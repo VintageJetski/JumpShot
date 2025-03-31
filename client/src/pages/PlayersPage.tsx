@@ -69,7 +69,12 @@ export default function PlayersPage() {
       header: "Role",
       accessorKey: "role",
       cell: ({ row }: any) => (
-        <RoleBadge role={row.original.role} />
+        <RoleBadge 
+          role={row.original.role} 
+          secondaryRole={row.original.secondaryRole}
+          isMainAwper={row.original.isMainAwper}
+          isIGL={row.original.isIGL}
+        />
       )
     },
     {

@@ -6,32 +6,58 @@ import {
 } from '@shared/schema';
 
 /**
- * Assigns a role to a player based on their statistics
+ * Evaluates potential roles for a player based on statistics
+ * Returns all fitting roles in order of strongest to weakest fit
+ */
+export function evaluatePlayerRoles(stats: PlayerRawStats): PlayerRole[] {
+  const roles: { role: PlayerRole; score: number }[] = [];
+  
+  // Check if player has AWP usage patterns
+  const awpScore = (stats.firstKills / (stats.deaths || 1)) * 2 + (stats.noScope * 0.5);
+  if (awpScore > 0.8 || stats.noScope > 0) {
+    roles.push({ role: PlayerRole.AWPer, score: awpScore });
+  }
+  
+  // Check for IGL patterns - utility usage and team coordination
+  const iglScore = (stats.assistedFlashes / 10) + (stats.totalUtilityThrown / 400) + (stats.assists / (stats.kills || 1));
+  if (iglScore > 0.7) {
+    roles.push({ role: PlayerRole.IGL, score: iglScore });
+  }
+  
+  // Check for Spacetaker patterns
+  const spacetakerScore = (stats.tFirstKills / 15) + (stats.firstKills / (stats.firstDeaths || 1) - 0.5);
+  if (spacetakerScore > 0.6) {
+    roles.push({ role: PlayerRole.Spacetaker, score: spacetakerScore });
+  }
+  
+  // Check for Lurker patterns
+  const lurkerScore = (stats.throughSmoke / 10) + (1 - stats.firstDeaths / (stats.firstKills || 1));
+  if (lurkerScore > 0.6) {
+    roles.push({ role: PlayerRole.Lurker, score: lurkerScore });
+  }
+  
+  // Check for Anchor patterns
+  const anchorScore = (stats.ctFirstKills / 12) + (stats.ctRoundsWon / (stats.totalRoundsWon || 1));
+  if (anchorScore > 0.7) {
+    roles.push({ role: PlayerRole.Anchor, score: anchorScore });
+  }
+  
+  // Support role is fallback
+  const supportScore = (stats.assistedFlashes / (stats.flashesThrown || 1)) + (stats.assists / (stats.kills || 1));
+  roles.push({ role: PlayerRole.Support, score: supportScore });
+  
+  // Sort roles by score (highest first)
+  return roles.sort((a, b) => b.score - a.score).map(r => r.role);
+}
+
+/**
+ * Assigns a primary and secondary role to a player based on their statistics
+ * This is a placeholder function that will be replaced by a more complex version
+ * that ensures only one IGL per team and AWPer assignments based on stats
  */
 export function assignRole(stats: PlayerRawStats): PlayerRole {
-  // Check if player has high AWP usage patterns
-  const isAWPer = stats.firstKills / (stats.deaths || 1) > 0.4 && stats.noScope > 0;
-  
-  // Check if player has high utility and team coordination
-  const isIGL = (stats.assistedFlashes > 5 && stats.totalUtilityThrown > 300);
-  
-  // Check if player has aggressive entry/space-taking stats
-  const isSpacetaker = stats.tFirstKills > 10 && stats.firstKills / (stats.firstDeaths || 1) > 0.8;
-  
-  // Check if player has lurker patterns
-  const isLurker = stats.throughSmoke > 8 && stats.firstDeaths < stats.firstKills * 0.7;
-  
-  // Check if player has CT side defense patterns
-  const isAnchor = stats.ctFirstKills > 10 && stats.ctRoundsWon > stats.tRoundsWon * 1.2;
-  
-  // If none of the above, default to support
-  if (isAWPer) return PlayerRole.AWPer;
-  if (isIGL) return PlayerRole.IGL;
-  if (isSpacetaker) return PlayerRole.Spacetaker;
-  if (isLurker) return PlayerRole.Lurker;
-  if (isAnchor) return PlayerRole.Anchor;
-  
-  return PlayerRole.Support;
+  const roles = evaluatePlayerRoles(stats);
+  return roles[0]; // Return the top role as primary
 }
 
 /**
@@ -211,16 +237,17 @@ function calculatePIV(rcs: number, icf: number, sc: number, osm: number): number
 }
 
 /**
- * Process player statistics and calculate PIV
+ * Process player statistics and calculate PIV with improved role assignment
  */
 export function processPlayerStats(rawStats: PlayerRawStats[], teamStatsMap: Map<string, PlayerRawStats[]>): PlayerWithPIV[] {
   // Group metrics by type for normalization
   const metricsByType: Record<string, number[]> = {};
   
-  // First pass: Assign roles and collect metrics for normalization
-  const playersWithRoles = rawStats.map(stats => {
-    const role = assignRole(stats);
-    const roleMetrics = calculateRoleMetrics(stats, role, rawStats);
+  // Analyze possible roles for each player
+  const playersWithPossibleRoles = rawStats.map(stats => {
+    const possibleRoles = evaluatePlayerRoles(stats);
+    const primaryRole = possibleRoles[0]; // Initially assign primary role based on strongest match
+    const roleMetrics = calculateRoleMetrics(stats, primaryRole, rawStats);
     
     // Store metrics for normalization
     Object.entries(roleMetrics).forEach(([key, value]) => {
@@ -230,12 +257,107 @@ export function processPlayerStats(rawStats: PlayerRawStats[], teamStatsMap: Map
       metricsByType[key].push(value);
     });
     
-    return { stats, role, roleMetrics };
+    // Calculate AWP score for AWPer determination
+    const awpScore = stats.noScope + (stats.firstKills / (stats.totalRoundsWon || 1) * 5);
+    
+    return { 
+      stats, 
+      primaryRole, 
+      possibleRoles,
+      roleMetrics,
+      awpScore
+    };
   });
   
-  // Second pass: Calculate PIV with normalized metrics
-  return playersWithRoles.map(({ stats, role, roleMetrics }) => {
-    // Normalize metrics
+  // Group players by team for team role assignment
+  const teamPlayersMap = new Map<string, typeof playersWithPossibleRoles>();
+  playersWithPossibleRoles.forEach(playerData => {
+    const teamName = playerData.stats.teamName;
+    if (!teamPlayersMap.has(teamName)) {
+      teamPlayersMap.set(teamName, []);
+    }
+    teamPlayersMap.get(teamName)!.push(playerData);
+  });
+  
+  // Assign final roles considering team context
+  const playersWithFinalRoles: {
+    stats: PlayerRawStats;
+    role: PlayerRole;
+    secondaryRole?: PlayerRole;
+    isIGL?: boolean;
+    isMainAwper?: boolean;
+    roleMetrics: Record<string, number>;
+  }[] = [];
+  
+  // Process teams to assign roles with team context
+  teamPlayersMap.forEach((teamPlayers, teamName) => {
+    // Hard-coded IGL list as requested
+    const iglNames = ["FalleN", "TabseN", "MAJ3R", "Snax", "karrigan", "apEX", "cadiaN", "Aleksib", "Twistzz", "Maka", "chopper", "kyxsan", "electronic", "ztr", "bLitz"];
+    
+    // Find the team's IGL (one per team)
+    let iglAssigned = false;
+    let iglPlayer = teamPlayers.find(p => iglNames.includes(p.stats.userName));
+    
+    if (iglPlayer) {
+      iglAssigned = true;
+      const index = playersWithFinalRoles.length;
+      playersWithFinalRoles.push({
+        ...iglPlayer,
+        role: PlayerRole.IGL,
+        secondaryRole: iglPlayer.primaryRole !== PlayerRole.IGL ? iglPlayer.primaryRole : undefined,
+        isIGL: true
+      });
+    }
+    
+    // Find main AWPer (one per team, highest AWP score)
+    const potentialAwpers = teamPlayers
+      .filter(p => !iglAssigned || p !== iglPlayer) // Skip IGL if already assigned
+      .filter(p => p.possibleRoles.includes(PlayerRole.AWPer) || p.awpScore > 0)
+      .sort((a, b) => b.awpScore - a.awpScore);
+    
+    let mainAwper = potentialAwpers[0]; // Player with highest AWP score
+    
+    if (mainAwper) {
+      // If IGL and AWPer are the same player, they're a hybrid
+      if (mainAwper === iglPlayer) {
+        const index = playersWithFinalRoles.findIndex(p => p.stats.userName === mainAwper.stats.userName);
+        if (index >= 0) {
+          playersWithFinalRoles[index].secondaryRole = PlayerRole.AWPer;
+          playersWithFinalRoles[index].isMainAwper = true;
+        }
+      } else {
+        playersWithFinalRoles.push({
+          ...mainAwper,
+          role: PlayerRole.AWPer,
+          secondaryRole: mainAwper.primaryRole !== PlayerRole.AWPer ? mainAwper.primaryRole : undefined,
+          isMainAwper: true
+        });
+      }
+    }
+    
+    // Assign remaining players with primary and secondary roles
+    teamPlayers.forEach(player => {
+      // Skip players already assigned (IGL or AWPer)
+      if ((iglAssigned && player === iglPlayer) || 
+          (mainAwper && player === mainAwper && player !== iglPlayer)) {
+        return;
+      }
+      
+      // Get primary and secondary roles
+      const [primaryRole, secondaryRole] = player.possibleRoles.length > 1 ? 
+        player.possibleRoles : [player.possibleRoles[0], undefined];
+      
+      playersWithFinalRoles.push({
+        ...player,
+        role: primaryRole,
+        secondaryRole: primaryRole !== secondaryRole ? secondaryRole : undefined
+      });
+    });
+  });
+  
+  // Calculate PIV and prepare final player data
+  return playersWithFinalRoles.map(({ stats, role, secondaryRole, isIGL, isMainAwper, roleMetrics }) => {
+    // Use metrics for primary role
     const normalizedMetrics = normalizeMetrics(roleMetrics, metricsByType);
     
     // Calculate PIV components
@@ -251,6 +373,7 @@ export function processPlayerStats(rawStats: PlayerRawStats[], teamStatsMap: Map
     // Create full player metrics
     const metrics: PlayerMetrics = {
       role,
+      secondaryRole,
       rcs: {
         value: rcs,
         metrics: normalizedMetrics
@@ -266,6 +389,9 @@ export function processPlayerStats(rawStats: PlayerRawStats[], teamStatsMap: Map
       name: stats.userName,
       team: stats.teamName,
       role,
+      secondaryRole,
+      isMainAwper,
+      isIGL,
       piv: Number(piv.toFixed(2)),
       kd: Number(stats.kd.toFixed(2)),
       primaryMetric: {

@@ -67,7 +67,12 @@ export default function PlayerDetailPage() {
               <div className="flex items-center mt-1">
                 <span className="text-gray-400">{player.team}</span>
                 <span className="mx-2 text-gray-600">•</span>
-                <RoleBadge role={player.role} />
+                <RoleBadge 
+                  role={player.role} 
+                  secondaryRole={player.secondaryRole}
+                  isMainAwper={player.isMainAwper}
+                  isIGL={player.isIGL}
+                />
               </div>
             </div>
           </div>

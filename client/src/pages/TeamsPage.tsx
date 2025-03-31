@@ -105,14 +105,7 @@ export default function TeamsPage() {
         <div className="text-right">
           <button 
             className="text-primary hover:text-primary-light"
-            onClick={() => {
-              // In a full implementation, this would go to a team detail page
-              // For now, show the top player from the team
-              const playerId = row.original.players[0]?.id;
-              if (playerId) {
-                setLocation(`/players/${playerId}`);
-              }
-            }}
+            onClick={() => setLocation(`/teams/${encodeURIComponent(row.original.name)}`)}
           >
             Details
           </button>

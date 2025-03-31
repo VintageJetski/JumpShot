@@ -53,6 +53,9 @@ export interface PlayerWithPIV {
   name: string;
   team: string;
   role: PlayerRole;
+  secondaryRole?: PlayerRole;
+  isMainAwper?: boolean;
+  isIGL?: boolean;
   piv: number;
   kd: number;
   primaryMetric: {
@@ -135,6 +138,7 @@ export interface PlayerRawStats {
 // Player metrics for PIV calculation
 export interface PlayerMetrics {
   role: PlayerRole;
+  secondaryRole?: PlayerRole;
   rcs: {
     value: number;
     metrics: {

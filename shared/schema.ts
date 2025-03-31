@@ -45,6 +45,13 @@ export const playerStats = pgTable("player_stats", {
   tSmokesThrown: integer("t_smokes_thrown").notNull(),
   smokesThrownInPistolRound: integer("smokes_thrown_in_pistol_round").notNull(),
   totalUtilityThrown: integer("total_utility_thrown").notNull(),
+  
+  // Calculated metrics
+  role: text("role"),
+  secondaryRole: text("secondary_role"),
+  isMainAwper: boolean("is_main_awper"),
+  isIGL: boolean("is_igl"),
+  piv: real("piv"),
 });
 
 // Player with calculated PIV metrics
@@ -222,10 +229,26 @@ export interface PlayerMetrics {
   piv: number;
 }
 
-// Insert schema
+// Teams table
+export const teams = pgTable("teams", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  tir: real("tir"),
+  sumPIV: real("sum_piv"),
+  synergy: real("synergy"),
+  avgPIV: real("avg_piv"),
+  topPlayerName: text("top_player_name"),
+  topPlayerPIV: real("top_player_piv"),
+});
+
+// Insert schemas
 export const insertPlayerStatsSchema = createInsertSchema(playerStats);
 export type InsertPlayerStats = z.infer<typeof insertPlayerStatsSchema>;
 export type PlayerStat = typeof playerStats.$inferSelect;
+
+export const insertTeamSchema = createInsertSchema(teams);
+export type InsertTeam = z.infer<typeof insertTeamSchema>;
+export type Team = typeof teams.$inferSelect;
 
 // Users table for authentication (from template)
 export const users = pgTable("users", {

@@ -1,0 +1,99 @@
+import type { Express, Request, Response } from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { loadPlayerData } from "./csvParser";
+import { processPlayerStats } from "./playerAnalytics";
+import { calculateTeamImpactRatings } from "./teamAnalytics";
+import path from "path";
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize data on server start
+  try {
+    console.log('Loading and processing player data...');
+    const rawPlayerStats = await loadPlayerData();
+    
+    // Group player stats by team
+    const teamStatsMap = new Map<string, typeof rawPlayerStats>();
+    rawPlayerStats.forEach(stats => {
+      if (!teamStatsMap.has(stats.teamName)) {
+        teamStatsMap.set(stats.teamName, []);
+      }
+      teamStatsMap.get(stats.teamName)!.push(stats);
+    });
+    
+    // Process player stats and calculate PIV
+    const playersWithPIV = processPlayerStats(rawPlayerStats, teamStatsMap);
+    
+    // Calculate team TIR
+    const teamsWithTIR = calculateTeamImpactRatings(playersWithPIV);
+    
+    // Store processed data
+    await storage.setPlayers(playersWithPIV);
+    await storage.setTeams(teamsWithTIR);
+    
+    console.log(`Processed ${playersWithPIV.length} players and ${teamsWithTIR.length} teams`);
+  } catch (error) {
+    console.error('Error initializing data:', error);
+  }
+  
+  // API routes
+  app.get('/api/players', async (req: Request, res: Response) => {
+    try {
+      const role = req.query.role as string | undefined;
+      
+      if (role && role !== 'All Roles') {
+        const players = await storage.getPlayersByRole(role);
+        res.json(players);
+      } else {
+        const players = await storage.getAllPlayers();
+        res.json(players);
+      }
+    } catch (error) {
+      console.error('Error fetching players:', error);
+      res.status(500).json({ message: 'Failed to fetch players' });
+    }
+  });
+  
+  app.get('/api/players/:id', async (req: Request, res: Response) => {
+    try {
+      const player = await storage.getPlayerById(req.params.id);
+      
+      if (player) {
+        res.json(player);
+      } else {
+        res.status(404).json({ message: 'Player not found' });
+      }
+    } catch (error) {
+      console.error('Error fetching player:', error);
+      res.status(500).json({ message: 'Failed to fetch player' });
+    }
+  });
+  
+  app.get('/api/teams', async (req: Request, res: Response) => {
+    try {
+      const teams = await storage.getAllTeams();
+      res.json(teams);
+    } catch (error) {
+      console.error('Error fetching teams:', error);
+      res.status(500).json({ message: 'Failed to fetch teams' });
+    }
+  });
+  
+  app.get('/api/teams/:name', async (req: Request, res: Response) => {
+    try {
+      const team = await storage.getTeamByName(req.params.name);
+      
+      if (team) {
+        res.json(team);
+      } else {
+        res.status(404).json({ message: 'Team not found' });
+      }
+    } catch (error) {
+      console.error('Error fetching team:', error);
+      res.status(500).json({ message: 'Failed to fetch team' });
+    }
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}

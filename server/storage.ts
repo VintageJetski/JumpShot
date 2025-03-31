@@ -89,8 +89,8 @@ export class HybridStorage implements IStorage {
         team: p.teamName,
         role: p.role as PlayerRole || PlayerRole.Support,
         secondaryRole: p.secondaryRole as PlayerRole,
-        isMainAwper: p.isMainAwper,
-        isIGL: p.isIGL,
+        isMainAwper: p.isMainAwper === null ? undefined : p.isMainAwper,
+        isIGL: p.isIGL === null ? undefined : p.isIGL,
         piv: Number(p.piv || 0),
         kd: Number(p.kd || 0),
         primaryMetric: {
@@ -187,8 +187,8 @@ export class HybridStorage implements IStorage {
       team: player.teamName,
       role: player.role as PlayerRole || PlayerRole.Support,
       secondaryRole: player.secondaryRole as PlayerRole,
-      isMainAwper: player.isMainAwper,
-      isIGL: player.isIGL,
+      isMainAwper: player.isMainAwper === null ? undefined : player.isMainAwper,
+      isIGL: player.isIGL === null ? undefined : player.isIGL,
       piv: Number(player.piv || 0),
       kd: Number(player.kd || 0),
       primaryMetric: {

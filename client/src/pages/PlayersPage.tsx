@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import StatsCard from "@/components/stats/StatsCard";
 import RoleBadge from "@/components/ui/role-badge";
-import { Search, User2, Target, Shield, Lightbulb, Rocket } from "lucide-react";
+import { Search, User2, Target, Shield, Lightbulb, CircleDot } from "lucide-react";
 
 export default function PlayersPage() {
   const [location, setLocation] = useLocation();
@@ -34,6 +34,9 @@ export default function PlayersPage() {
     awper: filteredPlayers.find(p => p.role === PlayerRole.AWPer) || null,
     lurker: filteredPlayers.find(p => p.role === PlayerRole.Lurker) || null,
     igl: filteredPlayers.find(p => p.role === PlayerRole.IGL) || null,
+    spacetaker: filteredPlayers.find(p => p.role === PlayerRole.Spacetaker) || null,
+    anchor: filteredPlayers.find(p => p.role === PlayerRole.Anchor) || null,
+    support: filteredPlayers.find(p => p.role === PlayerRole.Support) || null,
   };
 
   // Table columns definition
@@ -170,7 +173,7 @@ export default function PlayersPage() {
       </div>
       
       {/* Stats Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {topPlayersByRole.highest && (
           <StatsCard
             title="Highest PIV"
@@ -183,15 +186,15 @@ export default function PlayersPage() {
           />
         )}
         
-        {topPlayersByRole.lurker && (
+        {topPlayersByRole.igl && (
           <StatsCard
-            title="Best Lurker"
-            value={topPlayersByRole.lurker.name}
-            metric={`${topPlayersByRole.lurker.piv} PIV`}
-            metricColor="text-blue-400"
-            bgColor="bg-blue-500/10"
-            icon={<Shield className="h-6 w-6 text-blue-500" />}
-            subtext={`${topPlayersByRole.lurker.primaryMetric.name}: ${topPlayersByRole.lurker.primaryMetric.value.toFixed(2)}`}
+            title="Best IGL"
+            value={topPlayersByRole.igl.name}
+            metric={`${topPlayersByRole.igl.piv} PIV`}
+            metricColor="text-purple-400"
+            bgColor="bg-purple-500/10"
+            icon={<Lightbulb className="h-6 w-6 text-purple-500" />}
+            subtext={`${topPlayersByRole.igl.primaryMetric.name}: ${topPlayersByRole.igl.primaryMetric.value.toFixed(2)}`}
           />
         )}
         
@@ -207,15 +210,51 @@ export default function PlayersPage() {
           />
         )}
         
-        {topPlayersByRole.igl && (
+        {topPlayersByRole.spacetaker && (
           <StatsCard
-            title="Best IGL"
-            value={topPlayersByRole.igl.name}
-            metric={`${topPlayersByRole.igl.piv} PIV`}
-            metricColor="text-purple-400"
-            bgColor="bg-purple-500/10"
-            icon={<Lightbulb className="h-6 w-6 text-purple-500" />}
-            subtext={`${topPlayersByRole.igl.primaryMetric.name}: ${topPlayersByRole.igl.primaryMetric.value.toFixed(2)}`}
+            title="Best Spacetaker"
+            value={topPlayersByRole.spacetaker.name}
+            metric={`${topPlayersByRole.spacetaker.piv} PIV`}
+            metricColor="text-orange-400"
+            bgColor="bg-orange-500/10"
+            icon={<User2 className="h-6 w-6 text-orange-500" />}
+            subtext={`${topPlayersByRole.spacetaker.primaryMetric.name}: ${topPlayersByRole.spacetaker.primaryMetric.value.toFixed(2)}`}
+          />
+        )}
+        
+        {topPlayersByRole.lurker && (
+          <StatsCard
+            title="Best Lurker"
+            value={topPlayersByRole.lurker.name}
+            metric={`${topPlayersByRole.lurker.piv} PIV`}
+            metricColor="text-blue-400"
+            bgColor="bg-blue-500/10"
+            icon={<Shield className="h-6 w-6 text-blue-500" />}
+            subtext={`${topPlayersByRole.lurker.primaryMetric.name}: ${topPlayersByRole.lurker.primaryMetric.value.toFixed(2)}`}
+          />
+        )}
+        
+        {topPlayersByRole.anchor && (
+          <StatsCard
+            title="Best Anchor"
+            value={topPlayersByRole.anchor.name}
+            metric={`${topPlayersByRole.anchor.piv} PIV`}
+            metricColor="text-teal-400"
+            bgColor="bg-teal-500/10"
+            icon={<Shield className="h-6 w-6 text-teal-500" />}
+            subtext={`${topPlayersByRole.anchor.primaryMetric.name}: ${topPlayersByRole.anchor.primaryMetric.value.toFixed(2)}`}
+          />
+        )}
+        
+        {topPlayersByRole.support && (
+          <StatsCard
+            title="Best Support"
+            value={topPlayersByRole.support.name}
+            metric={`${topPlayersByRole.support.piv} PIV`}
+            metricColor="text-cyan-400"
+            bgColor="bg-cyan-500/10"
+            icon={<CircleDot className="h-6 w-6 text-cyan-500" />}
+            subtext={`${topPlayersByRole.support.primaryMetric.name}: ${topPlayersByRole.support.primaryMetric.value.toFixed(2)}`}
           />
         )}
       </div>
@@ -225,7 +264,7 @@ export default function PlayersPage() {
         {isLoading ? (
           <CardContent className="p-8 flex justify-center">
             <div className="text-center">
-              <Rocket className="h-8 w-8 animate-spin text-primary mx-auto" />
+              <div className="h-3 w-3 rounded-full bg-primary animate-pulse mx-auto"></div>
               <p className="mt-2 text-sm text-gray-400">Loading player data...</p>
             </div>
           </CardContent>

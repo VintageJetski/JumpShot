@@ -258,10 +258,23 @@ export function processPlayerStats(rawStats: PlayerRawStats[], teamStatsMap: Map
   // Hard-coded IGL list as requested
   const iglNames = ["FalleN", "TabseN", "MAJ3R", "Snax", "karrigan", "apEX", "cadiaN", "Aleksib", "Twistzz", "Maka", "chopper", "kyxsan", "electronic", "ztr", "bLitz"];
   
+  // Hard-coded AWPer list as requested
+  const awperNames = ["dev1ce", "sh1ro", "FalleN", "broky", "zywOo", "Monesy", "w0nderful", "910-", "degster", "torzsi", "REZ", "hyped", "ICY", "woxic"];
+  
   // Analyze possible roles for each player
   const playersWithPossibleRoles = rawStats.map(stats => {
     const isInIGLList = iglNames.includes(stats.userName);
-    const possibleRoles = evaluatePlayerRoles(stats, isInIGLList);
+    const isInAwperList = awperNames.includes(stats.userName);
+    
+    // If player is a known AWPer, prioritize that role
+    let possibleRoles = evaluatePlayerRoles(stats, isInIGLList);
+    if (isInAwperList) {
+      // Remove AWPer if it's already in the list
+      possibleRoles = possibleRoles.filter(role => role !== PlayerRole.AWPer);
+      // Add AWPer as the primary role with a high score
+      possibleRoles.unshift(PlayerRole.AWPer);
+    }
+    
     const primaryRole = possibleRoles[0]; // Initially assign primary role based on strongest match
     const roleMetrics = calculateRoleMetrics(stats, primaryRole, rawStats);
     
@@ -274,7 +287,10 @@ export function processPlayerStats(rawStats: PlayerRawStats[], teamStatsMap: Map
     });
     
     // Calculate AWP score for AWPer determination
-    const awpScore = stats.noScope + (stats.firstKills / (stats.totalRoundsWon || 1) * 5);
+    // Give a significant boost to known AWPers
+    const awpScore = isInAwperList ? 
+      10.0 : // High fixed value for known AWPers
+      stats.noScope + (stats.firstKills / (stats.totalRoundsWon || 1) * 5);
     
     return { 
       stats, 
@@ -282,7 +298,8 @@ export function processPlayerStats(rawStats: PlayerRawStats[], teamStatsMap: Map
       possibleRoles,
       roleMetrics,
       awpScore,
-      isInIGLList
+      isInIGLList,
+      isInAwperList
     };
   });
   

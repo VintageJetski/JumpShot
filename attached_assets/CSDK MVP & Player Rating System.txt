@@ -1,0 +1,581 @@
+﻿CSDK
+MVP Structure: Player Impact Value (PIV {for scouting}) & Team Impact Rating (TIR{for predicting})
+Core Components
+* Role-Specific Metrics: Detailed stats tailored to key roles (IGL, AWPer, Spacetaker, Lurker, Anchor, Support) to evaluate individual performance in context.
+* Player Impact Value (PIV): A composite score per player that combines role effectiveness, consistency, synergy, and opponent strength adjustment to rank players for scouting.
+* Team Impact Rating (TIR): A team-level metric that aggregates PIVs and adds a synergy bonus to predict match outcomes.
+Data Sources
+* HLTV: Provides kills (kill_count), deaths (death_count), assists (assist_count), K/D (kd), rounds won (total_rounds_won, t_rounds_won, ct_rounds_won), clutch wins (1vX_won), multi-kills (kills_x), and HLTV ratings (HLTV, HLTV 2.0).
+* Demo Parsers: Supplies round outcomes, utility usage (flahes_thrown, smokes_thrown, he_thrown, infernos_thrown, total_util_thrown), first kills (first_kill_count, t_first_kills, ct_first_kills), first deaths (first_death_count, t_first_deaths, ct_first_deaths), bomb plants (bomb_planted_count), bomb defuses (bomb_defused_count), and trade data (trade_kills, trade_deaths).
+Output
+* Scouting: Rank players by PIV to identify top talent in each role.
+* Match Prediction: Compare TIRs between teams to forecast winners (e.g., TIR_A > TIR_B → Team A favored).
+________________
+
+
+Role-Specific Metrics
+Below are the metrics for each role, calculated directly from your data where possible, with proxies noted.
+General IGL
+* Tactical Timeout Success (TTSR): Rounds won after timeout / Total rounds after timeout.
+   * Data: total_rounds_won post-timeout (assumes timeout flag exists in demos).
+   * Why: Measures IGL’s ability to shift momentum with strategic pauses.
+* Utility Setup Optimization (USO): (assisted_flashes + he_thrown + infernos_thrown) / total_util_thrown.
+   * Data: Utility stats from demos.
+   * Why: Reflects IGL’s effectiveness in enabling team plays through utility.
+* Clutch Conversion Rate (CCR): Sum(1vX_won) / Sum(1vX).
+   * Data: 1v1_won, 1v2_won, etc., from HLTV/demo.
+   * Why: Captures IGL’s adaptability in high-pressure situations.
+T-Side IGL
+* Opening Play Success Rate (OPSR): bomb_planted_count / t_rounds_won.
+   * Data: Bomb plants and T-side wins from demos.
+   * Why: Gauges success of initial T-side strategies.
+* Economy Optimization Index (EOI): t_rounds_won / (inferred buy cost from t_flahes_thrown + t_infernos_thrown).
+   * Data: T-side wins and utility usage as a cost proxy.
+   * Why: Tracks efficient resource management.
+* Fake Engagement Efficiency (FEE): (t_flahes_thrown or t_smokes_thrown in non-plant rounds) / (t_rounds_won from fakes).
+   * Data: Utility in non-execute rounds tied to wins (proxy).
+   * Why: Measures deception effectiveness.
+CT-Side IGL
+* Site Hold Efficiency (SHE): (ct_rounds_won - bomb_planted_count) / ct_rounds_won.
+   * Data: CT wins and bomb plants from demos.
+   * Why: Assesses defensive setup strength.
+* Save Call Efficiency (SCE): (Rounds with low kill_count but high survival) / (next-round total_rounds_won).
+   * Data: Survival and subsequent wins from demos (proxy).
+   * Why: Evaluates economic preservation.
+* Utility Setup Optimization (USO): (assisted_flashes + ct_he_thrown + ct_infernos_thrown) / total_util_thrown.
+   * Data: CT-side utility stats.
+   * Why: Tracks utility impact on defense.
+T-Side AWPer
+* Opening Pick Success Rate (OPSR): t_first_kills / (t_first_kills + t_first_deaths).
+   * Data: T-side first kills/deaths, AWP inferred from kills_x.
+   * Why: Measures entry kill success.
+* Multi-Kill Conversion (MKC): (multi-kill rounds) / (rounds with kill_count ≥ 1).
+   * Data: kills_x filtered for AWP multi-kills.
+   * Why: Captures ability to turn picks into round wins.
+* Flash-Assist Synergy (FAS): assisted_flashes / kills_x (T-side only).
+   * Data: Flash assists and T-side kills.
+   * Why: Reflects coordination with teammates.
+CT-Side AWPer
+* Site Lockdown Rate (SLR): (ct_rounds_won - bomb_planted_count) / ct_rounds_won where AWPer has kill_count.
+   * Data: CT wins, bomb plants, kills_x.
+   * Why: Assesses site denial.
+* Early Pick Security (EPS): ct_first_kills / (ct_first_kills + ct_first_deaths).
+   * Data: CT-side first kills/deaths, AWP inferred.
+   * Why: Tracks opening duel wins.
+* Entry Denial Efficiency (EDE): ct_first_kills / ct_first_deaths.
+   * Data: CT-side first engagements.
+   * Why: Measures duel success against entries.
+T Spacetaker
+* Opening Duel Success Rate (ODSR): t_first_kills / (t_first_kills + t_first_deaths).
+   * Data: T-side first kills/deaths.
+   * Why: Evaluates entry aggression.
+* Trade Conversion Rate (TCR): trade_kills / trade_deaths.
+   * Data: Trade stats from demos.
+   * Why: Tracks trading efficiency.
+* Aggression Efficiency Index (AEI): (kill_count - death_count) / (t_first_kills + t_first_deaths).
+   * Data: Kills, deaths, engagements.
+   * Why: Balances aggression with survival.
+T Lurker
+* Flank Success Rate (FSR): through_smoke / kill_count.
+   * Data: through_smoke as a flank proxy.
+   * Why: Gauges flank impact.
+* Clutch Conversion Rate (CCR): Sum(1vX_won) / Sum(1vX).
+   * Data: 1vX stats from HLTV/demo.
+   * Why: Measures late-round clutch ability.
+* Information Gathering Efficiency (IGE): t_rounds_won with low kill_count / total rounds.
+   * Data: Wins with minimal kills (proxy).
+   * Why: Reflects intel contribution.
+CT Anchor
+* Site Hold Success Rate (SHSR): (ct_rounds_won - bomb_planted_count) / ct_rounds_won.
+   * Data: CT wins and bomb plants.
+   * Why: Assesses site defense.
+* Opponent Entry Denial Rate (OEDR): ct_first_kills / ct_first_deaths.
+   * Data: CT-side first duels.
+   * Why: Tracks entry prevention.
+* Multi-Kill Defense Ratio (MKDR): (multi-kill rounds) / ct_rounds_won.
+   * Data: kills_x on CT side.
+   * Why: Captures multi-kill impact.
+T Support
+* Flash Assist Synergy (FAS): assisted_flashes / t_flahes_thrown.
+   * Data: Flash assists and throws.
+   * Why: Measures utility aiding kills.
+* Bomb Plant Utility Coverage (BPUC): bomb_planted_count with t_smokes_thrown / t_rounds_won.
+   * Data: Plants and smokes.
+   * Why: Tracks plant support.
+* Utility Setup Efficiency (USE): (bomb_planted_count + assisted_flashes) / total_util_thrown.
+   * Data: Utility and objective stats.
+   * Why: Evaluates entry facilitation.
+CT Support
+* Anti-Exec Utility Success (AEUS): (ct_rounds_won - bomb_planted_count) / ct_rounds_won with ct_util_thrown.
+   * Data: CT wins, plants, utility.
+   * Why: Measures execute disruption.
+* Crossfire Setup Rate (CSR): assisted_flashes leading to kill_count / ct_rounds_won.
+   * Data: Flash assists and kills.
+   * Why: Tracks crossfire support.
+* Retake Utility Coordination (RUC): bomb_defused_count with ct_flahes_thrown / retake attempts.
+   * Data: Defuses and flashes (proxy).
+   * Why: Assesses retake aid.
+Team Macro
+* Chain-Kill Conversion (CKC): (multi-kill chains) / total_kill_count.
+   * Data: kills_x with timestamp clustering.
+   * Why: Reflects team momentum.
+________________
+
+
+MVP Implementation Plan
+Scope
+* Analyze 10 matches (~200 rounds) from top teams (e.g., NAVI, FaZe) using your dataset.
+Metric Calculation
+* Output: Per-player metric table (e.g., ZywOo: OPSR = 0.78, MKC = 0.50, FAS = 0.40).
+* Process:
+   * Extract raw stats (e.g., kill_count, t_first_kills) from HLTV and demos.
+   * Compute metrics as defined above, normalizing where specified (e.g., AEI).
+Role Assignment
+* Infer Roles: Assign based on data patterns:
+   * IGL: High total_util_thrown + Sum(1vX_won), moderate kd (not lowest fragger).
+   * AWPer: High kills_x with AWP inferred, high t_first_kills (T) or ct_first_kills (CT).
+   * Spacetaker: High t_first_kills + trade_kills.
+   * Lurker: High through_smoke + 1vX_won, low t_first_kills.
+   * Anchor: High ct_first_kills + (ct_rounds_won - bomb_planted_count).
+   * Support: High assisted_flashes + bomb_planted_count (T) or bomb_defused_count (CT).
+* Why: Ensures roles align with playstyles using available stats.
+Step 1: Player Impact Value (PIV)
+* Formula: PIV_player = [(RCS_player * ICF) + SC_player] * OSM
+   * RCS_player: Sum(w_k * M_k') from k=1 to n (e.g., 0.33 * OPSR + 0.33 * MKC + 0.33 * FAS).
+      * Normalize M_k' to 0–1: M_k' = (M_k - min(M_k)) / (max(M_k) - min(M_k)).
+      * Initial w_k = equal (e.g., 0.33), tune later via regression.
+   * ICF: 1 / (1 + sigma_role), sigma_role from role-specific per-round scores (e.g., kill_count + trade_kills for Spacetaker).
+   * SC_player: Sum(v_j * S_j) from j=1 to m (e.g., v_j = 1, S_j = UES = 0.7).
+   * OSM: (Opponent HLTV Rating) / (League Avg HLTV Rating).
+* Output: Ranked players by PIV (e.g., ZywOo PIV = 1.25).
+Step 2: Team Impact Rating (TIR)
+* Formula: TIR = SumPIV + TSL
+   * SumPIV: Sum(PIV_player) for all 5 players.
+   * TSL: alpha * CKC, alpha = 0.1, CKC = (multi-kill chains) / total_kill_count.
+* Prediction: TIR_A > TIR_B → Team A favored (e.g., NAVI TIR = 5.11 vs. G2 TIR = 4.95).
+* Output: Team TIRs for match comparisons.
+Step 3: Validation
+* Test:
+   * PIV vs. mvp awards: Do high-PIV players align with MVPs?
+   * TIR vs. match outcomes: Does higher TIR predict wins >50% of the time?
+* Adjust: Refine weights (w_k, v_j, alpha) if correlations are weak, using regression on total_rounds_won.
+Step 4: Presentation
+* Dashboard:
+   * Player Rankings: Table of top PIVs per role (e.g., ZywOo T AWPer PIV = 1.25).
+   * Match Predictions: TIR_A vs. TIR_B with win probability (e.g., NAVI 52% vs. G2).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CS2 Rating System: Player Impact Value (PIV) & Team Impact Rating (TIR)
+
+
+Player Name
+	Role
+	Metric 1 (M_1)
+	Metric 2 (M_2)
+	Metric 3 (M_3)
+	RCS (Sum w_k * M_k')
+	Sigma_role
+	ICF (1 / (1 + Sigma))
+	SC (Synergy)
+	OSM (Opponent Strength)
+	PIV ([RCS * ICF + SC] * OSM)
+	Player A
+	Spacetaker
+	ODSR = 0.60
+	AEI = 0.9 (0.75 norm)
+	TCR = 0.70
+	0.68 (0.33 * 0.60 + 0.33 * 0.75 + 0.33 * 0.70)
+	1.2
+	0.45
+	0.7 (UES)
+	1.2 (HLTV 1.2 / 1.0)
+	1.20 ([0.68 * 0.45 + 0.7] * 1.2)
+	Player B
+	T AWPer
+	OPSR = 0.75
+	MKC = 0.50
+	-
+	0.63 (0.5 * 0.75 + 0.5 * 0.50)
+	0.8
+	0.56
+	0.4 (FAS)
+	1.0 (HLTV 1.0 / 1.0)
+	0.75 ([0.63 * 0.56 + 0.4] * 1.0)
+	Player C
+	IGL
+	OPSR = 0.55
+	USO = 0.65
+	-
+	0.60 (0.5 * 0.55 + 0.5 * 0.65)
+	1.0
+	0.50
+	0.6 (IIR)
+	1.1 (HLTV 1.1 / 1.0)
+	0.99 ([0.60 * 0.50 + 0.6] * 1.1)
+	
+
+
+
+1. Player Impact Value (PIV)
+The PIV measures a player’s total contribution to their team by combining their role-specific performance, consistency across rounds, synergy with teammates, and adjustment for opponent strength. It’s designed to scout top talent by evaluating players in their specific roles and predict match outcomes when aggregated.
+
+
+
+
+A. Role-Core Score (RCS)
+This captures how effectively a player fulfills their role’s core responsibilities using key metrics.
+
+
+
+
+Formula:
+RCS_player = Sum(w_k * M_k') from k=1 to n
+* M_k': A role-specific metric, normalized to 0–1 to ensure fair comparison across different scales. Normalization is calculated as:
+M_k' = (M_k - min(M_k)) / (max(M_k) - min(M_k)), where min and max are taken across all players in the dataset.
+* w_k: Weight assigned to each metric, summing to 1. Start with equal weights (e.g., 0.33 for 3 metrics) based on expert opinion, then adjust using data-driven methods like regression against total_rounds_won to reflect true impact.
+* n: Number of metrics per role, typically 2–4, chosen to represent the role’s essence.
+
+
+Example Metrics by Role:
+   * Spacetaker:
+   * ODSR = first_kill_count / (first_kill_count + first_death_count): Measures success in opening duels.
+   * AEI = (kill_count - death_count) / (first_kill_count + first_death_count): Balances aggression with survival (normalized).
+   * TCR = trade_kills / trade_deaths: Tracks ability to convert teammate deaths into trades.
+
+
+   * Lurker:
+   * FSR = through_smoke / kill_count: Gauges flank effectiveness (proxy due to limited positional data).
+   * CCR = Sum(1vX_won) / Sum(1vX): Assesses clutch success in 1vX scenarios.
+   * T-Side AWPer:
+   * OPSR = t_first_kills / (t_first_kills + t_first_deaths): Success rate of opening picks with AWP.
+   * MKC = (multi-kill rounds) / (rounds with kill_count ≥ 1): Multi-kill conversion from kills_x.
+   * IGL:
+   * OPSR = bomb_planted_count / t_rounds_won: Success of initial T-side strategies.
+   * USO = (assisted_flashes + he_thrown + infernos_thrown) / total_util_thrown: Utility effectiveness in setups.
+Compute each M_k from our data (e.g., first_kill_count, kills_x), normalize across players, assign initial w_k (e.g., 0.5, 0.5 for 2 metrics), and sum.
+Normalize: Metrics like ODSR (0–1) and AEI (unbounded) have different ranges. Normalization ensures each contributes equally to RCS, avoiding skew from unscaled values.
+B. Individual Consistency Factor (ICF)
+This reflects how steady a player’s performance is round-to-round, rewarding reliability—a key trait in pro CS2.
+   * Formula:
+ICF = 1 / (1 + sigma_role)
+      * sigma_role: Standard deviation of a role-specific per-round performance score, calculated across all rounds in a match or tournament.
+      * Scaled to 0–1 naturally (e.g., high sigma = low ICF, low sigma = high ICF). Optionally scale to 0–100 by multiplying by 100 for easier interpretation.
+The 1 / (1 + sigma) structure penalizes inconsistency (high sigma lowers ICF) while keeping it simple and bounded. It mirrors your original CRCI concept but adapts it for role-specific needs.
+      * Role-Specific Performance Scores:
+      * Spacetaker: kill_count + trade_kills per round: Focuses on aggressive output.
+      * Lurker: 1vX_won + through_smoke per round: Highlights clutch and stealth impact.
+      * AWPer: kill_count (AWP kills if tagged in kills_x) per round: Emphasizes fragging consistency.
+      * IGL: total_util_thrown + assist_count per round: Captures strategic influence over frags.
+      * Anchor: ct_first_kills + (ct_rounds_won - bomb_planted_count) per round: Reflects site defense stability.
+      * Support: assisted_flashes + bomb_planted_count (T) or bomb_defused_count (CT) per round: Utility and objective support.
+      * Implementation:
+      * Compute a per-round score
+      * Calculate sigma_role across rounds (e.g., Python’s numpy.std()).
+      * Apply the formula. Example: If sigma = 1.2, ICF = 1 / (1 + 1.2) = 0.45.
+Why Role-Specific?: Generic scores (e.g., kills + assists) might undervalue Supports or IGLs who don’t frag heavily but excel in their niche.
+
+
+C. Synergy Contribution (SC)
+This quantifies a player’s direct teamwork with specific teammates, rewarding synergy that boosts team success.
+      * Formula:
+SC_player = Sum(v_j * S_j) from j=1 to m
+         * S_j: A synergy metric involving the player (e.g., pair or trio stats).
+         * v_j: Weight for each synergy metric, summing to 1. Start equal (e.g., 0.5 for 2 metrics), tune via regression on total_rounds_won.
+         * m: Number of synergy metrics, typically 1–3, based on key teammate interactions.
+         * Why Only Direct Synergy?: SC focuses on the player’s specific contributions to pairs or trios (e.g., Spacetaker + Support), leaving broader team synergy to TIR’s TSL.
+         * Example Metrics:
+         * Spacetaker + Support: UES = (assisted_flashes by Support) / (t_first_kills by Spacetaker) in same rounds: Measures utility aiding entries.
+         * Lurker + IGL: IIR = (t_rounds_won with Lurker through_smoke) / (IGL total_util_thrown rounds): Links intel to strategy success.
+         * AWPer + Anchor: ROR = (bomb_defused_count with AWPer kills_x) / (retake attempts): Tracks retake coordination.
+         * Implementation:
+         * Use proxies due to limited pairing data: e.g., assisted_flashes (Support) tied to t_first_kills (Spacetaker) in winning rounds.
+         * Assign v_j (e.g., 1 if only one metric), sum for SC.
+         * Example: UES = 0.7, v_j = 1, SC = 0.7.
+         * D. Opponent Strength Multiplier (OSM)
+This adjusts PIV for the quality of opponents faced, ensuring fair comparisons.
+         * Formula:
+OSM = (Opponent HLTV Rating) / (League Average HLTV Rating)
+            * HLTV Rating from your data (HLTV or HLTV 2.0).
+            * League average computed across all teams in the dataset.
+            * Why OSM?: A PIV earned against tier-1 teams (e.g., NAVI) is more valuable than against tier-3, enhancing scouting accuracy.
+            * Implementation: Extract opponent HLTV from match data, divide by a precomputed league average (e.g., 1.0), apply as a multiplier.
+            * E. Final Player Impact Value (PIV)
+This combines all components into a single, comprehensive score.
+            * Formula:
+PIV_player = [(RCS_player * ICF) + SC_player] * OSM
+               * RCS_player * ICF: Scales role performance by consistency, reflecting stable output.
+               * SC_player: Adds value from teammate synergy.
+               * OSM: Adjusts for opponent difficulty.
+               * Interpretation: Higher PIV = greater impact. Example: PIV = 1.2 (strong vs. tough opponents) vs. 0.8 (average vs. weaker teams).
+               * Implementation: Compute RCS, ICF, SC, OSM separately, then plug into the formula.
+               * ________________
+
+
+
+
+
+
+2. Team Impact Rating (TIR)
+The TIR assesses a team’s collective strength by summing individual PIVs and adding a teamwide synergy bonus.
+
+
+
+
+A. Aggregate Player Values (SumPIV)
+This totals the PIVs of the starting five players.
+               * Formula:
+SumPIV = Sum(PIV_player) for all 5 players
+               * Why?: Provides a baseline of total "star power" plus individual synergy from PIVs.
+               * Implementation: Add the five PIVs calculated above.
+B. Teamwide Synergy Layer (TSL)
+This adds a bonus for full-team coordination beyond individual pairings.
+                  * Formula:
+TSL = alpha * CKC
+                     * CKC = (multi-kill chains) / (total kill_count): Measures team momentum via chained kills (from kills_x).
+                     * alpha = 0.1: Weighting factor, starting small to avoid overemphasis, tunable via regression.
+                     * Why CKC?: It’s a simple, computable proxy for team synergy using your data, capturing how well the team capitalizes on kills. More complex metrics (e.g., SEI, ZCO) need positional data we lack.
+                     * Implementation: Count multi-kill chains (tight kill clusters from kills_x), divide by team total_kill_count, multiply by alpha.
+C. Final Team Impact Rating (TIR)
+This combines individual and team factors into one score.
+                     * Formula:
+TIR = SumPIV + TSL
+                        * SumPIV: Total individual impact.
+                        * TSL: Bonus for team unity.
+                        * Interpretation: Higher TIR = stronger team. Used to predict match outcomes (e.g., Team A TIR > Team B TIR).
+                        * Implementation: Add SumPIV and TSL.
+                        * ________________
+
+
+
+
+3. Example Calculation Flow
+Spacetaker Example
+                        * RCS:
+                        * ODSR = 0.56, AEI = 0.9 (normalized to 0.75), TCR = 0.65.
+                        * w_k = 0.33, RCS = (0.33 * 0.56) + (0.33 * 0.75) + (0.33 * 0.65) = 0.185 + 0.248 + 0.215 = 0.65.
+                        * ICF:
+                        * Per-round score = kill_count + trade_kills, sigma = 1.2 (std dev across rounds).
+                        * ICF = 1 / (1 + 1.2) = 0.45.
+                        * SC:
+                        * UES = 0.7 (Support flashes aiding Spacetaker kills), v_j = 1 (only one synergy metric).
+                        * SC = 0.7.
+                        * OSM:
+                        * Opponent HLTV = 1.2, League Avg = 1.0, OSM = 1.2 / 1.0 = 1.2.
+                        * PIV:
+                        * PIV = [(0.65 * 0.45) + 0.7] * 1.2 = (0.2925 + 0.7) * 1.2 = 0.9925 * 1.2 = 1.191.
+Team Example
+                        * SumPIV:
+                        * PIVs = [1.191, 0.95, 1.05, 0.88, 1.00], SumPIV = 5.071.
+                        * TSL:
+                        * CKC = 0.4 (team multi-kill chains / total_kill_count), alpha = 0.1, TSL = 0.1 * 0.4 = 0.04.
+                        * TIR:
+                        * TIR = 5.071 + 0.04 = 5.111.
+                        *                         * 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import pandas as pd
+import numpy as np
+
+
+# Sample data creation
+data = {
+    'player': ['Player1', 'Player2', 'Player3', 'Player4', 'Player5'],
+    'role': ['Spacetaker', 'Lurker', 'T-Side AWPer', 'IGL', 'Support'],
+    'kill_count': [25, 18, 22, 15, 12],
+    'death_count': [18, 20, 19, 17, 16],
+    'assist_count': [5, 4, 3, 8, 10],
+    'first_kill_count': [8, 3, 7, 4, 2],
+    'first_death_count': [5, 4, 3, 3, 2],
+    't_first_kills': [8, 3, 7, 4, 2],
+    't_first_deaths': [5, 4, 3, 3, 2],
+    'trade_kills': [6, 4, 3, 2, 5],
+    'trade_deaths': [4, 3, 2, 3, 4],
+    'through_smoke': [1, 5, 2, 0, 1],
+    '1v2_won': [1, 2, 1, 1, 0],
+    '1v2': [2, 3, 2, 2, 1],
+    '1v3_won': [0, 1, 0, 0, 0],
+    '1v3': [1, 2, 1, 1, 0],
+    'assisted_flashes': [2, 1, 3, 4, 6],
+    't_flahes_thrown': [10, 8, 12, 15, 20],
+    'total_util_thrown': [25, 20, 30, 40, 35],
+    'bomb_planted_count': [3, 2, 4, 5, 6],
+    't_rounds_won': [10, 10, 10, 10, 10],
+    'he_thrown': [5, 4, 6, 8, 7],
+    'infernos_thrown': [3, 2, 5, 7, 6],
+    'HLTV': [1.15, 1.05, 1.10, 0.95, 0.90]  # Player HLTV ratings
+}
+df = pd.DataFrame(data)
+
+
+# Opponent and league averages (example values)
+opponent_hltv = 1.2  # Opponent team avg HLTV rating
+league_avg_hltv = 1.0  # League avg HLTV rating
+
+
+# Function to normalize metrics to 0-1 range
+def normalize_metric(series):
+    min_val = series.min()
+    max_val = series.max()
+    return (series - min_val) / (max_val - min_val) if max_val > min_val else series
+
+
+# Function to calculate Role-Core Score (RCS)
+def calculate_rcs(row):
+    role = row['role']
+    weights = {'Spacetaker': [0.33, 0.33, 0.34], 'Lurker': [0.5, 0.5], 
+               'T-Side AWPer': [0.5, 0.5], 'IGL': [0.5, 0.5], 'Support': [0.5, 0.5]}  # Equal weights for MVP
+    
+    if role == 'Spacetaker':
+        odsr = row['first_kill_count'] / (row['first_kill_count'] + row['first_death_count'] + 1e-5)
+        aei = (row['kill_count'] - row['death_count']) / (row['first_kill_count'] + row['first_death_count'] + 1e-5)
+        tcr = row['trade_kills'] / (row['trade_deaths'] + 1e-5)
+        metrics = [odsr, normalize_metric(pd.Series([aei, 0, 1]))[0], tcr]  # Normalize AEI
+        return sum(w * m for w, m in zip(weights['Spacetaker'], metrics))
+    
+    elif role == 'Lurker':
+        fsr = row['through_smoke'] / (row['kill_count'] + 1e-5)
+        ccr = row[['1v2_won', '1v3_won']].sum() / (row[['1v2', '1v3']].sum() + 1e-5)
+        return sum(w * m for w, m in zip(weights['Lurker'], [fsr, ccr]))
+    
+    elif role == 'T-Side AWPer':
+        opsr = row['t_first_kills'] / (row['t_first_kills'] + row['t_first_deaths'] + 1e-5)
+        mkc = row['kill_count'] / (row['t_rounds_won'] + 1e-5)  # Proxy for multi-kills
+        return sum(w * m for w, m in zip(weights['T-Side AWPer'], [opsr, mkc]))
+    
+    elif role == 'IGL':
+        opsr = row['bomb_planted_count'] / (row['t_rounds_won'] + 1e-5)
+        uso = (row['assisted_flashes'] + row['he_thrown'] + row['infernos_thrown']) / (row['total_util_thrown'] + 1e-5)
+        return sum(w * m for w, m in zip(weights['IGL'], [opsr, uso]))
+    
+    elif role == 'Support':
+        fas = row['assisted_flashes'] / (row['t_flahes_thrown'] + 1e-5)
+        use = (row['bomb_planted_count'] + row['assisted_flashes']) / (row['total_util_thrown'] + 1e-5)
+        return sum(w * m for w, m in zip(weights['Support'], [fas, use]))
+    
+    return 0  # Default for unassigned roles
+
+
+# Function to calculate Individual Consistency Factor (ICF)
+def calculate_icf(row):
+    role = row['role']
+    if role == 'Spacetaker':
+        score = row['kill_count'] + row['trade_kills']
+    elif role == 'Lurker':
+        score = row[['1v2_won', '1v3_won']].sum() + row['through_smoke']
+    elif role == 'T-Side AWPer':
+        score = row['kill_count']
+    elif role == 'IGL':
+        score = row['total_util_thrown'] + row['assist_count']
+    elif role == 'Support':
+        score = row['assisted_flashes'] + row['bomb_planted_count']
+    else:
+        score = row['kill_count']  # Default
+    
+    # Simulate per-round scores (assuming total_rounds_won as proxy for rounds played)
+    rounds = row['t_rounds_won']
+    sigma = np.std([score / rounds] * rounds) if rounds > 1 else 0  # Simplified sigma
+    return 1 / (1 + sigma)
+
+
+# Function to calculate Synergy Contribution (SC)
+def calculate_sc(row, df_team):
+    role = row['role']
+    if role == 'Spacetaker':
+        support = df_team[df_team['role'] == 'Support'].iloc[0]
+        ues = support['assisted_flashes'] / (row['t_first_kills'] + 1e-5)
+        return ues  # v_j = 1 for simplicity
+    elif role == 'Lurker':
+        igl = df_team[df_team['role'] == 'IGL'].iloc[0]
+        iir = row['through_smoke'] / (igl['total_util_thrown'] + 1e-5) if row['t_rounds_won'] > 0 else 0
+        return iir
+    elif role == 'T-Side AWPer' or role == 'IGL' or role == 'Support':
+        return 0  # Simplified: no SC for these roles in MVP
+    return 0
+
+
+# Calculate PIV
+def calculate_piv(row, df_team):
+    rcs = calculate_rcs(row)
+    icf = calculate_icf(row)
+    sc = calculate_sc(row, df_team)
+    osm = opponent_hltv / league_avg_hltv
+    piv = ((rcs * icf) + sc) * osm
+    return piv
+
+
+# Apply calculations to DataFrame
+df['RCS'] = df.apply(calculate_rcs, axis=1)
+df['ICF'] = df.apply(calculate_icf, axis=1)
+df['SC'] = df.apply(lambda row: calculate_sc(row, df), axis=1)
+df['PIV'] = df.apply(lambda row: calculate_piv(row, df), axis=1)
+
+
+# Calculate Team Impact Rating (TIR)
+sum_piv = df['PIV'].sum()
+ckc = df['kill_count'].sum() / (df['t_rounds_won'] + 1e-5)  # Proxy for chain kills
+tsl = 0.1 * ckc
+tir = sum_piv + tsl
+
+
+# Display results
+print("Player Impact Values (PIV):")
+print(df[['player', 'role', 'RCS', 'ICF', 'SC', 'PIV']].to_string(index=False))
+print("\nTeam Impact Rating (TIR):")
+print(f"SumPIV: {sum_piv:.3f}")
+print(f"TSL: {tsl:.3f}")
+print(f"TIR: {tir:.3f}")

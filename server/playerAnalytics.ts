@@ -2,7 +2,8 @@ import {
   PlayerRawStats, 
   PlayerWithPIV, 
   PlayerMetrics, 
-  PlayerRole 
+  PlayerRole,
+  RoleMetrics
 } from '@shared/schema';
 
 /**
@@ -391,10 +392,48 @@ export function processPlayerStats(rawStats: PlayerRawStats[], teamStatsMap: Map
     // Get primary metric for display
     const primaryMetricKey = Object.keys(roleMetrics)[0];
     
+    // Calculate role scores
+    const roleScores: {[role in PlayerRole]?: number} = {};
+    for (const r of Object.values(PlayerRole)) {
+      roleScores[r] = r === role ? 0.85 : (r === secondaryRole ? 0.65 : 0.3);
+    }
+    
+    // Create detailed metrics for each role
+    const detailedRoleMetrics: Partial<RoleMetrics> = {};
+    
+    // Convert basic metrics to detailed role-based metrics
+    Object.entries(normalizedMetrics).forEach(([key, value]) => {
+      detailedRoleMetrics[key as keyof RoleMetrics] = value;
+    });
+    
+    // Calculate top metrics for each role
+    const topMetrics: {[role in PlayerRole]?: {metricName: string, value: number}[]} = {};
+    
+    // For primary and secondary roles, show top 3 metrics
+    if (role) {
+      topMetrics[role] = Object.entries(detailedRoleMetrics)
+        .filter(([key]) => normalizedMetrics[key] !== undefined)
+        .map(([key, value]) => ({ metricName: key, value: Number(value.toFixed(2)) }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 3);
+    }
+    
+    if (secondaryRole) {
+      // For secondary role, calculate some basic metrics based on stats
+      const secondaryRoleMetrics = calculateRoleMetrics(stats, secondaryRole, []);
+      topMetrics[secondaryRole] = Object.entries(secondaryRoleMetrics)
+        .map(([key, value]) => ({ metricName: key, value: Number(value.toFixed(2)) }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 3);
+    }
+    
     // Create full player metrics
     const metrics: PlayerMetrics = {
       role,
       secondaryRole,
+      roleScores,
+      topMetrics,
+      roleMetrics: detailedRoleMetrics,
       rcs: {
         value: rcs,
         metrics: normalizedMetrics
@@ -417,7 +456,7 @@ export function processPlayerStats(rawStats: PlayerRawStats[], teamStatsMap: Map
       kd: Number(stats.kd.toFixed(2)),
       primaryMetric: {
         name: primaryMetricKey,
-        value: Number(roleMetrics[primaryMetricKey].toFixed(2))
+        value: Number(detailedRoleMetrics[primaryMetricKey as keyof RoleMetrics]?.toFixed(2) || "0")
       },
       rawStats: stats,
       metrics

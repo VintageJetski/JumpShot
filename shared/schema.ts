@@ -91,6 +91,61 @@ export enum PlayerRole {
   Support = "Support"
 }
 
+// Detailed metrics for each role
+export interface RoleMetrics {
+  // IGL metrics
+  "Tactical Timeout Success": number;
+  "Team Economy Preservation": number;
+  "Kill Participation Index": number;
+  "Opening Play Success Rate": number;
+  "Utility Setup Optimization": number;
+  "Site Hold Efficiency": number;
+  "Rotation Efficiency Index": number;
+  "Adaptive Defense Score": number;
+  
+  // AWPer metrics
+  "Opening Pick Success Rate": number;
+  "Multi Kill Conversion": number;
+  "AWPer Flash Assistance": number;
+  "Site Lockdown Rate": number;
+  "Entry Denial Efficiency": number;
+  "Angle Hold Success": number;
+  "Retake Contribution Index": number;
+  "Utility Punish Rate": number;
+  
+  // Spacetaker metrics
+  "Opening Duel Success Rate": number;
+  "Aggression Efficiency Index": number;
+  "First Blood Impact": number;
+  "Trade Conversion Rate": number;
+  "Utility Entry Effectiveness": number;
+  "Space Creation Index": number;
+  
+  // Lurker metrics
+  "Zone Influence Stability": number;
+  "Rotation Disruption Impact": number;
+  "Flank Success Rate": number;
+  "Information Gathering Efficiency": number;
+  "Clutch Conversion Rate": number;
+  "Delayed Timing Effectiveness": number;
+  
+  // Anchor metrics
+  "Site Hold Success Rate": number;
+  "Survival Rate Post-Engagement": number;
+  "Multi-Kill Defense Ratio": number;
+  "Opponent Entry Denial Rate": number;
+  "Defensive Efficiency Rating": number;
+  
+  // Support metrics
+  "Utility Setup Efficiency": number;
+  "Support Flash Assist": number;
+  "Bomb Plant Utility Coverage": number;
+  "Post-Plant Aid Ratio": number;
+  "Anti-Exec Utility Success": number;
+  "Teammate Save Ratio": number;
+  "Retake Utility Coordination": number;
+}
+
 // Raw stats extracted from CSV
 export interface PlayerRawStats {
   steamId: string;
@@ -139,6 +194,16 @@ export interface PlayerRawStats {
 export interface PlayerMetrics {
   role: PlayerRole;
   secondaryRole?: PlayerRole;
+  roleScores: {
+    [role in PlayerRole]?: number;
+  };
+  topMetrics: {
+    [role in PlayerRole]?: {
+      metricName: string;
+      value: number;
+    }[];
+  };
+  roleMetrics: Partial<RoleMetrics>;
   rcs: {
     value: number;
     metrics: {

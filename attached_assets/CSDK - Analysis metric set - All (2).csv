@@ -1,0 +1,248 @@
+,,,,,
+,General IGL,,,,
+,Metric,Importance,Calculation,Notes,
+,Tactical Timeout Success (TTSR),Evaluates whether rounds after timeouts result in improved performance.,Rounds won after timeout / Total rounds after timeout,,
+,Team Economy Preservation (TEP),Tracks how well an IGL manages economic losses over multiple rounds.,Eco-friendly rounds won / Total eco rounds,,
+,Momentum Shift Impact (MSI),"Measures the IGL’s effectiveness in shifting momentum (e.g., stopping an opponent’s streak or building one for their team).",Rounds won after losing streaks / Total losing streak scenarios,,
+,Kill Participation Index (KPI),"Tracks how often the IGL is involved in key engagements, either via direct kills or assists, to gauge leadership in combat scenarios.",(Kills + Assists) / Total rounds played,,
+,Map Control Influence (MCI),Quantifies how effectively the IGL helps the team secure and hold key areas of the map before engagements occur.,Time spent in contested zones before site executes,,
+,Strategic Depth Score (SDS),"Evaluates the IGL’s overall strategic versatility across multiple maps, reflecting ability to adjust to varying map conditions.",Unique map-specific strategies / Total maps played,,
+,Teammate Performance Uplift (TPU),"Measures how much teammates improve (K/D ratio, rating) under this IGL, indicating their leadership and motivational impact.",Teammate K/D or rating increase under IGL / Baseline teammate performance,,
+,Round Win Impact (RWI),Measures how much an IGL’s decisions directly contribute to winning rounds.,Rounds won influenced by IGL calls / Total rounds,"* changes in utility usage, player positions, and setup adjustments to identify impactful IGL calls, aiming to link these to round wins by examining deviations from standard patterns.",
+,,,,,
+,T side IGL,,,,
+,Metric,Importance,Calculation,,
+,Playstyle Variability Index (PVI),Measures how diverse the IGL’s playbook is by tracking repeated versus varied strategies.,Unique set plays used / Total rounds played,,
+,Opening Play Success Rate (OPSR),Measures the success of initial strategies in gaining map control and securing site access.,Successful executes / Total executes,,
+,Economy Optimization Index (EOI),Tracks how efficiently the IGL manages buys and eco rounds to maximize long-term team economy.,Rounds won per $ spent vs. league average (we could invent an avg),,
+,Mid-Round Call Success (MRCS),Quantifies the success rate of mid-round adjustments to the initial strat based on opponent reactions.,Successful mid-round changes leading to round wins / Total mid-round changes,,
+,Strategy Adaptability Score (SAS),Measures how often the IGL successfully shifts tactics based on enemy playstyle shifts.,Number of successful tactical shifts / Total shifts,,
+,Fake Engagement Efficiency (FEE),Evaluates how well the IGL calls fakes to force enemy rotations and misplays.,Rounds where fake plays led to rotations / Total rounds where fakes were called,,
+,Delayed Execution Success (DES),Tracks the IGL's ability to call late-round executes that disrupt defenses.,Rounds won with <20 sec executes / Total delayed executes,,
+,Clutch Opportunity Creation (COC),Evaluates how often an IGL’s strategy leads to winnable late-round situations.,Clutch situations created per half,,
+,,,,,
+,CT side IGL,,,,
+,Metric,Importance,Calculation,,
+,Site Hold Efficiency (SHE),Measures the success rate of defensive setups in preventing site takes.,Rounds where a bomb plant was denied / Total rounds,,
+,Rotation Efficiency Index (REI),Quantifies how well an IGL calls rotations based on early information.,Correct rotations called / Total rotation calls,,
+,Utility Setup Optimization (USO),Tracks how well utility is used to deny entries and control enemy movement.,Effective utility damage & flash assists / Total utility deployed,,
+,Adaptive Defense Score (ADS),Measures the IGL’s ability to switch setups dynamically mid-round based on enemy reads.,Successful defensive setup changes / Total changes,,
+,Anchor Support Effectiveness (ASE),Evaluates how often site anchors receive effective backup when under attack.,Rounds where anchors were reinforced successfully / Total site attacks,,
+,Mid-Round Recovery Index (MRI),Measures how well the IGL adapts after losing the first pick or site control.,Rounds recovered after losing opening pick / Total rounds where opening pick was lost,,
+,Opponent Conditioning Index (OCI),Tracks how well the IGL forces predictable enemy behaviors over multiple rounds.,Rounds where enemy responded predictably / Total tracked rounds,,
+,Save Call Efficiency (SCE),Evaluates whether an IGL’s save calls maximize future economy and win potential.,Rounds saved leading to next-round win %,,
+,,,,,
+, T side AWP,,,,
+,Metric,Explanation,Calculation,,
+,1. Opening Pick Success Rate (OPSR),"Measures how effectively the AWPer secures the first kill on T-side, often creating a 5v4 advantage and forcing opponents into reactive play.",OPSR = (Successful first picks) / (First-pick attempts),,
+,2. Offensive Angle Clearing (OAC),"Tracks the AWPer’s success in removing defenders from contested angles or choke points, enabling safe passage for teammates.",OAC = (Kills at contested angles) / (Total attempts to peek those angles),,
+,3. Post-Plant Defense Index (PDI),"Evaluates how well the AWPer defends the site once the bomb is planted, preventing retakes.",PDI = (Post-plant AWP kills + Surviving post-plant) / (Total post-plant scenarios),,
+,4. Economy Efficiency Ratio (EER),"Assesses how cost-effective the AWPer’s performance is, balancing the high price of the AWP against the kills, damage, or round wins generated.",EER = (Total damage + kills) / (Money spent on AWP + utility),,
+,5. Flash-Assist Synergy (FAS),"Measures how frequently the AWPer capitalises on teammate utility (especially flashes) to secure kills, indicating strong offensive coordination.",FAS = (Flash-assisted AWP kills) / (Total AWP kills on T-side),,
+,6. Multi-Kill Conversion (MKC),"Captures the AWPer’s ability to turn an initial frag into multiple kills during a single round, translating a small edge into a decisive advantage.",MKC = (Rounds with ≥2 AWP kills) / (Rounds with ≥1 AWP kill),,
+,7. Aggressive Re-Peek Rate (ARR) ,"Evaluates how often and successfully the AWPer re-peeks after firing an initial shot, reflecting a more forward, risk-taking style often seen in basketball’s fast-break transitions.",ARR = (Successful re-peeks leading to a kill) / (Total re-peek attempts,,
+,,,,,
+,CT side AWP,,,,
+,Metric,Explanation,Calculation,,
+,1. Site Lockdown Rate (SLR),"Measures how effectively the AWPer denies site control, preventing or delaying T-side executes (analogous to a goalie saving shots in hockey).",SLR = (Number of rounds AWPer holds a site without a successful T take) / (Total CT rounds),,
+,2. Early Pick Security (EPS),"Assesses how often the AWPer secures the first kill on CT side, granting a 5v4 advantage and forcing the enemy into less optimal rotations.",EPS = (Successful first picks) / (Attempted first picks),,
+,3. Entry Denial Efficiency (EDE),"Evaluates how well the AWPer prevents enemy opening picks, whether by winning or avoiding the duel, maintaining a 5v5 scenario or better.",EDE = (First-duel wins + first-duel avoids) / (Total first-duels initiated by the enemy),,
+,4. Save Preservation Efficiency (SPE),"Measures how successfully the AWPer retains the weapon when a round is lost or unwinnable, preserving economy for future rounds.",SPE = (Successful saves leading to next-round AWP usage) / (Total attempts to save the AWP),,
+,5. Angle Hold Success (AHS),"Tracks consistency in defending a given angle without getting forced off by utility or killed, akin to controlling a defensive zone in hockey or basketball.",AHS = (Kills or deterrences at angle) / (Times AWPer is forced off or killed at angle),,
+,6. Retake Contribution Index (RCI),"Evaluates how effectively the AWPer contributes to site retakes, clearing lines and neutralising T-side defenders—like a key defensive rebound in basketball.",RCI = (AWP kills/assists in retake) / (Total retake attempts),,
+,7. Utility Punish Rate (UPR),"Captures the AWPer’s ability to exploit windows opened by enemy utility (smoke fades, flash whiffs), capitalising on any misposition or ill-timed aggression.",UPR = (Kills secured right after enemy utility) / (Enemy utility events in AWPer’s zone),,
+,8. Crosshair Placement Efficiency (CPE) [New],"Assesses how often the AWPer’s first shot connects when the enemy appears in their crosshair, reflecting quick reaction times and strong fundamentals (similar to shooting efficiency in basketball).",CPE = (Immediate kill upon enemy entering AWPer's crosshair) / (Opportunities where enemy enters crosshair),,
+,,,,,
+,General AWP,,,,
+,Metric,Explanation,Calculation,Notes,
+,High-Impact Frag Ratio (HIFR) [New],"Quantifies how often the AWPer’s kills directly influence round outcomes (e.g., killing the bomb carrier, top fragger, or denying crucial map control). Similar to “go-ahead baskets” in basketball that shift momentum.",HIFR = (High-impact kills) / (Total kills),,
+,Repositioning Success Rate (RSR) [New],"Measures how effective the AWPer is at relocating after firing, retaining an element of surprise or safety (akin to reading the pitch/break in baseball or changes in formation in soccer).",RSR = (Successful reposition kills or survival) / (Total times AWPer repositions after firing),,
+,Clutch Impact Factor (CIF) [New],"Evaluates the AWPer’s performance in 1vx situations or final moments of a round, capturing the “clutch gene” similar to a top scorer in the last minutes of a basketball game.",CIF = (Clutch rounds won with AWP kills or assists) / (Total clutch rounds AWPer participated in),HIFR & CIF highlight how often the AWPer lands the truly decisive kills or performs under clutch conditions.,
+,Adaptive Tempo Rating (ATR) [New],Gauges how effectively the AWPer adjusts pace across T and CT sides or from round to round—mimicking pace control in soccer or shift changes in hockey.,"ATR = Weighted sum of (Aggression metrics + Passive hold metrics) / Rounds, measured over T and CT to find balance.","RSR & ATR measure broader strategic intelligence—knowing when to hold an angle or move, how to shift from defense to offense fluidly.",
+,KAST-based Impact Rating (KIR) [Potentially Reused],"Incorporates KAST (Kill, Assist, Survive, or Trade) events into an AWPer-specific formula to assess overall presence in a round, analogous to plus-minus ratings in basketball.",KIR = (KAST events * AWP kills multiplier) / (Total rounds played),"KIR merges mechanical and situational performance, giving a holistic rating reminiscent of all-in-one player metrics in other sports.",
+,,,,,
+,T Spacetaker Role,,,,
+,Metric,Importance,How It Is Calculated,,
+,Opening Duel Success Rate (ODSR),Measures effectiveness in winning early fights and setting team momentum.,ODSR = (Opening Duels Won / Total Opening Duels Attempted) * 100,,
+,First Blood Impact (FBI),Determines impact of securing the first kill and how it contributes to round wins.,FBI = (Rounds with First Kill / Total Rounds Played) * Impact Factor,,
+,Trade Conversion Rate (TCR),Evaluates ability to create or benefit from trade opportunities.,TCR = Successful Trades / Total Deaths of Teammates within Trade Window,,
+,Aggression Efficiency Index (AEI),Measures balance between engagements initiated and overall net impact.,AEI = (Kills - Deaths) / Engagements Initiated,,
+,Utility Entry Effectiveness (UEE),Determines how well utility is used to facilitate site entries.,UEE = Utility-Assisted Kills / Utility Used for Entries,,
+,Space Creation Index (SCI),Assesses how effectively the Spacetaker disrupts enemy territory and secures contested zones.,SCI = Seconds Occupying Enemy Territory / Round Duration,,
+,Psychological Pressure Index (PPI),Measures how much the Spacetaker influences enemy rotations and defensive play.,PPI = Enemy Rotations Induced / Rounds Played,,
+,Utility Chain Impact (UCI),Evaluates how well utility is synchronized with teammates’ actions.,UCI = Utility-Assisted Kills / Total Engagements Initiated,,
+,Clearing Utility Success Rate,Tracks success of utility in forcing enemy repositioning or elimination.,Clearing Utility Success Rate = Clearing Events / Total Utility Used,,
+,,,,,
+,Mid-Round Call Latency (MCL),"Measures how quickly the IGL reacts to a “trigger event” (e.g., losing a key player), reflecting adaptability and reaction speed.","Tag “trigger events” such as a sudden kill feed or crucial intel drop. 
+Note the timestamp of the IGL’s subsequent team shift or reposition. 
+Score how fast (in seconds) the adaptation occurs post-trigger.",,
+,Timeout Adaptation Efficiency (TAE),"Goes beyond pure timeout win rate by checking whether the new plan is actually implemented and remains effective over multiple rounds, not just immediately after the timeout.","After a timeout, label the next 3–4 rounds. 
+Track consistent changes in positioning or utility usage vs. pre-timeout pattern. 
+Score whether these strategic adjustments yield improved round outcomes.",,
+,Defeat Minimization Score (DMS),"Focuses on how the IGL manages unwinnable or near-lost rounds, salvaging weapons or exit frags to reduce economic damage, akin to “quality losses.”","Identify disadvantage scenarios (e.g., 2v5). 
+Check if team saves or sets up a crossfire to inflict exit kills. 
+DMS = (Rounds lost where minimal loss or exit frags gained) / (Total losing scenarios).",,
+,Opposition Analysis Conversion (OAC),"Evaluates how well the IGL exploits known enemy tendencies (e.g., frequent late rotations) over repeated rounds, reflecting deeper strategic exploitation.","Log recognized patterns in enemy setups from prior demos or earlier rounds. 
+Flag whenever IGL calls a strat aimed at exploiting that pattern. 
+Score success rate over those targeted rounds.",,
+,Karrigan Effect,"Measures an IGL’s long-term impact on a team’s performance across roster shifts or multiple tournaments, akin to a “legacy effect.”","Compare team results before and after the IGL joins/leaves. 
+Factor in roster stability, patch changes. 
+ELE = difference in team performance trend lines with vs. without the IGL.",,
+,Risk-Reward Profiling (RRP),"Captures how often the IGL makes high-risk calls (e.g., heavy stacks, early rushes) vs. safer defaults, along with their success rates.","Define which strats are “high risk” (stacks, double-eco AWPs, etc.). 
+Mark each round call as high or low risk. 
+RRP = (Wins from high-risk calls) - (Losses from high-risk calls), showing net payoff of aggression.",,
+,,,,,
+,T Lurker Role,,,,
+,,,,,
+,Metric,Importance,How It Is Calculated,,
+,Zone Influence Stability (ZIS),Measures how long the Lurker maintains control of key map areas.,ZIS = Controlled Time / Contested Time,,
+,Rotation Disruption Impact (RDI),Evaluates how much the Lurker delays or misdirects enemy rotations.,RDI = Disrupted Rotations / Total Rounds,,
+,Transition Efficiency (TE),Measures how well the Lurker shifts from intel-gathering to action.,TE = Engagements Post-Intel / Total Engagements,,
+,Clutch Conversion Rate (CCR),Tracks Lurker’s success in clutch scenarios.,CCR = Clutch Rounds Won / Total Clutch Rounds,,
+,Flank Success Rate (FSR),Determines effectiveness in executing successful flanks.,FSR = (Successful Flanks / Total Flanks) * 100,,
+,Finishing Kill Impact (FKI),Quantifies effectiveness in securing kills on weakened opponents.,FKI = Finishing Kills / Total Weak Opponents,,
+,Composite Efficiency Score (CES),Aggregates multiple key Lurker metrics for a comprehensive impact score.,CES = (FSR * Weight[0] + IGE * Weight[1] + RDI * Weight[2] + ZIS * Weight[3]),,
+,Information Gathering Efficiency (IGE),Tracks how much useful information is gathered without being detected.,IGE = Useful Intel Gathered / (Detection Instances + 1),,
+,Fake Engagement Efficiency (FEE),Determines how well the Lurker forces enemy reactions without committing.,FEE = Successful Disruptions / Fake Engagements,,
+,Event Sequencing Effectiveness (ESE),Assesses impact of Lurker’s sequential actions like baiting and flanking.,ESE = Successful Sequences / Total Sequences,,
+,Utility Baiting Index (UBI),Tracks how effectively the Lurker forces opponents to waste utility.,UBI = Baited Utility / Total Rounds,,
+,Delayed Timing Effectiveness (DTE),Measures success of Lurker’s delayed engagements.,DTE = Delayed Kills / Total Delayed Opportunities,,
+,,,,,
+,CT Anchor,,,,
+,Metric,Importance,How It Is Calculated,,notes
+,Site Hold Success Rate (SHSR),Measures how often the Anchor successfully defends the site without losing control.,SHSR = (Rounds Where Site Is Held / Total Defensive Rounds),,
+,Survival Rate Post-Engagement (SRPE),Evaluates how often the Anchor survives initial engagements and contributes to retakes.,SRPE = (Rounds Survived Post-Fight / Total Engagements at Site),,"bomb plant
+<2 kills on site.
+multiple grenade usage at site
+place of death of T"
+,Utility Denial Efficiency (UDE),"Measures how well the Anchor delays enemy pushes with smokes, molotovs, and flashes.",UDE = (Seconds Enemy Push Delayed / Total Utility Used Defensively),,
+,Multi-Kill Defense Ratio (MKDR),Tracks the Anchor’s ability to secure multiple kills while defending a site.,MKDR = Multi-Kill Rounds / Total Defensive Rounds,,
+,Retake Delay Contribution (RDC),Tracks how much time the Anchor buys for rotations or retakes after contact.,RDC = (Time Between First Contact and Site Loss) / Total Defensive Rounds,,
+,Late-Round Impact Score (LRIS),Measures how often the Anchor makes critical plays in late-round situations.,LRIS = (Kills + Clutch Contributions in Final 30 Secs) / Total Late-Round Scenarios,,
+,Utility Damage Impact (UDI),Measures how much utility damage the Anchor deals to attackers before site loss.,UDI = (Total Utility Damage Dealt / Total Rounds Defended),,
+,Opponent Entry Denial Rate (OEDR),Assesses how often the Anchor denies enemy entry frags.,OEDR = (First Duel Wins / First Duels Taken at Site),,
+,Rotation Success Rate (RSR),Evaluates the Anchor’s ability to rotate and successfully impact the other bombsite.,RSR = (Rounds with Successful Rotation Impact / Total Rotations Attempted),,
+,Defensive Efficiency Rating (DER),"Inspired by basketball’s PER, this is a composite score aggregating site holds, survival, utility impact, and trade success.","DER = Weighted Sum(SHSR, MKDR, UDE, OEDR)",,
+,Eco Round Survival Rate (ERSR),Tracks how often the Anchor survives or has impact in low-buy rounds.,ERSR = (Survived Eco Rounds / Total Eco Rounds Defended),,
+,Crossfire Setup Success (CSS),Evaluates how often the Anchor successfully sets up or benefits from crossfires.,CSS = (Kills Assisted in Crossfires / Total Defensive Rounds),,
+,,,,,
+,CT Rotator,,,,
+,Metric,Importance,How It Is Calculated,,
+,Rotation Timing Efficiency (RTE),Measures how quickly and effectively the Rotator moves to reinforce bomb sites.,RTE = (Average Time to Site Reinforcement / Total Rotation Attempts),,
+,Multi-Site Impact Rating (MSIR),Evaluates the Rotator’s effectiveness in contributing to multiple sites in a single round.,MSIR = (Successful Multi-Site Contributions / Total Rounds Played),,
+,Utility Disruption Index (UDI),Tracks how well the Rotator disrupts enemy executions with utility.,UDI = (Utility Damage + Enemy Blinded Seconds) / Total Utility Used,,
+,Duel Conversion Rate (DCR),Measures the Rotator’s effectiveness in taking and winning duels post-rotation.,DCR = (Kills After Rotating / Total Rotated Duels),,
+,Site Reinforcement Success Rate (SRSR),Evaluates how often the Rotator’s arrival leads to successful site defenses.,SRSR = (Rounds Won Post-Rotation / Total Defensive Rotations),,
+,Post-Rotation Survival Rate (PRSR),Measures how often the Rotator survives after reaching the new site.,PRSR = (Survived Rounds Post-Rotation / Total Rotations Attempted),,
+,Recovery Frag Percentage (RFP),Assesses how often the Rotator secures a kill to stabilize site holds.,RFP = (Kills Post-Rotation / Total Site Loss Scenarios),,
+,Flash Assist Effectiveness (FAE),Tracks the success of flash assists thrown upon arriving at a new site.,FAE = (Kills Assisted by Flash / Total Flashbangs Thrown Post-Rotation),,
+,Space Reclamation Score (SRS),Measures how well the Rotator retakes lost map control after a rotation.,SRS = (Key Area Regains / Total Rounds Played),,
+,Positional Adaptability Index (PAI),"Inspired by hockey’s positional shifts, tracks how well the Rotator adapts to different roles in a round.",PAI = (Successful Role Shifts / Total Rounds Played),,
+,,,,,
+,T Support,,,,
+,Metric,Explanation,Calculation,,
+,1. Utility Setup Efficiency (USE),"Gauges how effectively the Support’s pre-execute smokes, flashes, or molotovs facilitate safe entry or positioning (similar to setting up a forward pass in soccer or a screen assist in basketball).",USE = (Successful site entries with support utility) / (Total site-entry utility thrown),,
+,2. Bomb Plant Utility Coverage (BPUC),"Measures how consistently the Support provides defensive utility to cover teammates during or immediately after the bomb plant (e.g., smoking off choke points or flashing potential retake angles).",BPUC = (Rounds where supportive utility directly aids a safe plant) / (Total bomb plants attempted),,
+,3. Flash Assist Synergy (FAS),"Tracks how many kills are directly aided by the Support’s flashes. It’s akin to an “assist” in basketball or hockey, reflecting direct contribution to a teammate’s frag.",FAS = (Flash-assisted kills by teammates) / (Total flashbangs thrown in contested areas),,
+,4. Post-Plant Aid Ratio (PAR),Evaluates how often the Support continues to assist with utility or trades after the bomb is planted—like a supporting midfielder who maintains pressure in soccer rather than retreating.,PAR = (Support assists or utility impact post-plant) / (Total post-plant scenarios),,
+,5. Info Relay Efficiency (IRE),Measures how the Support’s positioning and spotting (or minimal peeking) on T-side help gather intel without losing duels. Similar to a “secondary playmaker” who feeds data to the main fraggers or IGL.,IRE = (Rounds where Support spots ≥1 enemy without dying early) / (Total T-side rounds played),,
+,6. Economic Drop Frequency (EDF),"Captures how often the Support invests in dropping weapons (e.g., rifling for a sniper) to maintain a balanced or optimal buy for the entire team, like distributing resources in hockey lines or basketball rotations.",EDF = (Rounds in which the Support drops a weapon) / (Total T-s,,
+,,,,,
+,CT Support,,,,
+,Metric,Explanation,Calculation,,
+,1. Anti-Exec Utility Success (AEUS),"Evaluates how effectively the Support times smokes, flashes, or molotovs to thwart or delay enemy pushes—like a defenseman in hockey who blocks shots or a rim protector in basketball denying drives.",AEUS = (Enemy executes disrupted / Total enemy executes faced),,
+,2. Teammate Save Ratio (TSR),"Measures how frequently the Support’s utility and positioning rescue or extract teammates who are in danger (e.g., low HP or pinned down) before a site is lost. Think of a last-ditch clearance in soccer.",TSR = (Rounds where Support utility or presence prevents a teammate’s death) / (Total scenarios where a teammate was under threat),,
+,3. Rotation Assist Efficiency (RAE),Tracks how effectively the Support aids teammates in rotating to contested sites by providing covering utility or clearing angles. Similar to a back-check in hockey or transitional defense in basketball.,RAE = (Successful rotation assists) / (Total rotation attempts where Support used utility or positioned to help),,
+,4. Crossfire Setup Rate (CSR),Evaluates how often the Support coordinates with an Anchor or Rotator to create a deadly crossfire. This is reminiscent of hockey’s zone coverage or forming a defensive wall in basketball.,CSR = (Rounds with an effective crossfire leading to a kill or deterrent) / (Total CT rounds where a crossfire was attempted),,
+,5. Retake Utility Coordination (RUC),"Measures how well the Support’s utility usage helps in retake situations, e.g., flashing a corner or smoking the bomb to defuse, akin to setting a perfect assist for a dunk in basketball.",RUC = (Retakes aided by Support utility) / (Total retakes attempted),,
+,6. Molotov Denial Index (MDI),"Assesses how many key choke points or bomb plant spots the Support denies using incendiary grenades, forcing the enemy to reroute—like shutting down passing lanes in soccer.",MDI = (Successful denies with molotov/incendiary) / (Total molotov/incendiary usage),,
+,,,,,
+,General Support,,,,
+,Metric,Explanation,Calculation,,
+,1. Economy Balancer Index (EBI),Measures how the Support helps maintain a stable team economy across both halves (T & CT)—similar to a “salary cap manager” in sports who balances star players with strong supporting talent.,"`EBI = (Team’s average buy quality) / (Rounds played), with weighting for effective drops vs. personal sacrifice",,
+,2. Utility Return on Investment (UROI),"Tracks the net benefit (kills, denies, forced enemy utility usage) per grenade or piece of utility purchased, akin to a cost-to-production ratio in hockey or a field general’s pass-completion efficiency in soccer.",UROI = (Sum of kills + forced reposition + denied executes) / (Money spent on utility),,
+,3. Trading Support Factor (TSF),Evaluates how often the Support either initiates a trade or is in position to instantly trade a fallen teammate across both halves—like a “second man” concept in soccer or hockey.,TSF = (Number of trades contributed by Support) / (Total trade opportunities across T and CT),,
+,4. Map Adaptability Score (MAS),"Reflects how the Support adjusts their role on different maps. Some maps may demand more aggression, while others require heavy utility usage from an off-site position—akin to different arenas or field sizes in sports.",`MAS = (Number of map-specific utility lineups or site setups effectively executed) / (Maps played),,
+,5. Cohesion-Assist Index (CAI),"Aggregates how many times the Support sets up others for success—integrating flash assists, rotations, eco drops, and mid-round calls. This is akin to plus-minus synergy in basketball or line synergy in hockey.","`CAI = Weighted sum(Flash assists, eco drops, retake utility) / (Total rounds)",,
+,,,,,
+,Team Macro metrics,,,,
+,Metric,Explanation,Calculation / Approach,,
+,Plus/Minus Round Value (PMRV),Basketball-style plus/minus applied to CS2. Tracks advantage/disadvantage shifts while a player is alive.,"- Segment each round into short intervals (e.g. 5s). 
+ - Assign + if neutral → advantage, - if neutral → disadvantage. 
+ - Sum across the match.",,
+,Hot-Hand Resilience (HHR),"Captures how a team reacts to an opponent on a streak (the “hot hand”), measuring if they adapt utility and focus to neutralize them quickly.","- Flag “hot” opponent (≥5 kills in previous rounds). 
+ - Check for extra attention: flashes, double-peeks, avoidance. 
+ - Score how fast the streaking player is shut down.",,
+,Chain-Kill Conversion (CKC),"Reflects momentum usage: once a kill is secured, how often another kill follows quickly, like consecutive hits in baseball.","- Timestamp each kill. 
+ - If a second kill by the same team happens within X seconds, treat it as a “chain.” 
+ - CKC = (# of multi-kill chains) / (total single kills).",,
+,Scramble Efficiency Index (SEI),Measures how well a team recovers from a broken play or unexpected event (e.g. losing a key player early).,"- Define “scramble triggers” (sudden picks/forced rotation). 
+ - Track the next 10–15 seconds: repositioning, trades, outcome. 
+ - Score success by survival rate and round result.",,
+,Time-to-Advantage (TTA),Tracks how quickly (in seconds) a team gains a 1-player or map-control advantage each round.,"- For each round, note the timestamp of the first kill or key map gain. 
+ - TTA = average (or median) time it takes to secure that advantage.",,
+,Positional Pass Map (PPM),"Inspired by soccer’s passing networks. Identifies how map control is “handed off” between teammates, analyzing coverage transitions.","- Divide the map into zones. 
+ - When one player leaves a zone and a teammate takes over, record a “pass.” 
+ - Compare successful pass sequences vs. missed coverage.",,
+,Cricket-Inspired “Partnership Runs” (CPR),"Treats two-player groupings like cricket batting partnerships, counting kills or site gains until one player falls.","- Each time two players group, tally kills/site control. 
+ - CPR = total kills (or successes) / total “partnerships.”",,
+,Per-Player WAR (Wins Above Replacement),"Borrowed from baseball. Compares a player to a “replacement-level” baseline, reflecting net rounds won due to this player’s presence.","- Establish a baseline for the role (league averages). 
+ - Compare difference in round wins with and without the specific player.",,
+,Cross-Round Consistency Index (CRCI),Shows how streaky or steady a player’s performance is. Higher CRCI means less variance across rounds.,"- Calculate a per-round score (kills + assists + utility). 
+ - Compute standard deviation across all rounds. 
+ - CRCI = 1 / (1 + std dev).",,
+,Projected Map-Specific Impact (PMSI),"Predicts performance on each map, factoring in history, synergy, and meta changes.","- Gather map-based stats for each player/team. 
+ - Adjust for lineups, patches, synergy. 
+ - Output an “expected impact” score per map.",,
+,,,,,
+,TEAM Cohesion,,,,
+,,,,,
+,,pair & trio synergy metrics,,,
+,,Metric,Explanation,Calculation / Approach,
+,,Pair Trading Rate (PTR),"How often two players secure follow-up kills/trades within a short window, reflecting immediate synergy.",- Track kills by Player A within X seconds of Player B’s kill or death.,
+,,Double-Peek Success (DPS),"Effectiveness when two players peek an angle simultaneously (often on offense), outnumbering a single defender.",- Identify events where both players peek the same angle within X seconds.,
+,,Crossfire Success (CFS),"Measures how deadly a two-/three-player crossfire is, typically on CT, indicating coordinated coverage of angles.",- Mark kills or forced reposition within the crossfire zone.,
+,,Trio Role Chain (TRC),"Evaluates synergy between three distinct roles (e.g., IGL, Support, Spacetaker) in consecutive kills or map control.","- For each triple group, see if each role contributed (calls, flashes, frags) in one chain.",
+,,Rescue Rate (RR),How often a teammate steps in to save or trade a player under threat (e.g. pinned or low HP).,- Label “danger events” (pinning or < 30 HP).,
+,,Late-Round Cohesion (LRC),"Measures coordination in the final seconds of a round (bomb plant, retake), emphasizing multi-player synergy rather than individual clutches.",- Focus on last ~20 seconds or post-plant.,
+,,Trio Retake Success (TRS),"Evaluates how well three players coordinate to retake a site, combining utility and positioning synergy.",- Tag retake scenarios with exactly 3 defenders.,
+,,Eco Synergy Rate (ESR),"Assesses synergy on eco/low-buy rounds, focusing on how pairs or trios use utility/trade tactics to compensate for weaker weapons.",- Filter rounds with limited buys.,
+,,,,,
+,,role-specific synergy,,,
+,Role Pair,,,,
+,Spacetaker + Support,Utility-Entry Sync (UES),"Measures how often a Support’s utility (flash, smoke, molotov) directly enables the Spacetaker’s successful entry or forces the enemy to reposition, creating a safe path.","- Identify entry attempts by the Spacetaker. 
+- Check if a Support’s utility hits within ~3 seconds before the entry kill. 
+- UES = (# of entries aided by Support utility) / (Total Spacetaker entry attempts with potential Support utility).",
+,Spacetaker + Support,Follow-Up Trade Rate (FTR),Evaluates how effectively the Support capitalizes on the Spacetaker’s aggression—either trading the Spacetaker’s death or pushing deeper once the Spacetaker has cleared initial angles.,"- Parse kill and death logs for the Spacetaker. 
+- If the Spacetaker dies, see if the Support gets a trade within X seconds at the same location. 
+- FTR = (# of trades by Support after Spacetaker death) / (Total Spacetaker deaths in attempt).",
+,IGL + Lurker,Info-to-Impact Rate (IIR),"Tracks how many times the Lurker’s early intel (enemy positions, rotations) is acted upon by the IGL to secure round advantages—like quick site calls or fakes exploiting uncovered areas.","- Log each piece of Lurker intel (spotting enemies, forced rotations). 
+- Check subsequent IGL calls (site hits, rotation shifts). 
+- IIR = (# of successful calls leveraging Lurker intel) / (Total Lurker intel events).",
+,IGL + Lurker,Late-Round Lurk Conversion (LLC),"Reflects how often the IGL times the Lurker’s flank or push with a main team execute, creating a pincer or a backstab that seals the round.","- Identify rounds where the Lurker attempts a flank (timestamp & position). 
+- Mark if the IGL’s main force executes the site within ±X seconds. 
+- LLC = (# of successful lurk flanks timed with team executes) / (Total lurk flank attempts).",
+,AWPer + Anchor,Defensive Handover Efficiency (DHE),"Shows how well the AWPer and Anchor coordinate handoffs on CT. For instance, the AWPer holds an angle initially, then transitions responsibility to the Anchor without leaving gaps.","- Track AWPer’s presence on a certain angle or zone. 
+-  When the AWPer rotates off, see if the Anchor consistently picks up coverage. 
+- DHE = (Rounds where site coverage is seamless between AWPer & Anchor) / (Total transitions).",
+,AWPer + Anchor,Retake Overwatch Rate (ROR),Assesses how often the AWPer and Anchor successfully pair up in retake scenarios—Anchor leading the charge while the AWPer provides overwatch or picks defenders off key angles.,"- Identify retake situations where both AWPer and Anchor are alive. 
+- Check if the AWPer gets kills or forces enemies off angles while the Anchor moves in. 
+- ROR = (Successful retakes involving AWPer & Anchor synergy) / (Total retake attempts with both alive).",
+,,,,,
+,,positional and spatial cohesion,,,
+,,,,,
+,,1. Avg. Distance During Engagements (ADDE),"Tracks the average spacing between teammates when firefights occur, ensuring they remain within trade or support range but not too close to risk multi-kills.","1) Identify timestamps and locations of all engagements. 
+2) For each pair/trio of teammates, compute distance at engagement time. 
+3) ADDE = mean of these distances across the match (ideal range is role-dependent).",
+,,2. Zone Coverage Overlap (ZCO),Measures how well the team covers the map’s key zones without redundant overlaps or leaving major angles undefended—akin to covering all passing lanes in basketball or hockey.,"1) Divide map into defined zones. 
+2) For each round segment (e.g., early/mid/late), see which players hold which zones. 
+3) ZCO = (zones adequately covered) / (total critical zones).",
+,,3. Rotational Path Efficiency (RPE),Evaluates how cleanly and quickly teammates rotate without colliding or wasting time in congested corridors—like good off-ball movement in basketball or line changes in hockey.,"1) Track each player’s path when rotating. 
+2) Note collisions (where two players block or slow each other), or dead-time in corners. 
+3) RPE = 1 - (penalty points for collisions / total rotations).",
+,,4. Synchronized Execution Index (SEI),Focuses on T-side alignment: how tightly multiple players converge on a site (in both time and space). Measures the “all-in” synergy of a site execute.,"1) Label the time window (e.g., ±3s) around the first player’s push into site. 
+2) Count how many teammates cross the same choke point in that window. 
+3) SEI = (# of players entering site simultaneously) / (# expected in the strategy).",
+,,5. Counter-Rotate Speed (CRS),"For CT side, checks how quickly multiple players reinforce a threatened site, ensuring minimal window for Ts to exploit a lone anchor.","1) Identify anchor “help request” or first sign of T aggression. 
+2) Measure how long it takes the next 1–2 CTs to arrive in effective range. 
+3) CRS = mean arrival time across relevant rounds (lower is better).",

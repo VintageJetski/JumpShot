@@ -4,6 +4,8 @@ import { TeamWithTIR } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import RoleBadge from "@/components/ui/role-badge";
 import ProgressMetric from "@/components/stats/ProgressMetric";
+import RoleDistributionChart from "@/components/charts/RoleDistributionChart";
+import TeamPIVBarChart from "@/components/charts/TeamPIVBarChart";
 import { ArrowLeft, Rocket, Users, ShieldCheck, Star, Activity, Zap } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 
@@ -242,47 +244,39 @@ export default function TeamDetailPage() {
           <div>
             <h3 className="text-lg font-medium mb-4">Role Distribution</h3>
             <Card className="bg-gray-800 border-gray-700">
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  {Object.entries(roleCount).map(([role, count]) => (
-                    <div key={role} className="flex items-center">
-                      <RoleBadge role={role as any} size="sm" />
-                      <div className="ml-4 flex-1">
-                        <div className="w-full bg-gray-700 rounded-full h-2">
-                          <div 
-                            className={getRoleBarColor(role as any)} 
-                            style={{width: `${(count / team.players.length) * 100}%`}} 
-                          />
-                        </div>
+              <CardContent className="py-6">
+                <RoleDistributionChart players={team.players} />
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                  <div className="text-sm text-gray-400">Key Team Attributes:</div>
+                  <div className="mt-2 space-y-2">
+                    {team.players.some(p => p.isIGL) && (
+                      <div className="flex items-center text-xs bg-gray-700 rounded-full px-3 py-1 text-purple-400 w-fit">
+                        <ShieldCheck className="h-3 w-3 mr-1" /> IGL Presence
                       </div>
-                      <div className="ml-2 text-sm text-gray-400">{count}</div>
-                    </div>
-                  ))}
-                  
-                  <div className="pt-4">
-                    <div className="text-sm text-gray-400">Key Team Attributes:</div>
-                    <div className="mt-2 space-y-2">
-                      {team.players.some(p => p.isIGL) && (
-                        <div className="flex items-center text-xs bg-gray-700 rounded-full px-3 py-1 text-purple-400 w-fit">
-                          <ShieldCheck className="h-3 w-3 mr-1" /> IGL Presence
-                        </div>
-                      )}
-                      {team.players.some(p => p.isMainAwper) && (
-                        <div className="flex items-center text-xs bg-gray-700 rounded-full px-3 py-1 text-amber-400 w-fit">
-                          <Star className="h-3 w-3 mr-1" /> Main AWPer
-                        </div>
-                      )}
-                      {team.avgPIV > 2.5 && (
-                        <div className="flex items-center text-xs bg-gray-700 rounded-full px-3 py-1 text-green-400 w-fit">
-                          <Users className="h-3 w-3 mr-1" /> High Avg. Impact
-                        </div>
-                      )}
-                    </div>
+                    )}
+                    {team.players.some(p => p.isMainAwper) && (
+                      <div className="flex items-center text-xs bg-gray-700 rounded-full px-3 py-1 text-amber-400 w-fit">
+                        <Star className="h-3 w-3 mr-1" /> Main AWPer
+                      </div>
+                    )}
+                    {team.avgPIV > 2.5 && (
+                      <div className="flex items-center text-xs bg-gray-700 rounded-full px-3 py-1 text-green-400 w-fit">
+                        <Users className="h-3 w-3 mr-1" /> High Avg. Impact
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
+        </div>
+        
+        {/* Player Impact Value Comparison */}
+        <div className="mt-8">
+          <h3 className="text-lg font-medium mb-4">Player Impact Value Comparison</h3>
+          <Card className="bg-gray-800 border-gray-700 p-4">
+            <TeamPIVBarChart players={team.players} />
+          </Card>
         </div>
         
         {/* Team Players Table */}

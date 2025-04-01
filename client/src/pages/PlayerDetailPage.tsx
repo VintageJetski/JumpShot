@@ -4,6 +4,7 @@ import { PlayerWithPIV } from "@shared/schema";
 import { Card, CardContent } from "@/components/ui/card";
 import RoleBadge from "@/components/ui/role-badge";
 import ProgressMetric from "@/components/stats/ProgressMetric";
+import PlayerStatsRadarChart from "@/components/charts/PlayerStatsRadarChart";
 import { ArrowLeft, Rocket } from "lucide-react";
 
 export default function PlayerDetailPage() {
@@ -92,7 +93,7 @@ export default function PlayerDetailPage() {
             <div>
               <h3 className="text-lg font-medium">Role Core Score (RCS)</h3>
               <div className="mt-4 space-y-4">
-                {roleMetricsKeys.map(metric => (
+                {roleMetricsKeys.slice(0, 5).map(metric => (
                   <ProgressMetric
                     key={metric}
                     label={metric}
@@ -219,6 +220,29 @@ export default function PlayerDetailPage() {
                     = {player.piv}
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-gray-800 rounded-lg p-4">
+            <PlayerStatsRadarChart player={player} />
+          </div>
+          
+          <div className="space-y-6">
+            <div className="bg-gray-800 rounded-lg p-4">
+              <h3 className="text-lg font-medium mb-2">Role Metrics Detail</h3>
+              <div className="mt-4 space-y-4">
+                {roleMetricsKeys.slice(5).map(metric => (
+                  <ProgressMetric
+                    key={metric}
+                    label={metric}
+                    value={player.metrics.rcs.metrics[metric]}
+                    color="bg-primary"
+                    description={getMetricDescription(metric, player)}
+                  />
+                ))}
               </div>
             </div>
           </div>

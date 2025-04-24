@@ -47,8 +47,16 @@ export default function PlayerComparisonsPage() {
   const [analysisTab, setAnalysisTab] = useState<"overall" | "ct" | "t">("overall");
   
   const { data: players = [], isLoading } = useQuery<PlayerWithPIV[]>({
-    queryKey: ["players"],
+    queryKey: ["/api/players"],
   });
+  
+  // Debug: Log players data to console
+  useEffect(() => {
+    console.log("Players data loaded:", players?.length || 0, "players");
+    if (players?.length > 0) {
+      console.log("First player:", players[0]);
+    }
+  }, [players]);
 
   // Fetch selected players' full data
   const player1 = useMemo(() => 

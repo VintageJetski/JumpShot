@@ -9,14 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Combobox, ComboboxOption } from "@/components/ui/combobox";
 import {
   Tabs,
   TabsContent,
@@ -597,39 +591,24 @@ export default function MatchPredictorPage() {
                 <div className="space-y-4">
                   <h3 className="font-medium">Team 1</h3>
                   
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="Search team by name..."
-                      value={searchQuery1}
-                      onChange={(e) => setSearchQuery1(e.target.value)}
-                      className="mb-2"
-                    />
-                    
-                    <div className="max-h-64 overflow-y-auto border border-gray-700 rounded-md">
-                      {teams
-                        .filter(team => 
-                          team.name.toLowerCase().includes(searchQuery1.toLowerCase())
-                        )
-                        .map((team) => (
-                          <div 
-                            key={team.id}
-                            className={`flex items-center justify-between p-2 hover:bg-gray-800 cursor-pointer ${
-                              team.id === team1Id ? 'bg-primary/20' : ''
-                            }`}
-                            onClick={() => setTeam1Id(team.id)}
-                          >
-                            <div className="flex items-center">
-                              <div className="text-sm font-medium">{team.name}</div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                                TIR: {Math.round(team.tir)}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
+                  <Combobox
+                    options={teams.map(team => ({
+                      value: team.id,
+                      label: team.name,
+                      content: (
+                        <div className="flex items-center justify-between w-full">
+                          <span>{team.name}</span>
+                          <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                            TIR: {Math.round(team.tir)}
+                          </span>
+                        </div>
+                      )
+                    }))}
+                    value={team1Id}
+                    onValueChange={setTeam1Id}
+                    placeholder="Select team"
+                    emptyText="No teams found"
+                  />
                   
                   {team1 && enhancedTeamStats[team1.id] && (
                     <div className="space-y-3 bg-background-light p-3 rounded-md">
@@ -668,39 +647,24 @@ export default function MatchPredictorPage() {
                 <div className="space-y-4">
                   <h3 className="font-medium">Team 2</h3>
                   
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="Search team by name..."
-                      value={searchQuery2}
-                      onChange={(e) => setSearchQuery2(e.target.value)}
-                      className="mb-2"
-                    />
-                    
-                    <div className="max-h-64 overflow-y-auto border border-gray-700 rounded-md">
-                      {teams
-                        .filter(team => 
-                          team.name.toLowerCase().includes(searchQuery2.toLowerCase())
-                        )
-                        .map((team) => (
-                          <div 
-                            key={team.id}
-                            className={`flex items-center justify-between p-2 hover:bg-gray-800 cursor-pointer ${
-                              team.id === team2Id ? 'bg-primary/20' : ''
-                            }`}
-                            onClick={() => setTeam2Id(team.id)}
-                          >
-                            <div className="flex items-center">
-                              <div className="text-sm font-medium">{team.name}</div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                                TIR: {Math.round(team.tir)}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
+                  <Combobox
+                    options={teams.map(team => ({
+                      value: team.id,
+                      label: team.name,
+                      content: (
+                        <div className="flex items-center justify-between w-full">
+                          <span>{team.name}</span>
+                          <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                            TIR: {Math.round(team.tir)}
+                          </span>
+                        </div>
+                      )
+                    }))}
+                    value={team2Id}
+                    onValueChange={setTeam2Id}
+                    placeholder="Select team"
+                    emptyText="No teams found"
+                  />
                   
                   {team2 && enhancedTeamStats[team2.id] && (
                     <div className="space-y-3 bg-background-light p-3 rounded-md">

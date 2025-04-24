@@ -101,7 +101,7 @@ interface MatchPrediction {
     team1Value: number;
     team2Value: number;
     weight: number;
-    favorsTeam: 1 | 2 | 0;
+    favorsTeam: number; // 1 = team1, 2 = team2, 0 = neutral
   }[];
   predictedScore: {
     team1: number;
@@ -118,7 +118,7 @@ interface MatchPrediction {
     }[];
   };
   mapAdvantages: {
-    [key: string]: 1 | 2 | 0; // 1 = team1, 2 = team2, 0 = neutral
+    [key: string]: number; // 1 = team1, 2 = team2, 0 = neutral
   };
 }
 

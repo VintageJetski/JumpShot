@@ -7,6 +7,7 @@ import PlayersPage from "@/pages/PlayersPage";
 import TeamsPage from "@/pages/TeamsPage";
 import PlayerDetailPage from "@/pages/PlayerDetailPage";
 import TeamDetailPage from "@/pages/TeamDetailPage";
+import RoleWeightingsPage from "@/pages/RoleWeightingsPage";
 import Layout from "@/components/layout/Layout";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
         <Route path="/" component={PlayersPage} />
         <Route path="/players" component={PlayersPage} />
         <Route path="/teams" component={TeamsPage} />
+        <Route path="/role-weightings" component={RoleWeightingsPage} />
         <Route path="/players/:id" component={PlayerDetailPage} />
         <Route path="/teams/:name" component={TeamDetailPage} />
         <Route component={NotFound} />

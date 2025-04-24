@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loadPlayerData } from "./csvParser";
+import { loadNewPlayerStats } from "./newDataParser";
 import { processPlayerStatsWithRoles } from "./newPlayerAnalytics";
 import { calculateTeamImpactRatings } from "./teamAnalytics";
 import { loadPlayerRoles } from "./roleParser";
@@ -11,7 +11,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize data on server start
   try {
     console.log('Loading and processing player data...');
-    const rawPlayerStats = await loadPlayerData();
+    const rawPlayerStats = await loadNewPlayerStats();
     
     // Load player roles from CSV
     console.log('Loading player roles from CSV...');

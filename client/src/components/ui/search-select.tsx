@@ -51,6 +51,11 @@ export function SearchSelect({
     : options.filter(option => 
         option.name.toLowerCase().includes(query.toLowerCase())
       );
+      
+  // Add debugging
+  console.log("SearchSelect options:", options.length);
+  console.log("SearchSelect query:", query);
+  console.log("SearchSelect filtered:", filteredOptions.length);
 
   // Get selected option for display
   const selectedOption = options.find(option => option.id === selectedId);

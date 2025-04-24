@@ -289,6 +289,195 @@ function calculateSC(stats: PlayerRawStats, role: PlayerRole): { value: number, 
 }
 
 /**
+ * Calculate Basic Metrics Score based on role
+ * This implements the metrics from CS2dkbasics - Roles Metrics Weights
+ */
+function calculateBasicMetricsScore(stats: PlayerRawStats, role: PlayerRole): number {
+  let score = 0;
+  
+  switch(role) {
+    case PlayerRole.IGL:
+      // Round Win Rate in Rifle Rounds (using general rounds as proxy)
+      const rifleRoundWinRate = stats.totalRoundsWon / Math.max(stats.totalRoundsWon + (stats.deaths - stats.totalRoundsWon), 1);
+      score += rifleRoundWinRate * 0.245;
+      
+      // Utility Usage Efficiency
+      const utilEfficiency = stats.assistedFlashes / Math.max(stats.totalUtilityThrown, 1);
+      score += utilEfficiency * 0.21;
+      
+      // Timeout Conversion (using a standard 50% conversion as baseline)
+      const timeoutConversion = 0.5; // baseline estimation
+      score += timeoutConversion * 0.14;
+      
+      // Basic Consistency (already calculated in ICF)
+      score += 0.105; // will be weighted by actual consistency
+      
+      // Eco/Force Round Conversion (using a standard 35% conversion as baseline)
+      const ecoForceConversion = 0.35; // baseline estimation
+      score += ecoForceConversion * 0.15;
+      
+      // 5v4 Conversion Rate (using 70% baseline)
+      const manAdvantageConversion = 0.7; // baseline estimation
+      score += manAdvantageConversion * 0.15;
+      break;
+      
+    case PlayerRole.AWP:
+      // Opening Kill Ratio
+      const openingKillRatio = stats.firstKills / Math.max(stats.firstKills + stats.firstDeaths, 1);
+      score += openingKillRatio * 0.28;
+      
+      // Basic Consistency (already calculated in ICF)
+      score += 0.205; // will be weighted by actual consistency
+      
+      // AWP Kill Share (assuming 50% of kills are with AWP as baseline)
+      const awpKillShare = 0.5; // baseline estimation
+      score += awpKillShare * 0.175;
+      
+      // Multi-Kill Conversion (using K/D as a proxy)
+      const multiKillConversion = Math.min(stats.kd, 2) / 2;
+      score += multiKillConversion * 0.14;
+      
+      // Save + Rebuy Efficiency (using a standard 40% save rate as baseline)
+      const saveRebuy = 0.4; // baseline estimation
+      score += saveRebuy * 0.15;
+      
+      // Weapon Survival Rate (using a standard survival rate)
+      const weaponSurvival = (stats.kills - stats.deaths + stats.assists) / Math.max(stats.kills + stats.assists, 1);
+      score += weaponSurvival * 0.05;
+      break;
+      
+    case PlayerRole.Spacetaker:
+      // Opening Duel Success Rate
+      const openingDuelSuccessRate = stats.tFirstKills / Math.max(stats.tFirstKills + stats.tFirstDeaths, 1);
+      score += openingDuelSuccessRate * 0.28;
+      
+      // Trade Kill Involvement (estimated from assists)
+      const tradeKillInvolvement = stats.assists / Math.max(stats.kills, 1);
+      score += tradeKillInvolvement * 0.175;
+      
+      // Average Damage per Round (estimated using kills/deaths with 100 dmg per kill)
+      const adr = (stats.kills * 100) / Math.max(stats.kills + stats.deaths, 1);
+      score += (adr / 200) * 0.14; // Normalize to 0-1 range
+      
+      // Basic Consistency (already calculated in ICF)
+      score += 0.105; // will be weighted by actual consistency
+      
+      // Headshot Percentage (estimated at 40% baseline)
+      const hsPercentage = stats.headshots / Math.max(stats.kills, 1);
+      score += hsPercentage * 0.15;
+      
+      // T-Side KAST (estimated from overall stats)
+      const tSideKast = (stats.kills + stats.assists) / Math.max(stats.kills + stats.deaths, 1);
+      score += tSideKast * 0.15;
+      break;
+      
+    case PlayerRole.Lurker:
+      // 1vX Conversion Rate (using K/D as a proxy)
+      const clutchSuccess = Math.min(stats.kd, 2) / 2;
+      score += clutchSuccess * 0.21;
+      
+      // Late-Round Survival Rate (estimated)
+      const lateRoundSurvival = stats.kills / Math.max(stats.deaths, 1) * 0.7;
+      score += lateRoundSurvival * 0.21;
+      
+      // KAST (estimated)
+      const kast = (stats.kills + stats.assists) / Math.max(stats.kills + stats.deaths, 1);
+      score += kast * 0.175;
+      
+      // Basic Consistency (already calculated in ICF)
+      score += 0.105; // will be weighted by actual consistency
+      
+      // Clutch Rounds Entered (estimated)
+      const clutchRoundsEntered = 0.4; // baseline estimation
+      score += clutchRoundsEntered * 0.15;
+      
+      // T-Side K/D Ratio (estimated from overall K/D)
+      score += Math.min(stats.kd / 2, 0.5) * 0.15;
+      break;
+      
+    case PlayerRole.Anchor:
+      // Site Hold Success Rate (estimated)
+      const siteHold = stats.ctRoundsWon / Math.max(stats.ctRoundsWon + stats.ctFirstDeaths, 1);
+      score += siteHold * 0.245;
+      
+      // Multi-Kills on CT (using overall K/D as proxy)
+      const ctMultiKills = Math.min(stats.kd, 2) / 2;
+      score += ctMultiKills * 0.175;
+      
+      // CT-Side ADR (estimated)
+      const ctADR = (stats.kills * 100) / Math.max(stats.kills + stats.deaths, 1);
+      score += (ctADR / 200) * 0.175; 
+      
+      // Basic Consistency (already calculated in ICF)
+      score += 0.105; // will be weighted by actual consistency
+      
+      // CT-Side KAST (estimated)
+      const ctKAST = (stats.kills + stats.assists) / Math.max(stats.kills + stats.deaths, 1);
+      score += ctKAST * 0.15;
+      
+      // CT Utility Efficiency
+      const ctUtilityEff = stats.assistedFlashes / Math.max(stats.totalUtilityThrown, 1);
+      score += ctUtilityEff * 0.15;
+      break;
+      
+    case PlayerRole.Support:
+      // Flash Assist Ratio
+      const flashAssistRatio = stats.assistedFlashes / Math.max(stats.flashesThrown, 1);
+      score += flashAssistRatio * 0.21;
+      
+      // Save Rounds / Economy Preservation (estimated)
+      const saveRounds = 0.4; // baseline estimation
+      score += saveRounds * 0.175;
+      
+      // Bomb Plant/Defuse Count (estimated from rounds won)
+      const bombActivity = stats.totalRoundsWon / 30; // normalized to 0-1 range
+      score += bombActivity * 0.175;
+      
+      // Basic Consistency (already calculated in ICF)
+      score += 0.105; // will be weighted by actual consistency
+      
+      // Non-Flash Utility Impact
+      const nonFlashUtility = (stats.totalUtilityThrown - stats.flashesThrown) / Math.max(stats.totalUtilityThrown, 1);
+      score += nonFlashUtility * 0.15;
+      
+      // T-Side Plant Conversion (estimated)
+      const tSidePlant = stats.tRoundsWon / Math.max(stats.totalRoundsWon, 1);
+      score += tSidePlant * 0.15;
+      break;
+      
+    case PlayerRole.Rotator:
+      // Rotation Speed (estimated from CT performance)
+      const rotationSpeed = 0.5; // baseline estimation
+      score += rotationSpeed * 0.25;
+      
+      // CT-Side ADR (estimated)
+      const rotatorADR = (stats.kills * 100) / Math.max(stats.kills + stats.deaths, 1);
+      score += (rotatorADR / 200) * 0.20;
+      
+      // Multi-Kills After Rotation (using K/D as proxy)
+      const rotatorMultiKills = Math.min(stats.kd, 2) / 2;
+      score += rotatorMultiKills * 0.15;
+      
+      // Basic Consistency (already calculated in ICF)
+      score += 0.105; // will be weighted by actual consistency
+      
+      // Flash Assist Ratio
+      const rotatorFlashRatio = stats.assistedFlashes / Math.max(stats.flashesThrown, 1);
+      score += rotatorFlashRatio * 0.15;
+      
+      // CT-Side KAST (estimated)
+      const rotatorKAST = (stats.kills + stats.assists) / Math.max(stats.kills + stats.deaths, 1);
+      score += rotatorKAST * 0.10;
+      break;
+      
+    default:
+      score = 0.5; // Default score if no role defined
+  }
+  
+  return score;
+}
+
+/**
  * Calculate OSM (Opponent Strength Multiplier)
  */
 function calculateOSM(): number {
@@ -299,9 +488,16 @@ function calculateOSM(): number {
 /**
  * Calculate PIV (Player Impact Value)
  */
-function calculatePIV(rcs: number, icf: number, sc: number, osm: number, kd: number = 1.0): number {
-  // Traditional calculation
-  const basePIV = ((rcs * icf) + sc) * osm;
+function calculatePIV(rcs: number, icf: number, sc: number, osm: number, kd: number = 1.0, basicScore: number = 0.5): number {
+  // New calculation with basic metrics integration
+  // Reduce advanced metrics (RCS) to 50% weight
+  const reducedRCS = rcs * 0.5;
+  
+  // Add 50% weight from basic metrics
+  const combinedRCS = reducedRCS + (basicScore * 0.5);
+  
+  // Traditional calculation with the combined RCS
+  const basePIV = ((combinedRCS * icf) + sc) * osm;
   
   // Add additional K/D influence through the formula itself
   // This change ensures even more emphasis on K/D for all player roles
@@ -487,21 +683,26 @@ function calculatePlayerWithPIV(
   const sc = calculateSC(stats, primaryRole);
   const osm = calculateOSM();
   
+  // Calculate basic metrics score
+  const basicScore = calculateBasicMetricsScore(stats, primaryRole);
+  
   // Add a K/D multiplier for star players (1.5+ K/D non-IGLs)
   const kdMultiplier = (!isIGL && stats.kd > 1.5) ? 
     1 + ((stats.kd - 1.5) * 0.15) : 1;
   
-  const piv = calculatePIV(rcs, icf.value, sc.value, osm, stats.kd) * kdMultiplier;
+  const piv = calculatePIV(rcs, icf.value, sc.value, osm, stats.kd, basicScore) * kdMultiplier;
   
-  // Calculate T-side PIV
+  // Calculate T-side basic metrics and PIV
+  const tBasicScore = calculateBasicMetricsScore(stats, tRole);
   const tRcs = calculateRCS(tMetrics);
   const tSc = calculateSC(stats, tRole);
-  const tPIV = calculatePIV(tRcs, icf.value, tSc.value, osm, stats.kd) * kdMultiplier;
+  const tPIV = calculatePIV(tRcs, icf.value, tSc.value, osm, stats.kd, tBasicScore) * kdMultiplier;
   
-  // Calculate CT-side PIV
+  // Calculate CT-side basic metrics and PIV
+  const ctBasicScore = calculateBasicMetricsScore(stats, ctRole);
   const ctRcs = calculateRCS(ctMetrics);
   const ctSc = calculateSC(stats, ctRole);
-  const ctPIV = calculatePIV(ctRcs, icf.value, ctSc.value, osm, stats.kd) * kdMultiplier;
+  const ctPIV = calculatePIV(ctRcs, icf.value, ctSc.value, osm, stats.kd, ctBasicScore) * kdMultiplier;
   
   // Create T-side metrics
   const tPlayerMetrics: PlayerMetrics = {

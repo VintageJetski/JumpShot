@@ -425,6 +425,9 @@ function createDefaultPlayerWithPIV(stats: PlayerRawStats): PlayerWithPIV {
     metrics: {
       role,
       roleScores: { [role]: 0.8 },
+      topMetrics: {
+        [role]: [{ metricName: "K/D Ratio", value: stats.kd }]
+      },
       roleMetrics: {},
       rcs: { value: 0.5, metrics: {} },
       icf: { value: 0.6, sigma: 0.4 },
@@ -480,6 +483,12 @@ function calculatePlayerWithPIV(
   const tPlayerMetrics: PlayerMetrics = {
     role: tRole,
     roleScores: { [tRole]: 0.9 },
+    topMetrics: {
+      [tRole]: Object.entries(tMetrics).map(([key, value]) => ({
+        metricName: key,
+        value: value
+      })).slice(0, 3)
+    },
     roleMetrics: tMetrics,
     rcs: { value: tRcs, metrics: tMetrics },
     icf: icf,
@@ -493,6 +502,12 @@ function calculatePlayerWithPIV(
   const ctPlayerMetrics: PlayerMetrics = {
     role: ctRole,
     roleScores: { [ctRole]: 0.9 },
+    topMetrics: {
+      [ctRole]: Object.entries(ctMetrics).map(([key, value]) => ({
+        metricName: key,
+        value: value
+      })).slice(0, 3)
+    },
     roleMetrics: ctMetrics,
     rcs: { value: ctRcs, metrics: ctMetrics },
     icf: icf,
@@ -527,6 +542,12 @@ function calculatePlayerWithPIV(
       [primaryRole]: 0.9,
       [tRole]: tRole === primaryRole ? 0.9 : 0.7,
       [ctRole]: ctRole === primaryRole ? 0.9 : 0.7,
+    },
+    topMetrics: {
+      [primaryRole]: Object.entries(normalizedMetrics).map(([key, value]) => ({
+        metricName: key,
+        value: value
+      })).slice(0, 3)
     },
     roleMetrics: normalizedMetrics,
     rcs: { value: rcs, metrics: normalizedMetrics },
@@ -569,9 +590,12 @@ function findPlayerRoleInfo(playerName: string, roleMap: Map<string, PlayerRoleI
     return roleMap.get(playerName);
   }
   
+  // Convert to arrays for easier iteration
+  const entries = Array.from(roleMap.entries());
+  
   // Try case-insensitive match
   const lowerPlayerName = playerName.toLowerCase();
-  for (const [name, info] of roleMap.entries()) {
+  for (const [name, info] of entries) {
     if (name.toLowerCase() === lowerPlayerName) {
       return info;
     }
@@ -584,7 +608,7 @@ function findPlayerRoleInfo(playerName: string, roleMap: Map<string, PlayerRoleI
   }
   
   // Try partial match (where player name is part of a name in the map)
-  for (const [name, info] of roleMap.entries()) {
+  for (const [name, info] of entries) {
     if (name.includes(playerName) || playerName.includes(name)) {
       return info;
     }

@@ -107,9 +107,11 @@ export function findPlayerRoleInfo(playerName: string, roleMap: Map<string, Play
   
   // Try lowercase comparison
   const lowerName = cleanName.toLowerCase();
-  for (const [key, value] of roleMap.entries()) {
+  const keys = Array.from(roleMap.keys());
+  
+  for (const key of keys) {
     if (key.toLowerCase() === lowerName) {
-      return value;
+      return roleMap.get(key);
     }
   }
   

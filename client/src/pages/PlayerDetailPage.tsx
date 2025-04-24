@@ -1,15 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
-import { PlayerWithPIV } from "@shared/schema";
+import { PlayerWithPIV, PlayerRole } from "@shared/schema";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RoleBadge from "@/components/ui/role-badge";
 import ProgressMetric from "@/components/stats/ProgressMetric";
 import PlayerStatsRadarChart from "@/components/charts/PlayerStatsRadarChart";
-import { ArrowLeft, Rocket } from "lucide-react";
+import { ArrowLeft, Rocket, Shield, Skull } from "lucide-react";
+import { useState } from "react";
 
 export default function PlayerDetailPage() {
   const { id } = useParams();
   const [location, setLocation] = useLocation();
+  const [activeTab, setActiveTab] = useState("overall");
   
   const { data: player, isLoading, isError } = useQuery<PlayerWithPIV>({
     queryKey: [`/api/players/${id}`],
@@ -42,8 +45,10 @@ export default function PlayerDetailPage() {
     );
   }
 
-  // Get the role metrics 
-  const roleMetricsKeys = Object.keys(player.metrics.rcs.metrics);
+  // Get the metrics for each side
+  const overallMetricsKeys = Object.keys(player.metrics.rcs.metrics);
+  const tMetricsKeys = player.tMetrics ? Object.keys(player.tMetrics.roleMetrics) : [];
+  const ctMetricsKeys = player.ctMetrics ? Object.keys(player.ctMetrics.roleMetrics) : [];
   
   return (
     <div className="space-y-6">
@@ -225,27 +230,156 @@ export default function PlayerDetailPage() {
           </div>
         </div>
         
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-gray-800 rounded-lg p-4">
-            <PlayerStatsRadarChart player={player} />
-          </div>
-          
-          <div className="space-y-6">
-            <div className="bg-gray-800 rounded-lg p-4">
-              <h3 className="text-lg font-medium mb-2">Role Metrics Detail</h3>
-              <div className="mt-4 space-y-4">
-                {roleMetricsKeys.slice(5).map(metric => (
-                  <ProgressMetric
-                    key={metric}
-                    label={metric}
-                    value={player.metrics.rcs.metrics[metric]}
-                    color="bg-primary"
-                    description={getMetricDescription(metric, player)}
-                  />
-                ))}
+        <div className="mt-8">
+          <Tabs defaultValue="overall" onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid grid-cols-3 w-full mb-4">
+              <TabsTrigger value="overall" className="flex items-center">
+                <Rocket className="h-4 w-4 mr-2" />
+                Overall
+              </TabsTrigger>
+              <TabsTrigger value="t-side" className="flex items-center">
+                <Skull className="h-4 w-4 mr-2" />
+                T Side
+              </TabsTrigger>
+              <TabsTrigger value="ct-side" className="flex items-center">
+                <Shield className="h-4 w-4 mr-2" />
+                CT Side
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="overall" className="space-y-4">
+              <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex-1 bg-gray-800 rounded-lg p-4">
+                  <h3 className="text-lg font-medium mb-4">Overall Performance</h3>
+                  <PlayerStatsRadarChart player={player} />
+                  <div className="mt-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <span className="font-semibold">Primary Role:</span>
+                      <RoleBadge role={player.role} />
+                    </div>
+                    <div className="mt-2 bg-gray-700 p-2 rounded text-sm">
+                      <span className="font-semibold text-green-400">{player.piv}</span> PIV Rating (Overall)
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex-1 bg-gray-800 rounded-lg p-4">
+                  <h3 className="text-lg font-medium mb-2">Overall Role Metrics</h3>
+                  <div className="mt-4 space-y-3">
+                    {overallMetricsKeys.slice(0, 6).map(metric => (
+                      <ProgressMetric
+                        key={metric}
+                        label={metric}
+                        value={player.metrics.rcs.metrics[metric]}
+                        color="bg-primary"
+                        description={getMetricDescription(metric, player)}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </TabsContent>
+            
+            <TabsContent value="t-side" className="space-y-4">
+              {player.tMetrics && player.tRole ? (
+                <div className="flex flex-col md:flex-row gap-6">
+                  <div className="flex-1 bg-gray-800 rounded-lg p-4">
+                    <h3 className="text-lg font-medium mb-4">T-Side Performance</h3>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Skull className="h-5 w-5 text-yellow-500" />
+                      <span className="font-semibold text-sm text-gray-300">T-Side Role:</span>
+                      <RoleBadge role={player.tRole} />
+                    </div>
+                    
+                    <div className="p-4 bg-gray-700 rounded-lg mt-4">
+                      <div className="text-center mb-2 text-sm text-gray-400">T-Side PIV Rating</div>
+                      <div className="text-center text-3xl font-bold text-yellow-500">{player.tPIV?.toFixed(2)}</div>
+                      
+                      <div className="mt-4 space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Opening Duels</span>
+                          <span className="font-medium">{player.rawStats.tFirstKills} / {player.rawStats.tFirstDeaths}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">T Rounds Won</span>
+                          <span className="font-medium">{player.rawStats.tRoundsWon}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 bg-gray-800 rounded-lg p-4">
+                    <h3 className="text-lg font-medium mb-2">T-Side Role Metrics</h3>
+                    <div className="mt-4 space-y-3">
+                      {tMetricsKeys.map(metric => (
+                        <ProgressMetric
+                          key={metric}
+                          label={metric}
+                          value={player.tMetrics!.roleMetrics[metric]}
+                          color="bg-yellow-500"
+                          description={`${metric} - T-side performance metric`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-gray-400 p-8">
+                  No T-side specific data available for this player.
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="ct-side" className="space-y-4">
+              {player.ctMetrics && player.ctRole ? (
+                <div className="flex flex-col md:flex-row gap-6">
+                  <div className="flex-1 bg-gray-800 rounded-lg p-4">
+                    <h3 className="text-lg font-medium mb-4">CT-Side Performance</h3>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Shield className="h-5 w-5 text-blue-500" />
+                      <span className="font-semibold text-sm text-gray-300">CT-Side Role:</span>
+                      <RoleBadge role={player.ctRole} />
+                    </div>
+                    
+                    <div className="p-4 bg-gray-700 rounded-lg mt-4">
+                      <div className="text-center mb-2 text-sm text-gray-400">CT-Side PIV Rating</div>
+                      <div className="text-center text-3xl font-bold text-blue-500">{player.ctPIV?.toFixed(2)}</div>
+                      
+                      <div className="mt-4 space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Opening Duels</span>
+                          <span className="font-medium">{player.rawStats.ctFirstKills} / {player.rawStats.ctFirstDeaths}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">CT Rounds Won</span>
+                          <span className="font-medium">{player.rawStats.ctRoundsWon}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 bg-gray-800 rounded-lg p-4">
+                    <h3 className="text-lg font-medium mb-2">CT-Side Role Metrics</h3>
+                    <div className="mt-4 space-y-3">
+                      {ctMetricsKeys.map(metric => (
+                        <ProgressMetric
+                          key={metric}
+                          label={metric}
+                          value={player.ctMetrics!.roleMetrics[metric]}
+                          color="bg-blue-500"
+                          description={`${metric} - CT-side performance metric`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-gray-400 p-8">
+                  No CT-side specific data available for this player.
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
         
         <div className="mt-8">

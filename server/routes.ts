@@ -2,8 +2,9 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { loadPlayerData } from "./csvParser";
-import { processPlayerStats } from "./playerAnalytics";
+import { processPlayerStatsWithRoles } from "./newPlayerAnalytics";
 import { calculateTeamImpactRatings } from "./teamAnalytics";
+import { loadPlayerRoles } from "./roleParser";
 import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -12,17 +13,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('Loading and processing player data...');
     const rawPlayerStats = await loadPlayerData();
     
-    // Group player stats by team
-    const teamStatsMap = new Map<string, typeof rawPlayerStats>();
-    rawPlayerStats.forEach(stats => {
-      if (!teamStatsMap.has(stats.teamName)) {
-        teamStatsMap.set(stats.teamName, []);
-      }
-      teamStatsMap.get(stats.teamName)!.push(stats);
-    });
+    // Load player roles from CSV
+    console.log('Loading player roles from CSV...');
+    const roleMap = await loadPlayerRoles();
     
-    // Process player stats and calculate PIV
-    const playersWithPIV = processPlayerStats(rawPlayerStats, teamStatsMap);
+    // Process player stats with roles and calculate PIV
+    const playersWithPIV = processPlayerStatsWithRoles(rawPlayerStats, roleMap);
     
     // Calculate team TIR
     const teamsWithTIR = calculateTeamImpactRatings(playersWithPIV);

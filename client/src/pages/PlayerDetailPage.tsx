@@ -75,8 +75,6 @@ export default function PlayerDetailPage() {
                 <span className="mx-2 text-gray-600">•</span>
                 <RoleBadge 
                   role={player.role} 
-                  secondaryRole={player.secondaryRole}
-                  isMainAwper={player.isMainAwper}
                   isIGL={player.isIGL}
                 />
               </div>
@@ -98,7 +96,7 @@ export default function PlayerDetailPage() {
             <div>
               <h3 className="text-lg font-medium">Role Core Score (RCS)</h3>
               <div className="mt-4 space-y-4">
-                {roleMetricsKeys.slice(0, 5).map(metric => (
+                {overallMetricsKeys.slice(0, 5).map((metric: string) => (
                   <ProgressMetric
                     key={metric}
                     label={metric}
@@ -311,11 +309,11 @@ export default function PlayerDetailPage() {
                   <div className="flex-1 bg-gray-800 rounded-lg p-4">
                     <h3 className="text-lg font-medium mb-2">T-Side Role Metrics</h3>
                     <div className="mt-4 space-y-3">
-                      {tMetricsKeys.map(metric => (
+                      {tMetricsKeys.map((metric: string) => (
                         <ProgressMetric
                           key={metric}
                           label={metric}
-                          value={player.tMetrics!.roleMetrics[metric]}
+                          value={player.tMetrics!.roleMetrics[metric as keyof typeof player.tMetrics.roleMetrics] as number}
                           color="bg-yellow-500"
                           description={`${metric} - T-side performance metric`}
                         />
@@ -361,11 +359,11 @@ export default function PlayerDetailPage() {
                   <div className="flex-1 bg-gray-800 rounded-lg p-4">
                     <h3 className="text-lg font-medium mb-2">CT-Side Role Metrics</h3>
                     <div className="mt-4 space-y-3">
-                      {ctMetricsKeys.map(metric => (
+                      {ctMetricsKeys.map((metric: string) => (
                         <ProgressMetric
                           key={metric}
                           label={metric}
-                          value={player.ctMetrics!.roleMetrics[metric]}
+                          value={player.ctMetrics!.roleMetrics[metric as keyof typeof player.ctMetrics.roleMetrics] as number}
                           color="bg-blue-500"
                           description={`${metric} - CT-side performance metric`}
                         />

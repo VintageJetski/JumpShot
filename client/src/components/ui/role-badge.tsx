@@ -17,7 +17,7 @@ export default function RoleBadge({
 }: RoleBadgeProps) {
   const getRoleColor = (roleType: PlayerRole): string => {
     switch (roleType) {
-      case PlayerRole.AWPer:
+      case PlayerRole.AWP:
         return "bg-amber-400/20 text-amber-400";
       case PlayerRole.IGL:
         return "bg-purple-400/20 text-purple-400";
@@ -29,6 +29,8 @@ export default function RoleBadge({
         return "bg-teal-400/20 text-teal-400";
       case PlayerRole.Support:
         return "bg-green-400/20 text-green-400";
+      case PlayerRole.Rotator:
+        return "bg-indigo-400/20 text-indigo-400";
       default:
         return "bg-gray-400/20 text-gray-400";
     }

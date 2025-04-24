@@ -47,12 +47,13 @@ export default function PlayersPage() {
       accessorKey: "name",
       cell: ({ row }: any) => {
         const player = row.original;
-        const initial = player.name.charAt(0).toUpperCase();
+        // Use team's initial instead of player's initial
+        const teamInitial = player.team.charAt(0).toUpperCase();
         
         return (
           <div className="flex items-center">
             <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center text-xl font-bold text-primary">
-              {initial}
+              {teamInitial}
             </div>
             <div className="ml-4">
               <div className="text-sm font-medium">{player.name}</div>
@@ -77,19 +78,34 @@ export default function PlayersPage() {
         
         // For players with CT and T roles
         if (player.ctRole && player.tRole) {
+          // Collect all unique roles to display
+          const rolesToDisplay = new Set<PlayerRole>();
+          
+          // If player is IGL, add it first (will be shown only once)
+          if (player.isIGL) {
+            rolesToDisplay.add(PlayerRole.IGL);
+          }
+          
+          // Add primary role if it's not IGL
+          if (player.role !== PlayerRole.IGL) {
+            rolesToDisplay.add(player.role);
+          }
+          
+          // Add T role if it's not already included and not the same as primary role
+          if (player.tRole && player.tRole !== player.role && player.tRole !== PlayerRole.IGL) {
+            rolesToDisplay.add(player.tRole);
+          }
+          
+          // Add CT role if it's not already included and not the same as primary role or T role
+          if (player.ctRole && player.ctRole !== player.role && player.ctRole !== player.tRole && player.ctRole !== PlayerRole.IGL) {
+            rolesToDisplay.add(player.ctRole);
+          }
+          
           return (
             <div className="flex flex-wrap gap-1">
-              {player.isIGL && <RoleBadge role={PlayerRole.IGL} size="sm" />}
-              <RoleBadge role={player.role} size="sm" />
-              {player.ctRole !== player.role && player.tRole !== player.role && 
-                (player.ctRole === player.tRole ? 
-                  <RoleBadge role={player.ctRole} size="sm" /> : 
-                  <>
-                    <RoleBadge role={player.tRole} size="sm" />
-                    <RoleBadge role={player.ctRole} size="sm" />
-                  </>
-                )
-              }
+              {Array.from(rolesToDisplay).map((role, index) => (
+                <RoleBadge key={index} role={role} size="sm" />
+              ))}
             </div>
           );
         }
@@ -108,9 +124,13 @@ export default function PlayersPage() {
     {
       header: "PIV",
       accessorKey: "piv",
-      cell: ({ row }: any) => (
-        <div className="font-medium text-white">{Math.round(row.original.piv)}</div>
-      )
+      cell: ({ row }: any) => {
+        // Convert decimal PIV (e.g., 0.798) to display format (80)
+        const scaledPIV = Math.round(row.original.piv * 100);
+        return (
+          <div className="font-medium text-white">{scaledPIV}</div>
+        );
+      }
     },
     {
       header: "K/D",
@@ -204,7 +224,7 @@ export default function PlayersPage() {
           <StatsCard
             title="Highest PIV"
             value={topPlayersByRole.highest.name}
-            metric={`${Math.round(topPlayersByRole.highest.piv)} PIV`}
+            metric={`${Math.round(topPlayersByRole.highest.piv * 100)} PIV`}
             metricColor="text-green-400"
             bgColor="bg-green-500/10"
             icon={<User2 className="h-6 w-6 text-green-500" />}
@@ -216,7 +236,7 @@ export default function PlayersPage() {
           <StatsCard
             title="Best IGL"
             value={topPlayersByRole.igl.name}
-            metric={`${Math.round(topPlayersByRole.igl.piv)} PIV`}
+            metric={`${Math.round(topPlayersByRole.igl.piv * 100)} PIV`}
             metricColor="text-purple-400"
             bgColor="bg-purple-500/10"
             icon={<Lightbulb className="h-6 w-6 text-purple-500" />}
@@ -228,7 +248,7 @@ export default function PlayersPage() {
           <StatsCard
             title="Best AWPer"
             value={topPlayersByRole.awper.name}
-            metric={`${Math.round(topPlayersByRole.awper.piv)} PIV`}
+            metric={`${Math.round(topPlayersByRole.awper.piv * 100)} PIV`}
             metricColor="text-amber-400"
             bgColor="bg-amber-500/10"
             icon={<Target className="h-6 w-6 text-amber-500" />}

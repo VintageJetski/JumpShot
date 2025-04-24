@@ -66,7 +66,7 @@ export default function PlayerDetailPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div className="flex items-center">
             <div className="h-16 w-16 rounded-full bg-gray-700 flex items-center justify-center text-3xl font-bold text-primary">
-              {player.name.charAt(0).toUpperCase()}
+              {player.team.charAt(0).toUpperCase()}
             </div>
             <div className="ml-4">
               <h2 className="text-2xl font-bold">{player.name}</h2>
@@ -83,7 +83,7 @@ export default function PlayerDetailPage() {
           
           <div className="mt-4 md:mt-0 flex flex-col items-start md:items-end">
             <div className="bg-green-500/20 text-green-400 rounded-full px-3 py-1 text-sm font-medium">
-              {player.piv} PIV
+              {Math.round(player.piv * 100)} PIV
             </div>
             <div className="text-sm text-gray-400 mt-1">
               Steam ID: {player.id}
@@ -220,7 +220,7 @@ export default function PlayerDetailPage() {
                     = [({player.metrics.rcs.value.toFixed(2)} × {player.metrics.icf.value.toFixed(2)}) + {player.metrics.sc.value.toFixed(2)}] × {player.metrics.osm.toFixed(2)}
                   </div>
                   <div className="text-lg font-bold text-green-400 mt-2">
-                    = {Math.round(player.piv)}
+                    = {Math.round(player.piv * 100)}
                   </div>
                 </div>
               </div>
@@ -256,7 +256,7 @@ export default function PlayerDetailPage() {
                       <RoleBadge role={player.role} />
                     </div>
                     <div className="mt-2 bg-gray-700 p-2 rounded text-sm">
-                      <span className="font-semibold text-green-400">{Math.round(player.piv)}</span> PIV Rating (Overall)
+                      <span className="font-semibold text-green-400">{Math.round(player.piv * 100)}</span> PIV Rating (Overall)
                     </div>
                   </div>
                 </div>
@@ -291,7 +291,7 @@ export default function PlayerDetailPage() {
                     
                     <div className="p-4 bg-gray-700 rounded-lg mt-4">
                       <div className="text-center mb-2 text-sm text-gray-400">T-Side PIV Rating</div>
-                      <div className="text-center text-3xl font-bold text-yellow-500">{player.tPIV?.toFixed(2)}</div>
+                      <div className="text-center text-3xl font-bold text-yellow-500">{Math.round((player.tPIV || 0) * 100)}</div>
                       
                       <div className="mt-4 space-y-2">
                         <div className="flex justify-between text-sm">
@@ -341,7 +341,7 @@ export default function PlayerDetailPage() {
                     
                     <div className="p-4 bg-gray-700 rounded-lg mt-4">
                       <div className="text-center mb-2 text-sm text-gray-400">CT-Side PIV Rating</div>
-                      <div className="text-center text-3xl font-bold text-blue-500">{player.ctPIV?.toFixed(2)}</div>
+                      <div className="text-center text-3xl font-bold text-blue-500">{Math.round((player.ctPIV || 0) * 100)}</div>
                       
                       <div className="mt-4 space-y-2">
                         <div className="flex justify-between text-sm">

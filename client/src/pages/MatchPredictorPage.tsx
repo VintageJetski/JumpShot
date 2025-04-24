@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import {
   Tabs,
   TabsContent,
@@ -127,6 +128,8 @@ const MAPS = ["Mirage", "Inferno", "Nuke", "Ancient", "Anubis", "Overpass", "Ver
 export default function MatchPredictorPage() {
   const [team1Id, setTeam1Id] = useState<string>("");
   const [team2Id, setTeam2Id] = useState<string>("");
+  const [searchQuery1, setSearchQuery1] = useState<string>("");
+  const [searchQuery2, setSearchQuery2] = useState<string>("");
   const [selectedMap, setSelectedMap] = useState<string>("Inferno");
   const [adjustmentFactors, setAdjustmentFactors] = useState({
     recentForm: 50, // 0-100 slider for team1's recent form (50 = neutral)
@@ -593,21 +596,40 @@ export default function MatchPredictorPage() {
                 {/* Team 1 Selection */}
                 <div className="space-y-4">
                   <h3 className="font-medium">Team 1</h3>
-                  <Select
-                    value={team1Id}
-                    onValueChange={setTeam1Id}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Team 1" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {teams.map((team) => (
-                        <SelectItem key={team.id} value={team.id}>
-                          {team.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Search team by name..."
+                      value={searchQuery1}
+                      onChange={(e) => setSearchQuery1(e.target.value)}
+                      className="mb-2"
+                    />
+                    
+                    <div className="max-h-64 overflow-y-auto border border-gray-700 rounded-md">
+                      {teams
+                        .filter(team => 
+                          team.name.toLowerCase().includes(searchQuery1.toLowerCase())
+                        )
+                        .map((team) => (
+                          <div 
+                            key={team.id}
+                            className={`flex items-center justify-between p-2 hover:bg-gray-800 cursor-pointer ${
+                              team.id === team1Id ? 'bg-primary/20' : ''
+                            }`}
+                            onClick={() => setTeam1Id(team.id)}
+                          >
+                            <div className="flex items-center">
+                              <div className="text-sm font-medium">{team.name}</div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                TIR: {Math.round(team.tir)}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
                   
                   {team1 && enhancedTeamStats[team1.id] && (
                     <div className="space-y-3 bg-background-light p-3 rounded-md">
@@ -645,21 +667,40 @@ export default function MatchPredictorPage() {
                 {/* Team 2 Selection */}
                 <div className="space-y-4">
                   <h3 className="font-medium">Team 2</h3>
-                  <Select
-                    value={team2Id}
-                    onValueChange={setTeam2Id}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Team 2" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {teams.map((team) => (
-                        <SelectItem key={team.id} value={team.id}>
-                          {team.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Search team by name..."
+                      value={searchQuery2}
+                      onChange={(e) => setSearchQuery2(e.target.value)}
+                      className="mb-2"
+                    />
+                    
+                    <div className="max-h-64 overflow-y-auto border border-gray-700 rounded-md">
+                      {teams
+                        .filter(team => 
+                          team.name.toLowerCase().includes(searchQuery2.toLowerCase())
+                        )
+                        .map((team) => (
+                          <div 
+                            key={team.id}
+                            className={`flex items-center justify-between p-2 hover:bg-gray-800 cursor-pointer ${
+                              team.id === team2Id ? 'bg-primary/20' : ''
+                            }`}
+                            onClick={() => setTeam2Id(team.id)}
+                          >
+                            <div className="flex items-center">
+                              <div className="text-sm font-medium">{team.name}</div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                TIR: {Math.round(team.tir)}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
                   
                   {team2 && enhancedTeamStats[team2.id] && (
                     <div className="space-y-3 bg-background-light p-3 rounded-md">

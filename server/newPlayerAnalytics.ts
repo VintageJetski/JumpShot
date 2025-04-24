@@ -211,22 +211,22 @@ function calculateRCS(normalizedMetrics: Record<string, number>): number {
  * Calculate Individual Consistency Factor (ICF)
  */
 function calculateICF(stats: PlayerRawStats, isIGL: boolean = false): { value: number, sigma: number } {
-  // Base calculation
-  const sigma = Math.abs(1 - stats.kd) * 2;
+  // Base calculation - enhance K/D influence
+  const sigma = Math.abs(1 - stats.kd) * 1.8; // Slightly reduced multiplier to make K/D more impactful
   let icf = 1 / (1 + sigma);
   
   // Make adjustments to balance IGL impact
   if (isIGL) {
-    // Slightly reduce the ICF for IGLs to avoid overweighting
+    // More aggressively reduce the ICF for IGLs to avoid overweighting
     // This is a balance adjustment requested by the client
-    const reductionFactor = 0.85; // Reduce by 15%
+    const reductionFactor = 0.75; // Reduce by 25% (previously 15%)
     icf = icf * reductionFactor;
   } 
-  // Bonus for high-fragging non-IGLs remains the same
-  else if (stats.kd > 1.3) {
+  // Enhanced bonus for high-fragging non-IGLs
+  else if (stats.kd > 1.2) { // Lower threshold to 1.2 (previously 1.3)
     // Provide a scaling bonus based on how high the K/D is
-    const kdBonus = (stats.kd - 1.3) * 0.2;
-    icf = Math.min(icf + kdBonus, 0.9); // Cap at 0.9
+    const kdBonus = (stats.kd - 1.2) * 0.25; // Increased bonus multiplier from 0.2 to 0.25
+    icf = Math.min(icf + kdBonus, 0.92); // Cap at 0.92 (previously 0.9)
   }
   
   return { value: icf, sigma };
@@ -236,40 +236,51 @@ function calculateICF(stats: PlayerRawStats, isIGL: boolean = false): { value: n
  * Calculate SC (Synergy Contribution) based on role
  */
 function calculateSC(stats: PlayerRawStats, role: PlayerRole): { value: number, metric: string } {
+  // For all roles, introduce a small K/D component to ensure consistency
+  // between fragging ability and role performance
+  const kdFactor = Math.min(stats.kd / 2, 0.6); // K/D contribution, capped at 0.6
+  
   switch (role) {
     case PlayerRole.AWP:
+      // For AWPers, blend flash assists with a stronger K/D component
       return { 
-        value: stats.assistedFlashes / (stats.totalUtilityThrown || 1) * 0.8,
+        value: (stats.assistedFlashes / (stats.totalUtilityThrown || 1) * 0.6) + (kdFactor * 0.3),
         metric: "Flash Assist Synergy"
       };
     case PlayerRole.IGL:
+      // For IGLs, maintain assist focus but reduce weighting, increase K/D importance
       return { 
-        value: (stats.assists / (stats.kills || 1)) * 0.6,
+        value: (stats.assists / (stats.kills || 1) * 0.4) + (kdFactor * 0.2),
         metric: "In-game Impact Rating"
       };
     case PlayerRole.Spacetaker:
+      // For entry fraggers, increase K/D contribution
       return { 
-        value: (stats.assistedFlashes / (stats.kills || 1)) * 0.7,
+        value: (stats.assistedFlashes / (stats.kills || 1) * 0.5) + (kdFactor * 0.35),
         metric: "Utility Effectiveness Score"
       };
     case PlayerRole.Lurker:
+      // For lurkers, maintain smoke kills focus
       return { 
-        value: (stats.throughSmoke / (stats.kills || 1)) * 0.5,
+        value: (stats.throughSmoke / (stats.kills || 1) * 0.4) + (kdFactor * 0.25),
         metric: "Information Retrieval Success"
       };
     case PlayerRole.Anchor:
+      // For anchors, emphasize CT rounds
       return { 
-        value: (stats.ctRoundsWon / (stats.totalRoundsWon || 1)) * 0.6,
+        value: (stats.ctRoundsWon / (stats.totalRoundsWon || 1) * 0.45) + (kdFactor * 0.25),
         metric: "Site Hold Effectiveness"
       };
     case PlayerRole.Rotator:
+      // For rotators, balance CT performance with K/D
       return {
-        value: (stats.ctRoundsWon / (stats.totalRoundsWon || 1)) * 0.55,
+        value: (stats.ctRoundsWon / (stats.totalRoundsWon || 1) * 0.4) + (kdFactor * 0.25),
         metric: "Rotation Efficiency"
       };
     case PlayerRole.Support:
+      // For support, maintain flash-centric measure but add small K/D component
       return { 
-        value: (stats.assistedFlashes / (stats.totalUtilityThrown || 1)) * 0.9,
+        value: (stats.assistedFlashes / (stats.totalUtilityThrown || 1) * 0.65) + (kdFactor * 0.15),
         metric: "Utility Contribution Score"
       };
     default:
@@ -288,8 +299,15 @@ function calculateOSM(): number {
 /**
  * Calculate PIV (Player Impact Value)
  */
-function calculatePIV(rcs: number, icf: number, sc: number, osm: number): number {
-  return ((rcs * icf) + sc) * osm;
+function calculatePIV(rcs: number, icf: number, sc: number, osm: number, kd: number = 1.0): number {
+  // Traditional calculation
+  const basePIV = ((rcs * icf) + sc) * osm;
+  
+  // Add additional K/D influence through the formula itself
+  // This change ensures even more emphasis on K/D for all player roles
+  const kdFactor = Math.min(Math.max(kd * 0.15, 0.1), 0.3); // Between 0.1 and 0.3
+  
+  return basePIV * (1 + kdFactor);
 }
 
 /**
@@ -473,17 +491,17 @@ function calculatePlayerWithPIV(
   const kdMultiplier = (!isIGL && stats.kd > 1.5) ? 
     1 + ((stats.kd - 1.5) * 0.15) : 1;
   
-  const piv = calculatePIV(rcs, icf.value, sc.value, osm) * kdMultiplier;
+  const piv = calculatePIV(rcs, icf.value, sc.value, osm, stats.kd) * kdMultiplier;
   
   // Calculate T-side PIV
   const tRcs = calculateRCS(tMetrics);
   const tSc = calculateSC(stats, tRole);
-  const tPIV = calculatePIV(tRcs, icf.value, tSc.value, osm) * kdMultiplier;
+  const tPIV = calculatePIV(tRcs, icf.value, tSc.value, osm, stats.kd) * kdMultiplier;
   
   // Calculate CT-side PIV
   const ctRcs = calculateRCS(ctMetrics);
   const ctSc = calculateSC(stats, ctRole);
-  const ctPIV = calculatePIV(ctRcs, icf.value, ctSc.value, osm) * kdMultiplier;
+  const ctPIV = calculatePIV(ctRcs, icf.value, ctSc.value, osm, stats.kd) * kdMultiplier;
   
   // Create T-side metrics
   const tPlayerMetrics: PlayerMetrics = {

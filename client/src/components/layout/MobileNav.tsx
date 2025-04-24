@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Users, UsersRound, BarChart2, LineChart } from "lucide-react";
+import { Users, UsersRound, FileText, LineChart } from "lucide-react";
 
 export default function MobileNav() {
   const [location] = useLocation();
@@ -35,10 +35,13 @@ export default function MobileNav() {
           <span className="text-xs mt-1">Roles</span>
         </Link>
         
-        <button className="flex flex-col items-center px-3 py-2 text-gray-400">
-          <BarChart2 className="h-6 w-6" />
-          <span className="text-xs mt-1">Stats</span>
-        </button>
+        <Link href="/documentation"
+          className={`flex flex-col items-center px-3 py-2 ${
+            isActive("/documentation") ? "text-primary" : "text-gray-400"
+          }`}>
+          <FileText className="h-6 w-6" />
+          <span className="text-xs mt-1">Docs</span>
+        </Link>
       </div>
     </nav>
   );

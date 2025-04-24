@@ -136,25 +136,16 @@ export default function MatchPredictorPage() {
   
   const { data: teams = [], isLoading: teamsLoading } = useQuery<TeamWithTIR[]>({
     queryKey: ["/api/teams"],
-    onSuccess: (data) => {
-      console.log("API teams data received:", data);
-      console.log("Teams array length:", data.length);
-      console.log("First team:", data[0]);
-      if (data.length > 0) {
-        console.log("Team names:", data.map(t => t.name).join(", "));
-      }
-    }
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnMount: true,
+    refetchOnWindowFocus: false
   });
   
   const { data: players = [], isLoading: playersLoading } = useQuery<PlayerWithPIV[]>({
     queryKey: ["/api/players"],
-    onSuccess: (data) => {
-      console.log("API players data received:", !!data);
-      console.log("Players array length:", data.length);
-      if (data.length > 0) {
-        console.log("First player data:", data[0]);
-      }
-    }
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnMount: true,
+    refetchOnWindowFocus: false
   });
   
   // Select first two teams if none selected
@@ -604,18 +595,24 @@ export default function MatchPredictorPage() {
                 <div className="space-y-4">
                   <h3 className="font-medium">Team 1</h3>
                   
-                  <select 
-                    className="w-full p-2 border rounded-md bg-background"
-                    value={team1Id}
-                    onChange={(e) => setTeam1Id(e.target.value)}
-                  >
-                    <option value="">Select team</option>
-                    {teams.map(team => (
-                      <option key={team.id} value={team.id}>
-                        {team.name} (TIR: {Math.round(team.tir)})
-                      </option>
-                    ))}
-                  </select>
+                  <div>
+                    <pre className="text-xs bg-gray-800 p-2 mb-2 rounded">
+                      Teams loaded: {teams.length}<br/>
+                      {teams.length > 0 ? `First team: ${teams[0]?.name || 'unnamed'}` : 'No teams'}
+                    </pre>
+                    <select 
+                      className="w-full p-2 border rounded-md bg-background"
+                      value={team1Id}
+                      onChange={(e) => setTeam1Id(e.target.value)}
+                    >
+                      <option value="">Select team</option>
+                      {teams.map(team => (
+                        <option key={team.id} value={team.id}>
+                          {team.name} (TIR: {Math.round(team.tir)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   
                   {team1 && enhancedTeamStats[team1.id] && (
                     <div className="space-y-3 bg-background-light p-3 rounded-md">
@@ -654,18 +651,25 @@ export default function MatchPredictorPage() {
                 <div className="space-y-4">
                   <h3 className="font-medium">Team 2</h3>
                   
-                  <select 
-                    className="w-full p-2 border rounded-md bg-background"
-                    value={team2Id}
-                    onChange={(e) => setTeam2Id(e.target.value)}
-                  >
-                    <option value="">Select team</option>
-                    {teams.map(team => (
-                      <option key={team.id} value={team.id}>
-                        {team.name} (TIR: {Math.round(team.tir)})
-                      </option>
-                    ))}
-                  </select>
+                  <div>
+                    <pre className="text-xs bg-gray-800 p-2 mb-2 rounded">
+                      Loading state: {teamsLoading ? 'Loading...' : 'Loaded'}<br/>
+                      Teams loaded: {teams.length}<br/>
+                      Teams: {teams.length > 0 ? teams.map(t => t.name).join(', ') : 'None'}
+                    </pre>
+                    <select 
+                      className="w-full p-2 border rounded-md bg-background"
+                      value={team2Id}
+                      onChange={(e) => setTeam2Id(e.target.value)}
+                    >
+                      <option value="">Select team</option>
+                      {teams.map(team => (
+                        <option key={team.id} value={team.id}>
+                          {team.name} (TIR: {Math.round(team.tir)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   
                   {team2 && enhancedTeamStats[team2.id] && (
                     <div className="space-y-3 bg-background-light p-3 rounded-md">

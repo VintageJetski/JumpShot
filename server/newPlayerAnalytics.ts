@@ -678,19 +678,12 @@ function calculatePlayerWithPIV(
   }, {} as Record<string, number>);
   
   // Calculate PIV components
-  const rcs = calculateRCS(normalizedMetrics);
   const icf = calculateICF(stats, isIGL);
-  const sc = calculateSC(stats, primaryRole);
   const osm = calculateOSM();
-  
-  // Calculate basic metrics score
-  const basicScore = calculateBasicMetricsScore(stats, primaryRole);
   
   // Add a K/D multiplier for star players (1.5+ K/D non-IGLs)
   const kdMultiplier = (!isIGL && stats.kd > 1.5) ? 
     1 + ((stats.kd - 1.5) * 0.15) : 1;
-  
-  const piv = calculatePIV(rcs, icf.value, sc.value, osm, stats.kd, basicScore) * kdMultiplier;
   
   // Calculate T-side basic metrics and PIV
   const tBasicScore = calculateBasicMetricsScore(stats, tRole);
@@ -703,6 +696,27 @@ function calculatePlayerWithPIV(
   const ctRcs = calculateRCS(ctMetrics);
   const ctSc = calculateSC(stats, ctRole);
   const ctPIV = calculatePIV(ctRcs, icf.value, ctSc.value, osm, stats.kd, ctBasicScore) * kdMultiplier;
+  
+  // Calculate IGL metrics and PIV if applicable
+  let iglPIV = 0;
+  if (isIGL) {
+    const iglBasicScore = calculateBasicMetricsScore(stats, PlayerRole.IGL);
+    // Use a combined set of metrics for IGL evaluation
+    const iglMetrics = { ...ctMetrics, ...tMetrics };
+    const iglRcs = calculateRCS(iglMetrics);
+    const iglSc = calculateSC(stats, PlayerRole.IGL);
+    iglPIV = calculatePIV(iglRcs, icf.value, iglSc.value, osm, stats.kd, iglBasicScore) * kdMultiplier;
+  }
+  
+  // Calculate overall PIV based on role weightings
+  let piv = 0;
+  if (isIGL) {
+    // For IGLs: 50% IGL, 25% CT Role, 25% T Role
+    piv = (iglPIV * 0.5) + (ctPIV * 0.25) + (tPIV * 0.25);
+  } else {
+    // For non-IGLs: 50% CT Role, 50% T Role
+    piv = (ctPIV * 0.5) + (tPIV * 0.5);
+  }
   
   // Create T-side metrics
   const tPlayerMetrics: PlayerMetrics = {
@@ -760,6 +774,16 @@ function calculatePlayerWithPIV(
     primaryMetricValue = stats.kd;
   }
   
+  // Calculate normalized combined metrics for overall view
+  const combinedRcs = (isIGL) ? 
+    (iglPIV * 0.5 + ctRcs * 0.25 + tRcs * 0.25) : 
+    (ctRcs * 0.5 + tRcs * 0.5);
+    
+  // Create primary role SC
+  const primarySc = primaryRole === tRole ? tSc : 
+                    primaryRole === ctRole ? ctSc : 
+                    isIGL ? { value: 0.8, metric: "Leadership Impact" } : tSc;
+  
   // Create overall metrics
   const overallMetrics: PlayerMetrics = {
     role: primaryRole,
@@ -775,9 +799,9 @@ function calculatePlayerWithPIV(
       })).slice(0, 3)
     },
     roleMetrics: normalizedMetrics,
-    rcs: { value: rcs, metrics: normalizedMetrics },
+    rcs: { value: combinedRcs, metrics: normalizedMetrics },
     icf: icf,
-    sc: sc,
+    sc: primarySc,
     osm,
     piv,
     side: 'Overall'

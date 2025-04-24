@@ -209,20 +209,42 @@ function calculateRCS(normalizedMetrics: Record<string, number>): number {
 
 /**
  * Calculate Individual Consistency Factor (ICF)
+ * Redesigned to better reward high-performing players
  */
 function calculateICF(stats: PlayerRawStats, isIGL: boolean = false): { value: number, sigma: number } {
-  // Base calculation - enhance K/D influence
-  const sigma = Math.abs(1 - stats.kd) * 1.8; // Slightly reduced multiplier to make K/D more impactful
+  // Calculate base sigma - lower values = better consistency
+  let sigma = 0;
+  
+  if (stats.kd >= 1.4) {
+    // For star players with high K/D, give a much lower sigma (high consistency)
+    sigma = 0.3;
+  } else if (stats.kd >= 1.2) {
+    // For good players, give a moderately low sigma
+    sigma = 0.5;
+  } else if (stats.kd >= 1.0) {
+    // For average players, standard sigma
+    sigma = Math.abs(1 - stats.kd) * 1.2;
+  } else {
+    // For below average players, higher sigma
+    sigma = Math.abs(1 - stats.kd) * 1.8;
+  }
+  
+  // Calculate ICF - normalize to 0-1 range
   let icf = 1 / (1 + sigma);
   
-  // Make adjustments to balance IGL impact
+  // Boost for high-performing players
+  if (stats.kd > 1.3) {
+    // Apply a multiplier based on how much above 1.3 the K/D is
+    const boostFactor = 1 + ((stats.kd - 1.3) * 0.5);
+    icf = Math.min(icf * boostFactor, 1.0); // Cap at 1.0
+  }
+  
+  // Adjust for IGL role
   if (isIGL) {
-    // More aggressively reduce the ICF for IGLs to avoid overweighting
-    // This is a balance adjustment requested by the client
-    const reductionFactor = 0.75; // Reduce by 25% (previously 15%)
+    // Less aggressive reduction for IGLs with good K/D
+    const reductionFactor = (stats.kd >= 1.2) ? 0.85 : 0.75;
     icf = icf * reductionFactor;
-  } 
-  // Enhanced bonus for high-fragging non-IGLs
+  }
   else if (stats.kd > 1.2) { // Lower threshold to 1.2 (previously 1.3)
     // Provide a scaling bonus based on how high the K/D is
     const kdBonus = (stats.kd - 1.2) * 0.25; // Increased bonus multiplier from 0.2 to 0.25
@@ -242,10 +264,13 @@ function calculateSC(stats: PlayerRawStats, role: PlayerRole): { value: number, 
   
   switch (role) {
     case PlayerRole.AWP:
-      // For AWPers, blend flash assists with a stronger K/D component
+      // For AWPers, reward opening kills and K/D much more strongly
+      // This better represents star AWP impact
+      const awpOpeningKills = stats.firstKills / Math.max(stats.tFirstKills + stats.ctFirstKills, 1);
+      const awpKDRating = Math.min(stats.kd / 1.5, 1); // Normalize to 0-1
       return { 
-        value: (stats.assistedFlashes / (stats.totalUtilityThrown || 1) * 0.6) + (kdFactor * 0.3),
-        metric: "Flash Assist Synergy"
+        value: (awpOpeningKills * 0.4) + (awpKDRating * 0.5) + (kdFactor * 0.1),
+        metric: "AWP Impact Rating"
       };
     case PlayerRole.IGL:
       // For IGLs, maintain assist focus but reduce weighting, increase K/D importance
@@ -254,16 +279,20 @@ function calculateSC(stats: PlayerRawStats, role: PlayerRole): { value: number, 
         metric: "In-game Impact Rating"
       };
     case PlayerRole.Spacetaker:
-      // For entry fraggers, increase K/D contribution
+      // For Spacetakers (entry fraggers), heavily reward opening duels and high K/D
+      const entrySuccess = stats.tFirstKills / Math.max(stats.tFirstKills + stats.tFirstDeaths, 1);
+      const entryKDRating = Math.min(stats.kd / 1.3, 1); // Normalize to 0-1
       return { 
-        value: (stats.assistedFlashes / (stats.kills || 1) * 0.5) + (kdFactor * 0.35),
-        metric: "Utility Effectiveness Score"
+        value: (entrySuccess * 0.5) + (entryKDRating * 0.4) + (kdFactor * 0.1),
+        metric: "Entry Impact Rating"
       };
     case PlayerRole.Lurker:
-      // For lurkers, maintain smoke kills focus
+      // For lurkers, reward clutch situations (using K/D as proxy) and smoke kills
+      const clutchRating = Math.min(stats.kd / 1.3, 1);
+      const smokeImpact = stats.throughSmoke / Math.max(stats.kills, 1);
       return { 
-        value: (stats.throughSmoke / (stats.kills || 1) * 0.4) + (kdFactor * 0.25),
-        metric: "Information Retrieval Success"
+        value: (clutchRating * 0.45) + (smokeImpact * 0.35) + (kdFactor * 0.2),
+        metric: "Clutch & Information Rating"
       };
     case PlayerRole.Anchor:
       // For anchors, emphasize CT rounds
@@ -500,10 +529,13 @@ function calculatePIV(rcs: number, icf: number, sc: number, osm: number, kd: num
   const basePIV = ((combinedRCS * icf) + sc) * osm;
   
   // Add additional K/D influence through the formula itself
-  // This change ensures even more emphasis on K/D for all player roles
-  const kdFactor = Math.min(Math.max(kd * 0.15, 0.1), 0.3); // Between 0.1 and 0.3
+  // Significantly increased to better reward star fraggers
+  const kdFactor = Math.min(Math.max(kd * 0.25, 0.15), 0.5); // Between 0.15 and 0.5
   
-  return basePIV * (1 + kdFactor);
+  // Special treatment for exceptional K/D (1.4+)
+  const starBonus = (kd >= 1.4) ? (kd - 1.4) * 0.35 : 0;
+  
+  return basePIV * (1 + kdFactor + starBonus);
 }
 
 /**
@@ -681,21 +713,30 @@ function calculatePlayerWithPIV(
   const icf = calculateICF(stats, isIGL);
   const osm = calculateOSM();
   
-  // Add a K/D multiplier for star players (1.5+ K/D non-IGLs)
-  const kdMultiplier = (!isIGL && stats.kd > 1.5) ? 
-    1 + ((stats.kd - 1.5) * 0.15) : 1;
+  // Add a K/D multiplier for star players (1.2+ K/D)
+  // Increased coefficient from 0.15 to 0.6 and lowered threshold from 1.5 to 1.2
+  // This gives star players a much stronger boost based on their K/D
+  const kdMultiplier = (stats.kd > 1.2) ? 
+    1 + ((stats.kd - 1.2) * 0.6) : 1;
+    
+  // Special additional multiplier for extremely high K/D (1.5+)
+  const superStarMultiplier = (stats.kd > 1.5) ? 
+    1 + ((stats.kd - 1.5) * 0.3) : 1;
+    
+  // Combined multiplier (apply both factors)
+  const combinedKdMultiplier = kdMultiplier * superStarMultiplier;
   
   // Calculate T-side basic metrics and PIV
   const tBasicScore = calculateBasicMetricsScore(stats, tRole);
   const tRcs = calculateRCS(tMetrics);
   const tSc = calculateSC(stats, tRole);
-  const tPIV = calculatePIV(tRcs, icf.value, tSc.value, osm, stats.kd, tBasicScore) * kdMultiplier;
+  const tPIV = calculatePIV(tRcs, icf.value, tSc.value, osm, stats.kd, tBasicScore) * combinedKdMultiplier;
   
   // Calculate CT-side basic metrics and PIV
   const ctBasicScore = calculateBasicMetricsScore(stats, ctRole);
   const ctRcs = calculateRCS(ctMetrics);
   const ctSc = calculateSC(stats, ctRole);
-  const ctPIV = calculatePIV(ctRcs, icf.value, ctSc.value, osm, stats.kd, ctBasicScore) * kdMultiplier;
+  const ctPIV = calculatePIV(ctRcs, icf.value, ctSc.value, osm, stats.kd, ctBasicScore) * combinedKdMultiplier;
   
   // Calculate IGL metrics and PIV if applicable
   let iglPIV = 0;
@@ -705,7 +746,7 @@ function calculatePlayerWithPIV(
     const iglMetrics = { ...ctMetrics, ...tMetrics };
     const iglRcs = calculateRCS(iglMetrics);
     const iglSc = calculateSC(stats, PlayerRole.IGL);
-    iglPIV = calculatePIV(iglRcs, icf.value, iglSc.value, osm, stats.kd, iglBasicScore) * kdMultiplier;
+    iglPIV = calculatePIV(iglRcs, icf.value, iglSc.value, osm, stats.kd, iglBasicScore) * combinedKdMultiplier;
   }
   
   // Calculate overall PIV based on role weightings

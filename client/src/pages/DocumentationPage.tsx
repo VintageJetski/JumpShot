@@ -55,7 +55,7 @@ export default function DocumentationPage() {
             <CardContent className="space-y-4">
               <h3 className="text-lg font-semibold">Core Formula</h3>
               <div className="bg-black/20 p-4 rounded-md font-mono text-sm">
-                PIV = (RCS * ICF * SC * OSM) * (K/D Multiplier)
+                PIV = (RCS * ICF * SC * OSM) * (K/D Multiplier) * (Role Modifier)
               </div>
               <p>Where:</p>
               <ul className="list-disc pl-6 space-y-2">
@@ -74,10 +74,23 @@ export default function DocumentationPage() {
                 <li>
                   <strong>K/D Multiplier:</strong> An additional factor that rewards exceptional K/D ratios. Enhanced in v1.2 to better recognize star players.
                 </li>
+                <li>
+                  <strong>Role Modifier:</strong> Role-specific balancing factor introduced in v1.3 that ensures fair comparison across different roles (AWP: 0.90x, Support: 1.08x, IGL: 1.05x, Spacetaker: 1.03x).
+                </li>
               </ul>
               
               <h3 className="text-lg font-semibold mt-8">Recent Improvements</h3>
               <div className="space-y-4">
+                <div className="border border-gray-700 rounded-md p-3">
+                  <h4 className="font-medium text-primary mb-2">Role Balancing System</h4>
+                  <p className="text-sm">Introduced dedicated role-specific modifiers to ensure balanced representation across roles. AWPers receive a 0.90x modifier to prevent dominance, while Support (1.08x), IGL (1.05x), and Spacetaker (1.03x) roles receive slight boosts to ensure fair comparison.</p>
+                </div>
+              
+                <div className="border border-gray-700 rounded-md p-3">
+                  <h4 className="font-medium text-primary mb-2">AWP Impact Recalibration</h4>
+                  <p className="text-sm">Reduced AWP role K/D weighting from 50% to 35% and added a utility component (15%) to better value team-oriented AWPers. Opening kill impact was lowered from 28% to 22% in basic metrics score to prevent over-valuation.</p>
+                </div>
+                
                 <div className="border border-gray-700 rounded-md p-3">
                   <h4 className="font-medium text-primary mb-2">Enhanced K/D Multiplier</h4>
                   <p className="text-sm">The K/D threshold for multiplier activation was lowered from 1.5 to 1.2, better rewarding good fraggers. The multiplier scale was also adjusted to provide more value to exceptional performers like ZywOo (1.47x) and donk (1.36x).</p>
@@ -86,11 +99,6 @@ export default function DocumentationPage() {
                 <div className="border border-gray-700 rounded-md p-3">
                   <h4 className="font-medium text-primary mb-2">ICF Calculation Refinement</h4>
                   <p className="text-sm">The ICF formula was refined to prevent penalizing high-performing players. The sigma value calculation now better accommodates consistent star performers, resulting in more accurate reflection of their contributions.</p>
-                </div>
-                
-                <div className="border border-gray-700 rounded-md p-3">
-                  <h4 className="font-medium text-primary mb-2">Role-Specific Metric Adjustments</h4>
-                  <p className="text-sm">Weights for AWPer metrics were increased to better value their impact. Similarly, Spacetaker and Lurker metrics were recalibrated to ensure proper valuation of their unique contributions.</p>
                 </div>
               </div>
             </CardContent>
@@ -300,7 +308,18 @@ export default function DocumentationPage() {
         <CardContent>
           <div className="space-y-4">
             <div className="border-l-4 border-green-500 pl-3 py-1">
-              <h4 className="font-medium">April 24, 2024 Update</h4>
+              <h4 className="font-medium">April 24, 2024 Update (v1.3)</h4>
+              <ul className="list-disc pl-6 space-y-1 mt-1 text-sm">
+                <li>Rebalanced role impact with new role-specific PIV modifiers</li>
+                <li>Reduced AWP scoring weight (0.90x modifier) to prevent role dominance</li>
+                <li>Added utility component (15%) to AWP impact evaluation</li>
+                <li>Enhanced Support (1.08x) and IGL (1.05x) roles for better balance</li>
+                <li>Improved role representation across rating tiers</li>
+              </ul>
+            </div>
+            
+            <div className="border-l-4 border-blue-500 pl-3 py-1">
+              <h4 className="font-medium">April 24, 2024 Update (v1.2)</h4>
               <ul className="list-disc pl-6 space-y-1 mt-1 text-sm">
                 <li>Lowered K/D multiplier threshold from 1.5 to 1.2</li>
                 <li>Enhanced ICF formula to better reward high K/D players</li>

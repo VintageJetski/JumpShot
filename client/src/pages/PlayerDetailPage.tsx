@@ -220,7 +220,7 @@ export default function PlayerDetailPage() {
                     = [({player.metrics.rcs.value.toFixed(2)} × {player.metrics.icf.value.toFixed(2)}) + {player.metrics.sc.value.toFixed(2)}] × {player.metrics.osm.toFixed(2)}
                   </div>
                   <div className="text-lg font-bold text-green-400 mt-2">
-                    = {player.piv}
+                    = {Math.round(player.piv)}
                   </div>
                 </div>
               </div>
@@ -256,7 +256,7 @@ export default function PlayerDetailPage() {
                       <RoleBadge role={player.role} />
                     </div>
                     <div className="mt-2 bg-gray-700 p-2 rounded text-sm">
-                      <span className="font-semibold text-green-400">{player.piv}</span> PIV Rating (Overall)
+                      <span className="font-semibold text-green-400">{Math.round(player.piv)}</span> PIV Rating (Overall)
                     </div>
                   </div>
                 </div>

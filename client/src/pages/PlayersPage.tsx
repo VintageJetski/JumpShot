@@ -31,12 +31,13 @@ export default function PlayersPage() {
   // Extract top players by role
   const topPlayersByRole = {
     highest: filteredPlayers[0] || null,
-    awper: filteredPlayers.find(p => p.role === PlayerRole.AWPer) || null,
+    awper: filteredPlayers.find(p => p.role === PlayerRole.AWP) || null,
     lurker: filteredPlayers.find(p => p.role === PlayerRole.Lurker) || null,
     igl: filteredPlayers.find(p => p.role === PlayerRole.IGL) || null,
     spacetaker: filteredPlayers.find(p => p.role === PlayerRole.Spacetaker) || null,
     anchor: filteredPlayers.find(p => p.role === PlayerRole.Anchor) || null,
     support: filteredPlayers.find(p => p.role === PlayerRole.Support) || null,
+    rotator: filteredPlayers.find(p => p.role === PlayerRole.Rotator) || null,
   };
 
   // Table columns definition
@@ -71,20 +72,44 @@ export default function PlayersPage() {
     {
       header: "Role",
       accessorKey: "role",
-      cell: ({ row }: any) => (
-        <RoleBadge 
-          role={row.original.role} 
-          secondaryRole={row.original.secondaryRole}
-          isMainAwper={row.original.isMainAwper}
-          isIGL={row.original.isIGL}
-        />
-      )
+      cell: ({ row }: any) => {
+        const player = row.original;
+        
+        // For players with CT and T roles
+        if (player.ctRole && player.tRole) {
+          return (
+            <div className="flex flex-wrap gap-1">
+              {player.isIGL && <RoleBadge role={PlayerRole.IGL} size="sm" />}
+              <RoleBadge role={player.role} size="sm" />
+              {player.ctRole !== player.role && player.tRole !== player.role && 
+                (player.ctRole === player.tRole ? 
+                  <RoleBadge role={player.ctRole} size="sm" /> : 
+                  <>
+                    <RoleBadge role={player.tRole} size="sm" />
+                    <RoleBadge role={player.ctRole} size="sm" />
+                  </>
+                )
+              }
+            </div>
+          );
+        }
+        
+        // Fallback to old display if CT/T role data is missing
+        return (
+          <RoleBadge 
+            role={player.role} 
+            secondaryRole={player.secondaryRole}
+            isMainAwper={player.isMainAwper}
+            isIGL={player.isIGL}
+          />
+        );
+      }
     },
     {
       header: "PIV",
       accessorKey: "piv",
       cell: ({ row }: any) => (
-        <div className="font-medium text-white">{row.original.piv}</div>
+        <div className="font-medium text-white">{Math.round(row.original.piv)}</div>
       )
     },
     {
@@ -161,11 +186,12 @@ export default function PlayersPage() {
               <SelectContent>
                 <SelectItem value="All Roles">All Roles</SelectItem>
                 <SelectItem value={PlayerRole.IGL}>IGL</SelectItem>
-                <SelectItem value={PlayerRole.AWPer}>AWPer</SelectItem>
+                <SelectItem value={PlayerRole.AWP}>AWP</SelectItem>
                 <SelectItem value={PlayerRole.Spacetaker}>Spacetaker</SelectItem>
                 <SelectItem value={PlayerRole.Lurker}>Lurker</SelectItem>
                 <SelectItem value={PlayerRole.Anchor}>Anchor</SelectItem>
                 <SelectItem value={PlayerRole.Support}>Support</SelectItem>
+                <SelectItem value={PlayerRole.Rotator}>Rotator</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -178,7 +204,7 @@ export default function PlayersPage() {
           <StatsCard
             title="Highest PIV"
             value={topPlayersByRole.highest.name}
-            metric={`${topPlayersByRole.highest.piv} PIV`}
+            metric={`${Math.round(topPlayersByRole.highest.piv)} PIV`}
             metricColor="text-green-400"
             bgColor="bg-green-500/10"
             icon={<User2 className="h-6 w-6 text-green-500" />}
@@ -190,7 +216,7 @@ export default function PlayersPage() {
           <StatsCard
             title="Best IGL"
             value={topPlayersByRole.igl.name}
-            metric={`${topPlayersByRole.igl.piv} PIV`}
+            metric={`${Math.round(topPlayersByRole.igl.piv)} PIV`}
             metricColor="text-purple-400"
             bgColor="bg-purple-500/10"
             icon={<Lightbulb className="h-6 w-6 text-purple-500" />}
@@ -202,7 +228,7 @@ export default function PlayersPage() {
           <StatsCard
             title="Best AWPer"
             value={topPlayersByRole.awper.name}
-            metric={`${topPlayersByRole.awper.piv} PIV`}
+            metric={`${Math.round(topPlayersByRole.awper.piv)} PIV`}
             metricColor="text-amber-400"
             bgColor="bg-amber-500/10"
             icon={<Target className="h-6 w-6 text-amber-500" />}
@@ -214,7 +240,7 @@ export default function PlayersPage() {
           <StatsCard
             title="Best Spacetaker"
             value={topPlayersByRole.spacetaker.name}
-            metric={`${topPlayersByRole.spacetaker.piv} PIV`}
+            metric={`${Math.round(topPlayersByRole.spacetaker.piv)} PIV`}
             metricColor="text-orange-400"
             bgColor="bg-orange-500/10"
             icon={<User2 className="h-6 w-6 text-orange-500" />}
@@ -226,7 +252,7 @@ export default function PlayersPage() {
           <StatsCard
             title="Best Lurker"
             value={topPlayersByRole.lurker.name}
-            metric={`${topPlayersByRole.lurker.piv} PIV`}
+            metric={`${Math.round(topPlayersByRole.lurker.piv)} PIV`}
             metricColor="text-blue-400"
             bgColor="bg-blue-500/10"
             icon={<Shield className="h-6 w-6 text-blue-500" />}
@@ -238,7 +264,7 @@ export default function PlayersPage() {
           <StatsCard
             title="Best Anchor"
             value={topPlayersByRole.anchor.name}
-            metric={`${topPlayersByRole.anchor.piv} PIV`}
+            metric={`${Math.round(topPlayersByRole.anchor.piv)} PIV`}
             metricColor="text-teal-400"
             bgColor="bg-teal-500/10"
             icon={<Shield className="h-6 w-6 text-teal-500" />}
@@ -250,7 +276,7 @@ export default function PlayersPage() {
           <StatsCard
             title="Best Support"
             value={topPlayersByRole.support.name}
-            metric={`${topPlayersByRole.support.piv} PIV`}
+            metric={`${Math.round(topPlayersByRole.support.piv)} PIV`}
             metricColor="text-cyan-400"
             bgColor="bg-cyan-500/10"
             icon={<CircleDot className="h-6 w-6 text-cyan-500" />}

@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Combobox, ComboboxOption } from "@/components/ui/combobox";
+import { SearchSelect, SearchOption } from "@/components/ui/search-select";
 import {
   Tabs,
   TabsContent,
@@ -122,8 +122,6 @@ const MAPS = ["Mirage", "Inferno", "Nuke", "Ancient", "Anubis", "Overpass", "Ver
 export default function MatchPredictorPage() {
   const [team1Id, setTeam1Id] = useState<string>("");
   const [team2Id, setTeam2Id] = useState<string>("");
-  const [searchQuery1, setSearchQuery1] = useState<string>("");
-  const [searchQuery2, setSearchQuery2] = useState<string>("");
   const [selectedMap, setSelectedMap] = useState<string>("Inferno");
   const [adjustmentFactors, setAdjustmentFactors] = useState({
     recentForm: 50, // 0-100 slider for team1's recent form (50 = neutral)
@@ -591,23 +589,15 @@ export default function MatchPredictorPage() {
                 <div className="space-y-4">
                   <h3 className="font-medium">Team 1</h3>
                   
-                  <Combobox
+                  <SearchSelect
                     options={teams.map(team => ({
-                      value: team.id,
-                      label: team.name,
-                      content: (
-                        <div className="flex items-center justify-between w-full">
-                          <span>{team.name}</span>
-                          <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                            TIR: {Math.round(team.tir)}
-                          </span>
-                        </div>
-                      )
+                      id: team.id,
+                      name: team.name,
+                      extra: `TIR: ${Math.round(team.tir)}`
                     }))}
-                    value={team1Id}
-                    onValueChange={setTeam1Id}
+                    selectedId={team1Id}
+                    onSelect={setTeam1Id}
                     placeholder="Select team"
-                    emptyText="No teams found"
                   />
                   
                   {team1 && enhancedTeamStats[team1.id] && (
@@ -647,23 +637,15 @@ export default function MatchPredictorPage() {
                 <div className="space-y-4">
                   <h3 className="font-medium">Team 2</h3>
                   
-                  <Combobox
+                  <SearchSelect
                     options={teams.map(team => ({
-                      value: team.id,
-                      label: team.name,
-                      content: (
-                        <div className="flex items-center justify-between w-full">
-                          <span>{team.name}</span>
-                          <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                            TIR: {Math.round(team.tir)}
-                          </span>
-                        </div>
-                      )
+                      id: team.id,
+                      name: team.name,
+                      extra: `TIR: ${Math.round(team.tir)}`
                     }))}
-                    value={team2Id}
-                    onValueChange={setTeam2Id}
+                    selectedId={team2Id}
+                    onSelect={setTeam2Id}
                     placeholder="Select team"
-                    emptyText="No teams found"
                   />
                   
                   {team2 && enhancedTeamStats[team2.id] && (

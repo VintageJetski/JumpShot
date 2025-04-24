@@ -59,11 +59,13 @@ export interface PlayerWithPIV {
   id: string;
   name: string;
   team: string;
-  role: PlayerRole;
-  secondaryRole?: PlayerRole;
-  isMainAwper?: boolean;
-  isIGL?: boolean;
-  piv: number;
+  role: PlayerRole;        // Primary role (determined from CT and T roles)
+  tRole?: PlayerRole;      // T side role
+  ctRole?: PlayerRole;     // CT side role
+  isIGL?: boolean;         // Is in-game leader
+  piv: number;             // Player Impact Value
+  ctPIV?: number;          // CT side PIV
+  tPIV?: number;           // T side PIV
   kd: number;
   primaryMetric: {
     name: string;
@@ -71,6 +73,8 @@ export interface PlayerWithPIV {
   };
   rawStats: PlayerRawStats;
   metrics: PlayerMetrics;
+  ctMetrics?: PlayerMetrics; // CT side metrics
+  tMetrics?: PlayerMetrics;  // T side metrics
 }
 
 // Team with calculated TIR metrics
@@ -91,11 +95,12 @@ export interface TeamWithTIR {
 // Player role enum
 export enum PlayerRole {
   IGL = "IGL",
-  AWPer = "AWPer",
+  AWP = "AWP",
   Spacetaker = "Spacetaker",
   Lurker = "Lurker",
   Anchor = "Anchor",
-  Support = "Support"
+  Support = "Support",
+  Rotator = "Rotator"
 }
 
 // Detailed metrics for each role
@@ -200,7 +205,6 @@ export interface PlayerRawStats {
 // Player metrics for PIV calculation
 export interface PlayerMetrics {
   role: PlayerRole;
-  secondaryRole?: PlayerRole;
   roleScores: {
     [role in PlayerRole]?: number;
   };
@@ -227,6 +231,7 @@ export interface PlayerMetrics {
   };
   osm: number;
   piv: number;
+  side?: 'CT' | 'T' | 'Overall'; // Indicates which side these metrics are for
 }
 
 // Teams table

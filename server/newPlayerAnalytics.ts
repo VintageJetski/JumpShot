@@ -264,12 +264,13 @@ function calculateSC(stats: PlayerRawStats, role: PlayerRole): { value: number, 
   
   switch (role) {
     case PlayerRole.AWP:
-      // For AWPers, reward opening kills and K/D much more strongly
-      // This better represents star AWP impact
+      // Rebalanced AWP impact to prevent AWP dominance
+      // Reduced weighting of K/D ratio and added utility component
       const awpOpeningKills = stats.firstKills / Math.max(stats.tFirstKills + stats.ctFirstKills, 1);
-      const awpKDRating = Math.min(stats.kd / 1.5, 1); // Normalize to 0-1
+      const awpKDRating = Math.min(stats.kd / 1.8, 0.85); // Lower cap and normalizing factor
+      const awpUtilityImpact = stats.assistedFlashes / Math.max(stats.totalUtilityThrown, 1);
       return { 
-        value: (awpOpeningKills * 0.4) + (awpKDRating * 0.5) + (kdFactor * 0.1),
+        value: (awpOpeningKills * 0.35) + (awpKDRating * 0.35) + (awpUtilityImpact * 0.15) + (kdFactor * 0.15),
         metric: "AWP Impact Rating"
       };
     case PlayerRole.IGL:
@@ -351,20 +352,21 @@ function calculateBasicMetricsScore(stats: PlayerRawStats, role: PlayerRole): nu
       break;
       
     case PlayerRole.AWP:
-      // Opening Kill Ratio
+      // Rebalanced AWP metrics with lower opening kill impact
+      // Opening Kill Ratio - reduced weight from 0.28 to 0.22
       const openingKillRatio = stats.firstKills / Math.max(stats.firstKills + stats.firstDeaths, 1);
-      score += openingKillRatio * 0.28;
+      score += openingKillRatio * 0.22;
       
-      // Basic Consistency (already calculated in ICF)
-      score += 0.205; // will be weighted by actual consistency
+      // Basic Consistency (already calculated in ICF) - reduced weight from 0.205 to 0.18
+      score += 0.18; // will be weighted by actual consistency
       
       // AWP Kill Share (assuming 50% of kills are with AWP as baseline)
       const awpKillShare = 0.5; // baseline estimation
-      score += awpKillShare * 0.175;
+      score += awpKillShare * 0.16; // reduced from 0.175
       
       // Multi-Kill Conversion (using K/D as a proxy)
       const multiKillConversion = Math.min(stats.kd, 2) / 2;
-      score += multiKillConversion * 0.14;
+      score += multiKillConversion * 0.13; // reduced from 0.14
       
       // Save + Rebuy Efficiency (using a standard 40% save rate as baseline)
       const saveRebuy = 0.4; // baseline estimation
@@ -373,6 +375,10 @@ function calculateBasicMetricsScore(stats: PlayerRawStats, role: PlayerRole): nu
       // Weapon Survival Rate (using a standard survival rate)
       const weaponSurvival = (stats.kills - stats.deaths + stats.assists) / Math.max(stats.kills + stats.assists, 1);
       score += weaponSurvival * 0.05;
+      
+      // Team Utility Support (new metric to balance AWP score)
+      const teamUtilSupport = stats.assistedFlashes / Math.max(stats.totalUtilityThrown, 1);
+      score += teamUtilSupport * 0.11;
       break;
       
     case PlayerRole.Spacetaker:
@@ -517,7 +523,7 @@ function calculateOSM(): number {
 /**
  * Calculate PIV (Player Impact Value)
  */
-function calculatePIV(rcs: number, icf: number, sc: number, osm: number, kd: number = 1.0, basicScore: number = 0.5): number {
+function calculatePIV(rcs: number, icf: number, sc: number, osm: number, kd: number = 1.0, basicScore: number = 0.5, role: PlayerRole = PlayerRole.Support): number {
   // New calculation with basic metrics integration
   // Reduce advanced metrics (RCS) to 50% weight
   const reducedRCS = rcs * 0.5;
@@ -535,7 +541,32 @@ function calculatePIV(rcs: number, icf: number, sc: number, osm: number, kd: num
   // Special treatment for exceptional K/D (1.4+)
   const starBonus = (kd >= 1.4) ? (kd - 1.4) * 0.35 : 0;
   
-  return basePIV * (1 + kdFactor + starBonus);
+  // Apply role-based balancing modifier to prevent AWP dominance
+  let roleModifier = 1.0;
+  
+  // Set role-specific modifiers to better balance output
+  switch(role) {
+    case PlayerRole.AWP:
+      // Apply a moderate reduction to AWP PIV to balance overall ratings
+      roleModifier = 0.90;
+      break;
+    case PlayerRole.IGL:
+      // Slightly boost IGL values to compensate for their often lower K/D
+      roleModifier = 1.05;
+      break;
+    case PlayerRole.Support:
+      // Slightly boost Support roles to compensate for lower fragging 
+      roleModifier = 1.08;
+      break;
+    case PlayerRole.Spacetaker:
+      // Minor boost for Spacetakers to reward entry fragging
+      roleModifier = 1.03;
+      break;
+    default:
+      roleModifier = 1.0;
+  }
+  
+  return basePIV * (1 + kdFactor + starBonus) * roleModifier;
 }
 
 /**
@@ -726,17 +757,17 @@ function calculatePlayerWithPIV(
   // Combined multiplier (apply both factors)
   const combinedKdMultiplier = kdMultiplier * superStarMultiplier;
   
-  // Calculate T-side basic metrics and PIV
+  // Calculate T-side basic metrics and PIV with role parameter
   const tBasicScore = calculateBasicMetricsScore(stats, tRole);
   const tRcs = calculateRCS(tMetrics);
   const tSc = calculateSC(stats, tRole);
-  const tPIV = calculatePIV(tRcs, icf.value, tSc.value, osm, stats.kd, tBasicScore) * combinedKdMultiplier;
+  const tPIV = calculatePIV(tRcs, icf.value, tSc.value, osm, stats.kd, tBasicScore, tRole) * combinedKdMultiplier;
   
-  // Calculate CT-side basic metrics and PIV
+  // Calculate CT-side basic metrics and PIV with role parameter
   const ctBasicScore = calculateBasicMetricsScore(stats, ctRole);
   const ctRcs = calculateRCS(ctMetrics);
   const ctSc = calculateSC(stats, ctRole);
-  const ctPIV = calculatePIV(ctRcs, icf.value, ctSc.value, osm, stats.kd, ctBasicScore) * combinedKdMultiplier;
+  const ctPIV = calculatePIV(ctRcs, icf.value, ctSc.value, osm, stats.kd, ctBasicScore, ctRole) * combinedKdMultiplier;
   
   // Calculate IGL metrics and PIV if applicable
   let iglPIV = 0;
@@ -746,7 +777,7 @@ function calculatePlayerWithPIV(
     const iglMetrics = { ...ctMetrics, ...tMetrics };
     const iglRcs = calculateRCS(iglMetrics);
     const iglSc = calculateSC(stats, PlayerRole.IGL);
-    iglPIV = calculatePIV(iglRcs, icf.value, iglSc.value, osm, stats.kd, iglBasicScore) * combinedKdMultiplier;
+    iglPIV = calculatePIV(iglRcs, icf.value, iglSc.value, osm, stats.kd, iglBasicScore, PlayerRole.IGL) * combinedKdMultiplier;
   }
   
   // Calculate overall PIV based on role weightings

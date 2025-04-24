@@ -150,11 +150,11 @@ export default function TeamsPage() {
               <div className="mt-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-400">Total PIV:</span>
-                  <span className="font-medium">{topTeams.highest.sumPIV}</span>
+                  <span className="font-medium">{Math.round(topTeams.highest.sumPIV * 100)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm mt-1">
                   <span className="text-gray-400">Synergy Layer:</span>
-                  <span className="font-medium">{topTeams.highest.synergy}</span>
+                  <span className="font-medium">{topTeams.highest.synergy.toFixed(2)}</span>
                 </div>
               </div>
             }
@@ -165,7 +165,7 @@ export default function TeamsPage() {
           <StatsCard
             title="Best Synergy"
             value={topTeams.bestSynergy.name}
-            metric={`${topTeams.bestSynergy.synergy} TSL`}
+            metric={`${topTeams.bestSynergy.synergy.toFixed(2)} TSL`}
             metricColor="text-blue-400"
             bgColor="bg-blue-500/10"
             icon={<Zap className="h-6 w-6 text-blue-500" />}
@@ -188,7 +188,7 @@ export default function TeamsPage() {
           <StatsCard
             title="Highest Avg PIV"
             value={topTeams.highestAvg.name}
-            metric={`${topTeams.highestAvg.avgPIV} Avg PIV`}
+            metric={`${Math.round(topTeams.highestAvg.avgPIV * 100)} Avg PIV`}
             metricColor="text-amber-400"
             bgColor="bg-amber-500/10"
             icon={<Users className="h-6 w-6 text-amber-500" />}

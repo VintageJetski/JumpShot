@@ -261,7 +261,7 @@ export default function PlayersPage() {
           <StatsCard
             title="Best Spacetaker"
             value={topPlayersByRole.spacetaker.name}
-            metric={`${Math.round(topPlayersByRole.spacetaker.piv)} PIV`}
+            metric={`${Math.round(topPlayersByRole.spacetaker.piv * 100)} PIV`}
             metricColor="text-orange-400"
             bgColor="bg-orange-500/10"
             icon={<User2 className="h-6 w-6 text-orange-500" />}
@@ -273,7 +273,7 @@ export default function PlayersPage() {
           <StatsCard
             title="Best Lurker"
             value={topPlayersByRole.lurker.name}
-            metric={`${Math.round(topPlayersByRole.lurker.piv)} PIV`}
+            metric={`${Math.round(topPlayersByRole.lurker.piv * 100)} PIV`}
             metricColor="text-blue-400"
             bgColor="bg-blue-500/10"
             icon={<Shield className="h-6 w-6 text-blue-500" />}
@@ -285,7 +285,7 @@ export default function PlayersPage() {
           <StatsCard
             title="Best Anchor"
             value={topPlayersByRole.anchor.name}
-            metric={`${Math.round(topPlayersByRole.anchor.piv)} PIV`}
+            metric={`${Math.round(topPlayersByRole.anchor.piv * 100)} PIV`}
             metricColor="text-teal-400"
             bgColor="bg-teal-500/10"
             icon={<Shield className="h-6 w-6 text-teal-500" />}
@@ -297,7 +297,7 @@ export default function PlayersPage() {
           <StatsCard
             title="Best Support"
             value={topPlayersByRole.support.name}
-            metric={`${Math.round(topPlayersByRole.support.piv)} PIV`}
+            metric={`${Math.round(topPlayersByRole.support.piv * 100)} PIV`}
             metricColor="text-cyan-400"
             bgColor="bg-cyan-500/10"
             icon={<CircleDot className="h-6 w-6 text-cyan-500" />}

@@ -208,15 +208,22 @@ function calculateRCS(normalizedMetrics: Record<string, number>): number {
 }
 
 /**
- * Calculate ICF (Individual Consistency Factor)
+ * Calculate Individual Consistency Factor (ICF)
  */
 function calculateICF(stats: PlayerRawStats, isIGL: boolean = false): { value: number, sigma: number } {
   // Base calculation
   const sigma = Math.abs(1 - stats.kd) * 2;
   let icf = 1 / (1 + sigma);
   
-  // Bonus for high-fragging non-IGLs
-  if (!isIGL && stats.kd > 1.3) {
+  // Make adjustments to balance IGL impact
+  if (isIGL) {
+    // Slightly reduce the ICF for IGLs to avoid overweighting
+    // This is a balance adjustment requested by the client
+    const reductionFactor = 0.85; // Reduce by 15%
+    icf = icf * reductionFactor;
+  } 
+  // Bonus for high-fragging non-IGLs remains the same
+  else if (stats.kd > 1.3) {
     // Provide a scaling bonus based on how high the K/D is
     const kdBonus = (stats.kd - 1.3) * 0.2;
     icf = Math.min(icf + kdBonus, 0.9); // Cap at 0.9
@@ -303,9 +310,8 @@ export function processPlayerStatsWithRoles(
     const roleInfo = findPlayerRoleInfo(stats.userName, roleMap);
     
     if (!roleInfo) {
-      console.warn(`No role information found for player ${stats.userName}, using default roles`);
-      // Create a placeholder player with default role assignments
-      processedPlayers.push(createDefaultPlayerWithPIV(stats));
+      console.warn(`No role information found for player ${stats.userName}, skipping`);
+      // Skip players that are not in the role dataset (per user request)
       continue;
     }
     

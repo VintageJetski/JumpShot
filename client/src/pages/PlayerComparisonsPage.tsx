@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import {
   Tabs,
   TabsContent,
@@ -39,6 +40,8 @@ import RoleBadge from "@/components/ui/role-badge";
 export default function PlayerComparisonsPage() {
   const [player1Id, setPlayer1Id] = useState<string>("");
   const [player2Id, setPlayer2Id] = useState<string>("");
+  const [searchQuery1, setSearchQuery1] = useState<string>("");
+  const [searchQuery2, setSearchQuery2] = useState<string>("");
   const [comparisonMetric, setComparisonMetric] = useState<"piv" | "kd" | "role_score" | "consistency">("piv");
   const [chartType, setChartType] = useState<"radar" | "scatter" | "bar">("radar");
   const [analysisTab, setAnalysisTab] = useState<"overall" | "ct" | "t">("overall");
@@ -458,26 +461,46 @@ export default function PlayerComparisonsPage() {
                 {/* Player 1 Selection */}
                 <div className="space-y-4">
                   <h3 className="font-medium">Player 1</h3>
-                  <Select
-                    value={player1Id}
-                    onValueChange={setPlayer1Id}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select player 1" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {players.map((player) => (
-                        <SelectItem key={player.id} value={player.id}>
-                          <div className="flex items-center">
-                            <div className="w-6 h-6 rounded-full bg-background-light flex items-center justify-center mr-2 text-xs">
-                              {player.team.substring(0, 2)}
+                  
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Search player by name..."
+                      value={searchQuery1}
+                      onChange={(e) => setSearchQuery1(e.target.value)}
+                      className="mb-2"
+                    />
+                    
+                    <div className="max-h-64 overflow-y-auto border border-gray-700 rounded-md">
+                      {players
+                        .filter(player => 
+                          player.name.toLowerCase().includes(searchQuery1.toLowerCase()) ||
+                          player.team.toLowerCase().includes(searchQuery1.toLowerCase())
+                        )
+                        .map((player) => (
+                          <div 
+                            key={player.id}
+                            className={`flex items-center justify-between p-2 hover:bg-gray-800 cursor-pointer ${
+                              player.id === player1Id ? 'bg-primary/20' : ''
+                            }`}
+                            onClick={() => setPlayer1Id(player.id)}
+                          >
+                            <div className="flex items-center">
+                              <div className="w-6 h-6 rounded-full bg-background-light flex items-center justify-center mr-2 text-xs">
+                                {player.team.substring(0, 2)}
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium">{player.name}</div>
+                                <div className="text-xs text-gray-400">{player.team}</div>
+                              </div>
                             </div>
-                            {player.name} ({player.team})
+                            <div className="flex items-center gap-1">
+                              <RoleBadge role={player.role} />
+                              <span className="text-xs font-medium">{Math.round(player.piv * 100)}</span>
+                            </div>
                           </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        ))}
+                    </div>
+                  </div>
                   
                   {player1 && (
                     <div className="flex items-center justify-between mt-4 bg-background-light p-3 rounded-md">
@@ -503,26 +526,46 @@ export default function PlayerComparisonsPage() {
                 {/* Player 2 Selection */}
                 <div className="space-y-4">
                   <h3 className="font-medium">Player 2</h3>
-                  <Select
-                    value={player2Id}
-                    onValueChange={setPlayer2Id}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select player 2" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {players.map((player) => (
-                        <SelectItem key={player.id} value={player.id}>
-                          <div className="flex items-center">
-                            <div className="w-6 h-6 rounded-full bg-background-light flex items-center justify-center mr-2 text-xs">
-                              {player.team.substring(0, 2)}
+                  
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Search player by name..."
+                      value={searchQuery2}
+                      onChange={(e) => setSearchQuery2(e.target.value)}
+                      className="mb-2"
+                    />
+                    
+                    <div className="max-h-64 overflow-y-auto border border-gray-700 rounded-md">
+                      {players
+                        .filter(player => 
+                          player.name.toLowerCase().includes(searchQuery2.toLowerCase()) ||
+                          player.team.toLowerCase().includes(searchQuery2.toLowerCase())
+                        )
+                        .map((player) => (
+                          <div 
+                            key={player.id}
+                            className={`flex items-center justify-between p-2 hover:bg-gray-800 cursor-pointer ${
+                              player.id === player2Id ? 'bg-primary/20' : ''
+                            }`}
+                            onClick={() => setPlayer2Id(player.id)}
+                          >
+                            <div className="flex items-center">
+                              <div className="w-6 h-6 rounded-full bg-background-light flex items-center justify-center mr-2 text-xs">
+                                {player.team.substring(0, 2)}
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium">{player.name}</div>
+                                <div className="text-xs text-gray-400">{player.team}</div>
+                              </div>
                             </div>
-                            {player.name} ({player.team})
+                            <div className="flex items-center gap-1">
+                              <RoleBadge role={player.role} />
+                              <span className="text-xs font-medium">{Math.round(player.piv * 100)}</span>
+                            </div>
                           </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        ))}
+                    </div>
+                  </div>
                   
                   {player2 && (
                     <div className="flex items-center justify-between mt-4 bg-background-light p-3 rounded-md">

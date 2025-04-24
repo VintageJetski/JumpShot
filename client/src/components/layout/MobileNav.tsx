@@ -1,5 +1,19 @@
 import { Link, useLocation } from "wouter";
-import { Users, UsersRound, FileText, LineChart, BarChart2 } from "lucide-react";
+import { 
+  Users, 
+  UsersRound, 
+  FileText, 
+  LineChart, 
+  BarChart2, 
+  ArrowRightLeft, 
+  Percent,
+  Menu
+} from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger
+} from "@/components/ui/sheet";
 
 export default function MobileNav() {
   const [location] = useLocation();
@@ -26,6 +40,37 @@ export default function MobileNav() {
           <UsersRound className="h-6 w-6" />
           <span className="text-xs mt-1">Teams</span>
         </Link>
+        
+        <Sheet>
+          <SheetTrigger className={`flex flex-col items-center px-3 py-2 ${
+            isActive("/player-comparisons") || isActive("/match-predictor") ? "text-primary" : "text-gray-400"
+          }`}>
+            <BarChart2 className="h-6 w-6" />
+            <span className="text-xs mt-1">Advanced</span>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="rounded-t-xl h-auto bg-background-light">
+            <div className="py-4 space-y-4">
+              <h3 className="text-sm text-gray-400 uppercase font-semibold px-4">Advanced Analytics</h3>
+              <div className="space-y-1">
+                <Link href="/player-comparisons"
+                  className={`flex items-center px-4 py-3 ${
+                    isActive("/player-comparisons") ? "bg-primary/20 text-primary" : "text-gray-300 hover:bg-gray-700/50"
+                  } rounded-md`}>
+                  <ArrowRightLeft className="h-5 w-5 mr-3" />
+                  <span>Player Comparisons</span>
+                </Link>
+                
+                <Link href="/match-predictor"
+                  className={`flex items-center px-4 py-3 ${
+                    isActive("/match-predictor") ? "bg-primary/20 text-primary" : "text-gray-300 hover:bg-gray-700/50"
+                  } rounded-md`}>
+                  <Percent className="h-5 w-5 mr-3" />
+                  <span>Match Predictor</span>
+                </Link>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
         
         <Link href="/role-weightings"
           className={`flex flex-col items-center px-3 py-2 ${

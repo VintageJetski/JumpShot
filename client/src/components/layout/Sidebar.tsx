@@ -6,7 +6,10 @@ import {
   LineChart, 
   FileText, 
   FileCode, 
-  Database
+  Database,
+  ArrowRightLeft,
+  Percent,
+  Activity
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -63,13 +66,39 @@ export default function Sidebar() {
             <FileText className="h-5 w-5 mr-2" />
             Documentation
           </Link>
+          
+          <div className="mt-6 mb-2">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-4">Advanced Analytics</h3>
+          </div>
+          
+          <Link href="/player-comparisons" 
+            className={`w-full flex items-center justify-start px-4 py-2 ${
+              isActive("/player-comparisons")
+                ? "bg-primary text-white"
+                : "text-gray-300 hover:bg-gray-700"
+            } rounded font-medium`}
+          >
+            <ArrowRightLeft className="h-5 w-5 mr-2" />
+            Player Comparisons
+          </Link>
+          
+          <Link href="/match-predictor" 
+            className={`w-full flex items-center justify-start px-4 py-2 ${
+              isActive("/match-predictor")
+                ? "bg-primary text-white"
+                : "text-gray-300 hover:bg-gray-700"
+            } rounded font-medium`}
+          >
+            <Percent className="h-5 w-5 mr-2" />
+            Match Predictor
+          </Link>
         </div>
         
         <div className="mt-8">
           <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">About</h3>
           <div className="mt-2 space-y-1">
             <div className="px-4 py-2 text-gray-400 text-sm">
-              CS2 Analytics v1.2
+              CS2 Analytics v1.3
             </div>
             <div className="px-4 py-2 text-gray-400 text-xs">
               Updated: April 24, 2024

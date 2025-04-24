@@ -135,15 +135,26 @@ export default function MatchPredictorPage() {
   });
   
   const { data: teams = [], isLoading: teamsLoading } = useQuery<TeamWithTIR[]>({
-    queryKey: ["teams"],
+    queryKey: ["/api/teams"],
     onSuccess: (data) => {
-      console.log("API teams data:", data);
-      console.log("Team names:", data.map(t => t.name).join(", "));
+      console.log("API teams data received:", data);
+      console.log("Teams array length:", data.length);
+      console.log("First team:", data[0]);
+      if (data.length > 0) {
+        console.log("Team names:", data.map(t => t.name).join(", "));
+      }
     }
   });
   
   const { data: players = [], isLoading: playersLoading } = useQuery<PlayerWithPIV[]>({
-    queryKey: ["players"],
+    queryKey: ["/api/players"],
+    onSuccess: (data) => {
+      console.log("API players data received:", !!data);
+      console.log("Players array length:", data.length);
+      if (data.length > 0) {
+        console.log("First player data:", data[0]);
+      }
+    }
   });
   
   // Select first two teams if none selected

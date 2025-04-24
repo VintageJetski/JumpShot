@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
-import { TeamWithTIR } from "@shared/schema";
+import { TeamWithTIR, PlayerRole } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import RoleBadge from "@/components/ui/role-badge";
 import ProgressMetric from "@/components/stats/ProgressMetric";
@@ -45,11 +45,15 @@ export default function TeamDetailPage() {
     );
   }
 
-  // Get team roles distribution
+  // Get team roles distribution (primary roles only for new system)
   const roleCount = team.players.reduce((acc, player) => {
     acc[player.role] = (acc[player.role] || 0) + 1;
-    if (player.secondaryRole) {
-      acc[player.secondaryRole] = (acc[player.secondaryRole] || 0) + 1;
+    // Include CT and T roles if available
+    if (player.ctRole && player.ctRole !== player.role) {
+      acc[player.ctRole] = (acc[player.ctRole] || 0) + 1;
+    }
+    if (player.tRole && player.tRole !== player.role) {
+      acc[player.tRole] = (acc[player.tRole] || 0) + 1;
     }
     return acc;
   }, {} as Record<string, number>);
@@ -61,12 +65,12 @@ export default function TeamDetailPage() {
       accessorKey: "name",
       cell: ({ row }: any) => {
         const player = row.original;
-        const initial = player.name.charAt(0).toUpperCase();
+        const teamInitial = player.team.charAt(0).toUpperCase();
         
         return (
           <div className="flex items-center">
             <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center text-xl font-bold text-primary">
-              {initial}
+              {teamInitial}
             </div>
             <div className="ml-4">
               <div className="text-sm font-medium">{player.name}</div>
@@ -79,21 +83,38 @@ export default function TeamDetailPage() {
     {
       header: "Role",
       accessorKey: "role",
-      cell: ({ row }: any) => (
-        <RoleBadge 
-          role={row.original.role} 
-          secondaryRole={row.original.secondaryRole}
-          isMainAwper={row.original.isMainAwper}
-          isIGL={row.original.isIGL}
-        />
-      )
+      cell: ({ row }: any) => {
+        // Use simpler role display without secondary roles for the new system
+        return (
+          <RoleBadge 
+            role={row.original.role}
+          />
+        );
+      }
     },
     {
       header: "PIV",
       accessorKey: "piv",
-      cell: ({ row }: any) => (
-        <div className="font-medium text-white">{row.original.piv}</div>
-      )
+      cell: ({ row }: any) => {
+        // Convert decimal PIV (e.g., 0.798) to display format (80)
+        const scaledPIV = Math.round(row.original.piv * 100);
+        return (
+          <div className="font-medium text-white">{scaledPIV}</div>
+        );
+      }
+    },
+    {
+      header: "K/D",
+      accessorKey: "kd",
+      cell: ({ row }: any) => {
+        const kd = row.original.kd;
+        const formattedKD = kd.toFixed(2); // Format to 2 decimal places
+        const textColor = kd >= 1.0 ? "text-green-400" : "text-yellow-400";
+        
+        return (
+          <div className={`text-sm font-medium ${textColor}`}>{formattedKD}</div>
+        );
+      }
     },
     {
       header: "Primary Metric",
@@ -230,7 +251,7 @@ export default function TeamDetailPage() {
                     
                     <div className="flex justify-between text-sm">
                       <span>Top Player</span>
-                      <span className="font-medium">{team.topPlayer.name} ({team.topPlayer.piv})</span>
+                      <span className="font-medium">{team.topPlayer.name} ({Math.round(team.topPlayer.piv * 100)})</span>
                     </div>
                     <div className="text-xs text-gray-500">
                       Players with complementary roles enhance team synergy
@@ -249,17 +270,17 @@ export default function TeamDetailPage() {
                 <div className="mt-4 pt-4 border-t border-gray-700">
                   <div className="text-sm text-gray-400">Key Team Attributes:</div>
                   <div className="mt-2 space-y-2">
-                    {team.players.some(p => p.isIGL) && (
+                    {team.players.some(p => p.role === PlayerRole.IGL) && (
                       <div className="flex items-center text-xs bg-gray-700 rounded-full px-3 py-1 text-purple-400 w-fit">
                         <ShieldCheck className="h-3 w-3 mr-1" /> IGL Presence
                       </div>
                     )}
-                    {team.players.some(p => p.isMainAwper) && (
+                    {team.players.some(p => p.role === PlayerRole.AWP) && (
                       <div className="flex items-center text-xs bg-gray-700 rounded-full px-3 py-1 text-amber-400 w-fit">
                         <Star className="h-3 w-3 mr-1" /> Main AWPer
                       </div>
                     )}
-                    {team.avgPIV > 2.5 && (
+                    {team.avgPIV > 0.7 && (
                       <div className="flex items-center text-xs bg-gray-700 rounded-full px-3 py-1 text-green-400 w-fit">
                         <Users className="h-3 w-3 mr-1" /> High Avg. Impact
                       </div>

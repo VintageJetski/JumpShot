@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Users, UsersRound, FileText, LineChart } from "lucide-react";
+import { Users, UsersRound, FileText, LineChart, BarChart2 } from "lucide-react";
 
 export default function MobileNav() {
   const [location] = useLocation();

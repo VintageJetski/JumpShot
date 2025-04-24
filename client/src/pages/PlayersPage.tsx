@@ -137,10 +137,11 @@ export default function PlayersPage() {
       accessorKey: "kd",
       cell: ({ row }: any) => {
         const kd = row.original.kd;
+        const formattedKD = kd.toFixed(2); // Format to 2 decimal places
         const textColor = kd >= 1.0 ? "text-green-400" : "text-yellow-400";
         
         return (
-          <div className={`text-sm font-medium ${textColor}`}>{kd}</div>
+          <div className={`text-sm font-medium ${textColor}`}>{formattedKD}</div>
         );
       }
     },

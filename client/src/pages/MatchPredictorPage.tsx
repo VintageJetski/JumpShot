@@ -556,12 +556,27 @@ export default function MatchPredictorPage() {
     return insights;
   }, [prediction, team1, team2, selectedMap]);
   
+  // Debug functions
+  const testDirectApiCall = async () => {
+    try {
+      const response = await fetch('/api/teams');
+      const data = await response.json();
+      console.log('Direct fetch response:', data);
+      alert(`Directly fetched ${data.length} teams: ${data.map((t: TeamWithTIR) => t.name).join(', ')}`);
+    } catch (error: unknown) {
+      console.error('Direct fetch error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Error: ${errorMessage}`);
+    }
+  };
+
   // If loading, show skeleton
   if (teamsLoading || playersLoading) {
     return (
       <div className="container mx-auto py-6 space-y-6 px-4">
         <h1 className="text-3xl font-bold">Match Predictor</h1>
         <div className="h-80 animate-pulse bg-gray-800 rounded-lg"></div>
+        <Button onClick={testDirectApiCall}>Test API Directly</Button>
       </div>
     );
   }
@@ -577,6 +592,11 @@ export default function MatchPredictorPage() {
           <p className="text-gray-400 mt-1">
             AI-powered CS2 match outcome prediction and analysis
           </p>
+        </div>
+        <div>
+          <Button onClick={testDirectApiCall} variant="outline">
+            Test API Directly
+          </Button>
         </div>
       </div>
 

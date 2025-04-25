@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PlayerRoleDisplay, PlayerStatsDisplay } from "@/components/ui/player-role-display";
-import { Percent, ArrowRightLeft, ChevronRight, ChevronDown, Map, Clock, Trophy, Zap, BarChart3 } from "lucide-react";
+import { Percent, ArrowRightLeft, ChevronRight, ChevronDown, Map, Clock, Trophy, Zap, BarChart3, Award } from "lucide-react";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip as RechartsTooltip 
 } from "recharts";
@@ -260,12 +260,22 @@ export default function MatchPredictorPage() {
         favorsTeam: team1Stats.synergy > team2Stats.synergy ? 1 : team1Stats.synergy < team2Stats.synergy ? 2 : 0
       },
       {
-        name: "Map Win Rate",
-        team1Value: (team1Stats.mapPerformance[selectedMap] || 0.5) * 100,
-        team2Value: (team2Stats.mapPerformance[selectedMap] || 0.5) * 100,
+        name: matchFormat === 'bo1' ? "Map Win Rate" : "Maps Win Rate",
+        team1Value: (matchFormat === 'bo1' 
+          ? (team1Stats.mapPerformance[selectedMap] || 0.5) * 100
+          : selectedMaps.reduce((sum, map) => sum + (team1Stats.mapPerformance[map] || 0.5) * 100, 0) / selectedMaps.length
+        ),
+        team2Value: (matchFormat === 'bo1'
+          ? (team2Stats.mapPerformance[selectedMap] || 0.5) * 100
+          : selectedMaps.reduce((sum, map) => sum + (team2Stats.mapPerformance[map] || 0.5) * 100, 0) / selectedMaps.length
+        ),
         weight: 0.20,
-        favorsTeam: (team1Stats.mapPerformance[selectedMap] || 0.5) > (team2Stats.mapPerformance[selectedMap] || 0.5) ? 1 
-          : (team1Stats.mapPerformance[selectedMap] || 0.5) < (team2Stats.mapPerformance[selectedMap] || 0.5) ? 2 : 0
+        favorsTeam: (matchFormat === 'bo1'
+          ? (team1Stats.mapPerformance[selectedMap] || 0.5) > (team2Stats.mapPerformance[selectedMap] || 0.5) ? 1 
+            : (team1Stats.mapPerformance[selectedMap] || 0.5) < (team2Stats.mapPerformance[selectedMap] || 0.5) ? 2 : 0
+          : selectedMaps.reduce((sum, map) => sum + (team1Stats.mapPerformance[map] || 0.5), 0) / selectedMaps.length >
+            selectedMaps.reduce((sum, map) => sum + (team2Stats.mapPerformance[map] || 0.5), 0) / selectedMaps.length ? 1 : 2
+        )
       },
       {
         name: "Role Coverage",
@@ -729,7 +739,38 @@ export default function MatchPredictorPage() {
               
               <div className="mt-6 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-medium">Map Selection</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium">Map Selection</h3>
+                    <div className="flex text-xs items-center gap-2 ml-2">
+                      <button
+                        className={`px-2 py-1 rounded-md transition ${matchFormat === 'bo1' ? 'bg-primary text-white' : 'bg-background-light hover:bg-gray-700'}`}
+                        onClick={() => {
+                          setMatchFormat('bo1');
+                          setSelectedMaps([selectedMap]);
+                        }}
+                      >
+                        BO1
+                      </button>
+                      <button
+                        className={`px-2 py-1 rounded-md transition ${matchFormat === 'bo3' ? 'bg-primary text-white' : 'bg-background-light hover:bg-gray-700'}`}
+                        onClick={() => {
+                          setMatchFormat('bo3');
+                          
+                          // Auto-select 3 maps if switching to BO3
+                          if (matchFormat !== 'bo3' && selectedMaps.length < 3) {
+                            const sortedMaps = [...MAPS].sort(() => Math.random() - 0.5);
+                            const additionalMaps = sortedMaps
+                              .filter(map => map !== selectedMap && !selectedMaps.includes(map))
+                              .slice(0, 3 - selectedMaps.length);
+                            
+                            setSelectedMaps([selectedMap, ...additionalMaps]);
+                          }
+                        }}
+                      >
+                        BO3
+                      </button>
+                    </div>
+                  </div>
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button variant="outline" size="sm">
@@ -770,39 +811,122 @@ export default function MatchPredictorPage() {
                   </Dialog>
                 </div>
                 
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-                  {MAPS.map(map => (
-                    <button
-                      key={map}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition 
-                        ${selectedMap === map ? 
-                          'bg-primary text-white' : 
-                          'bg-background-light text-gray-300 hover:bg-gray-700'}`}
-                      onClick={() => {
-                        setSelectedMap(map);
-                        
-                        // Auto-adjust contextual factors based on map selection
-                        if (team1 && team2 && enhancedTeamStats[team1.id] && enhancedTeamStats[team2.id]) {
-                          const team1MapPerf = enhancedTeamStats[team1.id].mapPerformance[map] || 0.5;
-                          const team2MapPerf = enhancedTeamStats[team2.id].mapPerformance[map] || 0.5;
+                {matchFormat === 'bo1' ? (
+                  // Single map selection for BO1
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                    {MAPS.map(map => (
+                      <button
+                        key={map}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition 
+                          ${selectedMap === map ? 
+                            'bg-primary text-white' : 
+                            'bg-background-light text-gray-300 hover:bg-gray-700'}`}
+                        onClick={() => {
+                          setSelectedMap(map);
+                          setSelectedMaps([map]);
                           
-                          // Calculate map-based adjustment between 0-100 (favoring team with better performance)
-                          const mapMatchupValue = Math.round(((team1MapPerf - team2MapPerf) * 200) + 50);
-                          
-                          // Update all contextual factors based on map data
-                          setAdjustmentFactors(prev => ({
-                            ...prev,
-                            mapMatchup: Math.min(100, Math.max(0, mapMatchupValue)),
-                            chemistry: Math.min(100, Math.max(0, mapMatchupValue - 10)),
-                            individuals: Math.min(100, Math.max(0, mapMatchupValue + 5))
-                          }));
-                        }
-                      }}
-                    >
-                      {map}
-                    </button>
-                  ))}
-                </div>
+                          // Auto-adjust contextual factors based on map selection
+                          if (team1 && team2 && enhancedTeamStats[team1.id] && enhancedTeamStats[team2.id]) {
+                            const team1MapPerf = enhancedTeamStats[team1.id].mapPerformance[map] || 0.5;
+                            const team2MapPerf = enhancedTeamStats[team2.id].mapPerformance[map] || 0.5;
+                            
+                            // Calculate map-based adjustment between 0-100 (favoring team with better performance)
+                            const mapMatchupValue = Math.round(((team1MapPerf - team2MapPerf) * 200) + 50);
+                            
+                            // Update all contextual factors based on map data
+                            setAdjustmentFactors(prev => ({
+                              ...prev,
+                              mapMatchup: Math.min(100, Math.max(0, mapMatchupValue)),
+                              chemistry: Math.min(100, Math.max(0, mapMatchupValue - 10)),
+                              individuals: Math.min(100, Math.max(0, mapMatchupValue + 5))
+                            }));
+                          }
+                        }}
+                      >
+                        {map}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  // Multi-map selection for BO3
+                  <div>
+                    <div className="mb-2 text-xs text-gray-400">
+                      Select up to 3 maps for BO3 series
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                      {MAPS.map(map => (
+                        <button
+                          key={map}
+                          className={`px-4 py-2 rounded-md text-sm font-medium transition 
+                            ${selectedMaps.includes(map) ? 
+                              'bg-primary text-white' : 
+                              'bg-background-light text-gray-300 hover:bg-gray-700'}`}
+                          onClick={() => {
+                            // Toggle map selection for BO3
+                            const isSelected = selectedMaps.includes(map);
+                            let newSelectedMaps: string[];
+                            
+                            if (isSelected) {
+                              // Remove map if already selected (unless it's the last one)
+                              if (selectedMaps.length > 1) {
+                                newSelectedMaps = selectedMaps.filter(m => m !== map);
+                              } else {
+                                newSelectedMaps = [map]; // Keep at least one map
+                              }
+                            } else if (selectedMaps.length < 3) {
+                              // Add map if under 3 maps
+                              newSelectedMaps = [...selectedMaps, map];
+                            } else {
+                              // Replace the first map if already at 3 maps
+                              newSelectedMaps = [...selectedMaps.slice(1), map];
+                            }
+                            
+                            setSelectedMaps(newSelectedMaps);
+                            setSelectedMap(newSelectedMaps[0]); // Set primary map to first in list
+                            
+                            // Auto-adjust contextual factors based on map selection
+                            if (team1 && team2 && enhancedTeamStats[team1.id] && enhancedTeamStats[team2.id]) {
+                              // Calculate average team performance across all selected maps
+                              const team1AvgMapPerf = newSelectedMaps.reduce(
+                                (avg, m) => avg + (enhancedTeamStats[team1.id].mapPerformance[m] || 0.5), 
+                                0
+                              ) / newSelectedMaps.length;
+                              
+                              const team2AvgMapPerf = newSelectedMaps.reduce(
+                                (avg, m) => avg + (enhancedTeamStats[team2.id].mapPerformance[m] || 0.5), 
+                                0
+                              ) / newSelectedMaps.length;
+                              
+                              // Calculate map-based adjustment between 0-100 (favoring team with better performance)
+                              const mapMatchupValue = Math.round(((team1AvgMapPerf - team2AvgMapPerf) * 200) + 50);
+                              
+                              // Update all contextual factors based on map data
+                              setAdjustmentFactors(prev => ({
+                                ...prev,
+                                mapMatchup: Math.min(100, Math.max(0, mapMatchupValue)),
+                                chemistry: Math.min(100, Math.max(0, mapMatchupValue - 10)),
+                                individuals: Math.min(100, Math.max(0, mapMatchupValue + 5))
+                              }));
+                            }
+                          }}
+                        >
+                          {map}
+                          {selectedMaps.includes(map) && 
+                            <span className="ml-1 text-[10px]">{selectedMaps.indexOf(map) + 1}</span>
+                          }
+                        </button>
+                      ))}
+                    </div>
+                    {selectedMaps.length > 0 && (
+                      <div className="mt-1 flex gap-1 text-xs">
+                        <span className="text-gray-400">Selected maps:</span>
+                        {selectedMaps.map((map, idx) => (
+                          <span key={map} className="font-medium">{map}{idx < selectedMaps.length - 1 ? ", " : ""}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               
               {/* Match Prediction moved here as requested */}
@@ -1237,7 +1361,7 @@ export default function MatchPredictorPage() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="tournament-tier" className="text-sm flex items-center gap-1">
-                        <Medal className="h-4 w-4" />
+                        <Award className="h-4 w-4" />
                         Tournament Tier
                       </Label>
                       <div className="flex gap-3 items-center text-xs">

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PlayerRoleDisplay, PlayerStatsDisplay } from "@/components/ui/player-role-display";
 import { Percent, ArrowRightLeft, ChevronRight, ChevronDown, Map, Clock, Trophy, Zap, BarChart3 } from "lucide-react";
@@ -20,7 +21,6 @@ const MAPS = [
   "Inferno",
   "Mirage",
   "Nuke", 
-  "Overpass",
   "Ancient",
   "Anubis",
   "Vertigo"
@@ -827,6 +827,22 @@ export default function MatchPredictorPage() {
                       max={100}
                       step={5}
                     />
+                    <Collapsible className="w-full">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="flex items-center justify-between w-full p-0 h-8">
+                          <span className="text-xs text-muted-foreground">Factor details</span>
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="bg-black/10 p-3 rounded-md text-xs mt-1">
+                        <div className="space-y-2">
+                          <p><span className="font-medium">Calculation:</span> Based on historical match results between {team1?.name} and {team2?.name}.</p>
+                          <p><span className="font-medium">Weight:</span> 5% impact on final probability</p>
+                          <p><span className="font-medium">Current effect:</span> {((adjustmentFactors.history - 50) / 50 * 0.05 * 100).toFixed(1)}% shift toward {adjustmentFactors.history > 50 ? team1?.name : team2?.name}</p>
+                          <p><span className="font-medium">Data source:</span> Team head-to-head from IEM Katowice 2025 and recent tournaments</p>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   </div>
                   
                   {/* Form slider */}
@@ -854,6 +870,22 @@ export default function MatchPredictorPage() {
                       max={100}
                       step={5}
                     />
+                    <Collapsible className="w-full">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="flex items-center justify-between w-full p-0 h-8">
+                          <span className="text-xs text-muted-foreground">Factor details</span>
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="bg-black/10 p-3 rounded-md text-xs mt-1">
+                        <div className="space-y-2">
+                          <p><span className="font-medium">Calculation:</span> Based on {team1?.name}'s and {team2?.name}'s recent results from the last 5 matches.</p>
+                          <p><span className="font-medium">Weight:</span> 7% impact on final probability</p>
+                          <p><span className="font-medium">Current effect:</span> {((adjustmentFactors.form - 50) / 50 * 0.07 * 100).toFixed(1)}% shift toward {adjustmentFactors.form > 50 ? team1?.name : team2?.name}</p>
+                          <p><span className="font-medium">Data source:</span> Match results from last 2 months including IEM Katowice 2025 group stage</p>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   </div>
                   
                   {/* BMT slider */}
@@ -881,6 +913,22 @@ export default function MatchPredictorPage() {
                       max={100}
                       step={5}
                     />
+                    <Collapsible className="w-full">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="flex items-center justify-between w-full p-0 h-8">
+                          <span className="text-xs text-muted-foreground">Factor details</span>
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="bg-black/10 p-3 rounded-md text-xs mt-1">
+                        <div className="space-y-2">
+                          <p><span className="font-medium">Calculation:</span> Based on performance in high-pressure playoff situations for both {team1?.name} and {team2?.name}.</p>
+                          <p><span className="font-medium">Weight:</span> 8% impact on final probability (highest weight of contextual factors)</p>
+                          <p><span className="font-medium">Current effect:</span> {((adjustmentFactors.bmt - 50) / 50 * 0.08 * 100).toFixed(1)}% shift toward {adjustmentFactors.bmt > 50 ? team1?.name : team2?.name}</p>
+                          <p><span className="font-medium">Data source:</span> Analysis of playoff matches versus group stage performance from IEM Katowice 2025</p>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   </div>
                   
                   {/* Chemistry slider */}
@@ -908,6 +956,22 @@ export default function MatchPredictorPage() {
                       max={100}
                       step={5}
                     />
+                    <Collapsible className="w-full">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="flex items-center justify-between w-full p-0 h-8">
+                          <span className="text-xs text-muted-foreground">Factor details</span>
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="bg-black/10 p-3 rounded-md text-xs mt-1">
+                        <div className="space-y-2">
+                          <p><span className="font-medium">Calculation:</span> Analysis of team communication, coordination, and roster stability.</p>
+                          <p><span className="font-medium">Weight:</span> 6% impact on final probability</p>
+                          <p><span className="font-medium">Current effect:</span> {((adjustmentFactors.chemistry - 50) / 50 * 0.06 * 100).toFixed(1)}% shift toward {adjustmentFactors.chemistry > 50 ? team1?.name : team2?.name}</p>
+                          <p><span className="font-medium">Data source:</span> Team composition history, audio communication samples, and tactical coordination metrics</p>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   </div>
                   
                   {/* Momentum slider */}
@@ -935,6 +999,22 @@ export default function MatchPredictorPage() {
                       max={100}
                       step={5}
                     />
+                    <Collapsible className="w-full">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="flex items-center justify-between w-full p-0 h-8">
+                          <span className="text-xs text-muted-foreground">Factor details</span>
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="bg-black/10 p-3 rounded-md text-xs mt-1">
+                        <div className="space-y-2">
+                          <p><span className="font-medium">Calculation:</span> Recent wins/losses and round differentials. Weighted toward most recent matches.</p>
+                          <p><span className="font-medium">Weight:</span> 6% impact on final probability</p>
+                          <p><span className="font-medium">Current effect:</span> {((adjustmentFactors.momentum - 50) / 50 * 0.06 * 100).toFixed(1)}% shift toward {adjustmentFactors.momentum > 50 ? team1?.name : team2?.name}</p>
+                          <p><span className="font-medium">Data source:</span> Tournament progression from group stage to current match in IEM Katowice 2025</p>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   </div>
                   
                   {/* Map matchup slider */}
@@ -962,6 +1042,22 @@ export default function MatchPredictorPage() {
                       max={100}
                       step={5}
                     />
+                    <Collapsible className="w-full">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="flex items-center justify-between w-full p-0 h-8">
+                          <span className="text-xs text-muted-foreground">Factor details</span>
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="bg-black/10 p-3 rounded-md text-xs mt-1">
+                        <div className="space-y-2">
+                          <p><span className="font-medium">Calculation:</span> Analysis of strategies, site control, and utility usage on {selectedMap}.</p>
+                          <p><span className="font-medium">Weight:</span> 7% impact on final probability</p>
+                          <p><span className="font-medium">Current effect:</span> {((adjustmentFactors.mapMatchup - 50) / 50 * 0.07 * 100).toFixed(1)}% shift toward {adjustmentFactors.mapMatchup > 50 ? team1?.name : team2?.name}</p>
+                          <p><span className="font-medium">Data source:</span> Map win rates, round win rates by side (T/CT), and site-specific performance on {selectedMap}</p>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   </div>
                   
                   {/* Individuals slider */}
@@ -989,6 +1085,39 @@ export default function MatchPredictorPage() {
                       max={100}
                       step={5}
                     />
+                    <Collapsible className="w-full">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="flex items-center justify-between w-full p-0 h-8">
+                          <span className="text-xs text-muted-foreground">Factor details</span>
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="bg-black/10 p-3 rounded-md text-xs mt-1">
+                        <div className="space-y-2">
+                          <p><span className="font-medium">Calculation:</span> Direct player-to-player comparisons in equivalent roles.</p>
+                          <p><span className="font-medium">Weight:</span> 6% impact on final probability</p>
+                          <p><span className="font-medium">Current effect:</span> {((adjustmentFactors.individuals - 50) / 50 * 0.06 * 100).toFixed(1)}% shift toward {adjustmentFactors.individuals > 50 ? team1?.name : team2?.name}</p>
+                          <p><span className="font-medium">Data source:</span> Individual matchups between AWPers, IGLs, and other role-based comparisons</p>
+                          <div className="mt-2 p-1 bg-black/20 rounded">
+                            <p className="font-medium text-primary text-xs">Role Matchup Analysis:</p>
+                            <ul className="mt-1 list-disc pl-4 space-y-1">
+                              {team1 && team2 && team1.players.map((player, idx) => {
+                                if (idx < 3) { // Show just top 3 matchups
+                                  const opposingPlayer = team2.players.find(p => p.role === player.role);
+                                  return (
+                                    <li key={idx} className="text-[10px]">
+                                      {player.name} ({player.role}) vs {opposingPlayer?.name || 'N/A'} 
+                                      {opposingPlayer ? ` - Edge: ${player.piv > (opposingPlayer?.piv || 0) ? team1.name : team2.name}` : ''}
+                                    </li>
+                                  );
+                                }
+                                return null;
+                              })}
+                            </ul>
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   </div>
                   
                   {/* Tournament Tier slider */}

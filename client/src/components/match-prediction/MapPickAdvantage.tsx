@@ -1,7 +1,19 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Map } from 'lucide-react';
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle,
+  CardFooter
+} from "@/components/ui/card";
+import { 
+  ArrowBigRightDash, 
+  ArrowBigLeftDash,
+  Scale 
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import KeyFactorsList from './KeyFactorsList';
 
 interface MapPickAdvantageProps {
   mapName: string;
@@ -14,93 +26,81 @@ interface MapPickAdvantageProps {
     advantage: number; // 1 = team1, 2 = team2, 0 = neutral
   }[];
   mapPickAdvantage?: number; // 1 = team1, 2 = team2, 0 = neutral
+  className?: string;
 }
 
-const MapPickAdvantage: React.FC<MapPickAdvantageProps> = ({
+export const MapPickAdvantage: React.FC<MapPickAdvantageProps> = ({
   mapName,
-  team1Name = 'Team 1',
-  team2Name = 'Team 2',
+  team1Name,
+  team2Name,
   keyFactors = [],
-  mapPickAdvantage = 0
+  mapPickAdvantage = 0,
+  className
 }) => {
-  // Filter for map-specific factors
-  const mapFactors = keyFactors.filter(factor => 
-    factor.name.includes(mapName) || 
-    factor.name.includes('Site') || 
-    factor.name.includes('Post-Plant') ||
-    factor.name.includes('Retake')
+  // Filter out non-map-specific factors
+  const mapFactors = keyFactors.filter(
+    factor => factor.name.toLowerCase().includes(mapName.toLowerCase())
   );
   
-  // Get most relevant factor for this map
-  const primaryFactor = mapFactors[0] || { 
-    name: `${mapName} Performance`, 
-    team1Value: 50, 
-    team2Value: 50,
-    advantage: 0
+  const getAdvantageText = () => {
+    if (mapPickAdvantage === 1 && team1Name) {
+      return `${team1Name} has the advantage on ${mapName}`;
+    } else if (mapPickAdvantage === 2 && team2Name) {
+      return `${team2Name} has the advantage on ${mapName}`;
+    } else {
+      return `No clear advantage on ${mapName}`;
+    }
   };
   
-  // Get team with map advantage
-  const advantageTeam = mapPickAdvantage === 1 ? team1Name : 
-                        mapPickAdvantage === 2 ? team2Name : null;
-  
   return (
-    <Card className="bg-gray-800 border-gray-700">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center">
-            <Map className="h-5 w-5 mr-2 text-blue-400" />
-            <span className="font-medium">{mapName}</span>
+    <Card className={className}>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-xl font-bold flex items-center">
+          <Scale className="mr-2 h-5 w-5" />
+          Map Pick Advantage
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex items-center justify-center py-2">
+            {mapPickAdvantage === 1 ? (
+              <div className="flex items-center text-blue-500">
+                <ArrowBigLeftDash className="h-6 w-6 animate-pulse" />
+                <span className="font-medium mx-2">Advantage</span>
+              </div>
+            ) : mapPickAdvantage === 2 ? (
+              <div className="flex items-center justify-end text-yellow-500">
+                <span className="font-medium mx-2">Advantage</span>
+                <ArrowBigRightDash className="h-6 w-6 animate-pulse" />
+              </div>
+            ) : (
+              <div className="text-gray-500 font-medium">Balanced</div>
+            )}
           </div>
           
-          {advantageTeam && (
-            <Badge className={mapPickAdvantage === 1 ? 'bg-blue-500' : 'bg-red-500'}>
-              {advantageTeam}'s Pick
-            </Badge>
-          )}
-        </div>
-        
-        <div className="space-y-3">
-          {mapFactors.slice(0, 3).map((factor, index) => (
-            <div key={index} className="bg-gray-900 rounded-lg p-3">
-              <div className="flex justify-between items-center text-sm mb-1">
-                <span className="text-gray-400">{factor.name}</span>
-                <div className="flex items-center space-x-2 text-xs">
-                  <span className={factor.advantage === 1 ? 'text-blue-400 font-medium' : ''}>
-                    {Math.round(factor.team1Value)}%
-                  </span>
-                  <span className="text-gray-500">vs</span>
-                  <span className={factor.advantage === 2 ? 'text-red-400 font-medium' : ''}>
-                    {Math.round(factor.team2Value)}%
-                  </span>
-                </div>
-              </div>
-              
-              <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden flex">
-                <div 
-                  className="bg-blue-500 h-2" 
-                  style={{ width: `${(factor.team1Value / (factor.team1Value + factor.team2Value)) * 100}%` }}
-                />
-                <div 
-                  className="bg-red-500 h-2" 
-                  style={{ width: `${(factor.team2Value / (factor.team1Value + factor.team2Value)) * 100}%` }}
-                />
-              </div>
-            </div>
-          ))}
-          
-          {mapFactors.length === 0 && (
-            <div className="text-center py-4 text-gray-400">
-              No specific map data available
-            </div>
-          )}
-        </div>
-        
-        {advantageTeam && (
-          <div className="mt-3 text-xs text-gray-400">
-            {mapPickAdvantage === 1 ? team1Name : team2Name} has a statistical advantage on {mapName}
+          <div className="py-2 px-3 bg-gray-100 dark:bg-gray-800 rounded-md">
+            <p className="text-sm font-medium text-center">{getAdvantageText()}</p>
           </div>
-        )}
+          
+          {mapFactors.length > 0 && (
+            <>
+              <Separator />
+              <div>
+                <h4 className="text-sm font-medium mb-2">Map-Specific Factors:</h4>
+                <KeyFactorsList 
+                  factors={mapFactors}
+                  team1Name={team1Name}
+                  team2Name={team2Name}
+                  excludeMapFactors={false}
+                />
+              </div>
+            </>
+          )}
+        </div>
       </CardContent>
+      <CardFooter className="pt-1 text-xs text-muted-foreground">
+        <p>Based on {mapFactors.length} map-specific performance factors</p>
+      </CardFooter>
     </Card>
   );
 };

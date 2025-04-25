@@ -584,9 +584,9 @@ export function enhanceMatchPrediction(
     });
     
     // Site control adjustments
-    if (team1MapStats.bombsitePreference && team2MapStats.bombsitePreference) {
+    if (team1MapStats.bombsitesPreference && team2MapStats.bombsitesPreference) {
       // Compare A site preference
-      const aSiteDiff = team1MapStats.bombsitePreference.aRate - team2MapStats.bombsitePreference.aRate;
+      const aSiteDiff = team1MapStats.bombsitesPreference.a - team2MapStats.bombsitesPreference.a;
       
       // T vs CT site preference matching
       // Example: Team1 prefers A site on T, but Team2 is strongest defending A site

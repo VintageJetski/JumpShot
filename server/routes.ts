@@ -115,6 +115,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to fetch round metrics' });
     }
   });
+  
+  // Match prediction endpoint
+  app.post('/api/match-prediction', handleMatchPrediction);
 
   const httpServer = createServer(app);
   return httpServer;

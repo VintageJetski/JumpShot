@@ -1,131 +1,77 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Map, Triangle } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { 
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card";
+import { Maps } from "@shared/types";
 
 interface MapSelectorProps {
-  maps: string[];
   selectedMap: string;
-  onSelectMap: (map: string) => void;
-  team1Name?: string;
-  team2Name?: string;
-  team1Performance?: Record<string, number>;
-  team2Performance?: Record<string, number>;
-  mapAdvantages?: Record<string, number>;
+  onMapChange: (map: string) => void;
+  className?: string;
 }
 
-const MAP_ICONS: Record<string, string> = {
-  'Inferno': '🔥',
-  'Mirage': '🏜️',
-  'Nuke': '☢️',
-  'Ancient': '🏺',
-  'Anubis': '🏺',
-  'Vertigo': '🏙️',
-  'Overpass': '🌉',
-  'Dust2': '🏜️',
-};
-
-const MapSelector: React.FC<MapSelectorProps> = ({
-  maps,
+export const MapSelector: React.FC<MapSelectorProps> = ({
   selectedMap,
-  onSelectMap,
-  team1Name,
-  team2Name,
-  team1Performance,
-  team2Performance,
-  mapAdvantages
+  onMapChange,
+  className
 }) => {
-  // Function to determine badge color based on map advantage
-  const getAdvantageColor = (map: string): string => {
-    if (!mapAdvantages) return 'bg-gray-600';
-    
-    const advantage = mapAdvantages[map];
-    if (advantage === 1) return 'bg-blue-500';
-    if (advantage === 2) return 'bg-red-500';
-    return 'bg-gray-600';
-  };
+  const maps = [
+    { id: Maps.Inferno, name: "Inferno" },
+    { id: Maps.Mirage, name: "Mirage" },
+    { id: Maps.Nuke, name: "Nuke" },
+    { id: Maps.Dust2, name: "Dust 2" },
+    { id: Maps.Vertigo, name: "Vertigo" },
+    { id: Maps.Ancient, name: "Ancient" },
+    { id: Maps.Anubis, name: "Anubis" }
+  ];
   
-  // Function to display win rate difference
-  const getWinRateDifference = (map: string): string => {
-    if (!team1Performance || !team2Performance) return '';
-    
-    const team1Rate = Math.round((team1Performance[map] || 0.5) * 100);
-    const team2Rate = Math.round((team2Performance[map] || 0.5) * 100);
-    const diff = team1Rate - team2Rate;
-    
-    if (diff > 0) return `+${diff}%`;
-    if (diff < 0) return `${diff}%`;
-    return 'Even';
-  };
-  
-  // Function to get the pick label
-  const getPickLabel = (map: string): string => {
-    if (!mapAdvantages) return '';
-    
-    const advantage = mapAdvantages[map];
-    if (advantage === 1 && team1Name) return `${team1Name}'s pick`;
-    if (advantage === 2 && team2Name) return `${team2Name}'s pick`;
-    return 'Neutral';
-  };
-
   return (
-    <div className="mt-2">
-      <div className="flex items-center mb-2">
-        <Map className="h-4 w-4 mr-2 text-blue-400" />
-        <span className="text-sm font-medium">Map Selection</span>
-      </div>
-      
-      <div className="grid grid-cols-3 gap-2">
-        {maps.map(map => (
-          <TooltipProvider key={map}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Card 
-                  className={`cursor-pointer transition-all hover:bg-gray-700 ${selectedMap === map ? 'border-blue-500 bg-gray-700' : 'border-gray-700 bg-gray-800'}`}
-                  onClick={() => onSelectMap(map)}
-                >
-                  <CardContent className="p-3 flex flex-col items-center justify-center text-center">
-                    <div className="text-2xl mb-1">{MAP_ICONS[map] || '🗺️'}</div>
-                    <span className="text-sm font-medium">{map}</span>
-                    
-                    {team1Performance && team2Performance && (
-                      <div className="mt-2 flex justify-center">
-                        <Badge 
-                          className={getAdvantageColor(map)}
-                          variant="outline"
-                        >
-                          {getWinRateDifference(map)}
-                        </Badge>
-                      </div>
-                    )}
-                    
-                    {selectedMap === map && (
-                      <div className="absolute -top-2 -right-2">
-                        <Triangle className="h-4 w-4 text-blue-500 fill-blue-500" />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                {team1Name && team2Name && team1Performance && team2Performance ? (
-                  <div className="text-sm">
-                    <div className="flex justify-between gap-4">
-                      <span>{team1Name}: {Math.round((team1Performance[map] || 0.5) * 100)}% win rate</span>
-                      <span>{team2Name}: {Math.round((team2Performance[map] || 0.5) * 100)}% win rate</span>
-                    </div>
-                    <div className="mt-1 text-xs text-center text-gray-400">{getPickLabel(map)}</div>
-                  </div>
-                ) : (
-                  <span>Select {map}</span>
-                )}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ))}
-      </div>
-    </div>
+    <Card className={className}>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-xl font-bold">Map Selection</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div>
+            <Select
+              value={selectedMap}
+              onValueChange={onMapChange}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select map" />
+              </SelectTrigger>
+              <SelectContent>
+                {maps.map((map) => (
+                  <SelectItem key={map.id} value={map.id}>
+                    {map.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex items-center justify-center">
+            {selectedMap && (
+              <div className="h-32 w-full bg-gradient-to-r from-blue-900/30 to-yellow-700/30 rounded-md flex items-center justify-center">
+                <p className="text-2xl font-bold text-center">
+                  {maps.find(m => m.id === selectedMap)?.name || selectedMap}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

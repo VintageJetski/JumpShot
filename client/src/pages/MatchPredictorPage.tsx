@@ -1015,6 +1015,59 @@ export default function MatchPredictorPage() {
                       ></div>
                     </div>
                   </div>
+                  
+                  {/* Key Insights section */}
+                  <div className="mt-6">
+                    <h3 className="font-medium text-sm mb-3">Key Insights</h3>
+                    <div className="space-y-2">
+                      {insights.map((insight, index) => (
+                        <div key={index} className="bg-background/20 p-3 rounded-md">
+                          <div className="font-medium text-sm">{insight.title}</div>
+                          <div className="text-xs text-gray-400 mt-1">{insight.content}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Key Players section */}
+                  <div className="mt-6">
+                    <h3 className="font-medium text-sm mb-3">Key Players to Watch</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {prediction.keyPlayers.team1.length > 0 && (
+                        <div className="bg-background/20 p-3 rounded-md">
+                          <div className="flex items-center mb-2">
+                            <div className="w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center mr-2 text-primary font-bold text-xs">
+                              {team1?.name?.slice(0, 2).toUpperCase()}
+                            </div>
+                            <div className="font-medium text-sm">{prediction.keyPlayers.team1[0].player.name}</div>
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            Role: {prediction.keyPlayers.team1[0].player.role}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            PIV: {Math.round(prediction.keyPlayers.team1[0].player.piv * 100)}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {prediction.keyPlayers.team2.length > 0 && (
+                        <div className="bg-background/20 p-3 rounded-md">
+                          <div className="flex items-center mb-2">
+                            <div className="w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center mr-2 text-primary font-bold text-xs">
+                              {team2?.name?.slice(0, 2).toUpperCase()}
+                            </div>
+                            <div className="font-medium text-sm">{prediction.keyPlayers.team2[0].player.name}</div>
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            Role: {prediction.keyPlayers.team2[0].player.role}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            PIV: {Math.round(prediction.keyPlayers.team2[0].player.piv * 100)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
               

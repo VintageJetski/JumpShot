@@ -228,6 +228,23 @@ export default function MatchPredictorPage() {
     return Math.min(100, Math.max(0, basePercentage + qualityModifier));
   }
   
+  // Helper function to sort players by role importance
+  function sortPlayersByRoleImportance(players: PlayerWithPIV[]): PlayerWithPIV[] {
+    return [...players].sort((a, b) => {
+      // Assign priority values based on roles (lower number = higher priority)
+      const getRolePriority = (player: PlayerWithPIV): number => {
+        if (player.isIGL) return 1; // IGL first
+        if (player.role === 'AWP' || player.tRole === 'AWP' || player.ctRole === 'AWP') return 2; // AWP second
+        if (player.role === 'Spacetaker' || player.tRole === 'Spacetaker') return 3; // Spacetakers 3rd
+        if (player.role === 'Lurker' || player.tRole === 'Lurker') return 5; // Lurkers last
+        if (player.role === 'Support' || player.tRole === 'Support') return 6; // Supports last
+        return 4; // Others in the middle
+      };
+      
+      return getRolePriority(a) - getRolePriority(b);
+    });
+  }
+  
   // Run match prediction algorithm when teams are selected
   const prediction = useMemo<MatchPrediction | null>(() => {
     if (!team1 || !team2 || !enhancedTeamStats[team1.id] || !enhancedTeamStats[team2.id]) 
@@ -664,7 +681,7 @@ export default function MatchPredictorPage() {
                       <div className="mt-3">
                         <div className="text-xs font-medium mb-2 text-primary">Team Lineup</div>
                         <div className="space-y-2">
-                          {team1.players.map(player => (
+                          {sortPlayersByRoleImportance(team1.players).map(player => (
                             <div key={player.id} className="bg-background p-2 rounded-md flex items-center justify-between text-xs">
                               <div className="flex items-center">
                                 <div className="w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center mr-2 text-primary font-bold">
@@ -732,7 +749,7 @@ export default function MatchPredictorPage() {
                       <div className="mt-3">
                         <div className="text-xs font-medium mb-2 text-primary">Team Lineup</div>
                         <div className="space-y-2">
-                          {team2.players.map(player => (
+                          {sortPlayersByRoleImportance(team2.players).map(player => (
                             <div key={player.id} className="bg-background p-2 rounded-md flex items-center justify-between text-xs">
                               <div className="flex items-center">
                                 <div className="w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center mr-2 text-primary font-bold">

@@ -13,7 +13,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { TeamWithTIR } from '@shared/types';
+// Define a simplified TeamWithTIR interface to avoid import issues
+interface TeamWithTIR {
+  id: string;
+  name: string;
+  tir: number;
+  synergy: number;
+  players: any[];
+}
 import { SunIcon, MoonIcon } from 'lucide-react';
 
 interface TeamSelectProps {

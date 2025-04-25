@@ -12,7 +12,16 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
-import { Maps } from "@shared/types";
+// Define our maps enum directly here to avoid import issues
+enum Maps {
+  Inferno = "inferno",
+  Mirage = "mirage",
+  Nuke = "nuke",
+  Dust2 = "dust2",
+  Vertigo = "vertigo",
+  Ancient = "ancient",
+  Anubis = "anubis"
+}
 
 interface MapSelectorProps {
   selectedMap: string;

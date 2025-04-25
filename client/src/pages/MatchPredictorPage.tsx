@@ -538,7 +538,7 @@ export default function MatchPredictorPage() {
                       <div className="flex items-center justify-between">
                         <div className="font-bold text-lg">{team1.name}</div>
                         <div className="bg-primary/20 text-primary rounded-full px-3 py-1 text-sm font-medium">
-                          TIR: {Math.round(team1.tir)}
+                          TIR: {Math.round(team1.tir * 10)}
                         </div>
                       </div>
                       
@@ -616,7 +616,7 @@ export default function MatchPredictorPage() {
                       <div className="flex items-center justify-between">
                         <div className="font-bold text-lg">{team2.name}</div>
                         <div className="bg-primary/20 text-primary rounded-full px-3 py-1 text-sm font-medium">
-                          TIR: {Math.round(team2.tir)}
+                          TIR: {Math.round(team2.tir * 10)}
                         </div>
                       </div>
                       

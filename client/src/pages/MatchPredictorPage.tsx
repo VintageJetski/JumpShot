@@ -493,11 +493,13 @@ export default function MatchPredictorPage() {
       
     insights.push({
       title: "Prediction Summary",
-      content: `${favored} is favored to win with a ${winProb}% probability. Predicted score: ${prediction.predictedScore.team1}-${prediction.predictedScore.team2}.`
+      content: matchFormat === 'bo1'
+        ? `${favored} is favored to win with a ${winProb}% probability. Predicted score: ${prediction.predictedScore.team1}-${prediction.predictedScore.team2}.`
+        : `${favored} is favored to win the series with a ${winProb}% probability. Predicted series score: ${Math.round(favored === team1.name ? prediction.team1WinProbability * 2 : prediction.team2WinProbability * 2)}-${Math.round(favored === team1.name ? prediction.team2WinProbability * 2 : prediction.team1WinProbability * 2)}.`
     });
     
     return insights;
-  }, [prediction, team1, team2, selectedMap]);
+  }, [prediction, team1, team2, selectedMap, matchFormat, enhancedTeamStats]);
   
   // If loading, show skeleton
   if (teamsLoading || playersLoading) {
@@ -1066,17 +1068,110 @@ export default function MatchPredictorPage() {
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div className="space-y-1">
                       <div className="font-bold truncate">{team1?.name}</div>
-                      <div className="text-lg font-bold">{prediction.predictedScore.team1}</div>
+                      {matchFormat === 'bo1' ? (
+                        <div className="text-lg font-bold">{prediction.predictedScore.team1}</div>
+                      ) : (
+                        <div className="text-lg font-bold">{Math.round(prediction.team1WinProbability * 2)}</div>
+                      )}
                     </div>
                     <div className="space-y-1">
-                      <div className="text-xs text-gray-400">Predicted Score</div>
+                      <div className="text-xs text-gray-400">
+                        {matchFormat === 'bo1' ? 'Predicted Score' : 'Series Score'}
+                      </div>
                       <div className="text-lg">vs</div>
                     </div>
                     <div className="space-y-1">
                       <div className="font-bold truncate">{team2?.name}</div>
-                      <div className="text-lg font-bold">{prediction.predictedScore.team2}</div>
+                      {matchFormat === 'bo1' ? (
+                        <div className="text-lg font-bold">{prediction.predictedScore.team2}</div>
+                      ) : (
+                        <div className="text-lg font-bold">{Math.round(prediction.team2WinProbability * 2)}</div>
+                      )}
                     </div>
                   </div>
+                  
+                  {/* BO3 Map Details */}
+                  {matchFormat === 'bo3' && (
+                    <div className="mt-2 space-y-2 pt-2 border-t border-gray-700">
+                      <div className="text-xs text-gray-400 mb-2">Map Predictions</div>
+                      
+                      {/* Map 1 */}
+                      <div className="grid grid-cols-3 gap-2 text-sm">
+                        <div className="text-left">
+                          {selectedMap}
+                        </div>
+                        <div className="text-center">
+                          {prediction.predictedScore.team1} - {prediction.predictedScore.team2}
+                        </div>
+                        <div className="text-right text-xs text-gray-400">
+                          Map 1
+                        </div>
+                      </div>
+                      
+                      {/* Map 2 - a different map with slightly adjusted probability */}
+                      {(() => {
+                        const otherMaps = MAPS.filter(m => m !== selectedMap);
+                        const map2 = otherMaps[0];
+                        // Generate a score with slightly reversed probability to make series competitive
+                        const map2Probability = Math.max(0.3, Math.min(0.7, 1 - prediction.team1WinProbability));
+                        let map2Score1, map2Score2;
+                        
+                        if (map2Probability > 0.5) {
+                          map2Score1 = 13;
+                          map2Score2 = Math.floor(Math.random() * 10);
+                        } else {
+                          map2Score1 = Math.floor(Math.random() * 10);
+                          map2Score2 = 13;
+                        }
+                        
+                        return (
+                          <div className="grid grid-cols-3 gap-2 text-sm">
+                            <div className="text-left">
+                              {map2}
+                            </div>
+                            <div className="text-center">
+                              {map2Score1} - {map2Score2}
+                            </div>
+                            <div className="text-right text-xs text-gray-400">
+                              Map 2
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      
+                      {/* Map 3 - only if series is tied 1-1 */}
+                      {Math.round(prediction.team1WinProbability * 2) === 1 && Math.round(prediction.team2WinProbability * 2) === 1 && (() => {
+                        const otherMaps = MAPS.filter(m => m !== selectedMap);
+                        const map3 = otherMaps[1];
+                        
+                        // Decide winner for map 3 based on overall probability but make it close
+                        const map3Probability = prediction.team1WinProbability;
+                        let map3Score1, map3Score2;
+                        
+                        if (map3Probability > 0.5) {
+                          map3Score1 = 13;
+                          map3Score2 = 10 + Math.floor(Math.random() * 3);
+                        } else {
+                          map3Score1 = 10 + Math.floor(Math.random() * 3);
+                          map3Score2 = 13;
+                        }
+                        
+                        return (
+                          <div className="grid grid-cols-3 gap-2 text-sm">
+                            <div className="text-left">
+                              {map3}
+                            </div>
+                            <div className="text-center">
+                              {map3Score1} - {map3Score2}
+                            </div>
+                            <div className="text-right text-xs text-gray-400">
+                              Map 3
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                   
                   {/* Confidence meter */}
                   <div className="space-y-2">

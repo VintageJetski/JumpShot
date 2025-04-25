@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
-import { TeamWithTIR, PlayerRole } from "@shared/schema";
+import { TeamWithTIR, PlayerRole, TeamRoundMetrics } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import RoleBadge from "@/components/ui/role-badge";
 import ProgressMetric from "@/components/stats/ProgressMetric";
 import RoleDistributionChart from "@/components/charts/RoleDistributionChart";
 import TeamPIVBarChart from "@/components/charts/TeamPIVBarChart";
-import { ArrowLeft, Rocket, Users, ShieldCheck, Star, Activity, Zap } from "lucide-react";
+import { ArrowLeft, Rocket, Users, ShieldCheck, Star, Activity, Zap, BarChart } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
+import RoundMetricsCard from "@/components/team-detail/RoundMetricsCard";
 
 export default function TeamDetailPage() {
   const { name } = useParams();
@@ -16,6 +17,11 @@ export default function TeamDetailPage() {
   
   const { data: team, isLoading, isError } = useQuery<TeamWithTIR>({
     queryKey: [`/api/teams/${decodedName}`],
+  });
+  
+  const { data: roundMetrics, isLoading: isLoadingRoundMetrics } = useQuery<TeamRoundMetrics>({
+    queryKey: [`/api/round-metrics/${decodedName}`],
+    enabled: !!decodedName // Only run query if we have a team name
   });
 
   if (isLoading) {
@@ -298,6 +304,15 @@ export default function TeamDetailPage() {
           <Card className="bg-gray-800 border-gray-700 p-4">
             <TeamPIVBarChart players={team.players} />
           </Card>
+        </div>
+        
+        {/* Round-Based Metrics */}
+        <div className="mt-8">
+          <h3 className="text-lg font-medium mb-4 flex items-center">
+            <BarChart className="h-5 w-5 mr-2 text-blue-400" />
+            Round-Based Performance Metrics
+          </h3>
+          <RoundMetricsCard metrics={roundMetrics} isLoading={isLoadingRoundMetrics} />
         </div>
         
         {/* Team Players Table */}

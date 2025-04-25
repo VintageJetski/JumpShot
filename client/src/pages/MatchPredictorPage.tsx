@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { PlayerRoleDisplay, PlayerStatsDisplay } from "@/components/ui/player-role-display";
 import { Percent, ArrowRightLeft, ChevronRight, Map, Clock, Trophy, Zap, BarChart3 } from "lucide-react";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip as RechartsTooltip 
@@ -528,7 +529,7 @@ export default function MatchPredictorPage() {
                     <option value="">Select first team</option>
                     {teams.map(team => (
                       <option key={team.id} value={team.id}>
-                        {team.name} (TIR: {Math.round(team.tir)})
+                        {team.name} (TIR: {Math.round(team.tir * 10)})
                       </option>
                     ))}
                   </select>
@@ -571,22 +572,12 @@ export default function MatchPredictorPage() {
                                 </div>
                                 <div>
                                   <div className="font-medium">{player.name}</div>
-                                  <div className="text-gray-400 text-[10px] flex items-center gap-1">
-                                    <span className="bg-primary/10 text-primary px-1 rounded">{player.role}</span>
-                                    <span>T: {player.tRole}</span>
-                                    <span>CT: {player.ctRole}</span>
-                                    {player.isIGL && <span className="bg-yellow-500/20 text-yellow-400 px-1 rounded">IGL</span>}
-                                  </div>
+                                  <PlayerRoleDisplay player={player} />
                                 </div>
                               </div>
                               <div className="text-right">
                                 <div className="font-bold">{Math.round(player.piv * 100)}</div>
-                                <div className="text-gray-400 text-[10px]">
-                                  KD: {player.kd.toFixed(2)} | 
-                                  <span className="text-primary ml-1">
-                                    {Math.round((player.metrics?.roleScores?.[player.role] || 0) * 100)}% {player.role}
-                                  </span>
-                                </div>
+                                <PlayerStatsDisplay player={player} />
                               </div>
                             </div>
                           ))}
@@ -606,7 +597,7 @@ export default function MatchPredictorPage() {
                     <option value="">Select second team</option>
                     {teams.map(team => (
                       <option key={team.id} value={team.id}>
-                        {team.name} (TIR: {Math.round(team.tir)})
+                        {team.name} (TIR: {Math.round(team.tir * 10)})
                       </option>
                     ))}
                   </select>
@@ -649,22 +640,12 @@ export default function MatchPredictorPage() {
                                 </div>
                                 <div>
                                   <div className="font-medium">{player.name}</div>
-                                  <div className="text-gray-400 text-[10px] flex items-center gap-1">
-                                    <span className="bg-primary/10 text-primary px-1 rounded">{player.role}</span>
-                                    <span>T: {player.tRole}</span>
-                                    <span>CT: {player.ctRole}</span>
-                                    {player.isIGL && <span className="bg-yellow-500/20 text-yellow-400 px-1 rounded">IGL</span>}
-                                  </div>
+                                  <PlayerRoleDisplay player={player} />
                                 </div>
                               </div>
                               <div className="text-right">
                                 <div className="font-bold">{Math.round(player.piv * 100)}</div>
-                                <div className="text-gray-400 text-[10px]">
-                                  KD: {player.kd.toFixed(2)} | 
-                                  <span className="text-primary ml-1">
-                                    {Math.round((player.metrics?.roleScores?.[player.role] || 0) * 100)}% {player.role}
-                                  </span>
-                                </div>
+                                <PlayerStatsDisplay player={player} />
                               </div>
                             </div>
                           ))}

@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PlayerRoleDisplay, PlayerStatsDisplay } from "@/components/ui/player-role-display";
-import { Percent, ArrowRightLeft, ChevronRight, Map, Clock, Trophy, Zap, BarChart3 } from "lucide-react";
+import { Percent, ArrowRightLeft, ChevronRight, ChevronDown, Map, Clock, Trophy, Zap, BarChart3 } from "lucide-react";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip as RechartsTooltip 
 } from "recharts";
@@ -753,7 +754,53 @@ export default function MatchPredictorPage() {
               </div>
               
               <div className="mt-6 space-y-4">
-                <h3 className="font-medium">Contextual Factors</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium">Contextual Factors</h3>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        Factor Explanations <ChevronDown className="h-4 w-4 ml-1" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-96 p-4">
+                      <h4 className="font-bold mb-2">Contextual Factor Explanations</h4>
+                      <div className="space-y-3 text-sm">
+                        <div>
+                          <div className="font-medium">History / Matchup</div>
+                          <p className="text-gray-400">Previous match results between these teams. Higher values indicate Team 1 has historically dominated this matchup.</p>
+                        </div>
+                        <div>
+                          <div className="font-medium">Form</div>
+                          <p className="text-gray-400">Recent performance over the last 5-10 matches. Higher values favor Team 1's current form.</p>
+                        </div>
+                        <div>
+                          <div className="font-medium">BMT (Big Match Temperament)</div>
+                          <p className="text-gray-400">Performance in high-pressure situations and important matches. Higher values suggest Team 1 performs better under pressure.</p>
+                        </div>
+                        <div>
+                          <div className="font-medium">Chemistry</div>
+                          <p className="text-gray-400">Team cohesion and communication effectiveness. Higher values indicate stronger team dynamics for Team 1.</p>
+                        </div>
+                        <div>
+                          <div className="font-medium">Momentum</div>
+                          <p className="text-gray-400">Current tournament momentum and confidence levels. Higher values indicate Team 1 has stronger momentum.</p>
+                        </div>
+                        <div>
+                          <div className="font-medium">Map Matchup</div>
+                          <p className="text-gray-400">Specific advantage on the selected map based on playstyle and strategies. Higher values favor Team 1's map approach.</p>
+                        </div>
+                        <div>
+                          <div className="font-medium">Individuals</div>
+                          <p className="text-gray-400">Individual skill matchups across key positions. Higher values suggest Team 1 has stronger individual players in critical roles.</p>
+                        </div>
+                        <div>
+                          <div className="font-medium">Tournament Tier</div>
+                          <p className="text-gray-400">Impact of tournament importance on team performance. Higher values indicate a more prestigious event.</p>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <div className="space-y-6">
                   {/* History/matchup slider */}
                   <div className="space-y-2">

@@ -1,76 +1,29 @@
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { PlayerWithPIV, TeamWithTIR, PlayerRole } from "@shared/schema";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { SearchSelect, SearchOption } from "@/components/ui/search-select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  Legend,
-} from 'recharts';
-import {
-  ArrowRightLeft,
-  Award,
-  Brain,
-  ChevronRight,
-  Clock,
-  ExternalLink,
-  GanttChart,
-  Info,
-  Map,
-  Percent,
-  Shield,
-  Trophy,
-  Users
-} from "lucide-react";
+import { 
+  Card, CardContent, CardHeader, CardTitle,
+  Slider, Badge, Button, Label, 
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, 
+  TooltipProvider, Tooltip, TooltipContent, TooltipTrigger 
+} from "@/components/ui";
+import { Percent, ArrowRightLeft, ChevronRight, Map, Clock, Trophy, Zap, BarChart3 } from "lucide-react";
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip as RechartsTooltip 
+} from "recharts";
+import { PlayerRole, type PlayerWithPIV, type TeamWithTIR } from "@shared/schema";
 
-const MAPS = ["Mirage", "Inferno", "Nuke", "Ancient", "Anubis", "Overpass", "Vertigo"];
+// Define map pool
+const MAPS = [
+  "Inferno",
+  "Mirage",
+  "Nuke", 
+  "Overpass",
+  "Ancient",
+  "Anubis",
+  "Vertigo"
+];
 
+// Team stats interface with additional analytical metrics
 interface TeamStats {
   name: string;
   tir: number;
@@ -81,6 +34,7 @@ interface TeamStats {
   roleCoverage: number;
 }
 
+// Interface for match prediction output
 interface MatchPrediction {
   team1WinProbability: number;
   team2WinProbability: number;
@@ -109,6 +63,12 @@ interface MatchPrediction {
   mapAdvantages: {
     [key: string]: number; // 1 = team1, 2 = team2, 0 = neutral
   };
+}
+
+// Interface for insights displayed to the user
+interface Insight {
+  title: string;
+  content: string;
 }
 
 export default function MatchPredictorPage() {
@@ -232,7 +192,7 @@ export default function MatchPredictorPage() {
     
     // Check quality of role coverage (are role players actually good at their roles?)
     const qualityModifier = teamPlayers.reduce((acc, player) => {
-      const roleScore = player.metrics.roleScores[player.role] || 0.5;
+      const roleScore = player.metrics?.roleScores?.[player.role] || 0.5;
       return acc + (roleScore - 0.5) * 10; // -5 to +5 range per player
     }, 0);
     
@@ -623,7 +583,7 @@ export default function MatchPredictorPage() {
                                 <div className="text-gray-400 text-[10px]">
                                   KD: {player.kd.toFixed(2)} | 
                                   <span className="text-primary ml-1">
-                                    {Math.round(player.metrics.roleScores[player.role] * 100)}% {player.role}
+                                    {Math.round((player.metrics?.roleScores?.[player.role] || 0) * 100)}% {player.role}
                                   </span>
                                 </div>
                               </div>
@@ -701,7 +661,7 @@ export default function MatchPredictorPage() {
                                 <div className="text-gray-400 text-[10px]">
                                   KD: {player.kd.toFixed(2)} | 
                                   <span className="text-primary ml-1">
-                                    {Math.round(player.metrics.roleScores[player.role] * 100)}% {player.role}
+                                    {Math.round((player.metrics?.roleScores?.[player.role] || 0) * 100)}% {player.role}
                                   </span>
                                 </div>
                               </div>
@@ -776,81 +736,189 @@ export default function MatchPredictorPage() {
               <div className="mt-6 space-y-4">
                 <h3 className="font-medium">Contextual Factors</h3>
                 <div className="space-y-6">
-                  {/* Recent Form slider */}
+                  {/* History/matchup slider */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="recent-form" className="text-sm flex items-center gap-1">
+                      <Label htmlFor="history" className="text-sm flex items-center gap-1">
                         <Clock className="h-4 w-4" />
-                        Recent Form
+                        History / matchup
                       </Label>
                       <div className="flex gap-3 items-center text-xs">
                         <span className="text-gray-400">{team2?.name}</span>
-                        <Badge variant={adjustmentFactors.recentForm === 50 ? "outline" : "default"}>
-                          {adjustmentFactors.recentForm === 50 ? "Neutral" : adjustmentFactors.recentForm > 50 ? "Favors " + team1?.name : "Favors " + team2?.name}
+                        <Badge variant={adjustmentFactors.history === 50 ? "outline" : "default"}>
+                          {adjustmentFactors.history === 50 ? "Neutral" : adjustmentFactors.history > 50 ? "Favors " + team1?.name : "Favors " + team2?.name}
                         </Badge>
                         <span className="text-gray-400">{team1?.name}</span>
                       </div>
                     </div>
                     <Slider
-                      id="recent-form"
-                      value={[adjustmentFactors.recentForm]}
+                      id="history"
+                      value={[adjustmentFactors.history]}
                       onValueChange={values => setAdjustmentFactors({ 
                         ...adjustmentFactors, 
-                        recentForm: values[0] 
+                        history: values[0] 
                       })}
                       max={100}
                       step={5}
                     />
                   </div>
                   
-                  {/* Head to Head slider */}
+                  {/* Form slider */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="head-to-head" className="text-sm flex items-center gap-1">
-                        <ArrowRightLeft className="h-4 w-4" />
-                        Head-to-Head History
+                      <Label htmlFor="form" className="text-sm flex items-center gap-1">
+                        <Zap className="h-4 w-4" />
+                        Form
                       </Label>
                       <div className="flex gap-3 items-center text-xs">
                         <span className="text-gray-400">{team2?.name}</span>
-                        <Badge variant={adjustmentFactors.headToHead === 50 ? "outline" : "default"}>
-                          {adjustmentFactors.headToHead === 50 ? "Neutral" : adjustmentFactors.headToHead > 50 ? "Favors " + team1?.name : "Favors " + team2?.name}
+                        <Badge variant={adjustmentFactors.form === 50 ? "outline" : "default"}>
+                          {adjustmentFactors.form === 50 ? "Neutral" : adjustmentFactors.form > 50 ? "Favors " + team1?.name : "Favors " + team2?.name}
                         </Badge>
                         <span className="text-gray-400">{team1?.name}</span>
                       </div>
                     </div>
                     <Slider
-                      id="head-to-head"
-                      value={[adjustmentFactors.headToHead]}
+                      id="form"
+                      value={[adjustmentFactors.form]}
                       onValueChange={values => setAdjustmentFactors({ 
                         ...adjustmentFactors, 
-                        headToHead: values[0] 
+                        form: values[0] 
                       })}
                       max={100}
                       step={5}
                     />
                   </div>
                   
-                  {/* Map Veto slider */}
+                  {/* BMT slider */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="map-veto" className="text-sm flex items-center gap-1">
+                      <Label htmlFor="bmt" className="text-sm flex items-center gap-1">
+                        <Trophy className="h-4 w-4" />
+                        BMT
+                      </Label>
+                      <div className="flex gap-3 items-center text-xs">
+                        <span className="text-gray-400">{team2?.name}</span>
+                        <Badge variant={adjustmentFactors.bmt === 50 ? "outline" : "default"}>
+                          {adjustmentFactors.bmt === 50 ? "Neutral" : adjustmentFactors.bmt > 50 ? "Favors " + team1?.name : "Favors " + team2?.name}
+                        </Badge>
+                        <span className="text-gray-400">{team1?.name}</span>
+                      </div>
+                    </div>
+                    <Slider
+                      id="bmt"
+                      value={[adjustmentFactors.bmt]}
+                      onValueChange={values => setAdjustmentFactors({ 
+                        ...adjustmentFactors, 
+                        bmt: values[0] 
+                      })}
+                      max={100}
+                      step={5}
+                    />
+                  </div>
+                  
+                  {/* Chemistry slider */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="chemistry" className="text-sm flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        Chemistry
+                      </Label>
+                      <div className="flex gap-3 items-center text-xs">
+                        <span className="text-gray-400">{team2?.name}</span>
+                        <Badge variant={adjustmentFactors.chemistry === 50 ? "outline" : "default"}>
+                          {adjustmentFactors.chemistry === 50 ? "Neutral" : adjustmentFactors.chemistry > 50 ? "Favors " + team1?.name : "Favors " + team2?.name}
+                        </Badge>
+                        <span className="text-gray-400">{team1?.name}</span>
+                      </div>
+                    </div>
+                    <Slider
+                      id="chemistry"
+                      value={[adjustmentFactors.chemistry]}
+                      onValueChange={values => setAdjustmentFactors({ 
+                        ...adjustmentFactors, 
+                        chemistry: values[0] 
+                      })}
+                      max={100}
+                      step={5}
+                    />
+                  </div>
+                  
+                  {/* Momentum slider */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="momentum" className="text-sm flex items-center gap-1">
+                        <Zap className="h-4 w-4" />
+                        Momentum
+                      </Label>
+                      <div className="flex gap-3 items-center text-xs">
+                        <span className="text-gray-400">{team2?.name}</span>
+                        <Badge variant={adjustmentFactors.momentum === 50 ? "outline" : "default"}>
+                          {adjustmentFactors.momentum === 50 ? "Neutral" : adjustmentFactors.momentum > 50 ? "Favors " + team1?.name : "Favors " + team2?.name}
+                        </Badge>
+                        <span className="text-gray-400">{team1?.name}</span>
+                      </div>
+                    </div>
+                    <Slider
+                      id="momentum"
+                      value={[adjustmentFactors.momentum]}
+                      onValueChange={values => setAdjustmentFactors({ 
+                        ...adjustmentFactors, 
+                        momentum: values[0] 
+                      })}
+                      max={100}
+                      step={5}
+                    />
+                  </div>
+                  
+                  {/* Map matchup slider */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="map-matchup" className="text-sm flex items-center gap-1">
                         <Map className="h-4 w-4" />
-                        Map Selection Advantage
+                        Map matchup
                       </Label>
                       <div className="flex gap-3 items-center text-xs">
                         <span className="text-gray-400">{team2?.name}</span>
-                        <Badge variant={adjustmentFactors.mapVeto === 50 ? "outline" : "default"}>
-                          {adjustmentFactors.mapVeto === 50 ? "Neutral" : adjustmentFactors.mapVeto > 50 ? "Favors " + team1?.name : "Favors " + team2?.name}
+                        <Badge variant={adjustmentFactors.mapMatchup === 50 ? "outline" : "default"}>
+                          {adjustmentFactors.mapMatchup === 50 ? "Neutral" : adjustmentFactors.mapMatchup > 50 ? "Favors " + team1?.name : "Favors " + team2?.name}
                         </Badge>
                         <span className="text-gray-400">{team1?.name}</span>
                       </div>
                     </div>
                     <Slider
-                      id="map-veto"
-                      value={[adjustmentFactors.mapVeto]}
+                      id="map-matchup"
+                      value={[adjustmentFactors.mapMatchup]}
                       onValueChange={values => setAdjustmentFactors({ 
                         ...adjustmentFactors, 
-                        mapVeto: values[0] 
+                        mapMatchup: values[0] 
+                      })}
+                      max={100}
+                      step={5}
+                    />
+                  </div>
+                  
+                  {/* Individuals slider */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="individuals" className="text-sm flex items-center gap-1">
+                        <BarChart3 className="h-4 w-4" />
+                        Individuals
+                      </Label>
+                      <div className="flex gap-3 items-center text-xs">
+                        <span className="text-gray-400">{team2?.name}</span>
+                        <Badge variant={adjustmentFactors.individuals === 50 ? "outline" : "default"}>
+                          {adjustmentFactors.individuals === 50 ? "Neutral" : adjustmentFactors.individuals > 50 ? "Favors " + team1?.name : "Favors " + team2?.name}
+                        </Badge>
+                        <span className="text-gray-400">{team1?.name}</span>
+                      </div>
+                    </div>
+                    <Slider
+                      id="individuals"
+                      value={[adjustmentFactors.individuals]}
+                      onValueChange={values => setAdjustmentFactors({ 
+                        ...adjustmentFactors, 
+                        individuals: values[0] 
                       })}
                       max={100}
                       step={5}
@@ -872,7 +940,7 @@ export default function MatchPredictorPage() {
                            adjustmentFactors.tournamentTier > 50 ? "A-Tier" : 
                            adjustmentFactors.tournamentTier > 25 ? "B-Tier" : "C-Tier"}
                         </Badge>
-                        <span className="text-gray-400">Major</span>
+                        <span className="text-gray-400">Higher Tier</span>
                       </div>
                     </div>
                     <Slider
@@ -895,63 +963,56 @@ export default function MatchPredictorPage() {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <Info className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <span className="sr-only">Advanced options info</span>
+                          <div className="rounded-full border border-gray-400 h-5 w-5 flex items-center justify-center text-xs">?</div>
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="max-w-xs text-sm">
-                          These options enable additional predictive factors based on psychological analysis, tournament context, and role-specific matchups.
-                        </p>
+                        <p className="max-w-xs">These options adjust the prediction algorithm. Psychological factors include team momentum and pressure response. Tournament context includes stage importance and team experience. Role matchups analyze player-vs-player effectiveness.</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                
-                <div className="space-y-3 bg-background-light p-3 rounded-md">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Brain className="h-4 w-4 text-primary" />
-                      <Label htmlFor="psychology-factors" className="text-sm">Psychology Factors</Label>
-                    </div>
-                    <Switch
-                      id="psychology-factors"
+                <div className="space-y-2 mt-2">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="enable-psychology"
                       checked={advancedOptions.enablePsychologyFactors}
-                      onCheckedChange={checked => setAdvancedOptions({
+                      onChange={(e) => setAdvancedOptions({
                         ...advancedOptions,
-                        enablePsychologyFactors: checked
+                        enablePsychologyFactors: e.target.checked
                       })}
+                      className="h-4 w-4 rounded border-gray-300 text-primary"
                     />
+                    <Label htmlFor="enable-psychology" className="text-sm">Enable psychological factors</Label>
                   </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Award className="h-4 w-4 text-yellow-400" />
-                      <Label htmlFor="tournament-context" className="text-sm">Tournament Context</Label>
-                    </div>
-                    <Switch
-                      id="tournament-context"
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="use-tournament"
                       checked={advancedOptions.useTournamentContext}
-                      onCheckedChange={checked => setAdvancedOptions({
+                      onChange={(e) => setAdvancedOptions({
                         ...advancedOptions,
-                        useTournamentContext: checked
+                        useTournamentContext: e.target.checked
                       })}
+                      className="h-4 w-4 rounded border-gray-300 text-primary"
                     />
+                    <Label htmlFor="use-tournament" className="text-sm">Consider tournament context</Label>
                   </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-blue-400" />
-                      <Label htmlFor="role-matchups" className="text-sm">Role-specific Matchups</Label>
-                    </div>
-                    <Switch
-                      id="role-matchups"
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="use-roles"
                       checked={advancedOptions.useRoleMatchups}
-                      onCheckedChange={checked => setAdvancedOptions({
+                      onChange={(e) => setAdvancedOptions({
                         ...advancedOptions,
-                        useRoleMatchups: checked
+                        useRoleMatchups: e.target.checked
                       })}
+                      className="h-4 w-4 rounded border-gray-300 text-primary"
                     />
+                    <Label htmlFor="use-roles" className="text-sm">Analyze role-based matchups</Label>
                   </div>
                 </div>
               </div>
@@ -959,141 +1020,128 @@ export default function MatchPredictorPage() {
           </Card>
         </div>
         
-        {/* Prediction results and visualizations - 4 columns on large screens */}
-        <div className="lg:col-span-4 space-y-6">
-          {!prediction ? (
-            <Card className="border-dashed border-2 border-gray-700 bg-gray-900/50">
-              <CardContent className="flex flex-col items-center justify-center py-10">
-                <Shield className="h-16 w-16 text-gray-600 mb-4" />
-                <h3 className="text-lg font-medium text-gray-400">Select Both Teams</h3>
-                <p className="text-sm text-gray-500 text-center mt-2">
-                  Choose two teams to see detailed match predictions and analytics
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              {/* Win Probability Card */}
-              <Card>
-                <CardHeader className="pb-0">
-                  <CardTitle className="text-lg">Win Probability</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between text-sm mt-4 mb-1">
-                    <span className="font-medium">{team1?.name}</span>
-                    <span className="font-medium">{team2?.name}</span>
-                  </div>
-                  
-                  <div className="relative h-6 bg-gray-800 rounded-full overflow-hidden">
-                    <div 
-                      className="absolute top-0 left-0 h-full bg-gradient-to-r from-indigo-600 to-blue-500"
-                      style={{ width: `${Math.round(prediction.team1WinProbability * 100)}%` }}
-                    ></div>
-                    <div 
-                      className="absolute top-0 right-0 h-full bg-gradient-to-r from-pink-500 to-red-500"
-                      style={{ width: `${Math.round(prediction.team2WinProbability * 100)}%` }}
-                    ></div>
-                    <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
-                      {Math.round(prediction.team1WinProbability * 100)}% - {Math.round(prediction.team2WinProbability * 100)}%
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-col gap-2 mt-6">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-400">Predicted Score</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-lg">
-                          {prediction.predictedScore.team1}
-                        </span>
-                        <span className="text-sm text-gray-400">-</span>
-                        <span className="font-bold text-lg">
-                          {prediction.predictedScore.team2}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-400">Confidence</span>
-                      <div className="flex items-center gap-1">
-                        <span className="font-medium">
-                          {Math.round(prediction.confidenceScore)}%
-                        </span>
-                        <div className="w-24 h-2 bg-gray-800 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-gradient-to-r from-green-500 to-emerald-500"
-                            style={{ width: `${prediction.confidenceScore}%` }}
-                          ></div>
-                        </div>
+        {/* Prediction results - 4 columns on large screens */}
+        <div className="lg:col-span-4 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Match Prediction</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {prediction ? (
+                <div className="space-y-6">
+                  {/* Prediction main win probability */}
+                  <div className="flex items-center justify-center">
+                    <div className="w-32 h-32 relative rounded-full overflow-hidden border-4 border-background flex items-center justify-center bg-background-light">
+                      <div 
+                        className="absolute top-0 left-0 h-full bg-primary opacity-20"
+                        style={{ 
+                          width: `${prediction.team1WinProbability * 100}%`,
+                        }}
+                      ></div>
+                      <div className="text-center z-10">
+                        <div className="text-3xl font-bold">{Math.round(prediction.team1WinProbability * 100)}%</div>
+                        <div className="text-xs text-gray-400">Win probability</div>
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-              
-              {/* Key Factors Card */}
-              <Card>
-                <CardHeader className="pb-0">
-                  <CardTitle className="text-lg">Key Factors</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4 mt-4">
-                    {prediction.keyFactors.map((factor, i) => (
-                      <div key={factor.name} className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{factor.name}</span>
-                          <Badge variant={factor.favorsTeam === 0 ? "outline" : "default"}>
-                            {factor.favorsTeam === 0 ? "Neutral" : factor.favorsTeam === 1 ? "Favors " + team1?.name : "Favors " + team2?.name}
-                          </Badge>
-                        </div>
-                        
-                        <div className="h-6 bg-gray-800 rounded-full relative overflow-hidden">
-                          <div 
-                            className="absolute top-0 left-0 h-full bg-blue-600"
-                            style={{ width: `${(factor.team1Value / (factor.team1Value + factor.team2Value)) * 100}%` }}
-                          ></div>
-                          <div className="absolute inset-0 flex items-center">
-                            <div 
-                              className="text-xs font-medium text-white text-right pr-2"
-                              style={{ width: `${(factor.team1Value / (factor.team1Value + factor.team2Value)) * 100}%` }}
-                            >
-                              {Math.round(factor.team1Value)}
+                  
+                  {/* Team comparison */}
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="space-y-1">
+                      <div className="font-bold truncate">{team1?.name}</div>
+                      <div className="text-lg font-bold">{prediction.predictedScore.team1}</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-xs text-gray-400">Predicted Score</div>
+                      <div className="text-lg">vs</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="font-bold truncate">{team2?.name}</div>
+                      <div className="text-lg font-bold">{prediction.predictedScore.team2}</div>
+                    </div>
+                  </div>
+                  
+                  {/* Confidence meter */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs">
+                      <span>Prediction Confidence</span>
+                      <span className="font-medium">{Math.round(prediction.confidenceScore)}%</span>
+                    </div>
+                    <div className="h-2 bg-background-light rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary rounded-full"
+                        style={{width: `${prediction.confidenceScore}%`}}
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  {/* Key insights */}
+                  <div className="space-y-3">
+                    <h3 className="font-medium text-sm">Key Insights</h3>
+                    {insights.map((insight, index) => (
+                      <div key={index} className="bg-background-light p-3 rounded-md">
+                        <div className="font-medium text-sm">{insight.title}</div>
+                        <div className="text-xs text-gray-400 mt-1">{insight.content}</div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Key players */}
+                  <div className="space-y-3">
+                    <h3 className="font-medium text-sm">Key Players to Watch</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Team 1 Key Player */}
+                      {prediction.keyPlayers.team1.length > 0 && (
+                        <div className="bg-background-light p-3 rounded-md">
+                          <div className="flex items-center mb-2">
+                            <div className="w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center mr-2 text-primary font-bold text-xs">
+                              {team1?.name?.slice(0, 2).toUpperCase()}
                             </div>
-                            <div 
-                              className="text-xs font-medium text-white pl-2"
-                              style={{ width: `${(factor.team2Value / (factor.team1Value + factor.team2Value)) * 100}%` }}
-                            >
-                              {Math.round(factor.team2Value)}
-                            </div>
+                            <div className="font-medium text-sm">{prediction.keyPlayers.team1[0].player.name}</div>
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            Role: {prediction.keyPlayers.team1[0].player.role}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            PIV: {Math.round(prediction.keyPlayers.team1[0].player.piv * 100)}
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      )}
+                      
+                      {/* Team 2 Key Player */}
+                      {prediction.keyPlayers.team2.length > 0 && (
+                        <div className="bg-background-light p-3 rounded-md">
+                          <div className="flex items-center mb-2">
+                            <div className="w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center mr-2 text-primary font-bold text-xs">
+                              {team2?.name?.slice(0, 2).toUpperCase()}
+                            </div>
+                            <div className="font-medium text-sm">{prediction.keyPlayers.team2[0].player.name}</div>
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            Role: {prediction.keyPlayers.team2[0].player.role}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            PIV: {Math.round(prediction.keyPlayers.team2[0].player.piv * 100)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-              
-              {/* Key Insights Card */}
-              <Card>
-                <CardHeader className="pb-0">
-                  <CardTitle className="text-lg">Match Insights</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 mt-4">
-                    {insights.map((insight, i) => (
-                      <div key={i} className="border-l-2 border-primary pl-3 py-1">
-                        <h4 className="text-sm font-medium">{insight.title}</h4>
-                        <p className="text-xs text-gray-400 mt-0.5">{insight.content}</p>
-                      </div>
-                    ))}
+                </div>
+              ) : (
+                <div className="h-60 flex items-center justify-center text-center">
+                  <div className="text-gray-400">
+                    <div className="text-lg mb-2">Select teams to generate prediction</div>
+                    <div className="text-sm">
+                      Choose two teams and a map to get detailed match analytics and prediction
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            </>
-          )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
   );
 }
-
-// Trophy icon is already imported from Lucide

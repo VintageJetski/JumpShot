@@ -5,6 +5,7 @@ import { loadNewPlayerStats } from "./newDataParser";
 import { processPlayerStatsWithRoles } from "./newPlayerAnalytics";
 import { calculateTeamImpactRatings } from "./teamAnalytics";
 import { loadPlayerRoles } from "./roleParser";
+import { initializeRoundData } from "./roundDataLoader";
 import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -28,6 +29,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await storage.setTeams(teamsWithTIR);
     
     console.log(`Processed ${playersWithPIV.length} players and ${teamsWithTIR.length} teams`);
+    
+    // Load and process round data
+    await initializeRoundData();
   } catch (error) {
     console.error('Error initializing data:', error);
   }
@@ -91,6 +95,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching team:', error);
       res.status(500).json({ message: 'Failed to fetch team' });
+    }
+  });
+  
+  // Round data endpoints
+  app.get('/api/round-metrics/:teamName', async (req: Request, res: Response) => {
+    try {
+      const teamName = req.params.teamName;
+      const metrics = await storage.getTeamRoundMetrics(teamName);
+      
+      if (metrics) {
+        res.json(metrics);
+      } else {
+        res.status(404).json({ message: 'Round metrics not found for team' });
+      }
+    } catch (error) {
+      console.error('Error fetching round metrics:', error);
+      res.status(500).json({ message: 'Failed to fetch round metrics' });
     }
   });
 

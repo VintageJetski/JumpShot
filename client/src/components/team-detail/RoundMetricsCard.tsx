@@ -66,12 +66,36 @@ const RoundMetricsCard: React.FC<RoundMetricsCardProps> = ({ metrics, isLoading 
     );
   }
 
-  // Filter out non-active maps (p1, p2, p3)
-  const validMapPerformance = Object.fromEntries(
-    Object.entries(metrics.mapPerformance).filter(([map]) => 
-      !map.startsWith('p') || isNaN(parseInt(map.substring(1)))
-    )
-  );
+  // Define types for map stats
+  interface MapStats {
+    ctWinRate: number;
+    tWinRate: number;
+    bombsitesPreference: {
+      a: number;
+      b: number;
+    };
+  }
+
+  interface FormattedMapData {
+    name: string;
+    stats: MapStats;
+  }
+
+  // Transform map performance data with better formatted names
+  const formattedMapPerformance: FormattedMapData[] = Object.entries(metrics.mapPerformance).map(([map, stats]) => {
+    // If the map is p1, p2, p3, format as "Pick 1", "Pick 2", "Pick 3"
+    const formattedName = map.startsWith('p') && !isNaN(parseInt(map.substring(1))) 
+      ? `Pick ${map.substring(1)}` 
+      : map.charAt(0).toUpperCase() + map.slice(1); // Capitalize regular map names
+    
+    // Cast the stats to the appropriate type
+    const typedStats = stats as MapStats;
+    
+    return {
+      name: formattedName,
+      stats: typedStats
+    };
+  });
 
   return (
     <Card className="w-full shadow-md">
@@ -183,28 +207,28 @@ const RoundMetricsCard: React.FC<RoundMetricsCardProps> = ({ metrics, isLoading 
           
           <TabsContent value="maps" className="pt-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {Object.entries(validMapPerformance).map(([map, stats]) => (
-                <Card key={map} className="bg-gray-800 border-gray-700">
+              {formattedMapPerformance.map((item) => (
+                <Card key={item.name} className="bg-gray-800 border-gray-700">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-md flex items-center">
                       <Map className="h-4 w-4 mr-2 text-blue-400" />
-                      {map}
+                      {item.name}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-blue-400">CT Win Rate</span>
-                        <span className="font-medium">{Math.round(stats.ctWinRate * 100)}%</span>
+                        <span className="font-medium">{Math.round(item.stats.ctWinRate * 100)}%</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-red-400">T Win Rate</span>
-                        <span className="font-medium">{Math.round(stats.tWinRate * 100)}%</span>
+                        <span className="font-medium">{Math.round(item.stats.tWinRate * 100)}%</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-400">A / B Preference</span>
                         <span className="font-medium">
-                          {Math.round(stats.bombsitesPreference.a * 100)}% / {Math.round(stats.bombsitesPreference.b * 100)}%
+                          {Math.round(item.stats.bombsitesPreference.a * 100)}% / {Math.round(item.stats.bombsitesPreference.b * 100)}%
                         </span>
                       </div>
                     </div>

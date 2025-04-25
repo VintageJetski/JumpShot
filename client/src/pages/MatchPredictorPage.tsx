@@ -451,7 +451,7 @@ export default function MatchPredictorPage() {
       },
       mapAdvantages
     };
-  }, [team1, team2, selectedMap, adjustmentFactors, enhancedTeamStats]);
+  }, [team1, team2, selectedMap, selectedMaps, matchFormat, adjustmentFactors, enhancedTeamStats]);
   
   // Generate detailed insights based on prediction
   const insights = useMemo(() => {
@@ -507,17 +507,47 @@ export default function MatchPredictorPage() {
     }
     
     // Map-specific insights
-    const mapAdvantage = prediction.mapAdvantages[selectedMap];
-    if (mapAdvantage === 1) {
-      insights.push({
-        title: "Map Advantage",
-        content: `${team1.name} historically performs well on ${selectedMap} with a ${Math.round((enhancedTeamStats[team1.id].mapPerformance[selectedMap] || 0.5) * 100)}% win rate.`
+    if (matchFormat === 'bo1') {
+      // Single map insight for BO1
+      const mapAdvantage = prediction.mapAdvantages[selectedMap];
+      if (mapAdvantage === 1) {
+        insights.push({
+          title: "Map Advantage",
+          content: `${team1.name} historically performs well on ${selectedMap} with a ${Math.round((enhancedTeamStats[team1.id].mapPerformance[selectedMap] || 0.5) * 100)}% win rate.`
+        });
+      } else if (mapAdvantage === 2) {
+        insights.push({
+          title: "Map Advantage", 
+          content: `${team2.name} has a ${Math.round((enhancedTeamStats[team2.id].mapPerformance[selectedMap] || 0.5) * 100)}% win rate on ${selectedMap}, giving them a strong advantage.`
+        });
+      }
+    } else {
+      // Multi-map insight for BO3
+      let team1AdvMapCount = 0;
+      let team2AdvMapCount = 0;
+      
+      selectedMaps.forEach(map => {
+        const mapAdvantage = prediction.mapAdvantages[map];
+        if (mapAdvantage === 1) team1AdvMapCount++;
+        else if (mapAdvantage === 2) team2AdvMapCount++;
       });
-    } else if (mapAdvantage === 2) {
-      insights.push({
-        title: "Map Advantage", 
-        content: `${team2.name} has a ${Math.round((enhancedTeamStats[team2.id].mapPerformance[selectedMap] || 0.5) * 100)}% win rate on ${selectedMap}, giving them a strong advantage.`
-      });
+      
+      if (team1AdvMapCount > team2AdvMapCount) {
+        insights.push({
+          title: "Map Pool Advantage",
+          content: `${team1.name} has the advantage on ${team1AdvMapCount} of the ${selectedMaps.length} selected maps, favoring them in this series.`
+        });
+      } else if (team2AdvMapCount > team1AdvMapCount) {
+        insights.push({
+          title: "Map Pool Advantage",
+          content: `${team2.name} has the advantage on ${team2AdvMapCount} of the ${selectedMaps.length} selected maps, favoring them in this series.`
+        });
+      } else if (selectedMaps.length > 0) {
+        insights.push({
+          title: "Balanced Map Pool",
+          content: `The selected maps don't strongly favor either team, suggesting a close series.`
+        });
+      }
     }
     
     // Key players insight
@@ -543,7 +573,7 @@ export default function MatchPredictorPage() {
     });
     
     return insights;
-  }, [prediction, team1, team2, selectedMap, matchFormat, enhancedTeamStats]);
+  }, [prediction, team1, team2, selectedMap, selectedMaps, matchFormat, enhancedTeamStats]);
   
   // If loading, show skeleton
   if (teamsLoading || playersLoading) {
@@ -1562,82 +1592,93 @@ export default function MatchPredictorPage() {
                     <div className="mt-2 space-y-2 pt-2 border-t border-gray-700">
                       <div className="text-xs text-gray-400 mb-2">Map Predictions</div>
                       
-                      {/* Map 1 */}
-                      <div className="grid grid-cols-3 gap-2 text-sm">
-                        <div className="text-left">
-                          {selectedMap}
-                        </div>
-                        <div className="text-center">
-                          {prediction.predictedScore.team1} - {prediction.predictedScore.team2}
-                        </div>
-                        <div className="text-right text-xs text-gray-400">
-                          Map 1
-                        </div>
-                      </div>
-                      
-                      {/* Map 2 - a different map with slightly adjusted probability */}
-                      {(() => {
-                        const otherMaps = MAPS.filter(m => m !== selectedMap);
-                        const map2 = otherMaps[0];
-                        // Generate a score with slightly reversed probability to make series competitive
-                        const map2Probability = Math.max(0.3, Math.min(0.7, 1 - prediction.team1WinProbability));
-                        let map2Score1, map2Score2;
+                      {selectedMaps.map((map, index) => {
+                        // Generate a map-specific prediction for each selected map
+                        const generateMapPrediction = (map: string) => {
+                          if (!team1 || !team2 || !enhancedTeamStats[team1.id] || !enhancedTeamStats[team2.id]) {
+                            return { winnerName: "TBD", score1: "--", score2: "--" };
+                          }
+                          
+                          const team1MapPerf = enhancedTeamStats[team1.id].mapPerformance[map] || 0.5;
+                          const team2MapPerf = enhancedTeamStats[team2.id].mapPerformance[map] || 0.5;
+                          
+                          // Simplified win probability calculation for this specific map
+                          const mapWinProb = team1MapPerf / (team1MapPerf + team2MapPerf);
+                          
+                          // Generate plausible score based on win probability
+                          let score1, score2;
+                          const isTeam1Winner = mapWinProb > 0.5;
+                          
+                          if (isTeam1Winner) {
+                            if (mapWinProb > 0.7) {
+                              // Dominant win
+                              score1 = 13;
+                              score2 = Math.floor(Math.random() * 6); // 0-5
+                            } else if (mapWinProb > 0.6) {
+                              // Clear win
+                              score1 = 13;
+                              score2 = 5 + Math.floor(Math.random() * 4); // 5-8
+                            } else {
+                              // Close win
+                              score1 = 13;
+                              score2 = 9 + Math.floor(Math.random() * 4); // 9-12
+                            }
+                          } else {
+                            if (mapWinProb < 0.3) {
+                              // Dominant loss
+                              score1 = Math.floor(Math.random() * 6); // 0-5
+                              score2 = 13;
+                            } else if (mapWinProb < 0.4) {
+                              // Clear loss
+                              score1 = 5 + Math.floor(Math.random() * 4); // 5-8
+                              score2 = 13;
+                            } else {
+                              // Close loss
+                              score1 = 9 + Math.floor(Math.random() * 4); // 9-12
+                              score2 = 13;
+                            }
+                          }
+                          
+                          return {
+                            winnerName: isTeam1Winner ? team1.name : team2.name,
+                            score1, 
+                            score2
+                          };
+                        };
                         
-                        if (map2Probability > 0.5) {
-                          map2Score1 = 13;
-                          map2Score2 = Math.floor(Math.random() * 10);
-                        } else {
-                          map2Score1 = Math.floor(Math.random() * 10);
-                          map2Score2 = 13;
-                        }
+                        const mapPrediction = generateMapPrediction(map);
                         
                         return (
-                          <div className="grid grid-cols-3 gap-2 text-sm">
+                          <div key={map} className="grid grid-cols-3 gap-2 text-sm">
                             <div className="text-left">
-                              {map2}
+                              {map}
                             </div>
                             <div className="text-center">
-                              {map2Score1} - {map2Score2}
+                              <span className={mapPrediction.score1 === '--' ? "text-gray-400" : "font-medium"}>
+                                {mapPrediction.score1} - {mapPrediction.score2}
+                              </span>
                             </div>
-                            <div className="text-right text-xs text-gray-400">
-                              Map 2
+                            <div className="text-right text-xs">
+                              {mapPrediction.winnerName === team1?.name ? (
+                                <span className="text-primary-400 font-medium">{team1.name}</span>
+                              ) : mapPrediction.winnerName === team2?.name ? (
+                                <span className="text-green-400 font-medium">{team2.name}</span>
+                              ) : (
+                                <span className="text-gray-400">TBD</span>
+                              )}
                             </div>
                           </div>
                         );
-                      })()}
+                      })}
                       
-                      {/* Map 3 - only show in 2-1 series */}
-                      {((prediction.team1WinProbability > prediction.team2WinProbability && prediction.team1WinProbability <= 0.7) || 
-                        (prediction.team2WinProbability > prediction.team1WinProbability && prediction.team2WinProbability <= 0.7)) && (() => {
-                        const otherMaps = MAPS.filter(m => m !== selectedMap);
-                        const map3 = otherMaps[1];
-                        
-                        // Decide winner for map 3 based on overall probability but make it close
-                        const map3Probability = prediction.team1WinProbability;
-                        let map3Score1, map3Score2;
-                        
-                        if (map3Probability > 0.5) {
-                          map3Score1 = 13;
-                          map3Score2 = 10 + Math.floor(Math.random() * 3);
-                        } else {
-                          map3Score1 = 10 + Math.floor(Math.random() * 3);
-                          map3Score2 = 13;
-                        }
-                        
-                        return (
-                          <div className="grid grid-cols-3 gap-2 text-sm">
-                            <div className="text-left">
-                              {map3}
-                            </div>
-                            <div className="text-center">
-                              {map3Score1} - {map3Score2}
-                            </div>
-                            <div className="text-right text-xs text-gray-400">
-                              Map 3
-                            </div>
-                          </div>
-                        );
-                      })()}
+                      {/* Show placeholders if fewer than 3 maps are selected */}
+                      {selectedMaps.length < 3 && Array(3 - selectedMaps.length).fill(0).map((_, idx) => (
+                        <div key={`placeholder-${idx}`} className="grid grid-cols-3 gap-2 text-sm text-gray-400">
+                          <div className="text-left">Map {selectedMaps.length + idx + 1}</div>
+                          <div className="text-center">TBD</div>
+                          <div className="text-right text-xs">Select map</div>
+                        </div>
+                      ))}
                     </div>
                   )}
                   

@@ -78,6 +78,7 @@ export default function MatchPredictorPage() {
   const [team1Id, setTeam1Id] = useState<string>("");
   const [team2Id, setTeam2Id] = useState<string>("");
   const [selectedMap, setSelectedMap] = useState<string>("Inferno");
+  const [selectedMaps, setSelectedMaps] = useState<string[]>(["Inferno"]);
   const [matchFormat, setMatchFormat] = useState<'bo1' | 'bo3'>('bo1');
   const [adjustmentFactors, setAdjustmentFactors] = useState({
     recentForm: 50, // 0-100 slider for team1's recent form (50 = neutral)
@@ -998,48 +999,7 @@ export default function MatchPredictorPage() {
                     </Collapsible>
                   </div>
                   
-                  {/* BMT slider */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="bmt" className="text-sm flex items-center gap-1">
-                        <Trophy className="h-4 w-4" />
-                        BMT
-                      </Label>
-                      <div className="flex gap-3 items-center text-xs">
-                        <span className="text-gray-400">{team2?.name}</span>
-                        <Badge variant={adjustmentFactors.bmt === 50 ? "outline" : "default"}>
-                          {adjustmentFactors.bmt === 50 ? "Neutral" : adjustmentFactors.bmt > 50 ? "Favors " + team1?.name : "Favors " + team2?.name}
-                        </Badge>
-                        <span className="text-gray-400">{team1?.name}</span>
-                      </div>
-                    </div>
-                    <Slider
-                      id="bmt"
-                      value={[adjustmentFactors.bmt]}
-                      onValueChange={values => setAdjustmentFactors({ 
-                        ...adjustmentFactors, 
-                        bmt: values[0] 
-                      })}
-                      max={100}
-                      step={5}
-                    />
-                    <Collapsible className="w-full">
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" size="sm" className="flex items-center justify-between w-full p-0 h-8">
-                          <span className="text-xs text-muted-foreground">Factor details</span>
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="bg-black/10 p-3 rounded-md text-xs mt-1">
-                        <div className="space-y-2">
-                          <p><span className="font-medium">Calculation:</span> Based on performance in high-pressure playoff situations for both {team1?.name} and {team2?.name}.</p>
-                          <p><span className="font-medium">Weight:</span> 8% impact on final probability (highest weight of contextual factors)</p>
-                          <p><span className="font-medium">Current effect:</span> {((adjustmentFactors.bmt - 50) / 50 * 0.08 * 100).toFixed(1)}% shift toward {adjustmentFactors.bmt > 50 ? team1?.name : team2?.name}</p>
-                          <p><span className="font-medium">Data source:</span> Analysis of playoff matches versus group stage performance from IEM Katowice 2025</p>
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </div>
+
                   
                   {/* Chemistry slider */}
                   <div className="space-y-2">
@@ -1230,11 +1190,54 @@ export default function MatchPredictorPage() {
                     </Collapsible>
                   </div>
                   
+                  {/* BMT slider */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="bmt" className="text-sm flex items-center gap-1">
+                        <Trophy className="h-4 w-4" />
+                        BMT
+                      </Label>
+                      <div className="flex gap-3 items-center text-xs">
+                        <span className="text-gray-400">{team2?.name}</span>
+                        <Badge variant={adjustmentFactors.bmt === 50 ? "outline" : "default"}>
+                          {adjustmentFactors.bmt === 50 ? "Neutral" : adjustmentFactors.bmt > 50 ? "Favors " + team1?.name : "Favors " + team2?.name}
+                        </Badge>
+                        <span className="text-gray-400">{team1?.name}</span>
+                      </div>
+                    </div>
+                    <Slider
+                      id="bmt"
+                      value={[adjustmentFactors.bmt]}
+                      onValueChange={values => setAdjustmentFactors({ 
+                        ...adjustmentFactors, 
+                        bmt: values[0] 
+                      })}
+                      max={100}
+                      step={5}
+                    />
+                    <Collapsible className="w-full">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="flex items-center justify-between w-full p-0 h-8">
+                          <span className="text-xs text-muted-foreground">Factor details</span>
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="bg-black/10 p-3 rounded-md text-xs mt-1">
+                        <div className="space-y-2">
+                          <p><span className="font-medium">Calculation:</span> Based on performance in high-pressure playoff situations for both {team1?.name} and {team2?.name}.</p>
+                          <p><span className="font-medium">Weight:</span> 8% impact on final probability (highest weight of contextual factors)</p>
+                          <p><span className="font-medium">Current effect:</span> {((adjustmentFactors.bmt - 50) / 50 * 0.08 * 100).toFixed(1)}% shift toward {adjustmentFactors.bmt > 50 ? team1?.name : team2?.name}</p>
+                          <p><span className="font-medium">Data source:</span> Analysis of playoff matches versus group stage performance from IEM Katowice 2025</p>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
+                  
                   {/* Tournament Tier slider */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="tournament-tier" className="text-sm flex items-center gap-1">
-                        <Trophy className="h-4 w-4" />
+                        <Medal className="h-4 w-4" />
                         Tournament Tier
                       </Label>
                       <div className="flex gap-3 items-center text-xs">

@@ -2,19 +2,39 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TeamRoundMetrics } from '@shared/schema';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { DollarSign, Target, Zap, Map } from 'lucide-react';
 
 interface RoundMetricsCardProps {
   metrics: TeamRoundMetrics | null | undefined;
   isLoading: boolean;
 }
 
-// Custom formatter for tooltip values
-const formatTooltipValue = (value: any): string => {
-  if (typeof value === 'number') {
-    return `${value.toFixed(1)}%`;
-  }
-  return `${value}%`;
+interface MetricBoxProps {
+  title: string;
+  value: number;
+  icon?: React.ReactNode;
+  color?: string;
+}
+
+const MetricBox: React.FC<MetricBoxProps> = ({ title, value, icon, color = "bg-blue-500" }) => {
+  // Format value as percentage
+  const formattedValue = `${Math.round(value * 100)}%`;
+  
+  return (
+    <Card className="bg-gray-800 border-gray-700">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <p className="text-sm text-gray-400">{title}</p>
+            <p className="text-2xl font-bold mt-1">{formattedValue}</p>
+          </div>
+          <div className={`w-10 h-10 rounded-full ${color} flex items-center justify-center`}>
+            {icon}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 };
 
 const RoundMetricsCard: React.FC<RoundMetricsCardProps> = ({ metrics, isLoading }) => {
@@ -46,37 +66,12 @@ const RoundMetricsCard: React.FC<RoundMetricsCardProps> = ({ metrics, isLoading 
     );
   }
 
-  // Economy metrics data
-  const economyData = [
-    { name: 'Full Buy Win Rate', value: metrics.fullBuyWinRate * 100 },
-    { name: 'Force Buy Win Rate', value: metrics.forceRoundWinRate * 100 },
-    { name: 'Eco Win Rate', value: metrics.ecoRoundWinRate * 100 },
-    { name: 'Economic Recovery', value: metrics.economicRecoveryIndex * 100 },
-  ];
-
-  // Strategic metrics data
-  const strategicData = [
-    { name: 'Bomb Plant Rate', value: metrics.bombPlantRate * 100 },
-    { name: 'Post-Plant Win Rate', value: metrics.postPlantWinRate * 100 },
-    { name: 'Retake Success Rate', value: metrics.retakeSuccessRate * 100 },
-    { name: 'A Site Preference', value: metrics.aPreference * 100 },
-    { name: 'B Site Preference', value: metrics.bPreference * 100 },
-  ];
-
-  // Momentum metrics data
-  const momentumData = [
-    { name: 'Pistol Win Rate', value: metrics.pistolRoundWinRate * 100 },
-    { name: 'Follow-Up Win Rate', value: metrics.followUpRoundWinRate * 100 },
-    { name: 'Comeback Factor', value: metrics.comebackFactor * 100 },
-    { name: 'Closing Factor', value: metrics.closingFactor * 100 },
-  ];
-
-  // Map performance data
-  const mapData = Object.entries(metrics.mapPerformance).map(([map, stats]) => ({
-    name: map,
-    CT: stats.ctWinRate * 100,
-    T: stats.tWinRate * 100,
-  }));
+  // Filter out non-active maps (p1, p2, p3)
+  const validMapPerformance = Object.fromEntries(
+    Object.entries(metrics.mapPerformance).filter(([map]) => 
+      !map.startsWith('p') || isNaN(parseInt(map.substring(1)))
+    )
+  );
 
   return (
     <Card className="w-full shadow-md">
@@ -93,57 +88,130 @@ const RoundMetricsCard: React.FC<RoundMetricsCardProps> = ({ metrics, isLoading 
             <TabsTrigger value="maps">Maps</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="economy" className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={economyData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" domain={[0, 100]} />
-                <YAxis dataKey="name" type="category" width={120} />
-                <Tooltip formatter={formatTooltipValue} />
-                <Legend />
-                <Bar dataKey="value" name="Success Rate (%)" fill="#8884d8" />
-              </BarChart>
-            </ResponsiveContainer>
+          <TabsContent value="economy" className="pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <MetricBox 
+                title="Full Buy Win Rate" 
+                value={metrics.fullBuyWinRate} 
+                icon={<DollarSign className="text-white w-5 h-5" />}
+                color="bg-blue-500"
+              />
+              <MetricBox 
+                title="Force Buy Win Rate" 
+                value={metrics.forceRoundWinRate} 
+                icon={<DollarSign className="text-white w-5 h-5" />}
+                color="bg-purple-500"
+              />
+              <MetricBox 
+                title="Eco Win Rate" 
+                value={metrics.ecoRoundWinRate} 
+                icon={<DollarSign className="text-white w-5 h-5" />}
+                color="bg-green-500"
+              />
+              <MetricBox 
+                title="Economic Recovery" 
+                value={metrics.economicRecoveryIndex} 
+                icon={<DollarSign className="text-white w-5 h-5" />}
+                color="bg-amber-500"
+              />
+            </div>
           </TabsContent>
           
-          <TabsContent value="strategic" className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={strategicData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" domain={[0, 100]} />
-                <YAxis dataKey="name" type="category" width={130} />
-                <Tooltip formatter={formatTooltipValue} />
-                <Legend />
-                <Bar dataKey="value" name="Rate (%)" fill="#82ca9d" />
-              </BarChart>
-            </ResponsiveContainer>
+          <TabsContent value="strategic" className="pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <MetricBox 
+                title="Bomb Plant Rate" 
+                value={metrics.bombPlantRate} 
+                icon={<Target className="text-white w-5 h-5" />}
+                color="bg-red-500"
+              />
+              <MetricBox 
+                title="Post-Plant Win Rate" 
+                value={metrics.postPlantWinRate} 
+                icon={<Target className="text-white w-5 h-5" />}
+                color="bg-amber-500"
+              />
+              <MetricBox 
+                title="Retake Success Rate" 
+                value={metrics.retakeSuccessRate} 
+                icon={<Target className="text-white w-5 h-5" />}
+                color="bg-green-500"
+              />
+              <MetricBox 
+                title="A Site Preference" 
+                value={metrics.aPreference} 
+                icon={<Target className="text-white w-5 h-5" />}
+                color="bg-blue-500"
+              />
+              <MetricBox 
+                title="B Site Preference" 
+                value={metrics.bPreference} 
+                icon={<Target className="text-white w-5 h-5" />}
+                color="bg-purple-500"
+              />
+            </div>
           </TabsContent>
           
-          <TabsContent value="momentum" className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={momentumData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" domain={[0, 100]} />
-                <YAxis dataKey="name" type="category" width={130} />
-                <Tooltip formatter={formatTooltipValue} />
-                <Legend />
-                <Bar dataKey="value" name="Success Rate (%)" fill="#ffc658" />
-              </BarChart>
-            </ResponsiveContainer>
+          <TabsContent value="momentum" className="pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <MetricBox 
+                title="Pistol Win Rate" 
+                value={metrics.pistolRoundWinRate} 
+                icon={<Zap className="text-white w-5 h-5" />}
+                color="bg-yellow-500"
+              />
+              <MetricBox 
+                title="Follow-Up Win Rate" 
+                value={metrics.followUpRoundWinRate} 
+                icon={<Zap className="text-white w-5 h-5" />}
+                color="bg-green-500"
+              />
+              <MetricBox 
+                title="Comeback Factor" 
+                value={metrics.comebackFactor} 
+                icon={<Zap className="text-white w-5 h-5" />}
+                color="bg-blue-500"
+              />
+              <MetricBox 
+                title="Closing Factor" 
+                value={metrics.closingFactor} 
+                icon={<Zap className="text-white w-5 h-5" />}
+                color="bg-purple-500"
+              />
+            </div>
           </TabsContent>
           
-          <TabsContent value="maps" className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={mapData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis domain={[0, 100]} />
-                <Tooltip formatter={formatTooltipValue} />
-                <Legend />
-                <Bar dataKey="CT" name="CT Win Rate (%)" fill="#3b82f6" />
-                <Bar dataKey="T" name="T Win Rate (%)" fill="#ef4444" />
-              </BarChart>
-            </ResponsiveContainer>
+          <TabsContent value="maps" className="pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {Object.entries(validMapPerformance).map(([map, stats]) => (
+                <Card key={map} className="bg-gray-800 border-gray-700">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-md flex items-center">
+                      <Map className="h-4 w-4 mr-2 text-blue-400" />
+                      {map}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-blue-400">CT Win Rate</span>
+                        <span className="font-medium">{Math.round(stats.ctWinRate * 100)}%</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-red-400">T Win Rate</span>
+                        <span className="font-medium">{Math.round(stats.tWinRate * 100)}%</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">A / B Preference</span>
+                        <span className="font-medium">
+                          {Math.round(stats.bombsitesPreference.a * 100)}% / {Math.round(stats.bombsitesPreference.b * 100)}%
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>

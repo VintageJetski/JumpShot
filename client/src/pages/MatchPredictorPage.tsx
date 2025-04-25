@@ -559,18 +559,7 @@ export default function MatchPredictorPage() {
       });
     }
     
-    // Create prediction summary
-    const favored = prediction.team1WinProbability > prediction.team2WinProbability ? team1.name : team2.name;
-    const winProb = prediction.team1WinProbability > prediction.team2WinProbability ? 
-      Math.round(prediction.team1WinProbability * 100) : 
-      Math.round(prediction.team2WinProbability * 100);
-      
-    insights.push({
-      title: "Prediction Summary",
-      content: matchFormat === 'bo1'
-        ? `${favored} is favored to win with a ${winProb}% probability. Predicted score: ${prediction.predictedScore.team1}-${prediction.predictedScore.team2}.`
-        : `${favored} is favored to win the series with a ${winProb}% probability. Predicted series score: ${winProb > 70 ? '2-0' : '2-1'}.`
-    });
+    // We've removed the redundant Prediction Summary as it's now shown in the main prediction section
     
     return insights;
   }, [prediction, team1, team2, selectedMap, selectedMaps, matchFormat, enhancedTeamStats]);

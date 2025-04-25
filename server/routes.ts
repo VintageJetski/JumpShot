@@ -7,6 +7,7 @@ import { calculateTeamImpactRatings } from "./teamAnalytics";
 import { loadPlayerRoles } from "./roleParser";
 import { initializeRoundData } from "./roundDataLoader";
 import path from "path";
+import { handleMatchPrediction } from "./routes/matchPrediction";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize data on server start

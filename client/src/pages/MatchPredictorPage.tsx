@@ -39,42 +39,37 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
+  LineChart,
+  Line,
   BarChart,
   Bar,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
   Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  RadialBarChart,
-  RadialBar,
-} from "recharts";
+} from 'recharts';
 import {
-  Percent,
-  Target,
-  CheckCircle2,
-  XCircle,
+  ArrowRightLeft,
   Award,
-  Users,
-  BarChart2,
-  PieChart as PieChartIcon,
   Brain,
   ChevronRight,
-  Info,
-  Zap,
-  Shuffle,
   Clock,
+  ExternalLink,
+  GanttChart,
+  Info,
   Map,
-  TrendingUp,
-  ArrowRightLeft,
+  Percent,
+  Shield,
+  Trophy,
+  Users
 } from "lucide-react";
-import RoleBadge from "@/components/ui/role-badge";
+
+const MAPS = ["Mirage", "Inferno", "Nuke", "Ancient", "Anubis", "Overpass", "Vertigo"];
 
 interface TeamStats {
   name: string;
@@ -116,9 +111,6 @@ interface MatchPrediction {
   };
 }
 
-// Top maps in competitive CS2
-const MAPS = ["Mirage", "Inferno", "Nuke", "Ancient", "Anubis", "Overpass", "Vertigo"];
-
 export default function MatchPredictorPage() {
   const [team1Id, setTeam1Id] = useState<string>("");
   const [team2Id, setTeam2Id] = useState<string>("");
@@ -127,6 +119,7 @@ export default function MatchPredictorPage() {
     recentForm: 50, // 0-100 slider for team1's recent form (50 = neutral)
     headToHead: 50, // 0-100 slider for team1's head-to-head record (50 = neutral)
     mapVeto: 50,    // 0-100 slider for team1's map selection advantage (50 = neutral)
+    tournamentTier: 50, // 0-100 slider for tournament tier and significance
   });
   const [advancedOptions, setAdvancedOptions] = useState({
     enablePsychologyFactors: true,
@@ -166,6 +159,20 @@ export default function MatchPredictorPage() {
   const team2 = useMemo(() => 
     teams.find(t => t.id === team2Id), [teams, team2Id]
   );
+
+  // Debug functions
+  const testDirectApiCall = async () => {
+    try {
+      const response = await fetch('/api/teams');
+      const data = await response.json();
+      console.log('Direct fetch response:', data);
+      alert(`Directly fetched ${data.length} teams: ${data.map((t: TeamWithTIR) => t.name).join(', ')}`);
+    } catch (error: unknown) {
+      console.error('Direct fetch error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Error: ${errorMessage}`);
+    }
+  };
 
   // Generate synthetic map performance data for demo
   // In a real system, this would come from map-specific stats
@@ -292,6 +299,7 @@ export default function MatchPredictorPage() {
     team1BaseProb = applyAdjustmentFactor(team1BaseProb, adjustmentFactors.recentForm, 0.1);
     team1BaseProb = applyAdjustmentFactor(team1BaseProb, adjustmentFactors.headToHead, 0.1);
     team1BaseProb = applyAdjustmentFactor(team1BaseProb, adjustmentFactors.mapVeto, 0.1);
+    team1BaseProb = applyAdjustmentFactor(team1BaseProb, adjustmentFactors.tournamentTier, 0.1);
     
     // Ensure probabilities are valid
     team1BaseProb = Math.min(0.95, Math.max(0.05, team1BaseProb));
@@ -369,42 +377,7 @@ export default function MatchPredictorPage() {
             [PlayerRole.Anchor]: 1.1,
             [PlayerRole.Rotator]: 1.15
           },
-          "Nuke": {
-            [PlayerRole.AWP]: 1.1,
-            [PlayerRole.IGL]: 1.15,
-            [PlayerRole.Lurker]: 0.9,
-            [PlayerRole.Spacetaker]: 0.95,
-            [PlayerRole.Support]: 1.05,
-            [PlayerRole.Anchor]: 1.2,
-            [PlayerRole.Rotator]: 1.1
-          },
-          "Ancient": {
-            [PlayerRole.AWP]: 1.25,
-            [PlayerRole.IGL]: 1.0,
-            [PlayerRole.Lurker]: 1.0,
-            [PlayerRole.Spacetaker]: 0.9,
-            [PlayerRole.Support]: 1.0,
-            [PlayerRole.Anchor]: 1.2,
-            [PlayerRole.Rotator]: 0.95
-          },
-          "Anubis": {
-            [PlayerRole.AWP]: 1.05,
-            [PlayerRole.IGL]: 0.95,
-            [PlayerRole.Lurker]: 1.2,
-            [PlayerRole.Spacetaker]: 1.15,
-            [PlayerRole.Support]: 0.9,
-            [PlayerRole.Anchor]: 1.0,
-            [PlayerRole.Rotator]: 1.1
-          },
-          "Overpass": {
-            [PlayerRole.AWP]: 1.1,
-            [PlayerRole.IGL]: 1.05,
-            [PlayerRole.Lurker]: 1.2,
-            [PlayerRole.Spacetaker]: 1.0,
-            [PlayerRole.Support]: 0.95,
-            [PlayerRole.Anchor]: 1.1,
-            [PlayerRole.Rotator]: 1.05
-          },
+          // other maps...
           "Vertigo": {
             [PlayerRole.AWP]: 0.85,
             [PlayerRole.IGL]: 1.1,
@@ -415,161 +388,118 @@ export default function MatchPredictorPage() {
             [PlayerRole.Rotator]: 1.1
           }
         };
+
+        // Apply map-specific adjustment
+        const mapAdjustment = mapRoleEffectiveness[mapName]?.[player.role] || 1.0;
+        impactScore *= mapAdjustment;
         
-        // Apply map-role adjustment
-        if (mapRoleEffectiveness[mapName] && mapRoleEffectiveness[mapName][player.role]) {
-          impactScore *= mapRoleEffectiveness[mapName][player.role];
-        }
-        
-        // Adjust for consistency
-        impactScore *= (1 + (player.metrics.icf.value - 0.5));
-        
-        return {
-          player,
-          impactScore
-        };
+        return { player, impactScore };
       });
       
       // Return top 3 players by impact score
-      return playersWithImpact
-        .sort((a, b) => b.impactScore - a.impactScore)
-        .slice(0, 3);
+      return playersWithImpact.sort((a, b) => b.impactScore - a.impactScore).slice(0, 3);
     };
     
-    // Generate map advantages based on win rates and role effectiveness
-    const calculateMapAdvantages = () => {
-      const advantages: {[key: string]: 1 | 2 | 0} = {};
+    // Calculate map advantages across all maps
+    const mapAdvantages = MAPS.reduce((acc, map) => {
+      const team1Rate = team1Stats.mapPerformance[map] || 0.5;
+      const team2Rate = team2Stats.mapPerformance[map] || 0.5;
       
-      for (const map of MAPS) {
-        const team1MapWinRate = team1Stats.mapPerformance[map] || 0.5;
-        const team2MapWinRate = team2Stats.mapPerformance[map] || 0.5;
-        
-        const difference = team1MapWinRate - team2MapWinRate;
-        
-        if (difference > 0.05) {
-          advantages[map] = 1;
-        } else if (difference < -0.05) {
-          advantages[map] = 2;
-        } else {
-          advantages[map] = 0;
-        }
-      }
+      // Determine advantage (1 = team1, 2 = team2, 0 = neutral)
+      let advantage = 0;
+      const threshold = 0.05; // Minimum difference to consider an advantage
       
-      return advantages;
-    };
+      if (team1Rate - team2Rate > threshold) advantage = 1;
+      else if (team2Rate - team1Rate > threshold) advantage = 2;
+      
+      acc[map] = advantage;
+      return acc;
+    }, {} as { [key: string]: number });
     
     return {
       team1WinProbability: team1BaseProb,
       team2WinProbability: team2BaseProb,
-      confidenceScore: Math.round(confidenceScore),
+      confidenceScore,
       keyFactors: factors,
       predictedScore,
       keyPlayers: {
         team1: getKeyPlayers(team1Stats.players, selectedMap),
         team2: getKeyPlayers(team2Stats.players, selectedMap)
       },
-      mapAdvantages: calculateMapAdvantages()
+      mapAdvantages
     };
-  }, [team1, team2, enhancedTeamStats, selectedMap, adjustmentFactors]);
+  }, [team1, team2, selectedMap, adjustmentFactors, enhancedTeamStats]);
   
-  // Generate prediction insights
-  const predictionInsights = useMemo(() => {
+  // Generate detailed insights based on prediction
+  const insights = useMemo(() => {
     if (!prediction || !team1 || !team2) return [];
     
     const insights = [];
     
-    // Overall winner prediction
-    const favoredTeam = prediction.team1WinProbability > prediction.team2WinProbability ? team1.name : team2.name;
-    const winnerProb = Math.round((prediction.team1WinProbability > prediction.team2WinProbability ? 
-      prediction.team1WinProbability : prediction.team2WinProbability) * 100);
-    
-    insights.push({
-      title: "Match Winner",
-      description: `${favoredTeam} is favored to win with ${winnerProb}% probability`,
-      icon: Trophy,
-      color: "text-yellow-400"
-    });
-    
-    // Map specific insight
-    const mapAdvantage = prediction.mapAdvantages[selectedMap];
-    const mapFavoredTeam = mapAdvantage === 1 ? team1.name : mapAdvantage === 2 ? team2.name : "Neither team";
-    
-    insights.push({
-      title: "Map Advantage",
-      description: mapAdvantage === 0 ? 
-        `${selectedMap} is a balanced map for both teams` : 
-        `${mapFavoredTeam} has a historical advantage on ${selectedMap}`,
-      icon: Map,
-      color: mapAdvantage === 0 ? "text-gray-400" : "text-blue-400"
-    });
-    
-    // Key player insight
-    const topPlayer = prediction.team1WinProbability > prediction.team2WinProbability ?
-      prediction.keyPlayers.team1[0] : prediction.keyPlayers.team2[0];
-    
-    if (topPlayer) {
-      insights.push({
-        title: "Key Player",
-        description: `${topPlayer.player.name} (${topPlayer.player.role}) is likely to have high impact`,
-        icon: Zap,
-        color: "text-purple-400"
-      });
-    }
-    
-    // Team strength insight
-    const team1TopFactor = prediction.keyFactors
+    // Top factor for each team
+    const team1Factors = prediction.keyFactors
       .filter(f => f.favorsTeam === 1)
-      .sort((a, b) => b.weight - a.weight)[0];
+      .sort((a, b) => b.weight - a.weight);
       
-    const team2TopFactor = prediction.keyFactors
-      .filter(f => f.favorsTeam === 2)
-      .sort((a, b) => b.weight - a.weight)[0];
+    const team1TopFactor = team1Factors.length > 0 ? team1Factors[0] : null;
     
+    const team2Factors = prediction.keyFactors
+      .filter(f => f.favorsTeam === 2)
+      .sort((a, b) => b.weight - a.weight);
+      
+    const team2TopFactor = team2Factors.length > 0 ? team2Factors[0] : null;
+      
     if (team1TopFactor) {
       insights.push({
         title: `${team1.name} Strength`,
-        description: `Superior ${team1TopFactor.name.toLowerCase()} (${Math.round(team1TopFactor.team1Value)} vs ${Math.round(team1TopFactor.team2Value)})`,
-        icon: TrendingUp,
-        color: "text-green-400"
+        content: `${team1.name}'s ${team1TopFactor.name.toLowerCase()} (${Math.round(team1TopFactor.team1Value)}) gives them an edge over ${team2.name} (${Math.round(team1TopFactor.team2Value)}).`
       });
     }
     
     if (team2TopFactor) {
       insights.push({
         title: `${team2.name} Strength`,
-        description: `Superior ${team2TopFactor.name.toLowerCase()} (${Math.round(team2TopFactor.team2Value)} vs ${Math.round(team2TopFactor.team1Value)})`,
-        icon: TrendingUp,
-        color: "text-green-400"
+        content: `${team2.name}'s ${team2TopFactor.name.toLowerCase()} (${Math.round(team2TopFactor.team2Value)}) counters ${team1.name}'s weaker ${team2TopFactor.name.toLowerCase()} (${Math.round(team2TopFactor.team1Value)}).`
       });
     }
     
-    // Close match insight
-    if (Math.abs(prediction.team1WinProbability - prediction.team2WinProbability) < 0.1) {
+    // Map-specific insights
+    const mapAdvantage = prediction.mapAdvantages[selectedMap];
+    if (mapAdvantage === 1) {
       insights.push({
-        title: "Close Match",
-        description: "This match is projected to be extremely close with minimal separating factors",
-        icon: Shuffle,
-        color: "text-orange-400"
+        title: "Map Advantage",
+        content: `${team1.name} historically performs well on ${selectedMap} with a ${Math.round((enhancedTeamStats[team1.id].mapPerformance[selectedMap] || 0.5) * 100)}% win rate.`
+      });
+    } else if (mapAdvantage === 2) {
+      insights.push({
+        title: "Map Advantage", 
+        content: `${team2.name} has a ${Math.round((enhancedTeamStats[team2.id].mapPerformance[selectedMap] || 0.5) * 100)}% win rate on ${selectedMap}, giving them a strong advantage.`
       });
     }
+    
+    // Key players insight
+    if (prediction.keyPlayers.team1.length > 0) {
+      const keyPlayer = prediction.keyPlayers.team1[0];
+      insights.push({
+        title: "Key Player",
+        content: `${keyPlayer.player.name} (${keyPlayer.player.role}) is crucial for ${team1.name}'s success with a PIV of ${Math.round(keyPlayer.player.piv * 100)}.`
+      });
+    }
+    
+    // Create prediction summary
+    const favored = prediction.team1WinProbability > prediction.team2WinProbability ? team1.name : team2.name;
+    const winProb = prediction.team1WinProbability > prediction.team2WinProbability ? 
+      Math.round(prediction.team1WinProbability * 100) : 
+      Math.round(prediction.team2WinProbability * 100);
+      
+    insights.push({
+      title: "Prediction Summary",
+      content: `${favored} is favored to win with a ${winProb}% probability. Predicted score: ${prediction.predictedScore.team1}-${prediction.predictedScore.team2}.`
+    });
     
     return insights;
   }, [prediction, team1, team2, selectedMap]);
   
-  // Debug functions
-  const testDirectApiCall = async () => {
-    try {
-      const response = await fetch('/api/teams');
-      const data = await response.json();
-      console.log('Direct fetch response:', data);
-      alert(`Directly fetched ${data.length} teams: ${data.map((t: TeamWithTIR) => t.name).join(', ')}`);
-    } catch (error: unknown) {
-      console.error('Direct fetch error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Error: ${errorMessage}`);
-    }
-  };
-
   // If loading, show skeleton
   if (teamsLoading || playersLoading) {
     return (
@@ -613,26 +543,18 @@ export default function MatchPredictorPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                 {/* Team 1 Selection */}
                 <div className="space-y-4">
-                  <h3 className="font-medium">Team 1</h3>
-                  
-                  <div>
-                    <pre className="text-xs bg-gray-800 p-2 mb-2 rounded">
-                      Teams loaded: {teams.length}<br/>
-                      {teams.length > 0 ? `First team: ${teams[0]?.name || 'unnamed'}` : 'No teams'}
-                    </pre>
-                    <select 
-                      className="w-full p-2 border rounded-md bg-background"
-                      value={team1Id}
-                      onChange={(e) => setTeam1Id(e.target.value)}
-                    >
-                      <option value="">Select team</option>
-                      {teams.map(team => (
-                        <option key={team.id} value={team.id}>
-                          {team.name} (TIR: {Math.round(team.tir)})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <select 
+                    className="w-full p-2 border rounded-md bg-background"
+                    value={team1Id}
+                    onChange={(e) => setTeam1Id(e.target.value)}
+                  >
+                    <option value="">Select first team</option>
+                    {teams.map(team => (
+                      <option key={team.id} value={team.id}>
+                        {team.name} (TIR: {Math.round(team.tir)})
+                      </option>
+                    ))}
+                  </select>
                   
                   {team1 && enhancedTeamStats[team1.id] && (
                     <div className="space-y-3 bg-background-light p-3 rounded-md">
@@ -669,27 +591,18 @@ export default function MatchPredictorPage() {
                 
                 {/* Team 2 Selection */}
                 <div className="space-y-4">
-                  <h3 className="font-medium">Team 2</h3>
-                  
-                  <div>
-                    <pre className="text-xs bg-gray-800 p-2 mb-2 rounded">
-                      Loading state: {teamsLoading ? 'Loading...' : 'Loaded'}<br/>
-                      Teams loaded: {teams.length}<br/>
-                      Teams: {teams.length > 0 ? teams.map(t => t.name).join(', ') : 'None'}
-                    </pre>
-                    <select 
-                      className="w-full p-2 border rounded-md bg-background"
-                      value={team2Id}
-                      onChange={(e) => setTeam2Id(e.target.value)}
-                    >
-                      <option value="">Select team</option>
-                      {teams.map(team => (
-                        <option key={team.id} value={team.id}>
-                          {team.name} (TIR: {Math.round(team.tir)})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <select 
+                    className="w-full p-2 border rounded-md bg-background"
+                    value={team2Id}
+                    onChange={(e) => setTeam2Id(e.target.value)}
+                  >
+                    <option value="">Select second team</option>
+                    {teams.map(team => (
+                      <option key={team.id} value={team.id}>
+                        {team.name} (TIR: {Math.round(team.tir)})
+                      </option>
+                    ))}
+                  </select>
                   
                   {team2 && enhancedTeamStats[team2.id] && (
                     <div className="space-y-3 bg-background-light p-3 rounded-md">
@@ -867,6 +780,36 @@ export default function MatchPredictorPage() {
                       step={5}
                     />
                   </div>
+                  
+                  {/* Tournament Tier slider */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="tournament-tier" className="text-sm flex items-center gap-1">
+                        <Trophy className="h-4 w-4" />
+                        Tournament Tier
+                      </Label>
+                      <div className="flex gap-3 items-center text-xs">
+                        <span className="text-gray-400">Lower Tier</span>
+                        <Badge variant={adjustmentFactors.tournamentTier === 50 ? "outline" : "default"}>
+                          {adjustmentFactors.tournamentTier === 50 ? "Mid Tier" : 
+                           adjustmentFactors.tournamentTier > 75 ? "S-Tier Major" : 
+                           adjustmentFactors.tournamentTier > 50 ? "A-Tier" : 
+                           adjustmentFactors.tournamentTier > 25 ? "B-Tier" : "C-Tier"}
+                        </Badge>
+                        <span className="text-gray-400">Major</span>
+                      </div>
+                    </div>
+                    <Slider
+                      id="tournament-tier"
+                      value={[adjustmentFactors.tournamentTier]}
+                      onValueChange={values => setAdjustmentFactors({ 
+                        ...adjustmentFactors, 
+                        tournamentTier: values[0] 
+                      })}
+                      max={100}
+                      step={5}
+                    />
+                  </div>
                 </div>
               </div>
               
@@ -922,7 +865,7 @@ export default function MatchPredictorPage() {
                   
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Target className="h-4 w-4 text-red-400" />
+                      <Users className="h-4 w-4 text-blue-400" />
                       <Label htmlFor="role-matchups" className="text-sm">Role-specific Matchups</Label>
                     </div>
                     <Switch
@@ -938,378 +881,138 @@ export default function MatchPredictorPage() {
               </div>
             </CardContent>
           </Card>
-          
-          {prediction && team1 && team2 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Match Analysis</CardTitle>
-                <CardDescription>
-                  Key factors influencing the prediction outcome
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Win probability chart */}
-                    <div>
-                      <h3 className="text-sm font-medium mb-4">Win Probability</h3>
-                      <div className="h-52">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={[
-                                { name: team1.name, value: prediction.team1WinProbability },
-                                { name: team2.name, value: prediction.team2WinProbability }
-                              ]}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={false}
-                              outerRadius={80}
-                              fill="#8884d8"
-                              dataKey="value"
-                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                            >
-                              <Cell fill="#8884d8" />
-                              <Cell fill="#82ca9d" />
-                            </Pie>
-                            <RechartsTooltip />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                    
-                    {/* Key factors */}
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-medium">Key Influencing Factors</h3>
-                        <div className="text-xs text-gray-400">Weight</div>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        {prediction.keyFactors.sort((a, b) => b.weight - a.weight).map((factor, index) => (
-                          <div key={index} className="space-y-1">
-                            <div className="flex items-center justify-between text-xs">
-                              <span>{factor.name}</span>
-                              <span className="text-xs text-gray-400">{(factor.weight * 100).toFixed(0)}%</span>
-                            </div>
-                            <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
-                              <div className="flex h-full">
-                                <div 
-                                  className="bg-blue-500 h-full" 
-                                  style={{ width: `${(factor.team1Value / (factor.team1Value + factor.team2Value)) * 100}%` }}
-                                ></div>
-                                <div 
-                                  className="bg-green-500 h-full" 
-                                  style={{ width: `${(factor.team2Value / (factor.team1Value + factor.team2Value)) * 100}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                            <div className="flex justify-between text-[10px] text-gray-400">
-                              <span>{Math.round(factor.team1Value)}</span>
-                              <span>{Math.round(factor.team2Value)}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Predicted score */}
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-medium">Predicted Score</h3>
-                      <div className="bg-background-light p-4 rounded-md">
-                        <div className="flex items-center justify-center gap-4">
-                          <div className="text-center">
-                            <div className="font-medium">{team1.name}</div>
-                            <div className="text-4xl font-bold mt-2">{prediction.predictedScore.team1}</div>
-                          </div>
-                          <div className="text-xl text-gray-400">vs</div>
-                          <div className="text-center">
-                            <div className="font-medium">{team2.name}</div>
-                            <div className="text-4xl font-bold mt-2">{prediction.predictedScore.team2}</div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex justify-center mt-4">
-                          <Badge variant={prediction.predictedScore.team1 > prediction.predictedScore.team2 ? 
-                            "default" : prediction.predictedScore.team1 < prediction.predictedScore.team2 ?
-                            "secondary" : "outline"}
-                          >
-                            {prediction.predictedScore.team1 > prediction.predictedScore.team2 ? 
-                              `${team1.name} Win` : prediction.predictedScore.team1 < prediction.predictedScore.team2 ?
-                              `${team2.name} Win` : "Draw"}
-                          </Badge>
-                        </div>
-                      </div>
-                      
-                      {/* Confidence meter */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between items-center text-xs">
-                          <span>Model Confidence</span>
-                          <span className={
-                            prediction.confidenceScore > 70 ? "text-green-400" :
-                            prediction.confidenceScore > 40 ? "text-yellow-400" :
-                            "text-red-400"
-                          }>
-                            {prediction.confidenceScore}%
-                          </span>
-                        </div>
-                        <Progress 
-                          value={prediction.confidenceScore} 
-                          className={`h-2 ${
-                            prediction.confidenceScore > 70 ? "bg-green-500/20" :
-                            prediction.confidenceScore > 40 ? "bg-yellow-500/20" :
-                            "bg-red-500/20"
-                          }`}
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Key players */}
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-medium">Key Players to Watch</h3>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <div className="text-xs font-medium text-gray-400">{team1.name}</div>
-                          {prediction.keyPlayers.team1.map((keyPlayer, index) => (
-                            <div 
-                              key={index} 
-                              className="flex items-center justify-between bg-background-light p-2 rounded-md"
-                            >
-                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs">
-                                  {keyPlayer.player.team.substring(0, 2)}
-                                </div>
-                                <div>
-                                  <div className="text-sm font-medium">{keyPlayer.player.name}</div>
-                                  <div className="flex items-center mt-0.5">
-                                    <RoleBadge role={keyPlayer.player.role} />
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="text-xs font-medium">
-                                {Math.round(keyPlayer.player.piv * 100)}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <div className="text-xs font-medium text-gray-400">{team2.name}</div>
-                          {prediction.keyPlayers.team2.map((keyPlayer, index) => (
-                            <div 
-                              key={index} 
-                              className="flex items-center justify-between bg-background-light p-2 rounded-md"
-                            >
-                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs">
-                                  {keyPlayer.player.team.substring(0, 2)}
-                                </div>
-                                <div>
-                                  <div className="text-sm font-medium">{keyPlayer.player.name}</div>
-                                  <div className="flex items-center mt-0.5">
-                                    <RoleBadge role={keyPlayer.player.role} />
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="text-xs font-medium">
-                                {Math.round(keyPlayer.player.piv * 100)}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
         
-        {/* Prediction insights - 4 columns on large screens */}
+        {/* Prediction results and visualizations - 4 columns on large screens */}
         <div className="lg:col-span-4 space-y-6">
-          {prediction && team1 && team2 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-primary" />
-                  Prediction Insights
-                </CardTitle>
-                <CardDescription>
-                  AI-generated analysis based on team statistics and context
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {predictionInsights.map((insight, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <insight.icon className={`h-5 w-5 ${insight.color}`} />
-                        <h3 className="font-medium">{insight.title}</h3>
-                      </div>
-                      <p className="text-sm text-gray-400">{insight.description}</p>
-                    </div>
-                  ))}
-                </div>
+          {!prediction ? (
+            <Card className="border-dashed border-2 border-gray-700 bg-gray-900/50">
+              <CardContent className="flex flex-col items-center justify-center py-10">
+                <Shield className="h-16 w-16 text-gray-600 mb-4" />
+                <h3 className="text-lg font-medium text-gray-400">Select Both Teams</h3>
+                <p className="text-sm text-gray-500 text-center mt-2">
+                  Choose two teams to see detailed match predictions and analytics
+                </p>
               </CardContent>
             </Card>
-          )}
-          
-          {prediction && team1 && team2 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Map className="h-5 w-5 text-blue-400" />
-                  Map Analysis
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Map Win Rates</h3>
-                  
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadialBarChart 
-                        innerRadius="20%" 
-                        outerRadius="90%" 
-                        barSize={10}
-                        data={[
-                          {
-                            name: team1.name,
-                            value: (enhancedTeamStats[team1.id].mapPerformance[selectedMap] || 0.5) * 100,
-                            fill: '#8884d8'
-                          },
-                          {
-                            name: team2.name,
-                            value: (enhancedTeamStats[team2.id].mapPerformance[selectedMap] || 0.5) * 100,
-                            fill: '#82ca9d'
-                          }
-                        ]}
-                        startAngle={180}
-                        endAngle={0}
-                      >
-                        <RadialBar
-                          background
-                          dataKey="value"
-                          label={{ position: 'insideStart', fill: '#fff', fontSize: 12 }}
-                        />
-                        <Legend 
-                          iconSize={10} 
-                          layout="horizontal" 
-                          verticalAlign="bottom" 
-                          align="center"
-                        />
-                      </RadialBarChart>
-                    </ResponsiveContainer>
+          ) : (
+            <>
+              {/* Win Probability Card */}
+              <Card>
+                <CardHeader className="pb-0">
+                  <CardTitle className="text-lg">Win Probability</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between text-sm mt-4 mb-1">
+                    <span className="font-medium">{team1?.name}</span>
+                    <span className="font-medium">{team2?.name}</span>
                   </div>
                   
-                  <Separator />
+                  <div className="relative h-6 bg-gray-800 rounded-full overflow-hidden">
+                    <div 
+                      className="absolute top-0 left-0 h-full bg-gradient-to-r from-indigo-600 to-blue-500"
+                      style={{ width: `${Math.round(prediction.team1WinProbability * 100)}%` }}
+                    ></div>
+                    <div 
+                      className="absolute top-0 right-0 h-full bg-gradient-to-r from-pink-500 to-red-500"
+                      style={{ width: `${Math.round(prediction.team2WinProbability * 100)}%` }}
+                    ></div>
+                    <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
+                      {Math.round(prediction.team1WinProbability * 100)}% - {Math.round(prediction.team2WinProbability * 100)}%
+                    </div>
+                  </div>
                   
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-medium">Map Advantages</h3>
+                  <div className="flex flex-col gap-2 mt-6">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400">Predicted Score</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-lg">
+                          {prediction.predictedScore.team1}
+                        </span>
+                        <span className="text-sm text-gray-400">-</span>
+                        <span className="font-bold text-lg">
+                          {prediction.predictedScore.team2}
+                        </span>
+                      </div>
+                    </div>
                     
-                    <div className="grid grid-cols-2 gap-2">
-                      {MAPS.map(map => (
-                        <div 
-                          key={map}
-                          className={`flex items-center justify-between p-2 rounded-md ${
-                            map === selectedMap ? 'bg-primary/20' : 'bg-background-light'
-                          }`}
-                        >
-                          <span className="text-sm">{map}</span>
-                          <Badge variant={
-                            prediction.mapAdvantages[map] === 1 ? "default" :
-                            prediction.mapAdvantages[map] === 2 ? "secondary" :
-                            "outline"
-                          }>
-                            {prediction.mapAdvantages[map] === 1 ? team1.name :
-                             prediction.mapAdvantages[map] === 2 ? team2.name :
-                             "Neutral"}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400">Confidence</span>
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium">
+                          {Math.round(prediction.confidenceScore)}%
+                        </span>
+                        <div className="w-24 h-2 bg-gray-800 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-green-500 to-emerald-500"
+                            style={{ width: `${prediction.confidenceScore}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Key Factors Card */}
+              <Card>
+                <CardHeader className="pb-0">
+                  <CardTitle className="text-lg">Key Factors</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4 mt-4">
+                    {prediction.keyFactors.map((factor, i) => (
+                      <div key={factor.name} className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{factor.name}</span>
+                          <Badge variant={factor.favorsTeam === 0 ? "outline" : "default"}>
+                            {factor.favorsTeam === 0 ? "Neutral" : factor.favorsTeam === 1 ? "Favors " + team1?.name : "Favors " + team2?.name}
                           </Badge>
                         </div>
-                      ))}
-                    </div>
+                        
+                        <div className="h-6 bg-gray-800 rounded-full relative overflow-hidden">
+                          <div 
+                            className="absolute top-0 left-0 h-full bg-blue-600"
+                            style={{ width: `${(factor.team1Value / (factor.team1Value + factor.team2Value)) * 100}%` }}
+                          ></div>
+                          <div className="absolute inset-0 flex items-center">
+                            <div 
+                              className="text-xs font-medium text-white text-right pr-2"
+                              style={{ width: `${(factor.team1Value / (factor.team1Value + factor.team2Value)) * 100}%` }}
+                            >
+                              {Math.round(factor.team1Value)}
+                            </div>
+                            <div 
+                              className="text-xs font-medium text-white pl-2"
+                              style={{ width: `${(factor.team2Value / (factor.team1Value + factor.team2Value)) * 100}%` }}
+                            >
+                              {Math.round(factor.team2Value)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  
-                  <div className="bg-background-light rounded-md p-3 mt-6">
-                    <div className="text-sm font-medium mb-2">Key Map Insight</div>
-                    <p className="text-xs text-gray-400">
-                      {selectedMap === "Mirage" ? 
-                        "Mirage favors teams with strong AWP players and mid-control strategies." :
-                      selectedMap === "Inferno" ? 
-                        "Inferno benefits teams with coordinated utility usage and strong support players." :
-                      selectedMap === "Nuke" ? 
-                        "Nuke heavily favors teams with well-practiced executes and strong CT setups." :
-                      selectedMap === "Ancient" ? 
-                        "Ancient rewards teams with strong AWPers and defensive anchors." :
-                      selectedMap === "Anubis" ? 
-                        "Anubis is a newer map that benefits teams with good adaptability and lurk roles." :
-                      selectedMap === "Overpass" ? 
-                        "Overpass favors teams with strong map control and flanking abilities." :
-                      selectedMap === "Vertigo" ? 
-                        "Vertigo rewards teams with precise utility usage and strong support roles." :
-                        ""}
-                    </p>
+                </CardContent>
+              </Card>
+              
+              {/* Key Insights Card */}
+              <Card>
+                <CardHeader className="pb-0">
+                  <CardTitle className="text-lg">Match Insights</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 mt-4">
+                    {insights.map((insight, i) => (
+                      <div key={i} className="border-l-2 border-primary pl-3 py-1">
+                        <h4 className="text-sm font-medium">{insight.title}</h4>
+                        <p className="text-xs text-gray-400 mt-0.5">{insight.content}</p>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-          
-          {/* Random match history simulator */}
-          {team1 && team2 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-yellow-400" />
-                  Historical Performance
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={[...Array(10)].map((_, i) => {
-                          // Create pseudo-random match results that favor the team with higher PIV
-                          const team1Strength = team1.avgPIV;
-                          const team2Strength = team2.avgPIV;
-                          const randSeed = (i + 1) * (team1.name.length + team2.name.length);
-                          
-                          // Biased random outcome based on team strength
-                          const team1Score = Math.floor(5 + (team1Strength * 15) + (Math.sin(randSeed) * 5));
-                          const team2Score = Math.floor(5 + (team2Strength * 15) + (Math.cos(randSeed) * 5));
-                          
-                          return {
-                            match: 10 - i,
-                            [team1.name]: team1Score,
-                            [team2.name]: team2Score,
-                          };
-                        })}
-                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="match" />
-                        <YAxis />
-                        <RechartsTooltip />
-                        <Legend />
-                        <Line type="monotone" dataKey={team1.name} stroke="#8884d8" activeDot={{ r: 8 }} />
-                        <Line type="monotone" dataKey={team2.name} stroke="#82ca9d" />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                  
-                  <div className="text-xs text-gray-400 text-center italic mt-2">
-                    Note: Simulated historical match performance based on current team statistics
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </>
           )}
         </div>
       </div>
@@ -1317,27 +1020,4 @@ export default function MatchPredictorPage() {
   );
 }
 
-// Trophy icon component
-function Trophy(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-      <path d="M4 22h16" />
-      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
-      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
-      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
-    </svg>
-  );
-}
+// Trophy icon is already imported from Lucide

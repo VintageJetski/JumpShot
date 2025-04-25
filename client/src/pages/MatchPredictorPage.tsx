@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -15,6 +15,12 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip as RechartsTooltip 
 } from "recharts";
 import { PlayerRole, type PlayerWithPIV, type TeamWithTIR } from "@shared/schema";
+
+// Import our new components
+import MapSelector from "@/components/match-prediction/MapSelector";
+import TeamSelect from "@/components/match-prediction/TeamSelect";
+import ContextualFactors from "@/components/match-prediction/ContextualFactors";
+import PlayerImpactCard from "@/components/charts/PlayerImpactCard";
 
 // Define map pool
 const MAPS = [

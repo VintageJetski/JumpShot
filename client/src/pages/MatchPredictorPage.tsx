@@ -77,6 +77,7 @@ export default function MatchPredictorPage() {
   const [team1Id, setTeam1Id] = useState<string>("");
   const [team2Id, setTeam2Id] = useState<string>("");
   const [selectedMap, setSelectedMap] = useState<string>("Inferno");
+  const [matchFormat, setMatchFormat] = useState<'bo1' | 'bo3'>('bo1');
   const [adjustmentFactors, setAdjustmentFactors] = useState({
     recentForm: 50, // 0-100 slider for team1's recent form (50 = neutral)
     headToHead: 50, // 0-100 slider for team1's head-to-head record (50 = neutral)
@@ -292,28 +293,28 @@ export default function MatchPredictorPage() {
     // For simplicity, use a normal distribution around win probabilities
     // more sophisticated versions would consider historical scorelines, etc.
     const generateScore = (winProb: number): [number, number] => {
-      const roundsToWin = 16; // Standard CS2 match format (first to 16)
+      const roundsToWin = 13; // Updated CS2 match format (first to 13)
       
       if (winProb > 0.8) {
         // Dominant win scenarios
-        return [roundsToWin, Math.floor(Math.random() * 10)];
+        return [roundsToWin, Math.floor(Math.random() * 7)];
       } else if (winProb > 0.65) {
         // Clear win scenarios
-        return [roundsToWin, Math.floor(10 + Math.random() * 4)];
+        return [roundsToWin, Math.floor(7 + Math.random() * 3)];
       } else if (winProb > 0.45) {
         // Close match scenarios
         const winner = Math.random() < 0.5 ? 0 : 1;
         if (winner === 0) {
-          return [roundsToWin, Math.floor(13 + Math.random() * 3)];
+          return [roundsToWin, Math.floor(10 + Math.random() * 3)];
         } else {
-          return [Math.floor(13 + Math.random() * 3), roundsToWin];
+          return [Math.floor(10 + Math.random() * 3), roundsToWin];
         }
       } else if (winProb > 0.3) {
         // Clear loss scenarios
-        return [Math.floor(10 + Math.random() * 4), roundsToWin];
+        return [Math.floor(7 + Math.random() * 3), roundsToWin];
       } else {
         // Dominant loss scenarios
-        return [Math.floor(Math.random() * 10), roundsToWin];
+        return [Math.floor(Math.random() * 7), roundsToWin];
       }
     };
     
@@ -428,16 +429,36 @@ export default function MatchPredictorPage() {
     const team2TopFactor = team2Factors.length > 0 ? team2Factors[0] : null;
       
     if (team1TopFactor) {
+      // Adjust values based on factor name for proper formatting
+      let team1Value = team1TopFactor.team1Value;
+      let team2Value = team1TopFactor.team2Value;
+      
+      // Apply TIR multiplier for Team Impact Rating
+      if (team1TopFactor.name === "Team Impact Rating") {
+        team1Value *= 10;
+        team2Value *= 10;
+      }
+      
       insights.push({
         title: `${team1.name} Strength`,
-        content: `${team1.name}'s ${team1TopFactor.name.toLowerCase()} (${Math.round(team1TopFactor.team1Value)}) gives them an edge over ${team2.name} (${Math.round(team1TopFactor.team2Value)}).`
+        content: `${team1.name}'s ${team1TopFactor.name.toLowerCase()} (${Math.round(team1Value)}) gives them an edge over ${team2.name} (${Math.round(team2Value)}).`
       });
     }
     
     if (team2TopFactor) {
+      // Adjust values based on factor name for proper formatting
+      let team1Value = team2TopFactor.team1Value;
+      let team2Value = team2TopFactor.team2Value;
+      
+      // Apply TIR multiplier for Team Impact Rating
+      if (team2TopFactor.name === "Team Impact Rating") {
+        team1Value *= 10;
+        team2Value *= 10;
+      }
+      
       insights.push({
         title: `${team2.name} Strength`,
-        content: `${team2.name}'s ${team2TopFactor.name.toLowerCase()} (${Math.round(team2TopFactor.team2Value)}) counters ${team1.name}'s weaker ${team2TopFactor.name.toLowerCase()} (${Math.round(team2TopFactor.team1Value)}).`
+        content: `${team2.name}'s ${team2TopFactor.name.toLowerCase()} (${Math.round(team2Value)}) counters ${team1.name}'s weaker ${team2TopFactor.name.toLowerCase()} (${Math.round(team1Value)}).`
       });
     }
     
@@ -515,6 +536,20 @@ export default function MatchPredictorPage() {
             <CardHeader className="pb-0">
               <div className="flex items-center justify-between">
                 <CardTitle>Match Setup</CardTitle>
+                <div className="border rounded-md overflow-hidden flex text-xs">
+                  <button 
+                    className={`px-3 py-1 ${matchFormat === 'bo1' ? 'bg-primary text-white' : 'bg-background hover:bg-gray-700'}`}
+                    onClick={() => setMatchFormat('bo1')}
+                  >
+                    BO1
+                  </button>
+                  <button 
+                    className={`px-3 py-1 ${matchFormat === 'bo3' ? 'bg-primary text-white' : 'bg-background hover:bg-gray-700'}`}
+                    onClick={() => setMatchFormat('bo3')}
+                  >
+                    BO3
+                  </button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -535,7 +570,7 @@ export default function MatchPredictorPage() {
                   </select>
                   
                   {team1 && enhancedTeamStats[team1.id] && (
-                    <div className="space-y-3 bg-background-light p-3 rounded-md">
+                    <div className="space-y-3 bg-gray-800/50 p-3 rounded-md">
                       <div className="flex items-center justify-between">
                         <div className="font-bold text-lg">{team1.name}</div>
                         <div className="bg-primary/20 text-primary rounded-full px-3 py-1 text-sm font-medium">
@@ -603,12 +638,12 @@ export default function MatchPredictorPage() {
                   </select>
                   
                   {team2 && enhancedTeamStats[team2.id] && (
-                    <div className="space-y-3 bg-background-light p-3 rounded-md">
+                    <div className="space-y-3 bg-gray-800/50 p-3 rounded-md">
                       <div className="flex items-center justify-between">
-                        <div className="font-bold text-lg">{team2.name}</div>
                         <div className="bg-primary/20 text-primary rounded-full px-3 py-1 text-sm font-medium">
                           TIR: {Math.round(team2.tir * 10)}
                         </div>
+                        <div className="font-bold text-lg">{team2.name}</div>
                       </div>
                       
                       <div className="grid grid-cols-3 gap-2 text-center text-xs">

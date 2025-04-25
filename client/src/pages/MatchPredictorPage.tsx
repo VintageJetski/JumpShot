@@ -605,9 +605,9 @@ export default function MatchPredictorPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Team selection and configuration - 8 columns on large screens */}
-        <div className="lg:col-span-8 space-y-6">
+      <div className="grid grid-cols-1 gap-6">
+        {/* Main card - full width */}
+        <div className="space-y-6">
           <Card>
             <CardHeader className="pb-0">
               <div className="flex items-center justify-between">

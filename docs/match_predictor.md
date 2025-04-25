@@ -9,10 +9,14 @@ The Match Predictor is an AI-powered feature that analyzes CS2 team and player s
 ### Match Setup
 - Select any two teams to compare and predict outcomes
 - Team statistics displayed: TIR (Team Impact Rating), Average PIV, Synergy, Map Win Rate
-- Key players are automatically identified for each team
+- Players are displayed in order of role importance: IGLs first, AWPers second, Spacetakers third/fourth, Lurkers and Supports last
+- Team lineups show detailed role information with color-coded indicators (Blue for CT roles, Orange for T roles, Purple for IGL)
 
 ### Map Selection
-- Choose from 7 standard CS2 maps: Mirage, Inferno, Nuke, Ancient, Anubis, Overpass, Vertigo
+- Choose from 6 standard CS2 maps in the current rotation: Mirage, Inferno, Nuke, Ancient, Anubis, Vertigo
+- Support for both BO1 (single map) and BO3 (multiple maps) formats
+- Multi-map selection for BO3 matches with numbered indicators for each map
+- BO3 predictions show series outcome (2-0 or 2-1) based on team strength across all selected maps
 - Map-specific performance statistics are factored into predictions
 - Visual comparison of map performance for both teams available in the Map Stats dialog
 
@@ -58,38 +62,39 @@ The following toggles enable additional predictive factors:
 ## Prediction Output
 
 ### Win Probability
-- Visual representation of each team's win probability
-- Percentage values for each team
+- Visual representation of each team's win probability in a circular gauge
+- Percentage values for each team with team names
 
 ### Predicted Score
-- Projected final score based on team strength and map characteristics
+- For BO1: Projected final score based on team strength and map characteristics (first to 13 rounds)
+- For BO3: Projected series outcome (2-0 or 2-1) based on relative team strength
 
 ### Confidence Score
 - Indicator of prediction confidence (0-100%)
-- Based on statistical differentiation between teams
+- Based on statistical differentiation between teams and TIR difference
+- Visualized with a progress bar
 
-### Key Factors
-- Detailed comparison of core predictive metrics for both teams:
-  - Team Impact Rating (TIR)
-  - Average PIV (Player Impact Value)
-  - Team Synergy
-  - Map Win Rate
-  - Role Coverage
-
-### Match Insights
+### Key Insights
 - Automatically generated analytical insights about:
-  - Team strengths
-  - Map advantages
-  - Key players to watch
-  - Prediction summary
+  - Team strengths (TIR comparison)
+  - Role coverage advantages
+  - Map-specific advantages
+  - Key strategic factors
+
+### Key Players to Watch
+- Displays the most impactful players from each team
+- Shows player role and PIV score
+- Team affiliation indicated by team initials in a circular icon
+- Sorted by potential match impact
 
 ## Technical Implementation
 
 ### Data Sources
-- Player statistics from CS2 match data CSV files
-- Team compositions and ratings
-- Role assignments and performance metrics
+- Player statistics from CS2 match data CSV files (IEM Katowice 2025 dataset)
+- Team compositions and ratings based on aggregated player statistics
+- T and CT side role assignments from dedicated role mapping CSV
 - Map-specific historical performance
+- Round-by-round data available but not currently utilized in predictions
 
 ### Prediction Algorithm
 The prediction algorithm uses the following process:

@@ -28,6 +28,10 @@ export interface IStorage {
   getAllTeams(): Promise<TeamWithTIR[]>;
   getTeamByName(name: string): Promise<TeamWithTIR | undefined>;
   
+  // Round data methods
+  getTeamRoundMetrics(teamName: string): Promise<TeamRoundMetrics | undefined>;
+  setTeamRoundMetrics(metrics: TeamRoundMetrics): Promise<void>;
+  
   // Storage update methods
   setPlayers(players: PlayerWithPIV[]): Promise<void>;
   setTeams(teams: TeamWithTIR[]): Promise<void>;

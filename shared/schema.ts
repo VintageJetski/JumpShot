@@ -103,6 +103,67 @@ export enum PlayerRole {
   Rotator = "Rotator"
 }
 
+export interface RoundData {
+  roundNum: number;
+  winner: 'ct' | 't';
+  reason: 'ct_killed' | 't_killed' | 'bomb_exploded' | 'bomb_defused';
+  bombPlant: boolean;
+  bombSite: 'bombsite_a' | 'bombsite_b' | 'not_planted';
+  ctTeam: string;
+  tTeam: string;
+  winnerTeam: string;
+  ctEquipValue: number;
+  tEquipValue: number;
+  ctLosingStreak: number;
+  tLosingStreak: number;
+  ctBuyType: string; // 'Full Buy', 'Eco', 'Semi-Buy', etc.
+  tBuyType: string;
+  firstAdvantage: 'ct' | 't'; // Which team got first 5v4 advantage
+  demoFileName: string;
+  map: string; // Extracted from demo filename
+  start: string;
+  freeze_end: string;
+  end: string;
+  bomb_plant?: string;
+}
+
+export interface TeamRoundMetrics {
+  id: string;
+  name: string;
+  
+  // Economy metrics
+  econEfficiencyRatio: number; // Results achieved relative to money spent
+  forceRoundWinRate: number;
+  ecoRoundWinRate: number;
+  fullBuyWinRate: number;
+  economicRecoveryIndex: number; // How quickly team recovers after eco rounds
+  
+  // Strategic metrics
+  aPreference: number; // 0-1 value showing preference for A site
+  bPreference: number;
+  bombPlantRate: number; // % of T rounds with bomb plants
+  postPlantWinRate: number;
+  retakeSuccessRate: number; // % of CT rounds where bomb was planted but CT won
+  
+  // Momentum metrics
+  pistolRoundWinRate: number;
+  followUpRoundWinRate: number; // Win rate after winning pistol
+  comebackFactor: number; // Ability to win after losing multiple rounds
+  closingFactor: number; // Success rate in closing out advantages (e.g., 5v4)
+  
+  // Map-specific metrics
+  mapPerformance: {
+    [mapName: string]: {
+      ctWinRate: number;
+      tWinRate: number;
+      bombsitesPreference: {
+        a: number;
+        b: number;
+      }
+    }
+  }
+}
+
 // Detailed metrics for each role
 export interface RoleMetrics {
   // IGL metrics

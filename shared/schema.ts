@@ -60,9 +60,11 @@ export interface PlayerWithPIV {
   name: string;
   team: string;
   role: PlayerRole;        // Primary role (determined from CT and T roles)
+  secondaryRole?: PlayerRole; // Secondary role
   tRole?: PlayerRole;      // T side role
   ctRole?: PlayerRole;     // CT side role
   isIGL?: boolean;         // Is in-game leader
+  isMainAwper?: boolean;   // Is the team's main AWPer
   piv: number;             // Player Impact Value
   ctPIV?: number;          // CT side PIV
   tPIV?: number;           // T side PIV

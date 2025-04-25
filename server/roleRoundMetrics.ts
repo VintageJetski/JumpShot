@@ -20,7 +20,10 @@ export function groupRoundsByHalf(rounds: RoundData[], teamName: string): RoundD
   // Split each match into halves
   const halves: RoundData[][] = [];
   
-  for (const matchRounds of matchMap.values()) {
+  // Convert Map values to array for iteration
+  const matchesArray = Array.from(matchMap.values());
+  
+  for (const matchRounds of matchesArray) {
     // Sort rounds by number
     const sortedRounds = [...matchRounds].sort((a, b) => a.roundNum - b.roundNum);
     
@@ -105,7 +108,10 @@ export function identifyTimeoutRounds(rounds: RoundData[], teamName: string): Ro
   });
   
   // Analyze each match
-  for (const matchRounds of matchMap.values()) {
+  // Convert Map values to array for iteration
+  const matchesArray = Array.from(matchMap.values());
+  
+  for (const matchRounds of matchesArray) {
     // Sort rounds by number
     const sortedRounds = [...matchRounds].sort((a, b) => a.roundNum - b.roundNum);
     

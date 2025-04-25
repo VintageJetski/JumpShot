@@ -8,7 +8,8 @@ import {
   playerStats,
   users,
   teams,
-  PlayerRole
+  PlayerRole,
+  TeamRoundMetrics
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
@@ -44,10 +45,12 @@ export interface IStorage {
 export class HybridStorage implements IStorage {
   private playersCache: Map<string, PlayerWithPIV>;
   private teamsCache: Map<string, TeamWithTIR>;
+  private roundMetricsCache: Map<string, TeamRoundMetrics>;
 
   constructor() {
     this.playersCache = new Map();
     this.teamsCache = new Map();
+    this.roundMetricsCache = new Map();
   }
 
   // User methods using database
@@ -460,6 +463,15 @@ export class HybridStorage implements IStorage {
         });
       }
     });
+  }
+  
+  // Team round metrics methods (in-memory only)
+  async getTeamRoundMetrics(teamName: string): Promise<TeamRoundMetrics | undefined> {
+    return this.roundMetricsCache.get(teamName);
+  }
+  
+  async setTeamRoundMetrics(metrics: TeamRoundMetrics): Promise<void> {
+    this.roundMetricsCache.set(metrics.name, metrics);
   }
 }
 

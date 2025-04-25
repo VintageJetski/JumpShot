@@ -1148,6 +1148,36 @@ export default function MatchPredictorPage() {
                       max={100}
                       step={5}
                     />
+                    <Collapsible className="w-full">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="flex items-center justify-between w-full p-0 h-8">
+                          <span className="text-xs text-muted-foreground">Factor details</span>
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="bg-black/10 p-3 rounded-md text-xs mt-1">
+                        <div className="space-y-2">
+                          <p><span className="font-medium">Calculation:</span> Tournament prestige and team performance adjustments based on event tier.</p>
+                          <p><span className="font-medium">Weight:</span> 5% impact on final probability</p>
+                          <p><span className="font-medium">Current effect:</span> Team performance tends to be more predictable at higher tier events.</p>
+                          <p><span className="font-medium">Current setting:</span> {
+                            adjustmentFactors.tournamentTier === 50 ? "Mid Tier" : 
+                            adjustmentFactors.tournamentTier > 75 ? "S-Tier Major" : 
+                            adjustmentFactors.tournamentTier > 50 ? "A-Tier" : 
+                            adjustmentFactors.tournamentTier > 25 ? "B-Tier" : "C-Tier"
+                          }</p>
+                          <div className="mt-2 p-1 bg-black/20 rounded">
+                            <p className="font-medium text-primary text-[10px]">Tournament Tier Effects:</p>
+                            <ul className="mt-1 list-disc pl-4 space-y-1 text-[10px]">
+                              <li>S-Tier: Highly predictable, favors teams with higher TIR</li>
+                              <li>A-Tier: Moderately predictable, established teams perform closer to expectations</li>
+                              <li>B-Tier: More volatility, greater chance for underdog success</li>
+                              <li>C-Tier: Highest variance, individual performances more significant</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   </div>
                 </div>
               </div>
@@ -1169,45 +1199,69 @@ export default function MatchPredictorPage() {
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <div className="space-y-2 mt-2">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="enable-psychology"
-                      checked={advancedOptions.enablePsychologyFactors}
-                      onChange={(e) => setAdvancedOptions({
-                        ...advancedOptions,
-                        enablePsychologyFactors: e.target.checked
-                      })}
-                      className="h-4 w-4 rounded border-gray-300 text-primary"
-                    />
-                    <Label htmlFor="enable-psychology" className="text-sm">Enable psychological factors</Label>
+                <div className="space-y-4 mt-2">
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="enable-psychology"
+                        checked={advancedOptions.enablePsychologyFactors}
+                        onChange={(e) => setAdvancedOptions({
+                          ...advancedOptions,
+                          enablePsychologyFactors: e.target.checked
+                        })}
+                        className="h-4 w-4 rounded border-gray-300 text-primary"
+                      />
+                      <Label htmlFor="enable-psychology" className="text-sm">Enable psychological factors</Label>
+                    </div>
+                    <div className="ml-6 text-xs text-muted-foreground">
+                      Includes momentum, pressure handling, and team chemistry. Impacts weights of BMT and momentum sliders.
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="use-tournament"
-                      checked={advancedOptions.useTournamentContext}
-                      onChange={(e) => setAdvancedOptions({
-                        ...advancedOptions,
-                        useTournamentContext: e.target.checked
-                      })}
-                      className="h-4 w-4 rounded border-gray-300 text-primary"
-                    />
-                    <Label htmlFor="use-tournament" className="text-sm">Consider tournament context</Label>
+                  
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="use-tournament"
+                        checked={advancedOptions.useTournamentContext}
+                        onChange={(e) => setAdvancedOptions({
+                          ...advancedOptions,
+                          useTournamentContext: e.target.checked
+                        })}
+                        className="h-4 w-4 rounded border-gray-300 text-primary"
+                      />
+                      <Label htmlFor="use-tournament" className="text-sm">Consider tournament context</Label>
+                    </div>
+                    <div className="ml-6 text-xs text-muted-foreground">
+                      Adjusts predictions based on tournament stage and importance. Accounts for team's historical playoff performance.
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="use-roles"
-                      checked={advancedOptions.useRoleMatchups}
-                      onChange={(e) => setAdvancedOptions({
-                        ...advancedOptions,
-                        useRoleMatchups: e.target.checked
-                      })}
-                      className="h-4 w-4 rounded border-gray-300 text-primary"
-                    />
-                    <Label htmlFor="use-roles" className="text-sm">Analyze role-based matchups</Label>
+                  
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="use-roles"
+                        checked={advancedOptions.useRoleMatchups}
+                        onChange={(e) => setAdvancedOptions({
+                          ...advancedOptions,
+                          useRoleMatchups: e.target.checked
+                        })}
+                        className="h-4 w-4 rounded border-gray-300 text-primary"
+                      />
+                      <Label htmlFor="use-roles" className="text-sm">Analyze role-based matchups</Label>
+                    </div>
+                    <div className="ml-6 text-xs text-muted-foreground">
+                      Compares players in equivalent roles (AWPer vs AWPer, IGL vs IGL). Provides deeper insight into team strengths and weaknesses.
+                    </div>
+                  </div>
+                  
+                  <div className="border border-border rounded-md p-3 bg-black/10 mt-2">
+                    <h4 className="text-xs font-medium mb-2">Algorithm Impact</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Your selections modify how the prediction algorithm weighs various factors. Advanced analysis may take longer to compute but provides more nuanced predictions.
+                    </p>
                   </div>
                 </div>
               </div>

@@ -35,7 +35,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 
 // Define interfaces for the application
 interface TeamWithTIR {
@@ -64,6 +63,7 @@ const availableMaps = [
 
 const MatchPredictorPage: React.FC = () => {
   const { toast } = useToast();
+  
   // State for user selections
   const [matchType, setMatchType] = useState<'bo1' | 'bo3'>('bo1');
   const [team1Id, setTeam1Id] = useState<string | undefined>();
@@ -308,7 +308,7 @@ const MatchPredictorPage: React.FC = () => {
                     <label className="text-sm font-medium">Match Type</label>
                     <RadioGroup 
                       value={matchType} 
-                      onValueChange={(value) => {
+                      onValueChange={(value: string) => {
                         setMatchType(value as 'bo1' | 'bo3');
                         resetMapSelections();
                         setSelectedMap('');

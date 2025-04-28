@@ -497,11 +497,21 @@ const MatchPredictorPage: React.FC = () => {
                       </span>
                       
                       {prediction.predictedScore && (
-                        <div className="flex justify-center items-center space-x-3 mt-2">
-                          <span className="text-sm text-muted-foreground">Predicted Score:</span>
-                          <span className="font-semibold">
-                            {team1Id} {prediction.predictedScore.team1Score} - {prediction.predictedScore.team2Score} {team2Id}
-                          </span>
+                        <div className="space-y-2 mt-2">
+                          <div className="flex justify-center items-center space-x-3">
+                            <span className="text-sm text-muted-foreground">Predicted Map Score:</span>
+                            <span className="font-semibold">
+                              {team1Id} {prediction.predictedScore.mapScore.team1Score} - {prediction.predictedScore.mapScore.team2Score} {team2Id}
+                            </span>
+                          </div>
+                          {matchType !== 'bo1' && (
+                            <div className="flex justify-center items-center space-x-3">
+                              <span className="text-sm text-muted-foreground">Predicted Series Score:</span>
+                              <span className="font-semibold">
+                                {team1Id} {prediction.predictedScore.seriesScore.team1Score} - {prediction.predictedScore.seriesScore.team2Score} {team2Id}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       )}
                       

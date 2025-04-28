@@ -806,12 +806,56 @@ export function enhanceMatchPrediction(
   team1WinProbability = Math.max(0.05, Math.min(0.95, team1WinProbability));
   const team2WinProbability = 1 - team1WinProbability;
   
-  // Generate insights from significant adjustments
-  const insights = adjustments
+  // Generate insights from significant adjustments and key metrics
+  let insights = adjustments
     .filter(adj => Math.abs(adj.factor) > 0.015) // Slightly higher threshold
     .sort((a, b) => Math.abs(b.factor) - Math.abs(a.factor))
-    .slice(0, 5)
+    .slice(0, 3)
     .map(adj => adj.reason);
+    
+  // Add insights based on key metrics
+  if (team1RoundMetrics.pistolRoundWinRate > team2RoundMetrics.pistolRoundWinRate && team1RoundMetrics.pistolRoundWinRate > 0.6) {
+    insights.push(`${team1.name} has a strong advantage in pistol rounds (${Math.round(team1RoundMetrics.pistolRoundWinRate * 100)}% win rate)`);
+  } else if (team2RoundMetrics.pistolRoundWinRate > team1RoundMetrics.pistolRoundWinRate && team2RoundMetrics.pistolRoundWinRate > 0.6) {
+    insights.push(`${team2.name} has a strong advantage in pistol rounds (${Math.round(team2RoundMetrics.pistolRoundWinRate * 100)}% win rate)`);
+  }
+  
+  // Form insight
+  if (Math.abs((team1RoundMetrics.recentPerformanceFactor || 0) - (team2RoundMetrics.recentPerformanceFactor || 0)) > 0.2) {
+    if ((team1RoundMetrics.recentPerformanceFactor || 0) > (team2RoundMetrics.recentPerformanceFactor || 0)) {
+      insights.push(`${team1.name} is in better form, with stronger recent performances`);
+    } else {
+      insights.push(`${team2.name} is in better form, with stronger recent performances`);
+    }
+  }
+  
+  // Synergy insight
+  if (Math.abs(team1.synergy - team2.synergy) > 0.15) {
+    if (team1.synergy > team2.synergy) {
+      insights.push(`${team1.name} shows better team chemistry and coordinated play`);
+    } else {
+      insights.push(`${team2.name} shows better team chemistry and coordinated play`);
+    }
+  }
+  
+  // Site preference insight
+  const team1ASitePref = team1RoundMetrics.aPreference || 0.5;
+  const team2ASitePref = team2RoundMetrics.aPreference || 0.5;
+  if (team1ASitePref > 0.7) {
+    insights.push(`${team1.name} strongly favors A site executions as T (${Math.round(team1ASitePref * 100)}%)`);
+  } else if (team1ASitePref < 0.3) {
+    insights.push(`${team1.name} strongly favors B site executions as T (${Math.round((1-team1ASitePref) * 100)}%)`);
+  }
+  
+  // Economy management insight
+  if (team1RoundMetrics.economicEfficiency > team2RoundMetrics.economicEfficiency * 1.5) {
+    insights.push(`${team1.name} shows significantly better economy management`);
+  } else if (team2RoundMetrics.economicEfficiency > team1RoundMetrics.economicEfficiency * 1.5) {
+    insights.push(`${team2.name} shows significantly better economy management`);
+  }
+  
+  // Take only the top 5 insights
+  insights = insights.slice(0, 5);
   
   // Sort key factors by their impact (advantage difference)
   keyRoundFactors.sort((a, b) => {
@@ -836,20 +880,53 @@ export function enhanceMatchPrediction(
     ]
   };
 
-  // Calculate the predicted score based on win probability
-  const predictedScore = {
-    team1Score: Math.round(team1WinProbability * 16),
-    team2Score: Math.round(team2WinProbability * 16)
+  // Calculate the predicted score for individual maps (first to 13)
+  let mapPredictedScore = {
+    team1Score: 0,
+    team2Score: 0
   };
   
-  // Ensure valid CS2 score (max 16 for winning team)
-  if (predictedScore.team1Score > predictedScore.team2Score) {
-    predictedScore.team1Score = Math.min(16, predictedScore.team1Score);
-    predictedScore.team2Score = Math.max(0, 16 - predictedScore.team1Score);
+  // For single maps: calculate expected score in a race to 13 rounds
+  if (team1WinProbability > team2WinProbability) {
+    mapPredictedScore.team1Score = 13;
+    // Calculate expected rounds for losing team based on probability
+    mapPredictedScore.team2Score = Math.round(team2WinProbability * 24 / (team1WinProbability + team2WinProbability));
+    // Ensure it's within valid range (0-12)
+    mapPredictedScore.team2Score = Math.min(12, Math.max(0, mapPredictedScore.team2Score));
   } else {
-    predictedScore.team2Score = Math.min(16, predictedScore.team2Score);
-    predictedScore.team1Score = Math.max(0, 16 - predictedScore.team2Score);
+    mapPredictedScore.team2Score = 13;
+    // Calculate expected rounds for losing team based on probability
+    mapPredictedScore.team1Score = Math.round(team1WinProbability * 24 / (team1WinProbability + team2WinProbability));
+    // Ensure it's within valid range (0-12)
+    mapPredictedScore.team1Score = Math.min(12, Math.max(0, mapPredictedScore.team1Score));
   }
+  
+  // For series (BO3/BO5): Calculate predicted match score
+  const seriesPredictedScore = {
+    team1Score: 0,
+    team2Score: 0
+  };
+  
+  // Based on win probability, determine the likely outcome for BO3 (first to 2 maps)
+  if (team1WinProbability > 0.6) {
+    seriesPredictedScore.team1Score = 2;
+    seriesPredictedScore.team2Score = 0;
+  } else if (team1WinProbability > 0.5) {
+    seriesPredictedScore.team1Score = 2;
+    seriesPredictedScore.team2Score = 1;
+  } else if (team1WinProbability > 0.4) {
+    seriesPredictedScore.team1Score = 1;
+    seriesPredictedScore.team2Score = 2;
+  } else {
+    seriesPredictedScore.team1Score = 0;
+    seriesPredictedScore.team2Score = 2;
+  }
+  
+  // Use both map score and series score
+  const predictedScore = {
+    mapScore: mapPredictedScore,
+    seriesScore: seriesPredictedScore
+  };
   
   // Calculate form rating (based on recent matches performance)
   const form = {

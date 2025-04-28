@@ -67,19 +67,41 @@ export async function handleMatchPrediction(req: Request, res: Response) {
     // Add the actual score object for showing historical match results
     // We'll use this for displaying actual score data
     // The calculated predicted score is already in the prediction object
-    const actualScore = {
-      team1Score: Math.round(Math.random() * 16), // This would come from actual historical data
-      team2Score: Math.round(Math.random() * 16)  // This would come from actual historical data
+    const actualMapScore = {
+      team1Score: Math.round(Math.random() * 12) + 1, // This would come from actual historical data
+      team2Score: 0 // Will be calculated
     };
     
-    // One team must have at least 16 points to win
-    if (actualScore.team1Score > actualScore.team2Score) {
-      actualScore.team1Score = Math.min(16, actualScore.team1Score);
-      actualScore.team2Score = Math.max(0, 16 - actualScore.team1Score);
+    // For an actual CS2 score, one team must have 13 points to win
+    if (actualMapScore.team1Score >= 13) {
+      actualMapScore.team1Score = 13;
+      // Other team can have 0-12 points
+      actualMapScore.team2Score = Math.min(12, Math.round(Math.random() * 10));
     } else {
-      actualScore.team2Score = Math.min(16, actualScore.team2Score);
-      actualScore.team1Score = Math.max(0, 16 - actualScore.team2Score);
+      actualMapScore.team1Score = Math.min(12, actualMapScore.team1Score);
+      actualMapScore.team2Score = 13;
     }
+    
+    // For BO3 series score (first to 2 maps)
+    const actualSeriesScore = {
+      team1Score: Math.round(Math.random() * 2),
+      team2Score: 0
+    };
+    
+    // Ensure valid BO3 score (one team must have 2 wins)
+    if (actualSeriesScore.team1Score >= 2) {
+      actualSeriesScore.team1Score = 2;
+      actualSeriesScore.team2Score = Math.min(1, Math.round(Math.random()));
+    } else {
+      actualSeriesScore.team1Score = Math.min(1, actualSeriesScore.team1Score);
+      actualSeriesScore.team2Score = 2;
+    }
+    
+    // Create a complete score object
+    const actualScore = {
+      team1Score: actualMapScore.team1Score,
+      team2Score: actualMapScore.team2Score
+    };
     
     // Add to prediction object
     (prediction as any).actualScore = actualScore;

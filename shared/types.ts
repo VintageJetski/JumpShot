@@ -191,8 +191,14 @@ export interface MatchPredictionResponse {
     advantage: number; // 1 = team1, 2 = team2, 0 = neutral
   }[];
   predictedScore: {
-    team1Score: number;
-    team2Score: number;
+    mapScore: {
+      team1Score: number;
+      team2Score: number;
+    };
+    seriesScore: {
+      team1Score: number;
+      team2Score: number;
+    };
   };
   actualScore?: {
     team1Score: number;

@@ -525,10 +525,16 @@ export function enhanceMatchPrediction(
     advantage: number;
     lastMatches: {winner: string, score: string}[];
   };
-  // Add predicted score
+  // Add predicted score with map and series info
   predictedScore: {
-    team1Score: number;
-    team2Score: number;
+    mapScore: {
+      team1Score: number;
+      team2Score: number;
+    };
+    seriesScore: {
+      team1Score: number;
+      team2Score: number;
+    };
   };
 } {
   // Base win probability from existing TIR calculation
@@ -978,7 +984,47 @@ export function enhanceMatchPrediction(
     ]
   };
 
-  return {
+  // Create proper score prediction format aligned with CS2 rules
+  // CS2 matches are first to 13 rounds (not 16)
+  const mapScore = {
+    team1Score: team1WinProbability > team2WinProbability ? 13 : Math.floor(13 * (team1WinProbability / (team1WinProbability + team2WinProbability))),
+    team2Score: team2WinProbability > team1WinProbability ? 13 : Math.floor(13 * (team2WinProbability / (team1WinProbability + team2WinProbability)))
+  };
+  
+  // Ensure at least one team has 13 points, and the other has a reasonable score
+  if (mapScore.team1Score >= 13) {
+    mapScore.team1Score = 13;
+    mapScore.team2Score = Math.min(12, mapScore.team2Score);
+  } else {
+    mapScore.team2Score = 13;
+    mapScore.team1Score = Math.min(12, mapScore.team1Score);
+  }
+  
+  // For series predictions (BO3/BO5)
+  const seriesScore = {
+    team1Score: team1WinProbability > team2WinProbability ? 2 : 0,
+    team2Score: team2WinProbability > team1WinProbability ? 2 : 0
+  };
+  
+  // For close matchups, make it 2-1 instead of 2-0
+  if (Math.abs(team1WinProbability - team2WinProbability) < 0.15) {
+    if (seriesScore.team1Score === 2) {
+      seriesScore.team1Score = 2;
+      seriesScore.team2Score = 1;
+    } else {
+      seriesScore.team1Score = 1;
+      seriesScore.team2Score = 2;
+    }
+  }
+  
+  // Format the predictedScore in the proper structure
+  const formattedPredictedScore = {
+    mapScore,
+    seriesScore
+  };
+
+  // Create the final response object that matches MatchPredictionResponse
+  const result: Partial<MatchPredictionResponse> = {
     team1WinProbability,
     team2WinProbability,
     insights,
@@ -992,6 +1038,17 @@ export function enhanceMatchPrediction(
     momentum,
     mapMatchup,
     history,
-    predictedScore
+    predictedScore: {
+      mapScore: {
+        team1Score: mapPredictedScore.team1Score,
+        team2Score: mapPredictedScore.team2Score
+      },
+      seriesScore: {
+        team1Score: seriesPredictedScore.team1Score, 
+        team2Score: seriesPredictedScore.team2Score
+      }
+    }
   };
+
+  return result;
 }

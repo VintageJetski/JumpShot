@@ -64,9 +64,10 @@ export async function handleMatchPrediction(req: Request, res: Response) {
       map
     ) as MatchPredictionResponse;
     
-    // Add the actual score object for showing historical match results
-    // We'll use this for displaying actual score data
-    // The calculated predicted score is already in the prediction object
+    // This is simulating historical match data
+    // In a production system, this would be pulled from a database of past matches
+    
+    // For the actual map score (CS2 is first to 13)
     const actualMapScore = {
       team1Score: Math.round(Math.random() * 12) + 1, // This would come from actual historical data
       team2Score: 0 // Will be calculated
@@ -82,29 +83,12 @@ export async function handleMatchPrediction(req: Request, res: Response) {
       actualMapScore.team2Score = 13;
     }
     
-    // For BO3 series score (first to 2 maps)
-    const actualSeriesScore = {
-      team1Score: Math.round(Math.random() * 2),
-      team2Score: 0
-    };
-    
-    // Ensure valid BO3 score (one team must have 2 wins)
-    if (actualSeriesScore.team1Score >= 2) {
-      actualSeriesScore.team1Score = 2;
-      actualSeriesScore.team2Score = Math.min(1, Math.round(Math.random()));
-    } else {
-      actualSeriesScore.team1Score = Math.min(1, actualSeriesScore.team1Score);
-      actualSeriesScore.team2Score = 2;
-    }
-    
-    // Create a complete score object
-    const actualScore = {
+    // Add to prediction object - just use the map score for the actual score
+    // This matches the current display in the frontend which only shows map score for actual
+    prediction.actualScore = {
       team1Score: actualMapScore.team1Score,
       team2Score: actualMapScore.team2Score
     };
-    
-    // Add to prediction object
-    (prediction as any).actualScore = actualScore;
     
     return res.json({ 
       prediction,

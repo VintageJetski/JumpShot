@@ -8,6 +8,19 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from '@/components/ui/button';
 import { Loader2Icon, ArrowRightIcon } from 'lucide-react';
 
+// Define interfaces for the application
+interface TeamWithTIR {
+  id: string;
+  name: string;
+  tir: number;
+  sumPIV?: number;
+  synergy?: number;
+  avgPIV?: number;
+  topPlayerName?: string;
+  topPlayerPIV?: number;
+  players?: any[]; // Added to match TeamSelect's interface
+}
+
 // Import our prediction components
 import MapSelector from '@/components/match-prediction/MapSelector';
 import TeamSelect from '@/components/match-prediction/TeamSelect';
@@ -23,7 +36,7 @@ const MatchPredictorPage: React.FC = () => {
   const [showAdvancedDetails, setShowAdvancedDetails] = useState(false);
 
   // Fetch teams data
-  const { data: teams = [], isLoading: isLoadingTeams } = useQuery({
+  const { data: teams = [], isLoading: isLoadingTeams } = useQuery<TeamWithTIR[]>({
     queryKey: ['/api/teams'],
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
@@ -110,7 +123,7 @@ const MatchPredictorPage: React.FC = () => {
         {/* Left column - Team select */}
         <div className="space-y-6 md:col-span-1">
           <TeamSelect 
-            teams={teams}
+            teams={teams as any}
             team1Id={team1Id}
             team2Id={team2Id}
             onTeam1Change={setTeam1Id}
@@ -186,8 +199,14 @@ const MatchPredictorPage: React.FC = () => {
               <div className="flex justify-between items-center mb-6">
                 <div className="text-center">
                   <h3 className="font-medium">{team1Name}</h3>
-                  <div className={`text-xl font-bold mt-1 ${team1Chance && team1Chance > team2Chance ? 'text-blue-500' : ''}`}>
-                    {team1Chance}%
+                  <div className={`text-xl font-bold mt-1 ${
+                    team1Chance !== null && 
+                    team2Chance !== null && 
+                    team1Chance > team2Chance 
+                      ? 'text-blue-500' 
+                      : ''
+                  }`}>
+                    {team1Chance !== null ? `${team1Chance}%` : '0%'}
                   </div>
                 </div>
                 
@@ -197,8 +216,14 @@ const MatchPredictorPage: React.FC = () => {
                 
                 <div className="text-center">
                   <h3 className="font-medium">{team2Name}</h3>
-                  <div className={`text-xl font-bold mt-1 ${team2Chance && team2Chance > team1Chance ? 'text-yellow-500' : ''}`}>
-                    {team2Chance}%
+                  <div className={`text-xl font-bold mt-1 ${
+                    team2Chance !== null && 
+                    team1Chance !== null && 
+                    team2Chance > team1Chance 
+                      ? 'text-yellow-500' 
+                      : ''
+                  }`}>
+                    {team2Chance !== null ? `${team2Chance}%` : '0%'}
                   </div>
                 </div>
               </div>

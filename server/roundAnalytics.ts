@@ -247,8 +247,9 @@ function calculateStrategicMetrics(rounds: RoundData[], teamName: string): {
  * Calculate momentum-related metrics for a team
  */
 function calculateMomentumMetrics(rounds: RoundData[], teamName: string): {
+  momentumRating: number;
   pistolRoundWinRate: number;
-  followUpRoundWinRate: number;
+  followUpWinRate: number;
   comebackFactor: number;
   closingFactor: number;
 } {
@@ -304,9 +305,18 @@ function calculateMomentumMetrics(rounds: RoundData[], teamName: string): {
   const comebackFactor = losingStreakRounds > 0 ? comebackRounds / losingStreakRounds : 0;
   const closingFactor = advantageRounds > 0 ? advantageWins / advantageRounds : 0;
   
+  // Calculate overall momentum rating (0-1 scale)
+  const momentumRating = (
+    (pistolRoundWinRate * 0.9) + 
+    (followUpRoundWinRate * 0.8) + 
+    (comebackFactor * 0.7) + 
+    (closingFactor * 0.9)
+  ) / 4;
+  
   return {
+    momentumRating,
     pistolRoundWinRate,
-    followUpRoundWinRate,
+    followUpWinRate: followUpRoundWinRate,
     comebackFactor,
     closingFactor
   };

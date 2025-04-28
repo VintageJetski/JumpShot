@@ -8,7 +8,8 @@ import {
   ArrowRightLeft, 
   Percent,
   Menu,
-  Image
+  Image,
+  Search
 } from "lucide-react";
 import {
   Sheet,
@@ -44,7 +45,7 @@ export default function MobileNav() {
         
         <Sheet>
           <SheetTrigger className={`flex flex-col items-center px-3 py-2 ${
-            isActive("/player-comparisons") || isActive("/match-predictor") || isActive("/match-infographic") ? "text-primary" : "text-gray-400"
+            isActive("/player-comparisons") || isActive("/match-predictor") || isActive("/match-infographic") || isActive("/scout") ? "text-primary" : "text-gray-400"
           }`}>
             <BarChart2 className="h-6 w-6" />
             <span className="text-xs mt-1">Advanced</span>
@@ -75,6 +76,14 @@ export default function MobileNav() {
                   } rounded-md`}>
                   <Image className="h-5 w-5 mr-3" />
                   <span>Match Infographic</span>
+                </Link>
+                
+                <Link href="/scout"
+                  className={`flex items-center px-4 py-3 ${
+                    isActive("/scout") ? "bg-primary/20 text-primary" : "text-gray-300 hover:bg-gray-700/50"
+                  } rounded-md`}>
+                  <Search className="h-5 w-5 mr-3" />
+                  <span>Scout</span>
                 </Link>
               </div>
             </div>

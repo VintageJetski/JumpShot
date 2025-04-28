@@ -10,7 +10,8 @@ import {
   ArrowRightLeft,
   Percent,
   Activity,
-  Image
+  Image,
+  Search
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -103,6 +104,17 @@ export default function Sidebar() {
           >
             <Image className="h-5 w-5 mr-2" />
             Match Infographic
+          </Link>
+          
+          <Link href="/scout" 
+            className={`w-full flex items-center justify-start px-4 py-2 ${
+              isActive("/scout")
+                ? "bg-primary text-white"
+                : "text-gray-300 hover:bg-gray-700"
+            } rounded font-medium`}
+          >
+            <Search className="h-5 w-5 mr-2" />
+            Scout
           </Link>
         </div>
         

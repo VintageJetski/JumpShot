@@ -202,13 +202,7 @@ const MatchPredictorPage: React.FC = () => {
     } else {
       if (team2Picks.length < 1) {
         setTeam2Picks([...team2Picks, map]);
-        
-        // Auto-select decider map (first remaining map)
-        const selectedMaps = [...team1Picks, ...team2Picks, map];
-        const remainingMaps = availableMaps.filter(m => !selectedMaps.includes(m));
-        if (remainingMaps.length > 0) {
-          setDeciderMap(remainingMaps[0]);
-        }
+        // Don't auto-select decider map, user must pick it manually
       }
     }
   };

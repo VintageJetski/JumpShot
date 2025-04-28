@@ -491,10 +491,19 @@ const MatchPredictorPage: React.FC = () => {
                       <span className="text-blue-500">{team1Chance}%</span>
                       <span className="text-yellow-500">{team2Chance}%</span>
                     </div>
-                    <div className="text-center mt-4">
+                    <div className="text-center mt-4 space-y-2">
                       <span className="font-medium">
                         Predicted winner: {team1Chance! > team2Chance! ? team1Id : team2Id}
                       </span>
+                      
+                      {prediction.actualScore && (
+                        <div className="flex justify-center items-center space-x-3 mt-2">
+                          <span className="text-sm text-muted-foreground">Actual Score:</span>
+                          <span className="font-semibold">
+                            {team1Id} {prediction.actualScore.team1Score} - {prediction.actualScore.team2Score} {team2Id}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   

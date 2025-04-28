@@ -29,11 +29,20 @@ interface PlayerWithPIV {
   rawStats: any;
 }
 
+interface TeamWithTIR {
+  id: string;
+  name: string;
+  tir: number;
+  synergy: number;
+  players?: PlayerWithPIV[];
+}
+
 interface TeamLineupProps {
   teamName?: string;
   className?: string;
 }
 
+// Color codes for each role
 const roleColors: Record<string, string> = {
   "IGL": "bg-purple-500/10 text-purple-500 border-purple-500/30",
   "AWP": "bg-red-500/10 text-red-500 border-red-500/30",
@@ -58,28 +67,18 @@ export const TeamLineup: React.FC<TeamLineupProps> = ({
   className
 }) => {
   // Fetch all players
-  const { data: playersData = [], isLoading } = useQuery<PlayerWithPIV[]>({
+  const { data: playersData = [], isLoading: isLoadingPlayers } = useQuery<PlayerWithPIV[]>({
     queryKey: ['/api/players'],
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
   
-  // Calculate team stats
-  const getTeamStats = () => {
-    if (!teamName || !playersData.length) return { avgPIV: 0, synergy: 0 };
-    
-    const teamPlayers = playersData.filter((player) => player.team === teamName);
-    if (!teamPlayers.length) return { avgPIV: 0, synergy: 0 };
-    
-    const totalPIV = teamPlayers.reduce((sum, player) => sum + player.piv, 0);
-    const avgPIV = Math.round(totalPIV / teamPlayers.length * 100) / 100;
-    
-    // Synergy is randomly between 75-85 for demo purposes
-    const synergy = Math.floor(Math.random() * 10) + 75;
-    
-    return { avgPIV, synergy };
-  };
+  // Fetch team data to get actual TIR and synergy values
+  const { data: teamsData = [], isLoading: isLoadingTeams } = useQuery<TeamWithTIR[]>({
+    queryKey: ['/api/teams'],
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
   
-  const { avgPIV, synergy } = getTeamStats();
+  const isLoading = isLoadingPlayers || isLoadingTeams;
 
   if (!teamName) {
     return (
@@ -88,9 +87,62 @@ export const TeamLineup: React.FC<TeamLineupProps> = ({
       </div>
     );
   }
-
+  
+  // Find the team data
+  const teamData = teamsData.find(team => team.name === teamName);
+  
   // Filter players by team
-  const teamPlayers = playersData.filter((player) => player.team === teamName);
+  const teamPlayers = playersData.filter(player => player.team === teamName);
+  
+  // Calculate average PIV for display
+  const avgPIV = teamPlayers.length > 0
+    ? teamPlayers.reduce((sum, player) => sum + player.piv, 0) / teamPlayers.length
+    : 0;
+  
+  // Find players by role
+  const playersByRole: Record<PlayerRole, PlayerWithPIV[]> = {
+    [PlayerRole.IGL]: teamPlayers.filter(p => p.isIGL),
+    [PlayerRole.AWP]: teamPlayers.filter(p => p.role === PlayerRole.AWP || p.ctRole === PlayerRole.AWP || p.tRole === PlayerRole.AWP),
+    [PlayerRole.Spacetaker]: teamPlayers.filter(p => p.role === PlayerRole.Spacetaker || p.tRole === PlayerRole.Spacetaker),
+    [PlayerRole.Support]: teamPlayers.filter(p => p.role === PlayerRole.Support || p.tRole === PlayerRole.Support),
+    [PlayerRole.Lurker]: teamPlayers.filter(p => p.role === PlayerRole.Lurker || p.tRole === PlayerRole.Lurker),
+    [PlayerRole.Anchor]: teamPlayers.filter(p => p.role === PlayerRole.Anchor || p.ctRole === PlayerRole.Anchor),
+    [PlayerRole.Rotator]: teamPlayers.filter(p => p.role === PlayerRole.Rotator || p.ctRole === PlayerRole.Rotator),
+  };
+  
+  // Find best and worst performers for each role
+  const rolePerformers: Record<PlayerRole, { best?: PlayerWithPIV, worst?: PlayerWithPIV }> = Object.entries(playersByRole).reduce((acc, [role, players]) => {
+    if (players.length === 0) {
+      acc[role as PlayerRole] = { best: undefined, worst: undefined };
+    } else if (players.length === 1) {
+      acc[role as PlayerRole] = { best: players[0], worst: undefined };
+    } else {
+      // Sort by PIV
+      const sorted = [...players].sort((a, b) => b.piv - a.piv);
+      acc[role as PlayerRole] = { 
+        best: sorted[0], 
+        worst: sorted[sorted.length - 1] 
+      };
+    }
+    return acc;
+  }, {} as Record<PlayerRole, { best?: PlayerWithPIV, worst?: PlayerWithPIV }>);
+  
+  // Get actual TIR and synergy from team data
+  const tir = teamData?.tir || 0;
+  const synergy = teamData?.synergy || 0;
+  
+  // Top and low performing roles
+  const topRoles = Object.entries(rolePerformers)
+    .filter(([_, data]) => data.best !== undefined)
+    .sort((a, b) => (b[1].best?.piv || 0) - (a[1].best?.piv || 0))
+    .slice(0, 2)
+    .map(([role]) => role as PlayerRole);
+  
+  const lowRoles = Object.entries(rolePerformers)
+    .filter(([_, data]) => data.worst !== undefined)
+    .sort((a, b) => (a[1].worst?.piv || 0) - (b[1].worst?.piv || 0))
+    .slice(0, 1)
+    .map(([role]) => role as PlayerRole);
 
   // Sort players: IGLs first, then by role
   const sortedPlayers = [...teamPlayers].sort((a, b) => {
@@ -115,7 +167,7 @@ export const TeamLineup: React.FC<TeamLineupProps> = ({
           <h3 className="text-xl font-bold">{teamName}</h3>
         </div>
         <Badge className="bg-primary/20 text-primary font-semibold px-3 py-1 text-sm rounded-md">
-          TIR: {Math.round(avgPIV * 10)}
+          TIR: {Math.round(tir * 10)}
         </Badge>
       </div>
       
@@ -126,14 +178,21 @@ export const TeamLineup: React.FC<TeamLineupProps> = ({
         </div>
         <div className="text-center">
           <div className="text-sm text-muted-foreground">Synergy</div>
-          <div className="font-semibold">{synergy}%</div>
+          <div className="font-semibold">{Math.round(synergy * 100)}%</div>
         </div>
         <div className="text-center">
           <div className="text-sm text-muted-foreground">Key Roles</div>
-          <div className="font-semibold text-xs flex items-center justify-center space-x-1">
-            <span className="text-purple-500">IGL</span>
-            <span>+</span>
-            <span className="text-red-500">AWP</span>
+          <div className="font-semibold text-xs flex flex-wrap items-center justify-center gap-1">
+            {topRoles.map(role => (
+              <Badge key={role} variant="outline" className={`text-green-500 bg-green-500/10 border-green-500/30 text-xs px-1`}>
+                {role}
+              </Badge>
+            ))}
+            {lowRoles.map(role => (
+              <Badge key={role} variant="outline" className={`text-red-500 bg-red-500/10 border-red-500/30 text-xs px-1`}>
+                {role}
+              </Badge>
+            ))}
           </div>
         </div>
       </div>

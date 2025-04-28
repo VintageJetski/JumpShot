@@ -185,4 +185,9 @@ export interface MatchPredictionResponse {
     team2Value: number;
     advantage: number; // 1 = team1, 2 = team2, 0 = neutral
   }[];
+  actualScore?: {
+    team1Score: number;
+    team2Score: number;
+  };
+  mapBreakdown?: Record<string, any>;
 }

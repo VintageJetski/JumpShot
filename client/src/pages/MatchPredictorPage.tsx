@@ -277,21 +277,75 @@ const MatchPredictorPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Team lineups section */}
-      {(team1Id || team2Id) && (
-        <>
-          <Separator className="my-6" />
-          <h2 className="text-2xl font-bold mb-4">Team Lineups</h2>
-          <div className="grid gap-6 md:grid-cols-2">
-            {team1Id && (
-              <TeamLineup teamName={team1Id} />
-            )}
-            {team2Id && (
-              <TeamLineup teamName={team2Id} />
-            )}
-          </div>
-        </>
-      )}
+      {/* Match details section: Lineups, Map, Predictions */}
+      <Separator className="my-6" />
+      
+      <div className="grid gap-6 md:grid-cols-12">
+        {/* Team 1 Lineup */}
+        <div className="md:col-span-5">
+          {team1Id ? (
+            <TeamLineup teamName={team1Id} className="bg-card rounded-md border p-4 shadow-sm" />
+          ) : (
+            <div className="bg-card rounded-md border p-6 shadow-sm flex items-center justify-center min-h-[300px]">
+              <div className="text-center text-muted-foreground">
+                <p>Select team 1 to view lineup</p>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Middle: Map & Result */}
+        <div className="md:col-span-2 flex flex-col">
+          {selectedMap && (
+            <div className="bg-card rounded-md border shadow-sm p-4 text-center flex-1 flex flex-col items-center justify-center">
+              <div className="text-sm font-medium text-muted-foreground mb-2">Selected Map</div>
+              <div className="font-bold text-lg capitalize mb-2">{selectedMap}</div>
+              
+              {prediction && (
+                <div className="flex flex-col items-center mt-4">
+                  <div className="text-sm font-medium text-muted-foreground mb-1">Prediction</div>
+                  <div className="flex space-x-1 font-bold text-sm">
+                    <span className="text-blue-500">{team1Chance !== null ? `${team1Chance}%` : '?'}</span>
+                    <span>-</span>
+                    <span className="text-yellow-500">{team2Chance !== null ? `${team2Chance}%` : '?'}</span>
+                  </div>
+                </div>
+              )}
+              
+              {!prediction && team1Id && team2Id && selectedMap && (
+                <Button 
+                  onClick={handleRunPrediction} 
+                  size="sm"
+                  className="mt-4"
+                  disabled={predictionMutation.isPending}
+                >
+                  {predictionMutation.isPending ? (
+                    <>
+                      <Loader2Icon className="mr-2 h-3 w-3 animate-spin" />
+                      Predicting
+                    </>
+                  ) : (
+                    'Run Prediction'
+                  )}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* Team 2 Lineup */}
+        <div className="md:col-span-5">
+          {team2Id ? (
+            <TeamLineup teamName={team2Id} className="bg-card rounded-md border p-4 shadow-sm" />
+          ) : (
+            <div className="bg-card rounded-md border p-6 shadow-sm flex items-center justify-center min-h-[300px]">
+              <div className="text-center text-muted-foreground">
+                <p>Select team 2 to view lineup</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

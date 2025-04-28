@@ -1,9 +1,7 @@
 import React from 'react';
 import { 
   Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle
+  CardContent
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
@@ -46,6 +44,15 @@ const roleColors: Record<string, string> = {
   "Rotator": "bg-cyan-500/10 text-cyan-500 border-cyan-500/30",
 };
 
+// Get initials for team badge
+const getTeamInitials = (teamName: string): string => {
+  return teamName
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .toUpperCase();
+};
+
 export const TeamLineup: React.FC<TeamLineupProps> = ({
   teamName,
   className
@@ -55,17 +62,30 @@ export const TeamLineup: React.FC<TeamLineupProps> = ({
     queryKey: ['/api/players'],
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
+  
+  // Calculate team stats
+  const getTeamStats = () => {
+    if (!teamName || !playersData.length) return { avgPIV: 0, synergy: 0 };
+    
+    const teamPlayers = playersData.filter((player) => player.team === teamName);
+    if (!teamPlayers.length) return { avgPIV: 0, synergy: 0 };
+    
+    const totalPIV = teamPlayers.reduce((sum, player) => sum + player.piv, 0);
+    const avgPIV = Math.round(totalPIV / teamPlayers.length * 100) / 100;
+    
+    // Synergy is randomly between 75-85 for demo purposes
+    const synergy = Math.floor(Math.random() * 10) + 75;
+    
+    return { avgPIV, synergy };
+  };
+  
+  const { avgPIV, synergy } = getTeamStats();
 
   if (!teamName) {
     return (
-      <Card className={className}>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-xl font-bold">Team Lineup</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">Select a team to view lineup</p>
-        </CardContent>
-      </Card>
+      <div className={className}>
+        <p className="text-muted-foreground text-sm">Select a team to view lineup</p>
+      </div>
     );
   }
 
@@ -86,58 +106,92 @@ export const TeamLineup: React.FC<TeamLineupProps> = ({
   });
 
   return (
-    <Card className={className}>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-xl font-bold">Team Lineup: {teamName}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="space-y-2">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
+    <div className={className}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <div className="bg-primary/20 text-primary font-bold rounded-md h-8 w-8 flex items-center justify-center">
+            {getTeamInitials(teamName)}
           </div>
-        ) : (
-          <div className="space-y-2">
-            {sortedPlayers.length > 0 ? (
-              sortedPlayers.map((player: PlayerWithPIV) => (
-                <div 
-                  key={player.id} 
-                  className="flex items-center justify-between p-2 border rounded-md hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex flex-col">
-                    <div className="font-medium">{player.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      K/D: {player.kd.toFixed(2)} | PIV: {Math.round(player.piv * 100)}
-                    </div>
+          <h3 className="text-xl font-bold">{teamName}</h3>
+        </div>
+        <Badge className="bg-primary/20 text-primary font-semibold px-3 py-1 text-sm rounded-md">
+          TIR: {Math.round(avgPIV * 10)}
+        </Badge>
+      </div>
+      
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="text-center">
+          <div className="text-sm text-muted-foreground">Avg PIV</div>
+          <div className="font-semibold">{Math.round(avgPIV * 100)}</div>
+        </div>
+        <div className="text-center">
+          <div className="text-sm text-muted-foreground">Synergy</div>
+          <div className="font-semibold">{synergy}%</div>
+        </div>
+        <div className="text-center">
+          <div className="text-sm text-muted-foreground">Key Roles</div>
+          <div className="font-semibold text-xs flex items-center justify-center space-x-1">
+            <span className="text-purple-500">IGL</span>
+            <span>+</span>
+            <span className="text-red-500">AWP</span>
+          </div>
+        </div>
+      </div>
+      
+      <div className="text-sm font-medium mb-2">Team Lineup</div>
+      
+      {isLoading ? (
+        <div className="space-y-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-10 w-full" />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {sortedPlayers.length > 0 ? (
+            sortedPlayers.map((player: PlayerWithPIV) => (
+              <div 
+                key={player.id} 
+                className="flex items-center justify-between p-2 bg-card/50 rounded-md"
+              >
+                <div className="flex items-center space-x-2">
+                  <div className={`h-6 w-6 flex items-center justify-center rounded-md text-xs font-medium 
+                    ${player.team === teamName ? 'bg-primary/20 text-primary' : 'bg-gray-500/20 text-gray-500'}`}>
+                    {getTeamInitials(player.team)}
                   </div>
-                  <div className="flex space-x-2">
-                    {player.isIGL && (
-                      <Badge variant="outline" className={roleColors.IGL}>
-                        IGL
-                      </Badge>
-                    )}
-                    <Badge variant="outline" className={roleColors[player.role] || "bg-gray-500/10"}>
-                      {player.role}
+                  <div className="font-medium">{player.name}</div>
+                  {player.isIGL && (
+                    <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500/30 text-xs px-1">
+                      IGL
                     </Badge>
-                    <div className="flex flex-col items-end">
-                      <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/30 text-xs px-1">
-                        CT: {player.ctRole}
-                      </Badge>
-                      <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/30 text-xs px-1 mt-1">
-                        T: {player.tRole}
-                      </Badge>
-                    </div>
+                  )}
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="flex">
+                    <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/30 text-xs px-1 rounded-r-none">
+                      CT:{player.ctRole}
+                    </Badge>
+                    <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/30 text-xs px-1 rounded-l-none">
+                      T:{player.tRole}
+                    </Badge>
+                  </div>
+                  <div className="text-center w-9">
+                    <div className="text-xs text-muted-foreground">K/D</div>
+                    <div className="font-medium text-sm">{player.kd.toFixed(2)}</div>
+                  </div>
+                  <div className="text-center w-9">
+                    <div className="text-xs text-muted-foreground">PIV</div>
+                    <div className="font-medium text-sm">{Math.round(player.piv * 100)}</div>
                   </div>
                 </div>
-              ))
-            ) : (
-              <p className="text-muted-foreground text-sm">No players found for this team</p>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              </div>
+            ))
+          ) : (
+            <p className="text-muted-foreground text-sm">No players found for this team</p>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 

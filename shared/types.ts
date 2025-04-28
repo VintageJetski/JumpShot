@@ -190,6 +190,10 @@ export interface MatchPredictionResponse {
     team2Value: number;
     advantage: number; // 1 = team1, 2 = team2, 0 = neutral
   }[];
+  predictedScore: {
+    team1Score: number;
+    team2Score: number;
+  };
   actualScore?: {
     team1Score: number;
     team2Score: number;

@@ -7,7 +7,6 @@ import { calculateTeamImpactRatings } from "./teamAnalytics";
 import { loadPlayerRoles } from "./roleParser";
 import { initializeRoundData } from "./roundDataLoader";
 import path from "path";
-import { handleMatchPrediction } from "./routes/matchPrediction";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize data on server start
@@ -115,9 +114,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to fetch round metrics' });
     }
   });
-  
-  // Match prediction endpoint
-  app.post('/api/match-prediction', handleMatchPrediction);
 
   const httpServer = createServer(app);
   return httpServer;

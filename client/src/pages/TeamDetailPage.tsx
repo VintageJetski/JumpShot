@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import RoleBadge from "@/components/ui/role-badge";
 import ProgressMetric from "@/components/stats/ProgressMetric";
 import RoleDistributionChart from "@/components/charts/RoleDistributionChart";
-import PlayerImpactCard from "@/components/charts/PlayerImpactCard";
+import TeamPIVBarChart from "@/components/charts/TeamPIVBarChart";
 import { ArrowLeft, Rocket, Users, ShieldCheck, Star, Activity, Zap, BarChart } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import RoundMetricsCard from "@/components/team-detail/RoundMetricsCard";
@@ -301,14 +301,9 @@ export default function TeamDetailPage() {
         {/* Player Impact Value Comparison */}
         <div className="mt-8">
           <h3 className="text-lg font-medium mb-4">Player Impact Value Comparison</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {team.players
-              .sort((a, b) => b.piv - a.piv)
-              .map(player => (
-                <PlayerImpactCard key={player.id} player={player} />
-              ))
-            }
-          </div>
+          <Card className="bg-gray-800 border-gray-700 p-4">
+            <TeamPIVBarChart players={team.players} />
+          </Card>
         </div>
         
         {/* Round-Based Metrics */}

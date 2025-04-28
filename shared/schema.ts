@@ -156,6 +156,11 @@ export interface TeamRoundMetrics {
   comebackFactor: number; // Ability to win after losing multiple rounds
   closingFactor: number; // Success rate in closing out advantages (e.g., 5v4)
   
+  // Re-included metrics from previous version
+  recentPerformanceFactor: number; // For Form rating
+  criticalRoundWinRate: number;    // For BMT (Big Match Temperament)
+  momentumFactor: number;          // Overall momentum
+  
   // Map-specific metrics
   mapPerformance: {
     [mapName: string]: {

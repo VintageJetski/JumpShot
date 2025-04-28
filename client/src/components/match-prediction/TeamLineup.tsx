@@ -131,17 +131,11 @@ export const TeamLineup: React.FC<TeamLineupProps> = ({
   const tir = teamData?.tir || 0;
   const synergy = teamData?.synergy || 0;
   
-  // Top and low performing roles
+  // Top performing roles only (removed lowest performer callout)
   const topRoles = Object.entries(rolePerformers)
     .filter(([_, data]) => data.best !== undefined)
     .sort((a, b) => (b[1].best?.piv || 0) - (a[1].best?.piv || 0))
-    .slice(0, 2)
-    .map(([role]) => role as PlayerRole);
-  
-  const lowRoles = Object.entries(rolePerformers)
-    .filter(([_, data]) => data.worst !== undefined)
-    .sort((a, b) => (a[1].worst?.piv || 0) - (b[1].worst?.piv || 0))
-    .slice(0, 1)
+    .slice(0, 3) // Show top 3 since we're not showing lowest anymore
     .map(([role]) => role as PlayerRole);
 
   // Sort players: IGLs first, then by role
@@ -185,11 +179,6 @@ export const TeamLineup: React.FC<TeamLineupProps> = ({
           <div className="font-semibold text-xs flex flex-wrap items-center justify-center gap-1">
             {topRoles.map(role => (
               <Badge key={role} variant="outline" className={`text-green-500 bg-green-500/10 border-green-500/30 text-xs px-1`}>
-                {role}
-              </Badge>
-            ))}
-            {lowRoles.map(role => (
-              <Badge key={role} variant="outline" className={`text-red-500 bg-red-500/10 border-red-500/30 text-xs px-1`}>
                 {role}
               </Badge>
             ))}

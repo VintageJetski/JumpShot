@@ -496,6 +496,15 @@ const MatchPredictorPage: React.FC = () => {
                         Predicted winner: {team1Chance! > team2Chance! ? team1Id : team2Id}
                       </span>
                       
+                      {prediction.predictedScore && (
+                        <div className="flex justify-center items-center space-x-3 mt-2">
+                          <span className="text-sm text-muted-foreground">Predicted Score:</span>
+                          <span className="font-semibold">
+                            {team1Id} {prediction.predictedScore.team1Score} - {prediction.predictedScore.team2Score} {team2Id}
+                          </span>
+                        </div>
+                      )}
+                      
                       {prediction.actualScore && (
                         <div className="flex justify-center items-center space-x-3 mt-2">
                           <span className="text-sm text-muted-foreground">Actual Score:</span>
@@ -516,7 +525,7 @@ const MatchPredictorPage: React.FC = () => {
                       </h3>
                       {prediction.keyRoundFactors ? (
                         <div className="space-y-3">
-                          {prediction.keyRoundFactors.map((factor: any, index: number) => (
+                          {prediction.keyRoundFactors.map((factor: { name: string, team1Value: number, team2Value: number, advantage: number }, index: number) => (
                             <div 
                               key={index} 
                               className="flex items-start space-x-3 text-sm"
@@ -620,12 +629,12 @@ const MatchPredictorPage: React.FC = () => {
                           <div className="mt-4 text-sm text-muted-foreground">
                             {mapData && mapData.keyFactors ? (
                               <ul className="list-disc pl-5 space-y-1">
-                                {mapData.keyFactors.map((factor, i) => (
+                                {mapData.keyFactors.map((factor: string, i: number) => (
                                   <li key={i}>{factor}</li>
                                 ))}
                               </ul>
                             ) : (
-                              <p>Key factors: Strong CT side for {team1Id}, better utility usage</p>
+                              <p>No map-specific data available.</p>
                             )}
                           </div>
                         </div>

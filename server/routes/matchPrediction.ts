@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { storage } from '../storage';
 import { enhanceMatchPrediction } from '../roundAnalytics';
+import { MatchPredictionResponse } from '@shared/types';
 
 /**
  * Handle match prediction request
@@ -61,7 +62,7 @@ export async function handleMatchPrediction(req: Request, res: Response) {
       team1RoundMetrics, 
       team2RoundMetrics, 
       map
-    );
+    ) as MatchPredictionResponse;
     
     // Add the actual score object for showing historical match results
     // We'll use this for displaying actual score data
@@ -81,7 +82,7 @@ export async function handleMatchPrediction(req: Request, res: Response) {
     }
     
     // Add to prediction object
-    prediction.actualScore = actualScore;
+    (prediction as any).actualScore = actualScore;
     
     return res.json({ 
       prediction,

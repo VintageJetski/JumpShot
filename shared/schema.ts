@@ -132,13 +132,16 @@ export interface RoundData {
 export interface TeamRoundMetrics {
   id: string;
   name: string;
+  economyRating: number;
+  strategyRating: number;
+  momentumRating: number;
   
   // Economy metrics
-  econEfficiencyRatio: number; // Results achieved relative to money spent
+  economicEfficiency: number; // Results achieved relative to money spent
   forceRoundWinRate: number;
   ecoRoundWinRate: number;
   fullBuyWinRate: number;
-  economicRecoveryIndex: number; // How quickly team recovers after eco rounds
+  economicRecovery: number; // How quickly team recovers after eco rounds
   
   // Strategic metrics
   aPreference: number; // 0-1 value showing preference for A site
@@ -149,7 +152,7 @@ export interface TeamRoundMetrics {
   
   // Momentum metrics
   pistolRoundWinRate: number;
-  followUpRoundWinRate: number; // Win rate after winning pistol
+  followUpWinRate: number; // Win rate after winning pistol
   comebackFactor: number; // Ability to win after losing multiple rounds
   closingFactor: number; // Success rate in closing out advantages (e.g., 5v4)
   

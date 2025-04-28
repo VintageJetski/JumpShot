@@ -68,11 +68,12 @@ export function groupRoundsByMatch(rounds: RoundData[]): Map<string, RoundData[]
  * Calculate economy-related metrics for a team
  */
 function calculateEconomyMetrics(rounds: RoundData[], teamName: string): {
-  econEfficiencyRatio: number;
+  economyRating: number;
+  economicEfficiency: number;
   forceRoundWinRate: number;
   ecoRoundWinRate: number;
   fullBuyWinRate: number;
-  economicRecoveryIndex: number;
+  economicRecovery: number;
 } {
   let ctRounds = 0, tRounds = 0;
   let ctWins = 0, tWins = 0;
@@ -154,12 +155,22 @@ function calculateEconomyMetrics(rounds: RoundData[], teamName: string): {
   // Economic recovery
   const economicRecoveryIndex = lossRounds > 0 ? recoveryRounds / lossRounds : 0;
   
+  // Calculate overall economy rating (0-1 scale)
+  const economyRating = (
+    (econEfficiencyRatio / 10) + 
+    (forceRoundWinRate * 0.8) + 
+    (ecoRoundWinRate * 0.7) + 
+    (fullBuyWinRate * 0.9) + 
+    (economicRecoveryIndex * 0.6)
+  ) / 5;
+  
   return {
-    econEfficiencyRatio,
+    economyRating,
+    economicEfficiency: econEfficiencyRatio,
     forceRoundWinRate,
-    ecoRoundWinRate,
+    ecoRoundWinRate, 
     fullBuyWinRate,
-    economicRecoveryIndex
+    economicRecovery: economicRecoveryIndex
   };
 }
 
@@ -167,6 +178,7 @@ function calculateEconomyMetrics(rounds: RoundData[], teamName: string): {
  * Calculate strategic metrics for a team
  */
 function calculateStrategicMetrics(rounds: RoundData[], teamName: string): {
+  strategyRating: number;
   aPreference: number;
   bPreference: number;
   bombPlantRate: number;
@@ -213,7 +225,16 @@ function calculateStrategicMetrics(rounds: RoundData[], teamName: string): {
   const postPlantWinRate = bombPlants > 0 ? postPlantWins / bombPlants : 0;
   const retakeSuccessRate = bombPlantedAgainst > 0 ? retakeSuccess / bombPlantedAgainst : 0;
   
+  // Calculate overall strategy rating (0-1 scale)
+  const strategyRating = (
+    (bombPlantRate * 0.7) + 
+    (postPlantWinRate * 0.9) + 
+    (retakeSuccessRate * 0.8) + 
+    (Math.abs(aPreference - 0.5) * 0.6) // Higher score for clear site preferences
+  ) / 4;
+  
   return {
+    strategyRating,
     aPreference,
     bPreference,
     bombPlantRate,

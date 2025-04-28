@@ -740,11 +740,28 @@ export function enhanceMatchPrediction(
     return bAdvDiff - aAdvDiff;
   });
   
+  // Create map-specific predictions for multi-map series (BO3/BO5)
+  const mapBreakdown: Record<string, any> = {};
+  
+  // Only for the current map in this prediction
+  mapBreakdown[map] = {
+    mapName: map,
+    team1WinChance: team1WinProbability,
+    team2WinChance: team2WinProbability,
+    advantage: mapPickAdvantage,
+    keyFactors: [
+      `${mapPickAdvantage === 1 ? team1.name : mapPickAdvantage === 2 ? team2.name : 'Neither team'} has a historical advantage on ${map}`,
+      `${team1RoundMetrics.pistolRoundWinRate > team2RoundMetrics.pistolRoundWinRate ? team1.name : team2.name} has better pistol round performance`,
+      `${team1RoundMetrics.economicEfficiency > team2RoundMetrics.economicEfficiency ? team1.name : team2.name} has better economy management`
+    ]
+  };
+
   return {
     team1WinProbability,
     team2WinProbability,
     insights,
     mapPickAdvantage,
-    keyRoundFactors: keyRoundFactors.slice(0, 8) // Return top 8 factors
+    keyRoundFactors: keyRoundFactors.slice(0, 8), // Return top 8 factors
+    mapBreakdown
   };
 }

@@ -505,15 +505,33 @@ const MatchPredictorPage: React.FC = () => {
                         <ActivityIcon className="h-4 w-4 mr-2" />
                         Key Performance Factors
                       </h3>
-                      {prediction.keyFactors ? (
+                      {prediction.keyRoundFactors ? (
                         <div className="space-y-3">
-                          {prediction.keyFactors.map((factor: any, index: number) => (
+                          {prediction.keyRoundFactors.map((factor: any, index: number) => (
                             <div 
                               key={index} 
                               className="flex items-start space-x-3 text-sm"
                             >
                               <span className="font-medium text-primary">{index + 1}.</span>
-                              <span>{factor}</span>
+                              <div className="flex-1">
+                                <div className="flex justify-between mb-1">
+                                  <span className="font-medium">{factor.name}</span>
+                                  <div className="flex space-x-3">
+                                    <span className={factor.advantage === 1 ? "text-blue-500 font-medium" : ""}>{factor.team1Value.toFixed(1)}%</span>
+                                    <span className={factor.advantage === 2 ? "text-yellow-500 font-medium" : ""}>{factor.team2Value.toFixed(1)}%</span>
+                                  </div>
+                                </div>
+                                <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
+                                  <div 
+                                    className={`h-full ${factor.advantage === 1 ? "bg-blue-500" : "bg-blue-400"}`}
+                                    style={{ width: `${factor.team1Value}%` }} 
+                                  />
+                                  <div 
+                                    className={`h-full ${factor.advantage === 2 ? "bg-yellow-500" : "bg-yellow-400"}`}
+                                    style={{ width: `${factor.team2Value}%` }} 
+                                  />
+                                </div>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -559,36 +577,51 @@ const MatchPredictorPage: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
-                    {[...team1Picks, ...team2Picks, ...deciderMaps].map((map, index) => (
-                      <div key={map} className="p-4 border rounded-md">
-                        <div className="flex justify-between items-center mb-2">
-                          <h3 className="font-medium capitalize">
-                            {map}
-                            {team1Picks.includes(map) && 
-                              <Badge className="ml-2 bg-blue-500/20 text-blue-500">{team1Id} Pick</Badge>
-                            }
-                            {team2Picks.includes(map) && 
-                              <Badge className="ml-2 bg-yellow-500/20 text-yellow-500">{team2Id} Pick</Badge>
-                            }
-                            {deciderMaps.includes(map) && 
-                              <Badge className="ml-2">Decider</Badge>
-                            }
-                          </h3>
-                          <div className="flex space-x-1 text-sm">
-                            <span className="text-blue-500 font-medium">55%</span>
-                            <span>-</span>
-                            <span className="text-yellow-500 font-medium">45%</span>
+                    {[...team1Picks, ...team2Picks, ...deciderMaps].map((map, index) => {
+                      // Get map-specific data if available
+                      const mapData = prediction.mapBreakdown && prediction.mapBreakdown[map];
+                      const team1Chance = mapData ? Math.round(mapData.team1WinChance * 100) : 50;
+                      const team2Chance = mapData ? Math.round(mapData.team2WinChance * 100) : 50;
+                      
+                      return (
+                        <div key={map} className="p-4 border rounded-md">
+                          <div className="flex justify-between items-center mb-2">
+                            <h3 className="font-medium capitalize">
+                              {map}
+                              {team1Picks.includes(map) && 
+                                <Badge className="ml-2 bg-blue-500/20 text-blue-500">{team1Id} Pick</Badge>
+                              }
+                              {team2Picks.includes(map) && 
+                                <Badge className="ml-2 bg-yellow-500/20 text-yellow-500">{team2Id} Pick</Badge>
+                              }
+                              {deciderMaps.includes(map) && 
+                                <Badge className="ml-2">Decider</Badge>
+                              }
+                            </h3>
+                            <div className="flex space-x-1 text-sm">
+                              <span className="text-blue-500 font-medium">{team1Chance}%</span>
+                              <span>-</span>
+                              <span className="text-yellow-500 font-medium">{team2Chance}%</span>
+                            </div>
+                          </div>
+                          <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
+                            <div className="bg-blue-500 h-full" style={{ width: `${team1Chance}%` }} />
+                            <div className="bg-yellow-500 h-full" style={{ width: `${team2Chance}%` }} />
+                          </div>
+                          <div className="mt-4 text-sm text-muted-foreground">
+                            {mapData && mapData.keyFactors ? (
+                              <ul className="list-disc pl-5 space-y-1">
+                                {mapData.keyFactors.map((factor, i) => (
+                                  <li key={i}>{factor}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p>Key factors: Strong CT side for {team1Id}, better utility usage</p>
+                            )}
                           </div>
                         </div>
-                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
-                          <div className="bg-blue-500 h-full" style={{ width: '55%' }} />
-                          <div className="bg-yellow-500 h-full" style={{ width: '45%' }} />
-                        </div>
-                        <div className="mt-4 text-sm text-muted-foreground">
-                          <p>Key factors: Strong CT side for {team1Id}, better utility usage</p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>

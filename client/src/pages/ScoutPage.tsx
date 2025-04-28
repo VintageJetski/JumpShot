@@ -43,12 +43,12 @@ export default function ScoutPage() {
   const { toast } = useToast();
 
   // Fetch teams data
-  const { data: teams, isLoading: isLoadingTeams } = useQuery({
+  const { data: teams, isLoading: isLoadingTeams } = useQuery<TeamWithTIR[]>({
     queryKey: ['/api/teams'],
   });
 
   // Fetch players data
-  const { data: players, isLoading: isLoadingPlayers } = useQuery({
+  const { data: players, isLoading: isLoadingPlayers } = useQuery<PlayerWithPIV[]>({
     queryKey: ['/api/players'],
   });
 
@@ -57,9 +57,9 @@ export default function ScoutPage() {
     if (!players || !teams) return [];
     
     // Find the selected team data
-    const team = teams.find((t: TeamWithTIR) => t.name === selectedTeam);
+    const team = teams.find((t) => t.name === selectedTeam);
     
-    return players.map((player: PlayerWithPIV) => {
+    return players.map((player) => {
       // Use the scout calculator service
       const scoutData = calculatePlayerScoutData(player, team || null, players);
       
@@ -78,14 +78,14 @@ export default function ScoutPage() {
             ...scoutData.scoutMetrics,
             overall
           }
-        };
+        } as PlayerWithScout;
       }
       
       // Return player with calculated scout data
       return {
         ...player,
         ...scoutData
-      };
+      } as PlayerWithScout;
     });
   }, [players, teams, selectedTeam, roleWeightSlider, synergyWeightSlider, riskWeightSlider]);
 
@@ -108,13 +108,13 @@ export default function ScoutPage() {
         
         return true;
       })
-      .sort((a, b) => b.scoutMetrics.overall - a.scoutMetrics.overall);
+      .sort((a: PlayerWithScout, b: PlayerWithScout) => b.scoutMetrics.overall - a.scoutMetrics.overall);
   }, [playersWithScoutMetrics, roleFilter, searchQuery]);
 
   // Get single player detail
   const selectedPlayerData = useMemo(() => {
     if (!selectedPlayer || !playersWithScoutMetrics) return null;
-    return playersWithScoutMetrics.find(p => p.id === selectedPlayer) || null;
+    return playersWithScoutMetrics.find((p: PlayerWithScout) => p.id === selectedPlayer) || null;
   }, [selectedPlayer, playersWithScoutMetrics]);
 
   // Helper functions for calculations
@@ -159,7 +159,9 @@ export default function ScoutPage() {
   function calculateRiskScore(player: PlayerWithPIV): number {
     // Calculate risk score (simplified)
     // In a real implementation, would consider sample size, tilt proxy, etc.
-    const roundsPlayed = player.rawStats?.ctRoundsWon + player.rawStats?.tRoundsWon || 0;
+    const ctRounds = player.rawStats?.ctRoundsWon || 0;
+    const tRounds = player.rawStats?.tRoundsWon || 0;
+    const roundsPlayed = ctRounds + tRounds;
     
     // Sample size risk (60%)
     const sampleRisk = Math.min(60, Math.max(0, 60 - ((roundsPlayed / 200) * 60)));
@@ -503,16 +505,39 @@ export default function ScoutPage() {
                   </CardHeader>
                   <CardContent className="p-4 pt-0">
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {Object.entries(selectedPlayerData.mapComfort).map(([map, comfort]) => (
-                        <div key={map} className="text-center">
-                          <div className="w-full aspect-square bg-gray-200 rounded-md flex items-center justify-center">
-                            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black font-bold">
-                              {Math.round(comfort)}
+                      {Object.entries(selectedPlayerData.mapComfort).map(([map, comfort]) => {
+                        // Determine background color based on comfort level
+                        let bgColor = "bg-white";
+                        let textColor = "text-black";
+                        
+                        if (comfort >= 80) {
+                          bgColor = "bg-green-500";
+                          textColor = "text-white";
+                        } else if (comfort >= 70) {
+                          bgColor = "bg-green-400";
+                          textColor = "text-white";
+                        } else if (comfort >= 60) {
+                          bgColor = "bg-amber-400";
+                          textColor = "text-black";
+                        } else if (comfort >= 50) {
+                          bgColor = "bg-amber-300";
+                          textColor = "text-black";
+                        } else {
+                          bgColor = "bg-red-400";
+                          textColor = "text-white";
+                        }
+                        
+                        return (
+                          <div key={map} className="text-center">
+                            <div className="w-full aspect-square bg-gray-200 rounded-md flex items-center justify-center">
+                              <div className={`w-12 h-12 rounded-full ${bgColor} flex items-center justify-center ${textColor} font-bold`}>
+                                {Math.round(comfort)}
+                              </div>
                             </div>
+                            <div className="mt-1 text-xs capitalize">{map}</div>
                           </div>
-                          <div className="mt-1 text-xs capitalize">{map}</div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>
@@ -595,16 +620,42 @@ export default function ScoutPage() {
               <div className="flex flex-col justify-center">
                 <h3 className="font-medium mb-4">Map Pool</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {["ancient", "anubis", "inferno", "mirage", "nuke", "overpass", "vertigo"].map((map) => (
-                    <div key={map} className="text-center">
-                      <div className="w-full aspect-square bg-gray-200 rounded-md flex items-center justify-center">
-                        <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black font-bold">
-                          {Math.round(50 + Math.random() * 30)}
+                  {["ancient", "anubis", "inferno", "mirage", "nuke", "overpass", "vertigo"].map((map) => {
+                    // Generate a comfort value for each map (would normally come from team data)
+                    const comfort = 50 + Math.floor(Math.random() * 30);
+                    
+                    // Determine background color based on comfort level
+                    let bgColor = "bg-white";
+                    let textColor = "text-black";
+                    
+                    if (comfort >= 80) {
+                      bgColor = "bg-green-500";
+                      textColor = "text-white";
+                    } else if (comfort >= 70) {
+                      bgColor = "bg-green-400";
+                      textColor = "text-white";
+                    } else if (comfort >= 60) {
+                      bgColor = "bg-amber-400";
+                      textColor = "text-black";
+                    } else if (comfort >= 50) {
+                      bgColor = "bg-amber-300";
+                      textColor = "text-black";
+                    } else {
+                      bgColor = "bg-red-400";
+                      textColor = "text-white";
+                    }
+                    
+                    return (
+                      <div key={map} className="text-center">
+                        <div className="w-full aspect-square bg-gray-200 rounded-md flex items-center justify-center">
+                          <div className={`w-12 h-12 rounded-full ${bgColor} flex items-center justify-center ${textColor} font-bold`}>
+                            {comfort}
+                          </div>
                         </div>
+                        <div className="mt-1 text-xs capitalize">{map}</div>
                       </div>
-                      <div className="mt-1 text-xs capitalize">{map}</div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>

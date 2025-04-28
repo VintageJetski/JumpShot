@@ -13,6 +13,7 @@ import MapSelector from '@/components/match-prediction/MapSelector';
 import TeamSelect from '@/components/match-prediction/TeamSelect';
 import MapPickAdvantage from '@/components/match-prediction/MapPickAdvantage';
 import ContextualFactors from '@/components/match-prediction/ContextualFactors';
+import TeamLineup from '@/components/match-prediction/TeamLineup';
 
 const MatchPredictorPage: React.FC = () => {
   // State for user selections
@@ -29,19 +30,28 @@ const MatchPredictorPage: React.FC = () => {
 
   // Mutation for match prediction
   const predictionMutation = useMutation({
-    mutationFn: (data: { team1Id: string; team2Id: string; map: string }) => 
-      apiRequest('/api/match-prediction', {
+    mutationFn: async (data: { team1Id: string; team2Id: string; map: string }) => {
+      const response = await fetch('/api/match-prediction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
-      }),
-    onSuccess: () => {
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      console.log("Prediction success:", data);
       toast({
         title: 'Prediction Complete',
         description: 'Match prediction analysis has been calculated',
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Prediction error:", error);
       toast({
         title: 'Prediction Failed',
         description: 'There was an error generating the match prediction',
@@ -196,9 +206,13 @@ const MatchPredictorPage: React.FC = () => {
               <div className="mt-6">
                 <h3 className="text-sm font-medium mb-2">Key Insights:</h3>
                 <ul className="space-y-1 text-sm">
-                  {prediction.insights.map((insight, index) => (
-                    <li key={index} className="list-disc ml-5">{insight}</li>
-                  ))}
+                  {prediction.insights && prediction.insights.length > 0 ? (
+                    prediction.insights.map((insight: string, index: number) => (
+                      <li key={index} className="list-disc ml-5">{insight}</li>
+                    ))
+                  ) : (
+                    <li className="text-muted-foreground italic">No specific insights available</li>
+                  )}
                 </ul>
               </div>
             </div>
@@ -227,7 +241,7 @@ const MatchPredictorPage: React.FC = () => {
               
               {showAdvancedDetails && (
                 <ContextualFactors
-                  insights={prediction.insights}
+                  insights={prediction.insights || []}
                   keyFactors={prediction.keyRoundFactors}
                   team1Name={team1Name}
                   team2Name={team2Name}
@@ -237,6 +251,22 @@ const MatchPredictorPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Team lineups section */}
+      {(team1Id || team2Id) && (
+        <>
+          <Separator className="my-6" />
+          <h2 className="text-2xl font-bold mb-4">Team Lineups</h2>
+          <div className="grid gap-6 md:grid-cols-2">
+            {team1Id && (
+              <TeamLineup teamName={team1Id} />
+            )}
+            {team2Id && (
+              <TeamLineup teamName={team2Id} />
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

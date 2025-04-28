@@ -17,9 +17,26 @@ export async function handleMatchPrediction(req: Request, res: Response) {
       });
     }
     
-    // Get team data
-    const team1 = await storage.getTeamByName(team1Id);
-    const team2 = await storage.getTeamByName(team2Id);
+    console.log('Prediction request received for teams:', team1Id, team2Id, 'map:', map);
+    
+    // Get team data - look up by name
+    let team1 = await storage.getTeamByName(team1Id);
+    let team2 = await storage.getTeamByName(team2Id);
+    
+    if (!team1 || !team2) {
+      // If not found by ID, try getting the teams by name from the teams list
+      const allTeams = await storage.getAllTeams();
+      
+      if (!team1) {
+        team1 = allTeams.find(team => team.name === team1Id);
+        console.log('Looking up team1 by name:', team1Id, 'Found:', team1 ? 'yes' : 'no');
+      }
+      
+      if (!team2) {
+        team2 = allTeams.find(team => team.name === team2Id);
+        console.log('Looking up team2 by name:', team2Id, 'Found:', team2 ? 'yes' : 'no');
+      }
+    }
     
     if (!team1 || !team2) {
       return res.status(404).json({ 

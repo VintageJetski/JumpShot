@@ -7,7 +7,8 @@ import {
   BarChart2, 
   ArrowRightLeft, 
   Percent,
-  Menu
+  Menu,
+  Image
 } from "lucide-react";
 import {
   Sheet,

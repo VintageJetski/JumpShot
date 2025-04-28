@@ -9,7 +9,8 @@ import {
   Database,
   ArrowRightLeft,
   Percent,
-  Activity
+  Activity,
+  Image
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -91,6 +92,17 @@ export default function Sidebar() {
           >
             <Percent className="h-5 w-5 mr-2" />
             Match Predictor
+          </Link>
+          
+          <Link href="/match-infographic" 
+            className={`w-full flex items-center justify-start px-4 py-2 ${
+              isActive("/match-infographic")
+                ? "bg-primary text-white"
+                : "text-gray-300 hover:bg-gray-700"
+            } rounded font-medium`}
+          >
+            <Image className="h-5 w-5 mr-2" />
+            Match Infographic
           </Link>
         </div>
         

@@ -24,6 +24,7 @@ import {
   Library,
   Search
 } from "lucide-react";
+import { ScoutDocumentation } from "@/components/documentation/ScoutDocumentation";
 
 export default function DocumentationPage() {
   return (
@@ -440,6 +441,10 @@ export default function DocumentationPage() {
               Last updated: April 28, 2024
             </CardFooter>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="scout" className="space-y-6">
+          <ScoutDocumentation />
         </TabsContent>
         
         <TabsContent value="architecture" className="space-y-6">

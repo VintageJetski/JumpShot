@@ -14,7 +14,10 @@ import {
   Layers, 
   BarChart2, 
   GitPullRequest, 
-  Scale
+  Scale,
+  ArrowRightLeft,
+  Percent,
+  Image
 } from "lucide-react";
 
 export default function DocumentationPage() {
@@ -38,6 +41,18 @@ export default function DocumentationPage() {
           <TabsTrigger value="metrics" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             <span>Key Metrics</span>
+          </TabsTrigger>
+          <TabsTrigger value="comparisons" className="flex items-center gap-2">
+            <ArrowRightLeft className="h-4 w-4" />
+            <span>Player Comparisons</span>
+          </TabsTrigger>
+          <TabsTrigger value="predictor" className="flex items-center gap-2">
+            <Percent className="h-4 w-4" />
+            <span>Match Predictor</span>
+          </TabsTrigger>
+          <TabsTrigger value="infographic" className="flex items-center gap-2">
+            <Image className="h-4 w-4" />
+            <span>Infographics</span>
           </TabsTrigger>
         </TabsList>
 
@@ -275,10 +290,26 @@ export default function DocumentationPage() {
                 </div>
                 
                 <div className="flex items-start gap-2">
-                  <div className="w-5 h-5 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center text-xs mt-0.5">→</div>
+                  <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center text-xs mt-0.5">✓</div>
                   <div>
                     <h4 className="font-medium">Match Prediction System</h4>
-                    <p className="text-sm text-gray-400">Upcoming feature to predict match outcomes</p>
+                    <p className="text-sm text-gray-400">Advanced match outcome prediction with map-specific analytics</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-2">
+                  <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center text-xs mt-0.5">✓</div>
+                  <div>
+                    <h4 className="font-medium">Player Comparison Tool</h4>
+                    <p className="text-sm text-gray-400">Side-by-side player stat comparison with radar charts</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-2">
+                  <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center text-xs mt-0.5">✓</div>
+                  <div>
+                    <h4 className="font-medium">Match Infographic Generator</h4>
+                    <p className="text-sm text-gray-400">Create shareable match analysis infographics with key stats</p>
                   </div>
                 </div>
                 

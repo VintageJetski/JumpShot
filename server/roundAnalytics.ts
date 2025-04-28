@@ -450,6 +450,7 @@ export function enhanceMatchPrediction(
     team2Value: number; 
     advantage: number; // 1 = team1, 2 = team2, 0 = neutral
   }[];
+  mapBreakdown: Record<string, any>;
 } {
   // Base win probability from existing TIR calculation
   let team1WinProbability = 0.5 + (team1.tir - team2.tir) * 0.05;
@@ -466,7 +467,7 @@ export function enhanceMatchPrediction(
   }[] = [];
   
   // 1. Economy management adjustments
-  const econDiff = team1RoundMetrics.econEfficiencyRatio - team2RoundMetrics.econEfficiencyRatio;
+  const econDiff = team1RoundMetrics.economicEfficiency - team2RoundMetrics.economicEfficiency;
   const econAdjustment = econDiff * 0.005;
   adjustments.push({
     factor: econAdjustment,
@@ -478,8 +479,8 @@ export function enhanceMatchPrediction(
   
   keyRoundFactors.push({
     name: "Economy Efficiency",
-    team1Value: team1RoundMetrics.econEfficiencyRatio * 100,
-    team2Value: team2RoundMetrics.econEfficiencyRatio * 100,
+    team1Value: team1RoundMetrics.economicEfficiency * 100,
+    team2Value: team2RoundMetrics.economicEfficiency * 100,
     advantage: econDiff > 0 ? 1 : econDiff < 0 ? 2 : 0
   });
   

@@ -262,11 +262,13 @@ const MatchPredictorPage: React.FC = () => {
                         <SelectValue placeholder="Select team 1" />
                       </SelectTrigger>
                       <SelectContent>
-                        {teams.map((team) => (
-                          <SelectItem key={team.id} value={team.id}>
-                            {team.name} (TIR: {Math.round(team.tir * 10)})
-                          </SelectItem>
-                        ))}
+                        {teams
+                          .filter(team => team.name && !team.name.includes("Opening") && !team.name.includes("K/D") && !team.name.includes("Zone"))
+                          .map((team) => (
+                            <SelectItem key={team.id} value={team.name}>
+                              {team.name} (TIR: {Math.round(team.tir * 10)})
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -278,11 +280,13 @@ const MatchPredictorPage: React.FC = () => {
                         <SelectValue placeholder="Select team 2" />
                       </SelectTrigger>
                       <SelectContent>
-                        {teams.map((team) => (
-                          <SelectItem key={team.id} value={team.id}>
-                            {team.name} (TIR: {Math.round(team.tir * 10)})
-                          </SelectItem>
-                        ))}
+                        {teams
+                          .filter(team => team.name && !team.name.includes("Opening") && !team.name.includes("K/D") && !team.name.includes("Zone"))
+                          .map((team) => (
+                            <SelectItem key={team.id} value={team.name}>
+                              {team.name} (TIR: {Math.round(team.tir * 10)})
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>

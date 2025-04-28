@@ -1,61 +1,36 @@
-import React from 'react';
-import { Badge } from '@/components/ui/badge';
-import { PlayerRole } from '@shared/schema';
+import { Badge } from "@/components/ui/badge";
+import { PlayerRole } from "@shared/types";
 
 interface RoleBadgeProps {
   role: PlayerRole;
-  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+  size?: string;
 }
 
-/**
- * RoleBadge - A component for displaying player roles with color coding
- * - Blue for CT side roles
- * - Orange for T side roles
- * - Purple for IGL role
- */
-const RoleBadge: React.FC<RoleBadgeProps> = ({ role, size = 'md' }) => {
-  // Determine role type (CT, T, or IGL)
-  const isCTRole = [PlayerRole.Anchor, PlayerRole.Rotator].includes(role);
-  const isTRole = [PlayerRole.Support, PlayerRole.Spacetaker, PlayerRole.Lurker].includes(role);
-  const isIGL = role === PlayerRole.IGL;
-  const isAWP = role === PlayerRole.AWP;
-  
-  // Determine styling based on role type
-  let badgeClass = '';
-  
-  if (isIGL) {
-    badgeClass = 'bg-purple-900/50 text-purple-300 border-purple-700';
-  } else if (isAWP) {
-    badgeClass = 'bg-amber-900/50 text-amber-300 border-amber-700';
-  } else if (isCTRole) {
-    badgeClass = 'bg-blue-900/50 text-blue-300 border-blue-700';
-  } else if (isTRole) {
-    badgeClass = 'bg-orange-900/50 text-orange-300 border-orange-700';
-  } else {
-    badgeClass = 'bg-gray-900/50 text-gray-300 border-gray-700';
+export default function RoleBadge({ role, className = "", size = "" }: RoleBadgeProps) {
+  const roleColors: Record<PlayerRole, { bg: string, text: string }> = {
+    [PlayerRole.IGL]: { bg: "bg-purple-500", text: "text-white" },
+    [PlayerRole.AWP]: { bg: "bg-yellow-500", text: "text-black" },
+    [PlayerRole.Lurker]: { bg: "bg-blue-500", text: "text-white" },
+    [PlayerRole.Spacetaker]: { bg: "bg-green-500", text: "text-white" },
+    [PlayerRole.Support]: { bg: "bg-indigo-500", text: "text-white" },
+    [PlayerRole.Anchor]: { bg: "bg-blue-700", text: "text-white" },
+    [PlayerRole.Rotator]: { bg: "bg-sky-500", text: "text-white" },
+  };
+
+  const { bg, text } = roleColors[role] || { bg: "bg-gray-500", text: "text-white" };
+
+  // Apply size classes
+  let sizeClasses = "";
+  if (size === "sm") {
+    sizeClasses = "text-xs px-1.5 py-0";
+  } else if (size === "lg") {
+    sizeClasses = "text-base px-3 py-1";
   }
-  
-  // Determine size-based styling
-  let sizeClass = '';
-  switch (size) {
-    case 'sm':
-      sizeClass = 'text-xs py-0 px-1.5';
-      break;
-    case 'lg':
-      sizeClass = 'text-base py-1 px-3';
-      break;
-    default:
-      sizeClass = 'text-sm py-0.5 px-2';
-  }
-  
+
   return (
-    <Badge 
-      variant="outline" 
-      className={`${badgeClass} ${sizeClass} font-medium rounded`}
-    >
+    <Badge className={`${bg} ${text} ${sizeClasses} ${className}`}>
       {role}
     </Badge>
   );
-};
-
-export default RoleBadge;
+}

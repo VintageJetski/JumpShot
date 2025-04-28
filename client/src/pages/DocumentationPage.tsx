@@ -189,6 +189,241 @@ export default function DocumentationPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="comparisons" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ArrowRightLeft className="h-5 w-5 text-primary" />
+                Player Comparison System
+              </CardTitle>
+              <CardDescription>
+                Advanced side-by-side player comparison with radar charts and metric breakdowns
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <h3 className="text-lg font-semibold">Feature Overview</h3>
+              <p>The Player Comparison tool allows for detailed side-by-side analysis of two players, enabling users to:</p>
+              
+              <ul className="list-disc pl-6 space-y-2 mt-2">
+                <li>Compare overall PIV ratings and metric breakdowns</li>
+                <li>Visualize strengths and weaknesses with radar charts</li>
+                <li>Analyze role-specific metrics for each player</li>
+                <li>View side-by-side K/D, utility usage, and impact metrics</li>
+                <li>Compare CT-side and T-side performance</li>
+              </ul>
+              
+              <div className="bg-black/20 p-4 rounded-md mt-4">
+                <h4 className="font-medium text-primary mb-2">Radar Chart Visualization</h4>
+                <p className="text-sm">
+                  The radar charts display 6 key metrics for each player, normalized to a 0-100 scale for easy visual comparison. The metrics displayed depend on the player's role, ensuring relevant comparisons between players.
+                </p>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-4 mt-6">
+                <div className="border border-gray-700 rounded-md p-4">
+                  <h4 className="font-medium text-primary mb-2">Role-Specific Comparisons</h4>
+                  <p className="text-sm">The system intelligently adapts comparisons based on player roles. When comparing players with different roles (e.g., AWPer vs. Support), the metrics are normalized and weighted to ensure fair assessment.</p>
+                </div>
+                
+                <div className="border border-gray-700 rounded-md p-4">
+                  <h4 className="font-medium text-primary mb-2">Side-Specific Analysis</h4>
+                  <p className="text-sm">The comparison includes breakdowns of T-side and CT-side performance, allowing analysis of how players perform in their specific side roles (e.g., Lurker on T-side vs. Anchor on CT-side).</p>
+                </div>
+              </div>
+              
+              <h3 className="text-lg font-semibold mt-8">Key Comparison Metrics</h3>
+              <div className="space-y-2 mt-2">
+                <div className="flex justify-between items-center border-b border-gray-700 pb-2">
+                  <span className="font-medium">Metric</span>
+                  <span className="font-medium">Description</span>
+                </div>
+                
+                <div className="flex justify-between items-center py-2">
+                  <span>PIV Rating</span>
+                  <span className="text-sm text-gray-400">Overall Player Impact Value (0-100)</span>
+                </div>
+                
+                <div className="flex justify-between items-center py-2">
+                  <span>K/D Ratio</span>
+                  <span className="text-sm text-gray-400">Kills divided by deaths</span>
+                </div>
+                
+                <div className="flex justify-between items-center py-2">
+                  <span>RCS (Role Core Score)</span>
+                  <span className="text-sm text-gray-400">Role-specific performance metric</span>
+                </div>
+                
+                <div className="flex justify-between items-center py-2">
+                  <span>ICF (Individual Consistency)</span>
+                  <span className="text-sm text-gray-400">Consistency and raw performance</span>
+                </div>
+                
+                <div className="flex justify-between items-center py-2">
+                  <span>SC (Synergy Contribution)</span>
+                  <span className="text-sm text-gray-400">Contribution to team success</span>
+                </div>
+                
+                <div className="flex justify-between items-center py-2">
+                  <span>Role-Specific Metrics</span>
+                  <span className="text-sm text-gray-400">Metrics relevant to player's primary role</span>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="text-sm text-gray-400">
+              Last updated: April 28, 2024
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="predictor" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Percent className="h-5 w-5 text-primary" />
+                Match Prediction System
+              </CardTitle>
+              <CardDescription>
+                Advanced analytics for predicting CS2 match outcomes with map-specific insights
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <h3 className="text-lg font-semibold">Prediction Methodology</h3>
+              <p>The Match Predictor uses a multi-factor analysis system that considers:</p>
+              
+              <ul className="list-disc pl-6 space-y-2 mt-2">
+                <li>Team Impact Ratings (TIR) with synergy calculations</li>
+                <li>Individual player PIV ratings with role considerations</li>
+                <li>Map-specific performance statistics</li>
+                <li>Round-based metrics such as economy efficiency and pistol round success</li>
+                <li>Historical head-to-head performance (when available)</li>
+                <li>Contextual factors like recent form, roster changes, and tournament stage</li>
+              </ul>
+              
+              <div className="bg-black/20 p-4 rounded-md mt-4">
+                <h4 className="font-medium text-primary mb-2">Map Selection Impact</h4>
+                <p className="text-sm">
+                  The predictor heavily weights map-specific performance, as certain teams excel on particular maps. The system analyzes side-specific win rates (T vs. CT) on each map to provide nuanced predictions.
+                </p>
+              </div>
+              
+              <h3 className="text-lg font-semibold mt-8">Prediction Components</h3>
+              
+              <div className="grid md:grid-cols-2 gap-4 mt-4">
+                <div className="border border-gray-700 rounded-md p-4">
+                  <h4 className="font-medium text-primary mb-2">Team Strength Analysis</h4>
+                  <p className="text-sm">Core prediction based on team TIR ratings, player PIV scores, and role coverage. Teams with balanced role distributions and higher average PIV scores typically receive stronger predictions.</p>
+                </div>
+                
+                <div className="border border-gray-700 rounded-md p-4">
+                  <h4 className="font-medium text-primary mb-2">Map-Specific Adjustments</h4>
+                  <p className="text-sm">Predictions are adjusted based on team performance on the selected map, including side win rates (T/CT), bombsite preferences, and utility usage patterns.</p>
+                </div>
+                
+                <div className="border border-gray-700 rounded-md p-4">
+                  <h4 className="font-medium text-primary mb-2">Economy & Round Analysis</h4>
+                  <p className="text-sm">Insights from round-by-round data including pistol round success rates, force buy effectiveness, economic recovery patterns, and comeback factors.</p>
+                </div>
+                
+                <div className="border border-gray-700 rounded-md p-4">
+                  <h4 className="font-medium text-primary mb-2">Contextual Factors</h4>
+                  <p className="text-sm">Adjustable factors such as recent form, roster changes, tournament importance, and stand-in players that can impact match outcomes beyond raw statistics.</p>
+                </div>
+              </div>
+              
+              <h3 className="text-lg font-semibold mt-8">Result Interpretation</h3>
+              <p className="mt-2">The prediction engine provides:</p>
+              <ul className="list-disc pl-6 space-y-1 mt-2">
+                <li>Win probability percentage for each team</li>
+                <li>Map-specific advantages and key areas to watch</li>
+                <li>Expected performance from key players (star players and IGLs)</li>
+                <li>Round distribution predictions (close match vs. dominant performance)</li>
+              </ul>
+              
+              <div className="bg-primary/10 p-4 rounded-md mt-6">
+                <h4 className="font-medium text-primary mb-2">Accuracy Considerations</h4>
+                <p className="text-sm">
+                  The prediction system is designed to provide informed analytical insights, not gambling advice. Predictions represent statistical likelihood based on available data and should be interpreted as one tool in match analysis.
+                </p>
+              </div>
+            </CardContent>
+            <CardFooter className="text-sm text-gray-400">
+              Last updated: April 28, 2024
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="infographic" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Image className="h-5 w-5 text-primary" />
+                Match Infographic Generator
+              </CardTitle>
+              <CardDescription>
+                Create shareable visuals highlighting key match statistics and player performances
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <h3 className="text-lg font-semibold">Feature Overview</h3>
+              <p>The Match Infographic Generator creates polished, shareable visualizations for team comparisons, including:</p>
+              
+              <ul className="list-disc pl-6 space-y-2 mt-2">
+                <li>Head-to-head team statistics with TIR ratings</li>
+                <li>Key player highlights with role designations</li>
+                <li>Critical round-based metrics comparisons</li>
+                <li>Map-specific performance analysis</li>
+                <li>Team advantages and strengths</li>
+                <li>Downloadable PNG format for sharing</li>
+              </ul>
+              
+              <div className="bg-black/20 p-4 rounded-md mt-4">
+                <h4 className="font-medium text-primary mb-2">Export & Sharing Options</h4>
+                <p className="text-sm">
+                  Infographics can be downloaded as high-quality PNG images or shared directly via the platform's sharing function. The system uses the html-to-image library to create crisp visuals suitable for social media or analytical presentations.
+                </p>
+              </div>
+              
+              <h3 className="text-lg font-semibold mt-8">Infographic Components</h3>
+              
+              <div className="grid md:grid-cols-2 gap-4 mt-4">
+                <div className="border border-gray-700 rounded-md p-4">
+                  <h4 className="font-medium text-primary mb-2">Team Strengths Comparison</h4>
+                  <p className="text-sm">Visual representation of team TIR ratings with key advantage areas highlighted. Teams' relative strengths are displayed with intuitive progress bars and advantage badges.</p>
+                </div>
+                
+                <div className="border border-gray-700 rounded-md p-4">
+                  <h4 className="font-medium text-primary mb-2">Key Players Showcase</h4>
+                  <p className="text-sm">Highlight of top performers, AWPers, and IGLs from each team with their PIV ratings and role designations. Role badges are color-coded (blue for CT, orange for T, purple for IGL).</p>
+                </div>
+                
+                <div className="border border-gray-700 rounded-md p-4">
+                  <h4 className="font-medium text-primary mb-2">Round Performance Metrics</h4>
+                  <p className="text-sm">Side-by-side comparison of critical round-based metrics including pistol round win rates, economy efficiency, force buy success rates, and comeback factors.</p>
+                </div>
+                
+                <div className="border border-gray-700 rounded-md p-4">
+                  <h4 className="font-medium text-primary mb-2">Map Analysis</h4>
+                  <p className="text-sm">Overview of common maps in the teams' map pools with CT and T side win percentages for each team, highlighting map advantages for potential match predictions.</p>
+                </div>
+              </div>
+              
+              <div className="bg-primary/10 p-4 rounded-md mt-6">
+                <h4 className="font-medium text-primary mb-2">Use Cases</h4>
+                <ul className="list-disc pl-6 space-y-1 mt-2 text-sm">
+                  <li><strong>Pre-match Analysis:</strong> Create shareable infographics for upcoming matches</li>
+                  <li><strong>Post-match Breakdowns:</strong> Highlight statistics from completed matches</li>
+                  <li><strong>Team Scouting:</strong> Generate reports on team strengths and weaknesses</li>
+                  <li><strong>Social Media Content:</strong> Share insights with the CS2 community</li>
+                  <li><strong>Analytical Presentations:</strong> Support strategic team analysis for coaches and analysts</li>
+                </ul>
+              </div>
+            </CardContent>
+            <CardFooter className="text-sm text-gray-400">
+              Last updated: April 28, 2024
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
         <TabsContent value="metrics" className="space-y-6">
           <Card>
             <CardHeader>

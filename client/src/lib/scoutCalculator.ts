@@ -188,8 +188,14 @@ function calculateIGLScore(player: PlayerWithPIV, metrics: Record<string, number
   const iglPlayers = allPlayers.filter(p => p.role === PlayerRole.IGL && p.rawStats);
   
   // Round win rate rifle v rifle (24.5%)
-  const rifleRoundWinRate = player.rawStats.ctRoundsWon / Math.max(1, (player.rawStats.ctRoundsWon + player.rawStats.tRoundsWon));
-  const allRifleRoundWinRates = iglPlayers.map(p => p.rawStats?.ctRoundsWon / Math.max(1, (p.rawStats?.ctRoundsWon + p.rawStats?.tRoundsWon)) || 0);
+  const ctRoundsWon = player.rawStats.ctRoundsWon || 0;
+  const tRoundsWon = player.rawStats.tRoundsWon || 0;
+  const rifleRoundWinRate = ctRoundsWon / Math.max(1, (ctRoundsWon + tRoundsWon));
+  const allRifleRoundWinRates = iglPlayers.map(p => {
+    const pCtRoundsWon = p.rawStats?.ctRoundsWon || 0;
+    const pTRoundsWon = p.rawStats?.tRoundsWon || 0;
+    return pCtRoundsWon / Math.max(1, (pCtRoundsWon + pTRoundsWon));
+  });
   const normalizedRifleRoundWinRate = normalizeValue(
     rifleRoundWinRate,
     Math.min(...allRifleRoundWinRates),
@@ -527,11 +533,13 @@ function calculateSupportScore(player: PlayerWithPIV, metrics: Record<string, nu
   const pistolInfluence = 50;
   
   // Smoke usage (15.0%)
-  const smokeUsage = player.rawStats.totalSmokesThrown / metrics.R;
+  const totalSmokes = player.rawStats.tSmokesThrown + player.rawStats.ctSmokesThrown;
+  const smokeUsage = totalSmokes / metrics.R;
   const allSmokeUsages = supportPlayers.map(p => {
     if (!p.rawStats) return 0;
     const m = getPlayerUniversalMetrics(p);
-    return p.rawStats.totalSmokesThrown / m.R;
+    const pTotalSmokes = (p.rawStats.tSmokesThrown || 0) + (p.rawStats.ctSmokesThrown || 0);
+    return pTotalSmokes / m.R;
   });
   const normalizedSmokeUsage = normalizeValue(
     smokeUsage,

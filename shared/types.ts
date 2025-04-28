@@ -151,6 +151,11 @@ export interface TeamRoundMetrics {
   comebackFactor: number;
   closingFactor: number;
   
+  // Re-included metrics from previous version
+  recentPerformanceFactor: number; // For Form rating
+  criticalRoundWinRate: number;    // For BMT (Big Match Temperament)
+  momentumFactor: number;          // Overall momentum
+  
   // Map-specific performance
   mapPerformance: {
     [map: string]: {

@@ -151,11 +151,6 @@ export interface TeamRoundMetrics {
   comebackFactor: number;
   closingFactor: number;
   
-  // Re-included metrics from previous version
-  recentPerformanceFactor: number; // For Form rating
-  criticalRoundWinRate: number;    // For BMT (Big Match Temperament)
-  momentumFactor: number;          // Overall momentum
-  
   // Map-specific performance
   mapPerformance: {
     [map: string]: {
@@ -184,65 +179,10 @@ export interface MatchPredictionResponse {
   team2WinProbability: number;
   insights: string[];
   mapPickAdvantage: number;
-  
-  // Key round factors (calculated from round data)
   keyRoundFactors: {
     name: string;
     team1Value: number;
     team2Value: number;
     advantage: number; // 1 = team1, 2 = team2, 0 = neutral
   }[];
-  
-  // Core comparison metrics
-  form?: {
-    team1Value: number;
-    team2Value: number;
-    advantage: number;
-  };
-  bmt?: {
-    team1Value: number;
-    team2Value: number;
-    advantage: number;
-  };
-  chemistry?: {
-    team1Value: number;
-    team2Value: number;
-    advantage: number;
-  };
-  momentum?: {
-    team1Value: number;
-    team2Value: number;
-    advantage: number;
-  };
-  mapMatchup?: {
-    team1Value: number;
-    team2Value: number;
-    advantage: number;
-  };
-  history?: {
-    team1Value: number;
-    team2Value: number;
-    advantage: number;
-  };
-  
-  // Score predictions
-  predictedScore: {
-    mapScore: {
-      team1Score: number;
-      team2Score: number;
-    };
-    seriesScore: {
-      team1Score: number;
-      team2Score: number;
-    };
-  };
-  
-  // Historical match results (if available)
-  actualScore?: {
-    team1Score: number;
-    team2Score: number;
-  };
-  
-  // Map-specific breakdown for series
-  mapBreakdown?: Record<string, any>;
 }

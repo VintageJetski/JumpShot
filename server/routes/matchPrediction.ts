@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { storage } from '../storage';
 import { enhanceMatchPrediction } from '../roundAnalytics';
-import { MatchPredictionResponse } from '@shared/types';
 
 /**
  * Handle match prediction request
@@ -18,26 +17,9 @@ export async function handleMatchPrediction(req: Request, res: Response) {
       });
     }
     
-    console.log('Prediction request received for teams:', team1Id, team2Id, 'map:', map);
-    
-    // Get team data - look up by name
-    let team1 = await storage.getTeamByName(team1Id);
-    let team2 = await storage.getTeamByName(team2Id);
-    
-    if (!team1 || !team2) {
-      // If not found by ID, try getting the teams by name from the teams list
-      const allTeams = await storage.getAllTeams();
-      
-      if (!team1) {
-        team1 = allTeams.find(team => team.name === team1Id);
-        console.log('Looking up team1 by name:', team1Id, 'Found:', team1 ? 'yes' : 'no');
-      }
-      
-      if (!team2) {
-        team2 = allTeams.find(team => team.name === team2Id);
-        console.log('Looking up team2 by name:', team2Id, 'Found:', team2 ? 'yes' : 'no');
-      }
-    }
+    // Get team data
+    const team1 = await storage.getTeamByName(team1Id);
+    const team2 = await storage.getTeamByName(team2Id);
     
     if (!team1 || !team2) {
       return res.status(404).json({ 
@@ -62,33 +44,7 @@ export async function handleMatchPrediction(req: Request, res: Response) {
       team1RoundMetrics, 
       team2RoundMetrics, 
       map
-    ) as MatchPredictionResponse;
-    
-    // This is simulating historical match data
-    // In a production system, this would be pulled from a database of past matches
-    
-    // For the actual map score (CS2 is first to 13)
-    const actualMapScore = {
-      team1Score: Math.round(Math.random() * 12) + 1, // This would come from actual historical data
-      team2Score: 0 // Will be calculated
-    };
-    
-    // For an actual CS2 score, one team must have 13 points to win
-    if (actualMapScore.team1Score >= 13) {
-      actualMapScore.team1Score = 13;
-      // Other team can have 0-12 points
-      actualMapScore.team2Score = Math.min(12, Math.round(Math.random() * 10));
-    } else {
-      actualMapScore.team1Score = Math.min(12, actualMapScore.team1Score);
-      actualMapScore.team2Score = 13;
-    }
-    
-    // Add to prediction object - just use the map score for the actual score
-    // This matches the current display in the frontend which only shows map score for actual
-    prediction.actualScore = {
-      team1Score: actualMapScore.team1Score,
-      team2Score: actualMapScore.team2Score
-    };
+    );
     
     return res.json({ 
       prediction,

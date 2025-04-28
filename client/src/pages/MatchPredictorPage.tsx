@@ -1,103 +1,47 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet';
-import { useToast } from '@/hooks/use-toast';
-import { 
-  GlobeIcon, 
-  Loader2Icon, 
-  ArrowRightIcon, 
-  ActivityIcon,
-  BarChart3Icon,
-  AlertCircleIcon
-} from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from "@/components/ui/switch";
 import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { 
-  Card, 
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter
-} from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+import { Loader2Icon, ArrowRightIcon } from 'lucide-react';
 
-// Define interfaces for the application
-interface TeamWithTIR {
-  id: string;
-  name: string;
-  tir: number;
-  sumPIV?: number;
-  synergy?: number;
-  avgPIV?: number;
-  topPlayerName?: string;
-  topPlayerPIV?: number;
-  players?: any[];
-}
-
-// Import prediction components
-import TeamLineup from '@/components/match-prediction/TeamLineup';
-
-// Define available maps for BO3/BO5
-const availableMaps = [
-  'ancient', 'anubis', 'inferno', 'mirage', 'nuke', 'overpass', 'vertigo'
-];
+// Import our prediction components
+import MapSelector from '@/components/match-prediction/MapSelector';
+import TeamSelect from '@/components/match-prediction/TeamSelect';
+import MapPickAdvantage from '@/components/match-prediction/MapPickAdvantage';
+import ContextualFactors from '@/components/match-prediction/ContextualFactors';
 
 const MatchPredictorPage: React.FC = () => {
-  const { toast } = useToast();
-  
   // State for user selections
-  const [matchType, setMatchType] = useState<'bo1' | 'bo3' | 'bo5'>('bo1');
+  const [selectedMap, setSelectedMap] = useState('');
   const [team1Id, setTeam1Id] = useState<string | undefined>();
   const [team2Id, setTeam2Id] = useState<string | undefined>();
-  
-  // BO1 state
-  const [selectedMap, setSelectedMap] = useState<string>('');
-  
-  // BO3/BO5 state
-  const [team1Picks, setTeam1Picks] = useState<string[]>([]);
-  const [team2Picks, setTeam2Picks] = useState<string[]>([]);
-  const [deciderMaps, setDeciderMaps] = useState<string[]>([]);
-  const [currentStage, setCurrentStage] = useState<'team1' | 'team2' | 'decider'>('team1');
+  const [showAdvancedDetails, setShowAdvancedDetails] = useState(false);
 
   // Fetch teams data
-  const { data: teams = [], isLoading: isLoadingTeams } = useQuery<TeamWithTIR[]>({
+  const { data: teams = [], isLoading: isLoadingTeams } = useQuery({
     queryKey: ['/api/teams'],
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 
   // Mutation for match prediction
   const predictionMutation = useMutation({
-    mutationFn: async (data: { team1Id: string; team2Id: string; map: string; isBO3?: boolean; maps?: string[] }) => {
-      const response = await fetch('/api/match-prediction', {
+    mutationFn: (data: { team1Id: string; team2Id: string; map: string }) => 
+      apiRequest('/api/match-prediction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
-      
-      return response.json();
-    },
-    onSuccess: (data) => {
-      console.log("Prediction success:", data);
+      }),
+    onSuccess: () => {
       toast({
         title: 'Prediction Complete',
         description: 'Match prediction analysis has been calculated',
       });
     },
-    onError: (error) => {
-      console.error("Prediction error:", error);
+    onError: () => {
       toast({
         title: 'Prediction Failed',
         description: 'There was an error generating the match prediction',
@@ -108,60 +52,27 @@ const MatchPredictorPage: React.FC = () => {
 
   // Handle prediction button click
   const handleRunPrediction = () => {
-    if (!team1Id || !team2Id) {
+    if (!team1Id || !team2Id || !selectedMap) {
       toast({
-        title: 'Missing Teams',
-        description: 'Please select two teams first',
+        title: 'Missing Information',
+        description: 'Please select two teams and a map first',
         variant: 'destructive',
       });
       return;
     }
 
-    if (matchType === 'bo1') {
-      if (!selectedMap) {
-        toast({
-          title: 'Missing Map',
-          description: 'Please select a map for the BO1',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      predictionMutation.mutate({
-        team1Id,
-        team2Id,
-        map: selectedMap,
-        isBO3: false
-      });
-    } else {
-      // BO3/BO5 mode
-      const mapsNeeded = matchType === 'bo3' ? 1 : 2;
-      const deciderNeeded = 1;
-      
-      if (team1Picks.length < mapsNeeded || team2Picks.length < mapsNeeded || deciderMaps.length < deciderNeeded) {
-        toast({
-          title: 'Missing Maps',
-          description: `Please complete the map picks for ${matchType.toUpperCase()}`,
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      const allMaps = [...team1Picks, ...team2Picks, ...deciderMaps];
-      
-      predictionMutation.mutate({
-        team1Id,
-        team2Id,
-        map: allMaps[0], // primary map
-        isBO3: true,
-        maps: allMaps
-      });
-    }
+    predictionMutation.mutate({
+      team1Id,
+      team2Id,
+      map: selectedMap
+    });
   };
 
   // Get the prediction result
   const prediction = predictionMutation.data?.prediction;
-  
+  const team1Name = team1Id;
+  const team2Name = team2Id;
+
   // Calculate win probabilities for visualization
   const team1Chance = prediction?.team1WinProbability 
     ? Math.round(prediction.team1WinProbability * 100) 
@@ -169,54 +80,6 @@ const MatchPredictorPage: React.FC = () => {
   const team2Chance = prediction?.team2WinProbability 
     ? Math.round(prediction.team2WinProbability * 100) 
     : null;
-    
-  // Handle map picks for BO3/BO5
-  const handleMapPick = (map: string) => {
-    const neededMapsPerTeam = matchType === 'bo3' ? 1 : 2; // BO3: 1 map per team, BO5: 2 maps per team
-    
-    if (currentStage === 'team1') {
-      if (team1Picks.length < neededMapsPerTeam) {
-        setTeam1Picks([...team1Picks, map]);
-        if (team1Picks.length + 1 >= neededMapsPerTeam) {
-          setCurrentStage('team2');
-        }
-      }
-    } else if (currentStage === 'team2') {
-      if (team2Picks.length < neededMapsPerTeam) {
-        setTeam2Picks([...team2Picks, map]);
-        if (team2Picks.length + 1 >= neededMapsPerTeam) {
-          setCurrentStage('decider');
-        }
-      }
-    } else if (currentStage === 'decider') {
-      // For decider maps
-      const neededDeciders = matchType === 'bo3' ? 1 : 1; // BO3: 1 decider, BO5: 1 decider
-      if (deciderMaps.length < neededDeciders) {
-        setDeciderMaps([...deciderMaps, map]);
-      }
-    }
-  };
-  
-  // Reset map selections
-  const resetMapSelections = () => {
-    setTeam1Picks([]);
-    setTeam2Picks([]);
-    setDeciderMaps([]);
-    setCurrentStage('team1');
-  };
-
-  // Is a map available to pick?
-  const isMapAvailable = (map: string) => {
-    const selectedMaps = [...team1Picks, ...team2Picks, ...deciderMaps];
-    return !selectedMaps.includes(map);
-  };
-  
-  // Get current pick stage label
-  const getPickingStageLabel = () => {
-    if (currentStage === 'team1') return `${team1Id || 'Team 1'} Picking`;
-    if (currentStage === 'team2') return `${team2Id || 'Team 2'} Picking`;
-    return "Select Decider Map";
-  };
 
   return (
     <div className="container mx-auto py-6">
@@ -224,561 +87,155 @@ const MatchPredictorPage: React.FC = () => {
         <title>Match Predictor | CS2 Analytics Platform</title>
       </Helmet>
 
-      <div className="flex flex-col space-y-2 mb-6">
-        <div className="flex items-center">
-          <GlobeIcon className="mr-2 h-6 w-6 text-primary" />
-          <h1 className="text-3xl font-bold tracking-tight">Match Predictor</h1>
-        </div>
+      <div className="flex flex-col space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight">Match Predictor</h1>
         <p className="text-muted-foreground">
           Predict match outcomes based on team performance and round-by-round analysis
         </p>
       </div>
 
-      <div className="space-y-8">
-        {/* MATCH SETUP SECTION */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Team selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Team Selection</CardTitle>
-              <CardDescription>Choose the teams competing in this match</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Team 1</label>
-                  <Select value={team1Id} onValueChange={setTeam1Id}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select team 1" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {teams
-                        .filter(team => team.name && !team.name.includes("Opening") && !team.name.includes("K/D") && !team.name.includes("Zone"))
-                        .map((team) => (
-                          <SelectItem key={team.id} value={team.name}>
-                            {team.name} (TIR: {Math.round(team.tir * 10)})
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Team 2</label>
-                  <Select value={team2Id} onValueChange={setTeam2Id}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select team 2" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {teams
-                        .filter(team => team.name && !team.name.includes("Opening") && !team.name.includes("K/D") && !team.name.includes("Zone"))
-                        .map((team) => (
-                          <SelectItem key={team.id} value={team.name}>
-                            {team.name} (TIR: {Math.round(team.tir * 10)})
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <Separator className="my-6" />
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Left column - Team select */}
+        <div className="space-y-6 md:col-span-1">
+          <TeamSelect 
+            teams={teams}
+            team1Id={team1Id}
+            team2Id={team2Id}
+            onTeam1Change={setTeam1Id}
+            onTeam2Change={setTeam2Id}
+          />
           
-          {/* Match configuration */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Match Configuration</CardTitle>
-              <CardDescription>Choose match type and map selections</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Match Type</label>
-                  <RadioGroup 
-                    value={matchType} 
-                    onValueChange={(value: string) => {
-                      setMatchType(value as 'bo1' | 'bo3' | 'bo5');
-                      resetMapSelections();
-                      setSelectedMap('');
-                    }} 
-                    className="flex gap-4"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="bo1" id="bo1" />
-                      <label htmlFor="bo1">Best of 1</label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="bo3" id="bo3" />
-                      <label htmlFor="bo3">Best of 3</label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="bo5" id="bo5" />
-                      <label htmlFor="bo5">Best of 5</label>
-                    </div>
-                  </RadioGroup>
-                </div>
-                
-                {matchType === 'bo1' ? (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Map</label>
-                    <Select value={selectedMap} onValueChange={setSelectedMap}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a map" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableMaps.map((map) => (
-                          <SelectItem key={map} value={map}>
-                            {map.charAt(0).toUpperCase() + map.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        {getPickingStageLabel()}
-                      </label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {availableMaps.map((map) => (
-                          <Button
-                            key={map}
-                            variant={
-                              team1Picks.includes(map) 
-                                ? "default" 
-                                : team2Picks.includes(map) 
-                                  ? "secondary" 
-                                  : deciderMaps.includes(map) 
-                                    ? "outline" 
-                                    : "ghost"
-                            }
-                            size="sm"
-                            disabled={!isMapAvailable(map)}
-                            onClick={() => handleMapPick(map)}
-                            className="text-xs capitalize justify-start"
-                          >
-                            {map}
-                            {team1Picks.includes(map) && <Badge className="ml-auto bg-blue-500">Team 1</Badge>}
-                            {team2Picks.includes(map) && <Badge className="ml-auto bg-yellow-500">Team 2</Badge>}
-                            {deciderMaps.includes(map) && <Badge className="ml-auto">Decider</Badge>}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span>{team1Id} pick: {team1Picks.join(', ')}</span>
-                        <span>{team2Id} pick: {team2Picks.join(', ')}</span>
-                      </div>
-                      <div className="text-sm">
-                        Decider map: {deciderMaps.join(', ')}
-                      </div>
-                    </div>
-                    
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={resetMapSelections}
-                      className="w-full"
-                    >
-                      Reset Map Picks
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                className="w-full" 
-                onClick={handleRunPrediction}
-                disabled={predictionMutation.isPending || !team1Id || !team2Id || 
-                  (matchType === 'bo1' && !selectedMap) || 
-                  (matchType === 'bo3' && (team1Picks.length === 0 || team2Picks.length === 0 || deciderMaps.length === 0))||
-                  (matchType === 'bo5' && (team1Picks.length < 2 || team2Picks.length < 2 || deciderMaps.length === 0))}
+          <MapSelector 
+            selectedMap={selectedMap}
+            onMapChange={setSelectedMap}
+          />
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="advanced-mode"
+                checked={showAdvancedDetails}
+                onCheckedChange={setShowAdvancedDetails}
+              />
+              <label
+                htmlFor="advanced-mode"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                {predictionMutation.isPending ? (
-                  <>
-                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                    Calculating Prediction...
-                  </>
-                ) : (
-                  <>
-                    Run {matchType.toUpperCase()} Prediction
-                    <ArrowRightIcon className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
+                Show advanced details
+              </label>
+            </div>
+            
+            <Button 
+              onClick={handleRunPrediction} 
+              disabled={!team1Id || !team2Id || !selectedMap || predictionMutation.isPending}
+            >
+              {predictionMutation.isPending ? (
+                <>
+                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                  Calculating...
+                </>
+              ) : (
+                <>
+                  Run Prediction
+                  <ArrowRightIcon className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
-        {/* TEAM LINEUPS SECTION */}
-        {(team1Id || team2Id) && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Team 1 Lineup */}
-            {team1Id && (
-              <Card className="overflow-hidden">
-                <CardHeader className="bg-card/50 border-b pb-3">
-                  <CardTitle>
-                    {team1Id} Lineup
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <TeamLineup teamName={team1Id} className="p-4" />
-                </CardContent>
-              </Card>
-            )}
-            
-            {/* Team 2 Lineup */}
-            {team2Id && (
-              <Card className="overflow-hidden">
-                <CardHeader className="bg-card/50 border-b pb-3">
-                  <CardTitle>
-                    {team2Id} Lineup
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <TeamLineup teamName={team2Id} className="p-4" />
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
-
-        {/* PREDICTION RESULTS SECTION */}
-        {prediction && (
-          <div className="space-y-6">
-            {/* Main prediction card */}
-            <Card className="border-primary/20">
-              <CardHeader className="bg-primary/5 border-b pb-3">
-                <CardTitle className="flex items-center">
-                  <BarChart3Icon className="mr-2 h-5 w-5 text-primary" />
-                  Match Prediction: {matchType.toUpperCase()}
-                </CardTitle>
-                <CardDescription>
-                  Maps: {matchType === 'bo1' 
-                    ? selectedMap
-                    : [...team1Picks, ...team2Picks, ...deciderMaps].join(', ')}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-6">
-                  {/* Win probability visualization */}
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
-                        <span>{team1Id}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <span>{team2Id}</span>
-                        <div className="w-3 h-3 rounded-full bg-yellow-500 ml-2"></div>
-                      </div>
-                    </div>
-                    <div className="w-full h-3 bg-muted rounded-full overflow-hidden flex">
-                      <div 
-                        className="bg-blue-500 h-full" 
-                        style={{ width: `${team1Chance}%` }} 
-                      />
-                      <div 
-                        className="bg-yellow-500 h-full" 
-                        style={{ width: `${team2Chance}%` }} 
-                      />
-                    </div>
-                    <div className="flex justify-between mt-1">
-                      <span className="text-blue-500">{team1Chance}%</span>
-                      <span className="text-yellow-500">{team2Chance}%</span>
-                    </div>
-                    <div className="text-center mt-4 space-y-2">
-                      <span className="font-medium">
-                        Predicted winner: {team1Chance! > team2Chance! ? team1Id : team2Id}
-                      </span>
-                      
-                      {prediction.predictedScore && (
-                        <div className="space-y-2 mt-2">
-                          <div className="flex justify-center items-center space-x-3">
-                            <span className="text-sm text-muted-foreground">Predicted Map Score:</span>
-                            <span className="font-semibold">
-                              {team1Id} {prediction.predictedScore.mapScore.team1Score} - {prediction.predictedScore.mapScore.team2Score} {team2Id}
-                            </span>
-                          </div>
-                          {matchType !== 'bo1' && (
-                            <div className="flex justify-center items-center space-x-3">
-                              <span className="text-sm text-muted-foreground">Predicted Series Score:</span>
-                              <span className="font-semibold">
-                                {team1Id} {prediction.predictedScore.seriesScore.team1Score} - {prediction.predictedScore.seriesScore.team2Score} {team2Id}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      
-                      {prediction.actualScore && (
-                        <div className="flex justify-center items-center space-x-3 mt-2">
-                          <span className="text-sm text-muted-foreground">Actual Score:</span>
-                          <span className="font-semibold">
-                            {team1Id} {prediction.actualScore.team1Score} - {prediction.actualScore.team2Score} {team2Id}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Key Performance Factors */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    <div>
-                      <h3 className="text-lg font-semibold flex items-center mb-3">
-                        <ActivityIcon className="h-4 w-4 mr-2" />
-                        Key Performance Factors
-                      </h3>
-                      {prediction.keyRoundFactors ? (
-                        <div className="space-y-3">
-                          {prediction.keyRoundFactors.map((factor: { name: string, team1Value: number, team2Value: number, advantage: number }, index: number) => (
-                            <div 
-                              key={index} 
-                              className="flex items-start space-x-3 text-sm"
-                            >
-                              <span className="font-medium text-primary">{index + 1}.</span>
-                              <div className="flex-1">
-                                <div className="flex justify-between mb-1">
-                                  <span className="font-medium">{factor.name}</span>
-                                  <div className="flex space-x-3">
-                                    <span className={factor.advantage === 1 ? "text-blue-500 font-medium" : ""}>{factor.team1Value.toFixed(1)}%</span>
-                                    <span className={factor.advantage === 2 ? "text-yellow-500 font-medium" : ""}>{factor.team2Value.toFixed(1)}%</span>
-                                  </div>
-                                </div>
-                                <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
-                                  <div 
-                                    className={`h-full ${factor.advantage === 1 ? "bg-blue-500" : "bg-blue-400"}`}
-                                    style={{ width: `${factor.team1Value}%` }} 
-                                  />
-                                  <div 
-                                    className={`h-full ${factor.advantage === 2 ? "bg-yellow-500" : "bg-yellow-400"}`}
-                                    style={{ width: `${factor.team2Value}%` }} 
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex items-center space-x-2 text-muted-foreground">
-                          <AlertCircleIcon className="h-4 w-4" />
-                          <span>No performance factors available</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3">Key Insights</h3>
-                      {prediction.insights ? (
-                        <div className="space-y-3">
-                          {prediction.insights.map((insight: any, index: number) => (
-                            <div 
-                              key={index} 
-                              className="flex items-start space-x-3 text-sm"
-                            >
-                              <span className="font-medium text-primary">{index + 1}.</span>
-                              <span>{insight}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-muted-foreground">
-                          No insights available
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Core Team Metrics Section */}
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
-                    {/* Form */}
-                    {prediction.form && (
-                      <div className="border rounded-md p-3">
-                        <h4 className="text-sm font-medium mb-2">Form</h4>
-                        <div className="flex space-x-1 text-xs mb-2">
-                          <span className={prediction.form.advantage === 1 ? "text-blue-500 font-medium" : ""}>
-                            {Math.round(prediction.form.team1Value)}%
-                          </span>
-                          <span>-</span>
-                          <span className={prediction.form.advantage === 2 ? "text-yellow-500 font-medium" : ""}>
-                            {Math.round(prediction.form.team2Value)}%
-                          </span>
-                        </div>
-                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
-                          <div className="bg-blue-500 h-full" style={{ width: `${prediction.form.team1Value}%` }} />
-                          <div className="bg-yellow-500 h-full" style={{ width: `${prediction.form.team2Value}%` }} />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* BMT */}
-                    {prediction.bmt && (
-                      <div className="border rounded-md p-3">
-                        <h4 className="text-sm font-medium mb-2">Big Match Temperament</h4>
-                        <div className="flex space-x-1 text-xs mb-2">
-                          <span className={prediction.bmt.advantage === 1 ? "text-blue-500 font-medium" : ""}>
-                            {Math.round(prediction.bmt.team1Value)}%
-                          </span>
-                          <span>-</span>
-                          <span className={prediction.bmt.advantage === 2 ? "text-yellow-500 font-medium" : ""}>
-                            {Math.round(prediction.bmt.team2Value)}%
-                          </span>
-                        </div>
-                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
-                          <div className="bg-blue-500 h-full" style={{ width: `${prediction.bmt.team1Value}%` }} />
-                          <div className="bg-yellow-500 h-full" style={{ width: `${prediction.bmt.team2Value}%` }} />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Chemistry */}
-                    {prediction.chemistry && (
-                      <div className="border rounded-md p-3">
-                        <h4 className="text-sm font-medium mb-2">Chemistry</h4>
-                        <div className="flex space-x-1 text-xs mb-2">
-                          <span className={prediction.chemistry.advantage === 1 ? "text-blue-500 font-medium" : ""}>
-                            {Math.round(prediction.chemistry.team1Value)}%
-                          </span>
-                          <span>-</span>
-                          <span className={prediction.chemistry.advantage === 2 ? "text-yellow-500 font-medium" : ""}>
-                            {Math.round(prediction.chemistry.team2Value)}%
-                          </span>
-                        </div>
-                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
-                          <div className="bg-blue-500 h-full" style={{ width: `${prediction.chemistry.team1Value}%` }} />
-                          <div className="bg-yellow-500 h-full" style={{ width: `${prediction.chemistry.team2Value}%` }} />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Momentum */}
-                    {prediction.momentum && (
-                      <div className="border rounded-md p-3">
-                        <h4 className="text-sm font-medium mb-2">Momentum</h4>
-                        <div className="flex space-x-1 text-xs mb-2">
-                          <span className={prediction.momentum.advantage === 1 ? "text-blue-500 font-medium" : ""}>
-                            {Math.round(prediction.momentum.team1Value)}%
-                          </span>
-                          <span>-</span>
-                          <span className={prediction.momentum.advantage === 2 ? "text-yellow-500 font-medium" : ""}>
-                            {Math.round(prediction.momentum.team2Value)}%
-                          </span>
-                        </div>
-                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
-                          <div className="bg-blue-500 h-full" style={{ width: `${prediction.momentum.team1Value}%` }} />
-                          <div className="bg-yellow-500 h-full" style={{ width: `${prediction.momentum.team2Value}%` }} />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Map Matchup */}
-                    {prediction.mapMatchup && (
-                      <div className="border rounded-md p-3">
-                        <h4 className="text-sm font-medium mb-2">Map Matchup</h4>
-                        <div className="flex space-x-1 text-xs mb-2">
-                          <span className={prediction.mapMatchup.advantage === 1 ? "text-blue-500 font-medium" : ""}>
-                            {Math.round(prediction.mapMatchup.team1Value)}%
-                          </span>
-                          <span>-</span>
-                          <span className={prediction.mapMatchup.advantage === 2 ? "text-yellow-500 font-medium" : ""}>
-                            {Math.round(prediction.mapMatchup.team2Value)}%
-                          </span>
-                        </div>
-                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
-                          <div className="bg-blue-500 h-full" style={{ width: `${prediction.mapMatchup.team1Value}%` }} />
-                          <div className="bg-yellow-500 h-full" style={{ width: `${prediction.mapMatchup.team2Value}%` }} />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* History */}
-                    {prediction.history && (
-                      <div className="border rounded-md p-3">
-                        <h4 className="text-sm font-medium mb-2">H2H History</h4>
-                        <div className="flex space-x-1 text-xs mb-2">
-                          <span className={prediction.history.advantage === 1 ? "text-blue-500 font-medium" : ""}>
-                            {Math.round(prediction.history.team1Value)}%
-                          </span>
-                          <span>-</span>
-                          <span className={prediction.history.advantage === 2 ? "text-yellow-500 font-medium" : ""}>
-                            {Math.round(prediction.history.team2Value)}%
-                          </span>
-                        </div>
-                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
-                          <div className="bg-blue-500 h-full" style={{ width: `${prediction.history.team1Value}%` }} />
-                          <div className="bg-yellow-500 h-full" style={{ width: `${prediction.history.team2Value}%` }} />
-                        </div>
-                      </div>
-                    )}
+        {/* Middle column - Results */}
+        <div className="md:col-span-1">
+          {prediction ? (
+            <div className="bg-card rounded-lg border p-6 shadow-sm">
+              <h2 className="text-xl font-bold mb-4">Prediction Results</h2>
+              
+              <div className="relative h-12 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mb-6">
+                <div 
+                  className="absolute top-0 left-0 h-full bg-blue-500"
+                  style={{ width: `${team1Chance}%` }}
+                >
+                </div>
+                <div 
+                  className="absolute top-0 right-0 h-full bg-yellow-500"
+                  style={{ width: `${team2Chance}%` }}
+                >
+                </div>
+                <div className="absolute inset-0 flex items-center justify-between px-3">
+                  <span className="font-semibold text-white text-shadow">
+                    {team1Chance}%
+                  </span>
+                  <span className="font-semibold text-white text-shadow">
+                    {team2Chance}%
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center mb-6">
+                <div className="text-center">
+                  <h3 className="font-medium">{team1Name}</h3>
+                  <div className={`text-xl font-bold mt-1 ${team1Chance && team1Chance > team2Chance ? 'text-blue-500' : ''}`}>
+                    {team1Chance}%
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-            
-            {/* Map Breakdown */}
-            {matchType !== 'bo1' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Map Breakdown</CardTitle>
-                  <CardDescription>Detailed analysis for each map in the series</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {[...team1Picks, ...team2Picks, ...deciderMaps].map((map, index) => {
-                      // Get map-specific data if available
-                      const mapData = prediction.mapBreakdown && prediction.mapBreakdown[map];
-                      const team1Chance = mapData ? Math.round(mapData.team1WinChance * 100) : 50;
-                      const team2Chance = mapData ? Math.round(mapData.team2WinChance * 100) : 50;
-                      
-                      return (
-                        <div key={map} className="p-4 border rounded-md">
-                          <div className="flex justify-between items-center mb-2">
-                            <h3 className="font-medium capitalize">
-                              {map}
-                              {team1Picks.includes(map) && 
-                                <Badge className="ml-2 bg-blue-500/20 text-blue-500">{team1Id} Pick</Badge>
-                              }
-                              {team2Picks.includes(map) && 
-                                <Badge className="ml-2 bg-yellow-500/20 text-yellow-500">{team2Id} Pick</Badge>
-                              }
-                              {deciderMaps.includes(map) && 
-                                <Badge className="ml-2">Decider</Badge>
-                              }
-                            </h3>
-                            <div className="flex space-x-1 text-sm">
-                              <span className="text-blue-500 font-medium">{team1Chance}%</span>
-                              <span>-</span>
-                              <span className="text-yellow-500 font-medium">{team2Chance}%</span>
-                            </div>
-                          </div>
-                          <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
-                            <div className="bg-blue-500 h-full" style={{ width: `${team1Chance}%` }} />
-                            <div className="bg-yellow-500 h-full" style={{ width: `${team2Chance}%` }} />
-                          </div>
-                          <div className="mt-4 text-sm text-muted-foreground">
-                            {mapData && mapData.keyFactors ? (
-                              <ul className="list-disc pl-5 space-y-1">
-                                {mapData.keyFactors.map((factor: string, i: number) => (
-                                  <li key={i}>{factor}</li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p>No map-specific data available.</p>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                
+                <div className="text-center px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800">
+                  <span className="text-sm font-medium">vs</span>
+                </div>
+                
+                <div className="text-center">
+                  <h3 className="font-medium">{team2Name}</h3>
+                  <div className={`text-xl font-bold mt-1 ${team2Chance && team2Chance > team1Chance ? 'text-yellow-500' : ''}`}>
+                    {team2Chance}%
                   </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
+                </div>
+              </div>
+              
+              <div className="mt-6">
+                <h3 className="text-sm font-medium mb-2">Key Insights:</h3>
+                <ul className="space-y-1 text-sm">
+                  {prediction.insights.map((insight, index) => (
+                    <li key={index} className="list-disc ml-5">{insight}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex items-center justify-center bg-card rounded-lg border p-6 shadow-sm">
+              <div className="text-center">
+                <p className="text-muted-foreground">
+                  Select two teams and a map, then run the prediction to see results
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right column - Contextual factors */}
+        <div className="space-y-6 md:col-span-2 lg:col-span-1">
+          {prediction && (
+            <>
+              <MapPickAdvantage
+                mapName={selectedMap}
+                team1Name={team1Name}
+                team2Name={team2Name}
+                keyFactors={prediction.keyRoundFactors}
+                mapPickAdvantage={prediction.mapPickAdvantage}
+              />
+              
+              {showAdvancedDetails && (
+                <ContextualFactors
+                  insights={prediction.insights}
+                  keyFactors={prediction.keyRoundFactors}
+                  team1Name={team1Name}
+                  team2Name={team2Name}
+                />
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

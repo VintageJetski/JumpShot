@@ -68,12 +68,11 @@ export function groupRoundsByMatch(rounds: RoundData[]): Map<string, RoundData[]
  * Calculate economy-related metrics for a team
  */
 function calculateEconomyMetrics(rounds: RoundData[], teamName: string): {
-  economyRating: number;
-  economicEfficiency: number;
+  econEfficiencyRatio: number;
   forceRoundWinRate: number;
   ecoRoundWinRate: number;
   fullBuyWinRate: number;
-  economicRecovery: number;
+  economicRecoveryIndex: number;
 } {
   let ctRounds = 0, tRounds = 0;
   let ctWins = 0, tWins = 0;
@@ -155,22 +154,12 @@ function calculateEconomyMetrics(rounds: RoundData[], teamName: string): {
   // Economic recovery
   const economicRecoveryIndex = lossRounds > 0 ? recoveryRounds / lossRounds : 0;
   
-  // Calculate overall economy rating (0-1 scale)
-  const economyRating = (
-    (econEfficiencyRatio / 10) + 
-    (forceRoundWinRate * 0.8) + 
-    (ecoRoundWinRate * 0.7) + 
-    (fullBuyWinRate * 0.9) + 
-    (economicRecoveryIndex * 0.6)
-  ) / 5;
-  
   return {
-    economyRating,
-    economicEfficiency: econEfficiencyRatio,
+    econEfficiencyRatio,
     forceRoundWinRate,
-    ecoRoundWinRate, 
+    ecoRoundWinRate,
     fullBuyWinRate,
-    economicRecovery: economicRecoveryIndex
+    economicRecoveryIndex
   };
 }
 
@@ -178,7 +167,6 @@ function calculateEconomyMetrics(rounds: RoundData[], teamName: string): {
  * Calculate strategic metrics for a team
  */
 function calculateStrategicMetrics(rounds: RoundData[], teamName: string): {
-  strategyRating: number;
   aPreference: number;
   bPreference: number;
   bombPlantRate: number;
@@ -225,16 +213,7 @@ function calculateStrategicMetrics(rounds: RoundData[], teamName: string): {
   const postPlantWinRate = bombPlants > 0 ? postPlantWins / bombPlants : 0;
   const retakeSuccessRate = bombPlantedAgainst > 0 ? retakeSuccess / bombPlantedAgainst : 0;
   
-  // Calculate overall strategy rating (0-1 scale)
-  const strategyRating = (
-    (bombPlantRate * 0.7) + 
-    (postPlantWinRate * 0.9) + 
-    (retakeSuccessRate * 0.8) + 
-    (Math.abs(aPreference - 0.5) * 0.6) // Higher score for clear site preferences
-  ) / 4;
-  
   return {
-    strategyRating,
     aPreference,
     bPreference,
     bombPlantRate,
@@ -247,9 +226,8 @@ function calculateStrategicMetrics(rounds: RoundData[], teamName: string): {
  * Calculate momentum-related metrics for a team
  */
 function calculateMomentumMetrics(rounds: RoundData[], teamName: string): {
-  momentumRating: number;
   pistolRoundWinRate: number;
-  followUpWinRate: number;
+  followUpRoundWinRate: number;
   comebackFactor: number;
   closingFactor: number;
 } {
@@ -305,18 +283,9 @@ function calculateMomentumMetrics(rounds: RoundData[], teamName: string): {
   const comebackFactor = losingStreakRounds > 0 ? comebackRounds / losingStreakRounds : 0;
   const closingFactor = advantageRounds > 0 ? advantageWins / advantageRounds : 0;
   
-  // Calculate overall momentum rating (0-1 scale)
-  const momentumRating = (
-    (pistolRoundWinRate * 0.9) + 
-    (followUpRoundWinRate * 0.8) + 
-    (comebackFactor * 0.7) + 
-    (closingFactor * 0.9)
-  ) / 4;
-  
   return {
-    momentumRating,
     pistolRoundWinRate,
-    followUpWinRate: followUpRoundWinRate,
+    followUpRoundWinRate,
     comebackFactor,
     closingFactor
   };
@@ -419,24 +388,13 @@ export function calculateTeamRoundMetrics(rounds: RoundData[], teamName: string)
   const momentumMetrics = calculateMomentumMetrics(rounds, teamName);
   const mapPerformance = calculateMapPerformance(rounds, teamName);
   
-  // Calculate the re-included metrics with default values
-  // In a real implementation, these would be calculated from the actual round data
-  const recentPerformanceFactor = 0.6; // 0-1 scale, 0.5 is average
-  const criticalRoundWinRate = 0.55;   // 0-1 scale
-  const momentumFactor = 0.5;          // -1 to 1 scale, 0 is neutral
-  
   return {
     id: teamName.toLowerCase().replace(/\s+/g, '-'),
     name: teamName,
     ...economyMetrics,
     ...strategicMetrics,
     ...momentumMetrics,
-    mapPerformance,
-    
-    // Add the re-included metrics
-    recentPerformanceFactor,
-    criticalRoundWinRate,
-    momentumFactor
+    mapPerformance
   };
 }
 
@@ -492,50 +450,6 @@ export function enhanceMatchPrediction(
     team2Value: number; 
     advantage: number; // 1 = team1, 2 = team2, 0 = neutral
   }[];
-  mapBreakdown: Record<string, any>;
-  // Re-include previously built metrics
-  form: {
-    team1Value: number;
-    team2Value: number;
-    advantage: number;
-  };
-  bmt: {
-    team1Value: number;
-    team2Value: number;
-    advantage: number;
-  };
-  chemistry: {
-    team1Value: number;
-    team2Value: number;
-    advantage: number;
-  };
-  momentum: {
-    team1Value: number;
-    team2Value: number;
-    advantage: number;
-  };
-  mapMatchup: {
-    team1Value: number;
-    team2Value: number;
-    advantage: number;
-  };
-  history: {
-    team1Value: number;
-    team2Value: number;
-    advantage: number;
-    lastMatches: {winner: string, score: string}[];
-  };
-  // Add predicted score with map and series info
-  predictedScore: {
-    mapScore: {
-      team1Score: number;
-      team2Score: number;
-    };
-    seriesScore: {
-      team1Score: number;
-      team2Score: number;
-    };
-  };
 } {
   // Base win probability from existing TIR calculation
   let team1WinProbability = 0.5 + (team1.tir - team2.tir) * 0.05;
@@ -552,7 +466,7 @@ export function enhanceMatchPrediction(
   }[] = [];
   
   // 1. Economy management adjustments
-  const econDiff = team1RoundMetrics.economicEfficiency - team2RoundMetrics.economicEfficiency;
+  const econDiff = team1RoundMetrics.econEfficiencyRatio - team2RoundMetrics.econEfficiencyRatio;
   const econAdjustment = econDiff * 0.005;
   adjustments.push({
     factor: econAdjustment,
@@ -564,8 +478,8 @@ export function enhanceMatchPrediction(
   
   keyRoundFactors.push({
     name: "Economy Efficiency",
-    team1Value: team1RoundMetrics.economicEfficiency * 100,
-    team2Value: team2RoundMetrics.economicEfficiency * 100,
+    team1Value: team1RoundMetrics.econEfficiencyRatio * 100,
+    team2Value: team2RoundMetrics.econEfficiencyRatio * 100,
     advantage: econDiff > 0 ? 1 : econDiff < 0 ? 2 : 0
   });
   
@@ -812,56 +726,12 @@ export function enhanceMatchPrediction(
   team1WinProbability = Math.max(0.05, Math.min(0.95, team1WinProbability));
   const team2WinProbability = 1 - team1WinProbability;
   
-  // Generate insights from significant adjustments and key metrics
-  let insights = adjustments
+  // Generate insights from significant adjustments
+  const insights = adjustments
     .filter(adj => Math.abs(adj.factor) > 0.015) // Slightly higher threshold
     .sort((a, b) => Math.abs(b.factor) - Math.abs(a.factor))
-    .slice(0, 3)
+    .slice(0, 5)
     .map(adj => adj.reason);
-    
-  // Add insights based on key metrics
-  if (team1RoundMetrics.pistolRoundWinRate > team2RoundMetrics.pistolRoundWinRate && team1RoundMetrics.pistolRoundWinRate > 0.6) {
-    insights.push(`${team1.name} has a strong advantage in pistol rounds (${Math.round(team1RoundMetrics.pistolRoundWinRate * 100)}% win rate)`);
-  } else if (team2RoundMetrics.pistolRoundWinRate > team1RoundMetrics.pistolRoundWinRate && team2RoundMetrics.pistolRoundWinRate > 0.6) {
-    insights.push(`${team2.name} has a strong advantage in pistol rounds (${Math.round(team2RoundMetrics.pistolRoundWinRate * 100)}% win rate)`);
-  }
-  
-  // Form insight
-  if (Math.abs((team1RoundMetrics.recentPerformanceFactor || 0) - (team2RoundMetrics.recentPerformanceFactor || 0)) > 0.2) {
-    if ((team1RoundMetrics.recentPerformanceFactor || 0) > (team2RoundMetrics.recentPerformanceFactor || 0)) {
-      insights.push(`${team1.name} is in better form, with stronger recent performances`);
-    } else {
-      insights.push(`${team2.name} is in better form, with stronger recent performances`);
-    }
-  }
-  
-  // Synergy insight
-  if (Math.abs(team1.synergy - team2.synergy) > 0.15) {
-    if (team1.synergy > team2.synergy) {
-      insights.push(`${team1.name} shows better team chemistry and coordinated play`);
-    } else {
-      insights.push(`${team2.name} shows better team chemistry and coordinated play`);
-    }
-  }
-  
-  // Site preference insight
-  const team1ASitePref = team1RoundMetrics.aPreference || 0.5;
-  const team2ASitePref = team2RoundMetrics.aPreference || 0.5;
-  if (team1ASitePref > 0.7) {
-    insights.push(`${team1.name} strongly favors A site executions as T (${Math.round(team1ASitePref * 100)}%)`);
-  } else if (team1ASitePref < 0.3) {
-    insights.push(`${team1.name} strongly favors B site executions as T (${Math.round((1-team1ASitePref) * 100)}%)`);
-  }
-  
-  // Economy management insight
-  if (team1RoundMetrics.economicEfficiency > team2RoundMetrics.economicEfficiency * 1.5) {
-    insights.push(`${team1.name} shows significantly better economy management`);
-  } else if (team2RoundMetrics.economicEfficiency > team1RoundMetrics.economicEfficiency * 1.5) {
-    insights.push(`${team2.name} shows significantly better economy management`);
-  }
-  
-  // Take only the top 5 insights
-  insights = insights.slice(0, 5);
   
   // Sort key factors by their impact (advantage difference)
   keyRoundFactors.sort((a, b) => {
@@ -870,185 +740,11 @@ export function enhanceMatchPrediction(
     return bAdvDiff - aAdvDiff;
   });
   
-  // Create map-specific predictions for multi-map series (BO3/BO5)
-  const mapBreakdown: Record<string, any> = {};
-  
-  // Only for the current map in this prediction
-  mapBreakdown[map] = {
-    mapName: map,
-    team1WinChance: team1WinProbability,
-    team2WinChance: team2WinProbability,
-    advantage: mapPickAdvantage,
-    keyFactors: [
-      `${mapPickAdvantage === 1 ? team1.name : mapPickAdvantage === 2 ? team2.name : 'Neither team'} has a historical advantage on ${map}`,
-      `${team1RoundMetrics.pistolRoundWinRate > team2RoundMetrics.pistolRoundWinRate ? team1.name : team2.name} has better pistol round performance`,
-      `${team1RoundMetrics.economicEfficiency > team2RoundMetrics.economicEfficiency ? team1.name : team2.name} has better economy management`
-    ]
-  };
-
-  // Calculate the predicted score for individual maps (first to 13)
-  let mapPredictedScore = {
-    team1Score: 0,
-    team2Score: 0
-  };
-  
-  // For single maps: calculate expected score in a race to 13 rounds
-  if (team1WinProbability > team2WinProbability) {
-    mapPredictedScore.team1Score = 13;
-    // Calculate expected rounds for losing team based on probability
-    mapPredictedScore.team2Score = Math.round(team2WinProbability * 24 / (team1WinProbability + team2WinProbability));
-    // Ensure it's within valid range (0-12)
-    mapPredictedScore.team2Score = Math.min(12, Math.max(0, mapPredictedScore.team2Score));
-  } else {
-    mapPredictedScore.team2Score = 13;
-    // Calculate expected rounds for losing team based on probability
-    mapPredictedScore.team1Score = Math.round(team1WinProbability * 24 / (team1WinProbability + team2WinProbability));
-    // Ensure it's within valid range (0-12)
-    mapPredictedScore.team1Score = Math.min(12, Math.max(0, mapPredictedScore.team1Score));
-  }
-  
-  // For series (BO3/BO5): Calculate predicted match score
-  const seriesPredictedScore = {
-    team1Score: 0,
-    team2Score: 0
-  };
-  
-  // Based on win probability, determine the likely outcome for BO3 (first to 2 maps)
-  if (team1WinProbability > 0.6) {
-    seriesPredictedScore.team1Score = 2;
-    seriesPredictedScore.team2Score = 0;
-  } else if (team1WinProbability > 0.5) {
-    seriesPredictedScore.team1Score = 2;
-    seriesPredictedScore.team2Score = 1;
-  } else if (team1WinProbability > 0.4) {
-    seriesPredictedScore.team1Score = 1;
-    seriesPredictedScore.team2Score = 2;
-  } else {
-    seriesPredictedScore.team1Score = 0;
-    seriesPredictedScore.team2Score = 2;
-  }
-  
-  // Use both map score and series score
-  const predictedScore = {
-    mapScore: mapPredictedScore,
-    seriesScore: seriesPredictedScore
-  };
-  
-  // Calculate form rating (based on recent matches performance)
-  const form = {
-    team1Value: Math.min(100, Math.max(0, 50 + (team1RoundMetrics.recentPerformanceFactor || 0) * 100)),
-    team2Value: Math.min(100, Math.max(0, 50 + (team2RoundMetrics.recentPerformanceFactor || 0) * 100)),
-    advantage: (team1RoundMetrics.recentPerformanceFactor || 0) > (team2RoundMetrics.recentPerformanceFactor || 0) ? 1 : 
-               (team1RoundMetrics.recentPerformanceFactor || 0) < (team2RoundMetrics.recentPerformanceFactor || 0) ? 2 : 0
-  };
-  
-  // Big Match Temperament (BMT) based on performance in critical rounds
-  const bmt = {
-    team1Value: Math.min(100, Math.max(0, 50 + (team1RoundMetrics.criticalRoundWinRate || 0.5) * 50)),
-    team2Value: Math.min(100, Math.max(0, 50 + (team2RoundMetrics.criticalRoundWinRate || 0.5) * 50)),
-    advantage: (team1RoundMetrics.criticalRoundWinRate || 0.5) > (team2RoundMetrics.criticalRoundWinRate || 0.5) ? 1 :
-               (team1RoundMetrics.criticalRoundWinRate || 0.5) < (team2RoundMetrics.criticalRoundWinRate || 0.5) ? 2 : 0
-  };
-  
-  // Team chemistry based on team synergy scores
-  const chemistry = {
-    team1Value: Math.min(100, Math.max(0, team1.synergy * 100)),
-    team2Value: Math.min(100, Math.max(0, team2.synergy * 100)), 
-    advantage: team1.synergy > team2.synergy ? 1 : team1.synergy < team2.synergy ? 2 : 0
-  };
-  
-  // Momentum based on recent rounds performance
-  const momentum = {
-    team1Value: Math.min(100, Math.max(0, 50 + (team1RoundMetrics.momentumFactor || 0) * 100)),
-    team2Value: Math.min(100, Math.max(0, 50 + (team2RoundMetrics.momentumFactor || 0) * 100)),
-    advantage: (team1RoundMetrics.momentumFactor || 0) > (team2RoundMetrics.momentumFactor || 0) ? 1 :
-               (team1RoundMetrics.momentumFactor || 0) < (team2RoundMetrics.momentumFactor || 0) ? 2 : 0
-  };
-  
-  // Map matchup advantage
-  const mapMatchup = {
-    team1Value: Math.min(100, Math.max(0, team1WinProbability * 100)),
-    team2Value: Math.min(100, Math.max(0, team2WinProbability * 100)),
-    advantage: mapPickAdvantage
-  };
-  
-  // Head-to-head history
-  const history = {
-    team1Value: 55, // Placeholder - would come from actual head-to-head data
-    team2Value: 45, // Placeholder - would come from actual head-to-head data
-    advantage: 1,   // Placeholder - would be calculated from actual data
-    lastMatches: [
-      { winner: team1.name, score: '16-12' },
-      { winner: team2.name, score: '16-14' },
-      { winner: team1.name, score: '16-9' }
-    ]
-  };
-
-  // Create proper score prediction format aligned with CS2 rules
-  // CS2 matches are first to 13 rounds (not 16)
-  const mapScore = {
-    team1Score: team1WinProbability > team2WinProbability ? 13 : Math.floor(13 * (team1WinProbability / (team1WinProbability + team2WinProbability))),
-    team2Score: team2WinProbability > team1WinProbability ? 13 : Math.floor(13 * (team2WinProbability / (team1WinProbability + team2WinProbability)))
-  };
-  
-  // Ensure at least one team has 13 points, and the other has a reasonable score
-  if (mapScore.team1Score >= 13) {
-    mapScore.team1Score = 13;
-    mapScore.team2Score = Math.min(12, mapScore.team2Score);
-  } else {
-    mapScore.team2Score = 13;
-    mapScore.team1Score = Math.min(12, mapScore.team1Score);
-  }
-  
-  // For series predictions (BO3/BO5)
-  const seriesScore = {
-    team1Score: team1WinProbability > team2WinProbability ? 2 : 0,
-    team2Score: team2WinProbability > team1WinProbability ? 2 : 0
-  };
-  
-  // For close matchups, make it 2-1 instead of 2-0
-  if (Math.abs(team1WinProbability - team2WinProbability) < 0.15) {
-    if (seriesScore.team1Score === 2) {
-      seriesScore.team1Score = 2;
-      seriesScore.team2Score = 1;
-    } else {
-      seriesScore.team1Score = 1;
-      seriesScore.team2Score = 2;
-    }
-  }
-  
-  // Format the predictedScore in the proper structure
-  const formattedPredictedScore = {
-    mapScore,
-    seriesScore
-  };
-
-  // Create the final response object that matches MatchPredictionResponse
-  const result: Partial<MatchPredictionResponse> = {
+  return {
     team1WinProbability,
     team2WinProbability,
     insights,
     mapPickAdvantage,
-    keyRoundFactors: keyRoundFactors.slice(0, 8), // Return top 8 factors
-    mapBreakdown,
-    // Add newly re-included metrics
-    form,
-    bmt,
-    chemistry,
-    momentum,
-    mapMatchup,
-    history,
-    predictedScore: {
-      mapScore: {
-        team1Score: mapPredictedScore.team1Score,
-        team2Score: mapPredictedScore.team2Score
-      },
-      seriesScore: {
-        team1Score: seriesPredictedScore.team1Score, 
-        team2Score: seriesPredictedScore.team2Score
-      }
-    }
+    keyRoundFactors: keyRoundFactors.slice(0, 8) // Return top 8 factors
   };
-
-  return result;
 }

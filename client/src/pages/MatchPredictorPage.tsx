@@ -592,6 +592,129 @@ const MatchPredictorPage: React.FC = () => {
                       )}
                     </div>
                   </div>
+
+                  {/* Core Team Metrics Section */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
+                    {/* Form */}
+                    {prediction.form && (
+                      <div className="border rounded-md p-3">
+                        <h4 className="text-sm font-medium mb-2">Form</h4>
+                        <div className="flex space-x-1 text-xs mb-2">
+                          <span className={prediction.form.advantage === 1 ? "text-blue-500 font-medium" : ""}>
+                            {Math.round(prediction.form.team1Value)}%
+                          </span>
+                          <span>-</span>
+                          <span className={prediction.form.advantage === 2 ? "text-yellow-500 font-medium" : ""}>
+                            {Math.round(prediction.form.team2Value)}%
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
+                          <div className="bg-blue-500 h-full" style={{ width: `${prediction.form.team1Value}%` }} />
+                          <div className="bg-yellow-500 h-full" style={{ width: `${prediction.form.team2Value}%` }} />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* BMT */}
+                    {prediction.bmt && (
+                      <div className="border rounded-md p-3">
+                        <h4 className="text-sm font-medium mb-2">Big Match Temperament</h4>
+                        <div className="flex space-x-1 text-xs mb-2">
+                          <span className={prediction.bmt.advantage === 1 ? "text-blue-500 font-medium" : ""}>
+                            {Math.round(prediction.bmt.team1Value)}%
+                          </span>
+                          <span>-</span>
+                          <span className={prediction.bmt.advantage === 2 ? "text-yellow-500 font-medium" : ""}>
+                            {Math.round(prediction.bmt.team2Value)}%
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
+                          <div className="bg-blue-500 h-full" style={{ width: `${prediction.bmt.team1Value}%` }} />
+                          <div className="bg-yellow-500 h-full" style={{ width: `${prediction.bmt.team2Value}%` }} />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Chemistry */}
+                    {prediction.chemistry && (
+                      <div className="border rounded-md p-3">
+                        <h4 className="text-sm font-medium mb-2">Chemistry</h4>
+                        <div className="flex space-x-1 text-xs mb-2">
+                          <span className={prediction.chemistry.advantage === 1 ? "text-blue-500 font-medium" : ""}>
+                            {Math.round(prediction.chemistry.team1Value)}%
+                          </span>
+                          <span>-</span>
+                          <span className={prediction.chemistry.advantage === 2 ? "text-yellow-500 font-medium" : ""}>
+                            {Math.round(prediction.chemistry.team2Value)}%
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
+                          <div className="bg-blue-500 h-full" style={{ width: `${prediction.chemistry.team1Value}%` }} />
+                          <div className="bg-yellow-500 h-full" style={{ width: `${prediction.chemistry.team2Value}%` }} />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Momentum */}
+                    {prediction.momentum && (
+                      <div className="border rounded-md p-3">
+                        <h4 className="text-sm font-medium mb-2">Momentum</h4>
+                        <div className="flex space-x-1 text-xs mb-2">
+                          <span className={prediction.momentum.advantage === 1 ? "text-blue-500 font-medium" : ""}>
+                            {Math.round(prediction.momentum.team1Value)}%
+                          </span>
+                          <span>-</span>
+                          <span className={prediction.momentum.advantage === 2 ? "text-yellow-500 font-medium" : ""}>
+                            {Math.round(prediction.momentum.team2Value)}%
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
+                          <div className="bg-blue-500 h-full" style={{ width: `${prediction.momentum.team1Value}%` }} />
+                          <div className="bg-yellow-500 h-full" style={{ width: `${prediction.momentum.team2Value}%` }} />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Map Matchup */}
+                    {prediction.mapMatchup && (
+                      <div className="border rounded-md p-3">
+                        <h4 className="text-sm font-medium mb-2">Map Matchup</h4>
+                        <div className="flex space-x-1 text-xs mb-2">
+                          <span className={prediction.mapMatchup.advantage === 1 ? "text-blue-500 font-medium" : ""}>
+                            {Math.round(prediction.mapMatchup.team1Value)}%
+                          </span>
+                          <span>-</span>
+                          <span className={prediction.mapMatchup.advantage === 2 ? "text-yellow-500 font-medium" : ""}>
+                            {Math.round(prediction.mapMatchup.team2Value)}%
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
+                          <div className="bg-blue-500 h-full" style={{ width: `${prediction.mapMatchup.team1Value}%` }} />
+                          <div className="bg-yellow-500 h-full" style={{ width: `${prediction.mapMatchup.team2Value}%` }} />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* History */}
+                    {prediction.history && (
+                      <div className="border rounded-md p-3">
+                        <h4 className="text-sm font-medium mb-2">H2H History</h4>
+                        <div className="flex space-x-1 text-xs mb-2">
+                          <span className={prediction.history.advantage === 1 ? "text-blue-500 font-medium" : ""}>
+                            {Math.round(prediction.history.team1Value)}%
+                          </span>
+                          <span>-</span>
+                          <span className={prediction.history.advantage === 2 ? "text-yellow-500 font-medium" : ""}>
+                            {Math.round(prediction.history.team2Value)}%
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden flex">
+                          <div className="bg-blue-500 h-full" style={{ width: `${prediction.history.team1Value}%` }} />
+                          <div className="bg-yellow-500 h-full" style={{ width: `${prediction.history.team2Value}%` }} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>

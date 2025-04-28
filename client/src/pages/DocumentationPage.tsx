@@ -21,7 +21,8 @@ import {
   Code,
   Database,
   FileJson,
-  Library
+  Library,
+  Search
 } from "lucide-react";
 
 export default function DocumentationPage() {
@@ -57,6 +58,10 @@ export default function DocumentationPage() {
           <TabsTrigger value="infographic" className="flex items-center gap-2">
             <Image className="h-4 w-4" />
             <span>Infographics</span>
+          </TabsTrigger>
+          <TabsTrigger value="scout" className="flex items-center gap-2">
+            <Search className="h-4 w-4" />
+            <span>Scout</span>
           </TabsTrigger>
           <TabsTrigger value="architecture" className="flex items-center gap-2">
             <Code className="h-4 w-4" />

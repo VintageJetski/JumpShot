@@ -428,31 +428,8 @@ export default function DocumentationPage() {
               
               <h3 className="text-lg font-semibold mt-8">Technical Implementation</h3>
               <p className="text-sm">
-                The infographic generator uses the html-to-image library to convert DOM elements to downloadable images. The implementation includes:
+                The infographic generator uses the html-to-image library to convert DOM elements to downloadable images. The implementation includes responsive design with precise layout control and user-friendly team selection.
               </p>
-              <ul className="list-disc pl-6 space-y-1 mt-2 text-sm">
-                <li><code>toPng()</code> method for converting the infographic container to a PNG image</li>
-                <li>Custom styling with absolute positioning for precise layout control</li>
-                <li>React state management to handle dynamic team selection and comparison</li>
-                <li>Responsive design that maintains aspect ratio for sharing on various platforms</li>
-              </ul>
-              
-              <div className="bg-black/20 p-4 rounded-md mt-4">
-                <code className="text-xs text-gray-300 whitespace-pre">
-{`// Example image generation code
-const handleDownload = () => {
-  if (infographicRef.current === null) return;
-  toPng(infographicRef.current, { cacheBust: true })
-    .then((dataUrl) => {
-      const link = document.createElement('a');
-      link.download = 'team-comparison.png';
-      link.href = dataUrl;
-      link.click();
-    })
-    .catch((err) => console.error('Error:', err));
-};`}
-                </code>
-              </div>
             </CardContent>
             <CardFooter className="text-sm text-gray-400">
               Last updated: April 28, 2024
@@ -559,144 +536,32 @@ const handleDownload = () => {
               <div className="space-y-4 mt-4">
                 <div className="border border-gray-700 rounded-md p-4">
                   <h4 className="font-medium text-primary mb-2">RCS (Role Core Score) Formula</h4>
-                  <p className="text-sm">RCS calculates a weighted average of normalized role-specific metrics:</p>
-                  <div className="bg-black/20 p-3 rounded-md mt-2">
-                    <code className="text-xs text-gray-300 whitespace-pre">
-{`function calculateRCS(normalizedMetrics: Record<string, number>): number {
-  const weights: Record<string, number> = {
-    // AWP weights
-    'Opening Pick Success Rate': 0.22,
-    'Multi Kill Conversion': 0.18,
-    'AWPer Flash Assistance': 0.15,
-    'Utility Punish Rate': 0.15,
-    // ... weights for other roles
-  };
-  
-  // Calculate weighted average of normalized metrics
-  let weightedScore = 0;
-  let totalWeight = 0;
-  
-  for (const metric in normalizedMetrics) {
-    if (weights[metric]) {
-      weightedScore += normalizedMetrics[metric] * weights[metric];
-      totalWeight += weights[metric];
-    }
-  }
-  
-  return totalWeight > 0 ? weightedScore / totalWeight : 0.5;
-}`}
-                    </code>
-                  </div>
+                  <p className="text-sm">RCS calculates a weighted average of normalized role-specific metrics using custom weights for each role type (AWP, Support, etc.), resulting in a score that reflects how well a player performs within their specific role definition.</p>
                 </div>
                 
                 <div className="border border-gray-700 rounded-md p-4">
                   <h4 className="font-medium text-primary mb-2">ICF (Individual Consistency Factor) Formula</h4>
-                  <p className="text-sm">ICF evaluates consistency and raw performance:</p>
-                  <div className="bg-black/20 p-3 rounded-md mt-2">
-                    <code className="text-xs text-gray-300 whitespace-pre">
-{`function calculateICF(stats: PlayerRawStats, isIGL: boolean = false): { value: number, sigma: number } {
-  const kd = stats.kd;
-  const killsPerRound = stats.kills / (stats.ctRoundsWon + stats.tRoundsWon);
-  
-  // Calculate base value with greater weight for K/D
-  let baseValue = kd * 0.75 + killsPerRound * 0.25;
-  
-  // Calculate sigma (dispersion metric)
-  let sigma = isIGL ? 0.4 : 0.3;
-  
-  // Enhanced to reward high-performers more
-  if (kd > 1.2) {
-    sigma = Math.max(0.2, sigma - (kd - 1.2) * 0.1);
-  }
-  
-  const icfValue = baseValue * (1 - sigma);
-  return { value: icfValue, sigma };
-}`}
-                    </code>
-                  </div>
+                  <p className="text-sm">ICF evaluates consistency and raw performance by combining K/D ratio (75% weight) with kills per round (25% weight) and adjusting by a sigma factor that rewards high-performers more. IGLs have a higher base sigma (0.4 vs 0.3) that recognizes their broader responsibilities.</p>
                 </div>
                 
                 <div className="border border-gray-700 rounded-md p-4">
                   <h4 className="font-medium text-primary mb-2">SC (Synergy Contribution) Formula</h4>
-                  <p className="text-sm">SC calculates role-specific team contribution:</p>
-                  <div className="bg-black/20 p-3 rounded-md mt-2">
-                    <code className="text-xs text-gray-300 whitespace-pre">
-{`function calculateSC(stats: PlayerRawStats, role: PlayerRole): { value: number, metric: string } {
-  // Example for AWP role
-  if (role === PlayerRole.AWP) {
-    const openingImpact = stats.firstKills / Math.max(1, stats.firstDeaths);
-    const utilityComponent = stats.flashesThrown / 200; // Normalized
-    
-    // v1.3: Reduced K/D weight from 50% to 35%, added utility (15%)
-    const scValue = openingImpact * 0.5 + stats.kd * 0.35 + utilityComponent * 0.15;
-    return { value: scValue, metric: 'AWP Impact Rating' };
-  }
-  
-  // Similar calculations for other roles
-}`}
-                    </code>
-                  </div>
+                  <p className="text-sm">SC calculates role-specific team contribution with different formulas per role. For example, AWP role uses opening pick impact (50%), K/D ratio (35%), and utility component (15%) to determine how they contribute to team success.</p>
                 </div>
                 
                 <div className="border border-gray-700 rounded-md p-4">
                   <h4 className="font-medium text-primary mb-2">Team Impact Rating (TIR) Formula</h4>
-                  <p className="text-sm">TIR calculates overall team strength:</p>
-                  <div className="bg-black/20 p-3 rounded-md mt-2">
-                    <code className="text-xs text-gray-300 whitespace-pre">
-{`function calculateTeamImpactRatings(players: PlayerWithPIV[]): TeamWithTIR[] {
-  // Group players by team
-  const teamPlayers = new Map<string, PlayerWithPIV[]>();
-  // ... (grouping logic)
-  
-  // Calculate TIR for each team
-  return teams.map(team => {
-    const teamPlayerList = teamPlayers.get(team) || [];
-    const synergyFactor = calculateTeamSynergy(teamPlayerList);
-    const pivSum = teamPlayerList.reduce((sum, player) => sum + player.piv, 0);
-    const tir = pivSum * synergyFactor * 10; // Scaled by 10 for display
-    return { name: team, tir, players: teamPlayerList, synergyFactor };
-  });
-}`}
-                    </code>
-                  </div>
+                  <p className="text-sm">TIR calculates overall team strength by summing player PIV values and multiplying by a synergy factor that evaluates role coverage and complementary skills, then scaling by 10 for display purposes.</p>
                 </div>
               </div>
               
               <h3 className="text-lg font-semibold mt-8">Database Schema</h3>
-              <div className="bg-black/20 p-4 rounded-md mt-2">
-                <code className="text-xs text-gray-300 whitespace-pre">
-{`// PostgreSQL schema using Drizzle ORM
-export const players = pgTable('players', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  team: text('team').notNull().references(() => teams.name),
-  role: text('role').notNull(),
-  tRole: text('t_role').notNull(),
-  ctRole: text('ct_role').notNull(),
-  isIGL: boolean('is_igl').default(false).notNull(),
-  piv: doublePrecision('piv').notNull(),
-  tPIV: doublePrecision('t_piv').notNull(),
-  ctPIV: doublePrecision('ct_piv').notNull(),
-  kd: doublePrecision('kd').notNull(),
-  primaryMetric: jsonb('primary_metric').notNull(),
-  // Additional fields for player raw stats and metrics
-});
-
-export const teams = pgTable('teams', {
-  name: text('name').primaryKey(),
-  tir: doublePrecision('tir').notNull(),
-  synergyFactor: doublePrecision('synergy_factor').notNull(),
-});
-
-export const roundMetrics = pgTable('round_metrics', {
-  teamName: text('team_name').primaryKey().references(() => teams.name),
-  economyMetrics: jsonb('economy_metrics').notNull(),
-  strategicMetrics: jsonb('strategic_metrics').notNull(),
-  momentumMetrics: jsonb('momentum_metrics').notNull(),
-  mapPerformance: jsonb('map_performance').notNull(),
-});`}
-                </code>
-              </div>
+              <p className="text-sm mt-2">Our PostgreSQL schema uses Drizzle ORM with three primary tables:</p>
+              <ul className="list-disc pl-6 space-y-1 mt-2 text-sm">
+                <li><strong>players</strong> - Stores player data including roles, PIV values, and performance metrics</li>
+                <li><strong>teams</strong> - Contains team names, TIR ratings, and synergy factors</li>
+                <li><strong>roundMetrics</strong> - Stores detailed round-by-round performance metrics for each team</li>
+              </ul>
               
               <h3 className="text-lg font-semibold mt-8">API Endpoints</h3>
               <div className="space-y-3 mt-2">

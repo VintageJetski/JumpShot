@@ -116,6 +116,17 @@ export default function Sidebar() {
             <Search className="h-5 w-5 mr-2" />
             Scout
           </Link>
+          
+          <Link href="/statistical-analysis" 
+            className={`w-full flex items-center justify-start px-4 py-2 ${
+              isActive("/statistical-analysis")
+                ? "bg-primary text-white"
+                : "text-gray-300 hover:bg-gray-700"
+            } rounded font-medium`}
+          >
+            <BarChart2 className="h-5 w-5 mr-2" />
+            Statistical Analysis
+          </Link>
         </div>
         
         <div className="mt-8">

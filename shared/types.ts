@@ -43,10 +43,20 @@ export interface RawStats {
   tradeDeaths: number;
 }
 
+export interface ICFMetric {
+  value: number;
+  sigma?: number;
+}
+
+export interface SCMetric {
+  value: number;
+  metric?: string;
+}
+
 export interface PlayerMetrics {
-  rcs: number;
-  icf: number;
-  sc: number;
+  rcs: number | { value: number; metrics?: Record<string, number> };
+  icf: number | ICFMetric;
+  sc: number | SCMetric;
   osm: number;
 }
 

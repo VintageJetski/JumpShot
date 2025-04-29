@@ -164,6 +164,64 @@ export default function TeamChemistrySimulator() {
     setSelectedTeam(team);
   };
 
+  // Handle drag and drop of players
+  const handleDragEnd = (result: DropResult) => {
+    const { source, destination } = result;
+    
+    // Dropped outside a droppable area
+    if (!destination) return;
+    
+    // Handle drop from player search to position
+    if (source.droppableId === 'player-search' && destination.droppableId.startsWith('position-')) {
+      const positionId = destination.droppableId.replace('position-', '');
+      const playerIndex = source.index;
+      const player = filteredPlayers[playerIndex];
+      
+      // Update the position with the player
+      const newPositions = [...positions];
+      const positionIndex = newPositions.findIndex(p => p.id === positionId);
+      if (positionIndex !== -1) {
+        newPositions[positionIndex].player = player;
+        setPositions(newPositions);
+        calculateTeamChemistry(newPositions);
+        
+        // Close the search dialog
+        setIsSearchDialogOpen(false);
+        setSelectedPosition(null);
+        
+        toast({
+          title: "Player Added",
+          description: `${player.name} has been added to the ${newPositions[positionIndex].name} position.`,
+        });
+      }
+    }
+    
+    // Handle position swapping
+    if (source.droppableId.startsWith('position-') && destination.droppableId.startsWith('position-')) {
+      const sourceId = source.droppableId.replace('position-', '');
+      const destId = destination.droppableId.replace('position-', '');
+      
+      const newPositions = [...positions];
+      const sourcePos = newPositions.find(p => p.id === sourceId);
+      const destPos = newPositions.find(p => p.id === destId);
+      
+      if (sourcePos && destPos) {
+        // Swap players between positions
+        const tempPlayer = sourcePos.player;
+        sourcePos.player = destPos.player;
+        destPos.player = tempPlayer;
+        
+        setPositions(newPositions);
+        calculateTeamChemistry(newPositions);
+        
+        toast({
+          title: "Players Swapped",
+          description: "Player positions have been swapped.",
+        });
+      }
+    }
+  };
+
   // Handle player selection for a position
   const handlePlayerSelect = (positionId: string, player: PlayerWithScout) => {
     const newPositions = [...positions];
@@ -495,112 +553,135 @@ export default function TeamChemistrySimulator() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                {positions.map((position) => (
-                  <div key={position.id} className="relative">
-                    <Card className="h-full border-dashed">
-                      <CardHeader className="p-3">
-                        <CardTitle className="text-sm flex justify-between items-center">
-                          <RoleBadge role={position.role} /> 
-                          <span>{position.name}</span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-3 flex flex-col items-center">
-                        {position.player ? (
-                          <div className="w-full text-center">
-                            <div className="text-lg font-bold mb-1">
-                              {position.player.name}
-                            </div>
-                            <div className="mb-2 text-xs text-muted-foreground">
-                              {position.player.team}
-                            </div>
-                            <div className="mb-2">
-                              <div className="w-12 h-12 mx-auto rounded-full bg-white flex items-center justify-center text-black text-xl font-bold">
-                                {Math.round(position.player.scoutMetrics.roleScore)}
-                              </div>
-                            </div>
-                            <div className="flex gap-1 justify-center mt-2">
-                              <Button 
-                                variant="destructive" 
-                                size="sm" 
-                                className="h-8 px-2"
-                                onClick={() => removePlayer(position.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="h-8 px-2"
-                                onClick={() => findReplacements(position.id)}
-                              >
-                                Find Replacement
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="text-muted-foreground mb-3">No player assigned</div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openSearchDialog(position.id)}
-                            >
-                              <PlusCircle className="h-4 w-4 mr-2" />
-                              Add Player
-                            </Button>
-                          </>
-                        )}
-                      </CardContent>
-                    </Card>
-                    
-                    {/* Replacement suggestions */}
-                    {selectedPosition === position.id && replacementSuggestions.length > 0 && (
-                      <Card className="absolute top-full left-0 right-0 z-10 mt-2 shadow-lg">
-                        <CardHeader className="p-3">
-                          <CardTitle className="text-sm">Suggested Replacements</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-3">
-                          <div className="space-y-2">
-                            {replacementSuggestions.map((player) => (
-                              <Button
-                                key={player.id}
-                                variant="outline"
-                                size="sm"
-                                className="w-full justify-start"
-                                onClick={() => replacePlayer(position.id, player)}
-                              >
-                                <div className="flex items-center">
-                                  <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-black text-xs font-bold mr-2">
-                                    {Math.round(player.scoutMetrics.roleScore)}
-                                  </div>
-                                  <div>
-                                    <div className="text-sm">{player.name}</div>
-                                    <div className="text-xs text-muted-foreground">{player.team}</div>
-                                  </div>
-                                </div>
-                              </Button>
-                            ))}
-                          </div>
-                        </CardContent>
-                        <CardFooter className="p-3">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="w-full"
-                            onClick={() => {
-                              setReplacementSuggestions([]);
-                              setSelectedPosition(null);
-                            }}
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                  {positions.map((position) => (
+                    <div key={position.id} className="relative">
+                      <Droppable droppableId={`position-${position.id}`}>
+                        {(provided) => (
+                          <Card 
+                            className="h-full border-dashed"
+                            ref={provided.innerRef} 
+                            {...provided.droppableProps}
                           >
-                            Close
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    )}
-                  </div>
-                ))}
-              </div>
+                            <CardHeader className="p-3">
+                              <CardTitle className="text-sm flex justify-between items-center">
+                                <RoleBadge role={position.role} /> 
+                                <span>{position.name}</span>
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-3 flex flex-col items-center">
+                              {position.player ? (
+                                <Draggable 
+                                  draggableId={position.player.id} 
+                                  index={0}
+                                >
+                                  {(provided) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      className="w-full text-center"
+                                    >
+                                      <div className="text-lg font-bold mb-1">
+                                        {position.player?.name || ''}
+                                      </div>
+                                      <div className="mb-2 text-xs text-muted-foreground">
+                                        {position.player?.team || ''}
+                                      </div>
+                                      <div className="mb-2">
+                                        <div className="w-12 h-12 mx-auto rounded-full bg-white flex items-center justify-center text-black text-xl font-bold">
+                                          {position.player ? Math.round(position.player.scoutMetrics.roleScore) : 0}
+                                        </div>
+                                      </div>
+                                      <div className="flex gap-1 justify-center mt-2">
+                                        <Button 
+                                          variant="destructive" 
+                                          size="sm" 
+                                          className="h-8 px-2"
+                                          onClick={() => removePlayer(position.id)}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm" 
+                                          className="h-8 px-2"
+                                          onClick={() => findReplacements(position.id)}
+                                        >
+                                          Find Replacement
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </Draggable>
+                              ) : (
+                                <>
+                                  <div className="text-muted-foreground mb-3">No player assigned</div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openSearchDialog(position.id)}
+                                  >
+                                    <PlusCircle className="h-4 w-4 mr-2" />
+                                    Add Player
+                                  </Button>
+                                </>
+                              )}
+                              {provided.placeholder}
+                            </CardContent>
+                          </Card>
+                        )}
+                      </Droppable>
+                      
+                      {/* Replacement suggestions */}
+                      {selectedPosition === position.id && replacementSuggestions.length > 0 && (
+                        <Card className="absolute top-full left-0 right-0 z-10 mt-2 shadow-lg">
+                          <CardHeader className="p-3">
+                            <CardTitle className="text-sm">Suggested Replacements</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-3">
+                            <div className="space-y-2">
+                              {replacementSuggestions.map((player) => (
+                                <Button
+                                  key={player.id}
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full justify-start"
+                                  onClick={() => replacePlayer(position.id, player)}
+                                >
+                                  <div className="flex items-center">
+                                    <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-black text-xs font-bold mr-2">
+                                      {Math.round(player.scoutMetrics.roleScore)}
+                                    </div>
+                                    <div>
+                                      <div className="text-sm">{player.name}</div>
+                                      <div className="text-xs text-muted-foreground">{player.team}</div>
+                                    </div>
+                                  </div>
+                                </Button>
+                              ))}
+                            </div>
+                          </CardContent>
+                          <CardFooter className="p-3">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="w-full"
+                              onClick={() => {
+                                setReplacementSuggestions([]);
+                                setSelectedPosition(null);
+                              }}
+                            >
+                              Close
+                            </Button>
+                          </CardFooter>
+                        </Card>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </DragDropContext>
             </CardContent>
           </Card>
           

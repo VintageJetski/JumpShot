@@ -48,7 +48,11 @@ interface Position {
   player: PlayerWithScout | null;
 }
 
-export default function TeamChemistrySimulator() {
+interface TeamChemistrySimulatorProps {
+  selectedPlayerId?: string | null;
+}
+
+export default function TeamChemistrySimulator({ selectedPlayerId = null }: TeamChemistrySimulatorProps) {
   const [selectedTeam, setSelectedTeam] = useState<TeamWithTIR | null>(null);
   const [positions, setPositions] = useState<Position[]>([]);
   const [searchQuery, setSearchQuery] = useState("");

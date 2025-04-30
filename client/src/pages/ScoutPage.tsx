@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -14,7 +14,21 @@ enum ScoutTab {
 
 export default function ScoutPage() {
   const [activeTab, setActiveTab] = useState<ScoutTab>(ScoutTab.TeamSelector);
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+
+  // Parse URL parameters when the component mounts or location changes
+  useEffect(() => {
+    // Extract the selectedPlayer parameter from the URL if it exists
+    const params = new URLSearchParams(location.split('?')[1]);
+    const playerParam = params.get('selectedPlayer');
+    
+    if (playerParam) {
+      setSelectedPlayerId(playerParam);
+      // Ensure we're on the team chemistry tab
+      setActiveTab(ScoutTab.TeamSelector);
+    }
+  }, [location]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -43,7 +57,7 @@ export default function ScoutPage() {
           </TabsList>
           
           <TabsContent value={ScoutTab.TeamSelector} className="mt-6">
-            <TeamChemistrySimulator />
+            <TeamChemistrySimulator selectedPlayerId={selectedPlayerId} />
           </TabsContent>
           
           <TabsContent value={ScoutTab.PlayerSearch} className="mt-6">

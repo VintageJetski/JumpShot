@@ -75,6 +75,11 @@ export default function SearchPlayersPage() {
     setLocation(`/players/${playerId}`);
   };
   
+  // Navigate back to chemistry simulator with the selected player
+  const addPlayerToTeam = (playerId: string) => {
+    setLocation(`/scout?selectedPlayer=${playerId}`);
+  };
+  
   return (
     <div className="container px-4 py-6 max-w-7xl">
       <div className="flex items-center justify-between mb-6">
@@ -268,25 +273,31 @@ export default function SearchPlayersPage() {
                       <div>
                         <div className="text-xs font-medium mb-1">Key Performance</div>
                         <div className="grid grid-cols-3 gap-1">
-                          {player.metrics?.roleMetrics && Object.entries(player.metrics.roleMetrics).slice(0, 3).map(([metricName, value], idx: number) => (
-                            <div key={idx} className="flex flex-col">
-                              <span className="text-xs text-muted-foreground truncate" title={metricName}>
-                                {metricName.length > 14 
-                                  ? `${metricName.substring(0, 12)}...` 
-                                  : metricName}
+                          {player.primaryMetric && (
+                            <div className="flex flex-col">
+                              <span className="text-xs text-muted-foreground truncate" title={player.primaryMetric.name}>
+                                {player.primaryMetric.name.length > 14 
+                                  ? `${player.primaryMetric.name.substring(0, 12)}...` 
+                                  : player.primaryMetric.name}
                               </span>
                               <span className="font-medium">
-                                {typeof value === 'number' 
-                                  ? value.toFixed(2) 
-                                  : String(value)}
+                                {player.primaryMetric.value.toFixed(2)}
                               </span>
                             </div>
-                          ))}
+                          )}
+                          <div className="flex flex-col">
+                            <span className="text-xs text-muted-foreground truncate">K/D Ratio</span>
+                            <span className="font-medium">{player.kd.toFixed(2)}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-xs text-muted-foreground truncate">PIV</span>
+                            <span className="font-medium">{player.piv.toFixed(2)}</span>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
                     
-                    <CardFooter className="bg-gray-50">
+                    <CardFooter className="bg-gray-50 flex-col space-y-2">
                       <div className="flex justify-between w-full">
                         <Button 
                           variant="ghost" 
@@ -310,6 +321,14 @@ export default function SearchPlayersPage() {
                           Compare
                         </Button>
                       </div>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="w-full text-xs"
+                        onClick={() => addPlayerToTeam(player.id)}
+                      >
+                        Add to Team
+                      </Button>
                     </CardFooter>
                   </Card>
                 ))}

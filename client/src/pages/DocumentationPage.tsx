@@ -32,6 +32,15 @@ import { ScoutDocumentation } from "@/components/documentation/ScoutDocumentatio
 import exportToPDF from "@/lib/pdfExport";
 
 export default function DocumentationPage() {
+  const [activeTab, setActiveTab] = useState("piv");
+  
+  // Handle PDF export
+  const handleExportToPDF = () => {
+    // Create a filename based on the current tab
+    const filename = `CS2_Analytics_Documentation_${activeTab}.pdf`;
+    // Export the current tab content
+    exportToPDF("documentation-content", filename);
+  };
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-2 text-gradient">CS2 Analytics Documentation</h1>
@@ -39,7 +48,24 @@ export default function DocumentationPage() {
         This page documents the methodology and development of the CS2 Analytics system.
       </p>
       
-      <Tabs defaultValue="piv" className="mb-12">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold">Documentation Details</h2>
+        <Button 
+          onClick={handleExportToPDF}
+          className="flex items-center gap-2"
+          variant="outline"
+        >
+          <FileDown className="h-4 w-4" />
+          Export as PDF
+        </Button>
+      </div>
+      
+      <Tabs 
+        defaultValue="piv" 
+        className="mb-12"
+        value={activeTab}
+        onValueChange={setActiveTab}
+      >
         <TabsList className="grid w-full md:w-auto md:inline-flex grid-cols-3 md:grid-cols-none mb-6">
           <TabsTrigger value="piv" className="flex items-center gap-2">
             <Calculator className="h-4 w-4" />
@@ -74,8 +100,9 @@ export default function DocumentationPage() {
             <span>Technical</span>
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="piv" className="space-y-6">
+        
+        <div id="documentation-content">
+          <TabsContent value="piv" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -765,6 +792,7 @@ export default function DocumentationPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        </div>
       </Tabs>
       
       <Card>

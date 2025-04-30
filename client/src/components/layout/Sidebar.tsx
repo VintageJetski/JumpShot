@@ -11,7 +11,8 @@ import {
   Percent,
   Activity,
   Image,
-  Search
+  Search,
+  PieChart
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -126,6 +127,17 @@ export default function Sidebar() {
           >
             <BarChart2 className="h-5 w-5 mr-2" />
             Statistical Analysis
+          </Link>
+
+          <Link href="/data-visualization" 
+            className={`w-full flex items-center justify-start px-4 py-2 ${
+              isActive("/data-visualization")
+                ? "bg-primary text-white"
+                : "text-gray-300 hover:bg-gray-700"
+            } rounded font-medium`}
+          >
+            <PieChart className="h-5 w-5 mr-2" />
+            Data Visualization
           </Link>
         </div>
         

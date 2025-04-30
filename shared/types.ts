@@ -41,6 +41,29 @@ export interface RawStats {
   awpKills: number;
   tradeKills: number;
   tradeDeaths: number;
+  // Additional fields for visualization
+  heThrown?: number;
+  infernosThrown?: number;
+  multiKills?: number;
+  wallbangKills?: number;
+  noScope?: number;
+  throughSmoke?: number;
+  blindKills?: number;
+  victimBlindKills?: number;
+  steamId?: string;
+  userName?: string;
+  teamName?: string;
+  totalRoundsWon?: number;
+  ctFirstKills?: number;
+  tFirstDeaths?: number;
+  flashesThrownInPistolRound?: number;
+  heThrownInPistolRound?: number;
+  ctHeThrown?: number;
+  tHeThrown?: number;
+  infernosThrownInPistolRound?: number;
+  ctInfernosThrown?: number;
+  tInfernosThrown?: number;
+  smokesThrownInPistolRound?: number;
 }
 
 export interface ICFMetric {
@@ -81,10 +104,25 @@ export interface PlayerWithPIV {
 }
 
 export interface TeamWithTIR {
+  id?: string;
   name: string;
   tir: number;
   players: PlayerWithPIV[];
   synergyFactor: number;
+  
+  // Additional fields for visualization
+  matchesWon?: number;
+  matchesLost?: number;
+  matchesPlayed?: number;
+  roundsWon?: number;
+  roundsPlayed?: number;
+  tRoundsWon?: number;
+  tRoundsPlayed?: number;
+  ctRoundsWon?: number;
+  ctRoundsPlayed?: number;
+  averagePIV?: number;
+  teamSynergy?: number;
+  mapPool?: string[];
 }
 
 export interface RoundData {
@@ -108,11 +146,21 @@ export interface TeamRoundMetrics {
     forceRoundWinRate: number;
     ecoRoundWinRate: number;
     fullBuyEfficiency: number;
+    // Extended metrics for visualization
+    semiEcoWinRate?: number;
+    forceBuyWinRate?: number;
+    fullBuyWinRate?: number;
   };
   strategicMetrics: {
     tacticalTimeoutConversion: number;
     adaptationRating: number;
     mapControlPerformance: Record<string, number>;
+    // Extended metrics for visualization
+    tSideWinRate?: number;
+    ctSideWinRate?: number;
+    aSiteWinRate?: number;
+    bSiteWinRate?: number;
+    postTimeoutWinRate?: number;
   };
   momentumMetrics: {
     comebackFactor: number;

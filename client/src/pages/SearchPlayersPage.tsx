@@ -32,12 +32,12 @@ export default function SearchPlayersPage() {
   const [mustBeIGL, setMustBeIGL] = useState(false);
   
   // Fetch players data
-  const { data: players = [], isLoading, error } = useQuery({
+  const { data: players = [], isLoading, error } = useQuery<PlayerWithPIV[]>({
     queryKey: ['/api/players'],
   });
   
   // Filter players based on search criteria and advanced filters
-  const filteredPlayers = players.filter((player: PlayerWithPIV) => {
+  const filteredPlayers = (players || []).filter((player: PlayerWithPIV) => {
     // Basic search
     const matchesSearch = searchQuery === '' || 
       player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -268,17 +268,17 @@ export default function SearchPlayersPage() {
                       <div>
                         <div className="text-xs font-medium mb-1">Key Performance</div>
                         <div className="grid grid-cols-3 gap-1">
-                          {player.metrics?.topMetrics?.[player.role]?.slice(0, 3).map((metric, idx) => (
+                          {player.metrics?.roleMetrics && Object.entries(player.metrics.roleMetrics).slice(0, 3).map(([metricName, value], idx: number) => (
                             <div key={idx} className="flex flex-col">
-                              <span className="text-xs text-muted-foreground truncate" title={metric.metricName}>
-                                {metric.metricName.length > 14 
-                                  ? `${metric.metricName.substring(0, 12)}...` 
-                                  : metric.metricName}
+                              <span className="text-xs text-muted-foreground truncate" title={metricName}>
+                                {metricName.length > 14 
+                                  ? `${metricName.substring(0, 12)}...` 
+                                  : metricName}
                               </span>
                               <span className="font-medium">
-                                {typeof metric.value === 'number' 
-                                  ? metric.value.toFixed(2) 
-                                  : metric.value}
+                                {typeof value === 'number' 
+                                  ? value.toFixed(2) 
+                                  : String(value)}
                               </span>
                             </div>
                           ))}

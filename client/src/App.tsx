@@ -13,6 +13,7 @@ import PlayerComparisonsPage from "@/pages/PlayerComparisonsPage";
 import MatchPredictorPage from "@/pages/MatchPredictorPage";
 import MatchInfographicPage from "@/pages/MatchInfographicPage";
 import ScoutPage from "@/pages/ScoutPage";
+import SearchPlayersPage from "@/pages/SearchPlayersPage";
 import StatisticalAnalysisPage from "@/pages/StatisticalAnalysisPage";
 import Layout from "@/components/layout/Layout";
 
@@ -29,6 +30,7 @@ function Router() {
         <Route path="/match-predictor" component={MatchPredictorPage} />
         <Route path="/match-infographic" component={MatchInfographicPage} />
         <Route path="/scout" component={ScoutPage} />
+        <Route path="/scout/search-players" component={SearchPlayersPage} />
         <Route path="/statistical-analysis" component={StatisticalAnalysisPage} />
         <Route path="/players/:id" component={PlayerDetailPage} />
         <Route path="/teams/:name" component={TeamDetailPage} />

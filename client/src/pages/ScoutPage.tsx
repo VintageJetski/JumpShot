@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Search, Users, GitMerge } from "lucide-react";
+import { Search, Users, GitMerge, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import TeamChemistrySimulator from "@/components/scout/TeamChemistrySimulator";
 
 // Define the tabs for the Scout page
@@ -12,6 +14,7 @@ enum ScoutTab {
 
 export default function ScoutPage() {
   const [activeTab, setActiveTab] = useState<ScoutTab>(ScoutTab.TeamSelector);
+  const [, setLocation] = useLocation();
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -53,12 +56,19 @@ export default function ScoutPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col items-center justify-center p-8 text-center">
-                  <GitMerge className="h-12 w-12 text-primary mb-4" />
-                  <h3 className="text-xl font-bold mb-2">Switch to Team Chemistry Simulator</h3>
-                  <p className="text-muted-foreground max-w-md">
-                    Our enhanced Team Chemistry Simulator now includes all player scouting functionality.
-                    Use the Team Chemistry tab to search for players, build teams, and analyze synergy.
+                  <Search className="h-12 w-12 text-primary mb-4" />
+                  <h3 className="text-xl font-bold mb-2">Find Players</h3>
+                  <p className="text-muted-foreground max-w-md mb-6">
+                    Our enhanced player search lets you filter by role, stats, and more.
+                    Find the perfect player for your team based on performance metrics and team fit.
                   </p>
+                  <Button 
+                    onClick={() => setLocation('/scout/search-players')}
+                    className="gap-2"
+                  >
+                    Go to Player Search
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>

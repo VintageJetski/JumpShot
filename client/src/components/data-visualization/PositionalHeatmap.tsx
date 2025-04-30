@@ -1,387 +1,372 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Download, RefreshCw } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 import { PlayerWithPIV, PlayerRole } from '@shared/types';
-import { Card, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { SiCounterstrike } from 'react-icons/si';
 
 interface PositionalHeatmapProps {
   players: PlayerWithPIV[];
 }
 
-// Available maps for CS2
-const availableMaps = [
-  { id: 'de_inferno', name: 'Inferno' },
-  { id: 'de_mirage', name: 'Mirage' },
-  { id: 'de_nuke', name: 'Nuke' },
-  { id: 'de_overpass', name: 'Overpass' },
-  { id: 'de_ancient', name: 'Ancient' },
-  { id: 'de_anubis', name: 'Anubis' },
-  { id: 'de_vertigo', name: 'Vertigo' }
-];
-
-// Define positions on maps
-interface Position {
-  id: string;
-  name: string;
-  side: 'T' | 'CT';
-  description: string;
-}
-
-// Define positions for Inferno map
-const infernoPositions: Position[] = [
-  { id: 'inf-a-site', name: 'A Site', side: 'CT', description: 'A bombsite area' },
-  { id: 'inf-a-pit', name: 'Pit', side: 'T', description: 'Deep area near A site' },
-  { id: 'inf-a-apartments', name: 'Apartments', side: 'T', description: 'Apartments leading to A site' },
-  { id: 'inf-mid', name: 'Mid', side: 'T', description: 'Middle area of the map' },
-  { id: 'inf-banana', name: 'Banana', side: 'T', description: 'Pathway leading to B site' },
-  { id: 'inf-b-site', name: 'B Site', side: 'CT', description: 'B bombsite area' },
-  { id: 'inf-ct-spawn', name: 'CT Spawn', side: 'CT', description: 'Counter-Terrorist starting area' },
-  { id: 'inf-t-spawn', name: 'T Spawn', side: 'T', description: 'Terrorist starting area' }
-];
-
-// Role-based position preferences
-const rolePositionPreferences: Record<PlayerRole, string[]> = {
-  [PlayerRole.IGL]: ['inf-mid', 'inf-b-site'],
-  [PlayerRole.AWP]: ['inf-mid', 'inf-banana', 'inf-a-pit'],
-  [PlayerRole.Lurker]: ['inf-a-apartments', 'inf-t-spawn'],
-  [PlayerRole.Spacetaker]: ['inf-banana', 'inf-a-apartments'],
-  [PlayerRole.Support]: ['inf-mid', 'inf-banana'],
-  [PlayerRole.Anchor]: ['inf-b-site', 'inf-a-site'],
-  [PlayerRole.Rotator]: ['inf-mid', 'inf-ct-spawn']
+// Map positions/roles to general areas of the map
+const ROLE_POSITIONS = {
+  [PlayerRole.IGL]: {
+    name: 'In-Game Leader',
+    description: 'Strategic mid-map presence with focus on team coordination',
+    tSidePositions: ['Mid Control', 'Default Setup', 'Coordinated Executes'],
+    ctSidePositions: ['Rotator', 'Site Overseer', 'Info Gathering']
+  },
+  [PlayerRole.AWP]: {
+    name: 'AWP',
+    description: 'Holds long angles and creates initial picks for the team',
+    tSidePositions: ['Long Angles', 'Entry Picks', 'Trade Support'],
+    ctSidePositions: ['Long Angles', 'Site Anchor', 'Defensive AWPing']
+  },
+  [PlayerRole.Spacetaker]: {
+    name: 'Spacetaker',
+    description: 'Aggressive entry player that creates space for teammates',
+    tSidePositions: ['Entry Fragger', 'First Contact', 'Map Control'],
+    ctSidePositions: ['Aggressive Off-Angles', 'Information Plays', 'Early Rotations']
+  },
+  [PlayerRole.Lurker]: {
+    name: 'Lurker',
+    description: 'Operates away from main team, creating distractions and flanks',
+    tSidePositions: ['Flank Control', 'Split Pressure', 'Late Lurks'],
+    ctSidePositions: ['Flank Watch', 'Unexpected Positions', 'Information Gathering']
+  },
+  [PlayerRole.Support]: {
+    name: 'Support',
+    description: 'Provides utility support and trades for core players',
+    tSidePositions: ['Utility Support', 'Trade Fragger', 'Site Establishment'],
+    ctSidePositions: ['Site Support', 'Utility Usage', 'Retake Support']
+  },
+  [PlayerRole.Anchor]: {
+    name: 'Anchor',
+    description: 'Holds bombsites and defensive positions firmly',
+    tSidePositions: ['Site Control', 'Post-plant Positions', 'Defensive Setup'],
+    ctSidePositions: ['Site Anchor', 'Defensive Positioning', 'Hold Specialist']
+  },
+  [PlayerRole.Rotator]: {
+    name: 'Rotator',
+    description: 'Flexibly moves between positions based on information',
+    tSidePositions: ['Flexible Entry', 'Mid-round Adaptations', 'Reactive Play'],
+    ctSidePositions: ['Quick Rotation', 'Mid Control', 'Adaptive Defense']
+  },
 };
 
-// Heatmap options
-type HeatmapMetric = 'kills' | 'deaths' | 'utility' | 'preference';
-type HeatmapSide = 'T' | 'CT' | 'Both';
+// Role effectiveness by map area (arbitrary values for visualization)
+const ROLE_EFFECTIVENESS = {
+  [PlayerRole.IGL]: {
+    'A Site': 65,
+    'B Site': 65,
+    'Mid': 85,
+    'Long': 60,
+    'Connector': 80,
+  },
+  [PlayerRole.AWP]: {
+    'A Site': 70,
+    'B Site': 70,
+    'Mid': 90,
+    'Long': 95,
+    'Connector': 60,
+  },
+  [PlayerRole.Spacetaker]: {
+    'A Site': 85,
+    'B Site': 85,
+    'Mid': 80,
+    'Long': 70,
+    'Connector': 75,
+  },
+  [PlayerRole.Lurker]: {
+    'A Site': 60,
+    'B Site': 65,
+    'Mid': 70,
+    'Long': 75,
+    'Connector': 90,
+  },
+  [PlayerRole.Support]: {
+    'A Site': 80,
+    'B Site': 80,
+    'Mid': 65,
+    'Long': 70,
+    'Connector': 75,
+  },
+  [PlayerRole.Anchor]: {
+    'A Site': 95,
+    'B Site': 95,
+    'Mid': 60,
+    'Long': 70,
+    'Connector': 50,
+  },
+  [PlayerRole.Rotator]: {
+    'A Site': 75,
+    'B Site': 75,
+    'Mid': 85,
+    'Long': 65,
+    'Connector': 80,
+  },
+};
+
+// Map areas for different maps
+const MAP_AREAS = {
+  'dust2': ['A Site', 'B Site', 'Mid', 'Long', 'Tunnel', 'Catwalk', 'T Spawn', 'CT Spawn'],
+  'mirage': ['A Site', 'B Site', 'Mid', 'Palace', 'Apartments', 'Connector', 'Jungle', 'CT Spawn'],
+  'inferno': ['A Site', 'B Site', 'Mid', 'Banana', 'Apartments', 'Pit', 'CT Spawn', 'T Spawn'],
+  'nuke': ['A Site', 'B Site', 'Outside', 'Ramp', 'Lobby', 'Secret', 'Heaven', 'Vents'],
+  'overpass': ['A Site', 'B Site', 'Long', 'Connector', 'Bathrooms', 'Monster', 'Heaven', 'Bank'],
+};
+
+// Sample player positions based on role (for visualization)
+const generateHeatmapData = (role: PlayerRole, map: string, side: 'T' | 'CT') => {
+  const areas = MAP_AREAS[map as keyof typeof MAP_AREAS] || Object.keys(ROLE_EFFECTIVENESS[role]);
+  
+  // Generate heatmap data with normalized values
+  return areas.map(area => {
+    // Base value from role effectiveness for this area
+    let baseValue = ROLE_EFFECTIVENESS[role][area as keyof typeof ROLE_EFFECTIVENESS[typeof role]] || 50;
+    
+    // Adjust based on side (T or CT)
+    if (side === 'T') {
+      // T side favors certain roles in certain areas
+      if (role === PlayerRole.Spacetaker) baseValue += 15;
+      if (role === PlayerRole.Lurker && (area.includes('Connector') || area.includes('Flank'))) baseValue += 20;
+      if (role === PlayerRole.IGL && area.includes('Mid')) baseValue += 10;
+    } else {
+      // CT side adjustments
+      if (role === PlayerRole.Anchor && (area.includes('Site'))) baseValue += 20;
+      if (role === PlayerRole.AWP && (area.includes('Long') || area.includes('Mid'))) baseValue += 15;
+      if (role === PlayerRole.Rotator) baseValue += 10;
+    }
+    
+    // Clamp value between 0-100
+    const value = Math.min(100, Math.max(0, baseValue));
+    
+    return {
+      area,
+      value,
+      intensity: value >= 80 ? 'high' : value >= 50 ? 'medium' : 'low'
+    };
+  });
+};
 
 export default function PositionalHeatmap({ players }: PositionalHeatmapProps) {
-  const [selectedMap, setSelectedMap] = useState('de_inferno');
-  const [heatmapMetric, setHeatmapMetric] = useState<HeatmapMetric>('preference');
-  const [mapSide, setMapSide] = useState<HeatmapSide>('Both');
-  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(players.length > 0 ? players[0].id : null);
-
-  // Function to calculate position score based on player role
-  const getPositionScoreForRole = (position: Position, role: PlayerRole): number => {
-    const preferredPositions = rolePositionPreferences[role] || [];
-    if (preferredPositions.includes(position.id)) {
-      return preferredPositions.indexOf(position.id) === 0 ? 1.0 : 0.7;
-    }
-    
-    // Check if the position side matches role tendency
-    if ((role === PlayerRole.Anchor || role === PlayerRole.Rotator) && position.side === 'CT') {
-      return 0.5;
-    }
-    
-    if ((role === PlayerRole.Lurker || role === PlayerRole.Spacetaker) && position.side === 'T') {
-      return 0.5;
-    }
-    
-    return 0.2;
-  };
-
-  // Generate heatmap data
-  const generateHeatmapData = () => {
-    // Get selected player
-    const player = players.find(p => p.id === selectedPlayer);
-    if (!player) return [];
-    
-    // Get positions for the selected map
-    const positions = selectedMap === 'de_inferno' ? infernoPositions : [];
-    
-    // Calculate heatmap values based on selection
-    return positions
-      .filter(pos => mapSide === 'Both' || pos.side === mapSide)
-      .map(position => {
-        let score = 0;
-        
-        if (heatmapMetric === 'preference') {
-          // Role-based position preferences
-          score = getPositionScoreForRole(position, player.role);
-          
-          // Adjust for T/CT specific roles
-          if (position.side === 'T' && player.tRole) {
-            score = Math.max(score, getPositionScoreForRole(position, player.tRole));
-          } else if (position.side === 'CT' && player.ctRole) {
-            score = Math.max(score, getPositionScoreForRole(position, player.ctRole));
-          }
-        } else {
-          // For actual stats, we'd use real data - this is a placeholder
-          // In a real implementation, you'd pull data from match history
-          score = Math.random(); // Placeholder for demo purposes
-        }
-        
-        return {
-          ...position,
-          score,
-          intensity: Math.floor(score * 5) // 0-4 intensity levels for visualization
-        };
-      });
-  };
-
-  // Get currently active map positions
-  const currentMapPositions = selectedMap === 'de_inferno' ? infernoPositions : [];
+  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(players[0]?.id || null);
+  const [selectedMap, setSelectedMap] = useState<string>('dust2');
+  const [selectedSide, setSelectedSide] = useState<'T' | 'CT'>('T');
   
-  // Heatmap data
-  const heatmapData = generateHeatmapData();
+  // Get the currently selected player data
+  const player = useMemo(() => {
+    return players.find(p => p.id === selectedPlayer) || null;
+  }, [players, selectedPlayer]);
   
-  // Get the current player
-  const currentPlayer = players.find(p => p.id === selectedPlayer);
-
-  // Render a position indicator on the heatmap
-  const renderPositionIndicator = (positionId: string) => {
-    const position = heatmapData.find(p => p.id === positionId);
-    if (!position) return null;
+  // Get the appropriate role for the selected side
+  const effectiveRole = useMemo(() => {
+    if (!player) return null;
     
-    const intensityClass = [
-      'bg-blue-500/20',
-      'bg-blue-500/40',
-      'bg-blue-500/60',
-      'bg-blue-500/80',
-      'bg-blue-500'
-    ][position.intensity] || 'bg-blue-500/20';
+    if (selectedSide === 'T') {
+      return player.tRole;
+    } else {
+      return player.ctRole;
+    }
+  }, [player, selectedSide]);
+  
+  // Generate heatmap data for visualization
+  const heatmapData = useMemo(() => {
+    if (!player || !effectiveRole) return [];
     
-    return (
-      <div 
-        className={`absolute rounded-full w-8 h-8 ${intensityClass} flex items-center justify-center text-xs font-medium text-white border-2 border-white/50 shadow-md transition-all hover:scale-110`}
-        style={{
-          // Positioning would be more accurate on a real implementation
-          top: `${20 + Math.random() * 60}%`,
-          left: `${20 + Math.random() * 60}%`,
-        }}
-        title={position.name}
-      >
-        {position.name.substring(0, 1)}
-      </div>
-    );
+    return generateHeatmapData(effectiveRole, selectedMap, selectedSide);
+  }, [player, effectiveRole, selectedMap, selectedSide]);
+  
+  // Calculate color based on value (heat)
+  const getHeatColor = (value: number) => {
+    if (value >= 80) return 'bg-red-500/80';
+    if (value >= 65) return 'bg-orange-500/70';
+    if (value >= 50) return 'bg-yellow-500/60';
+    if (value >= 35) return 'bg-blue-500/50';
+    return 'bg-blue-300/40';
   };
+  
+  // Get position descriptions based on role and side
+  const positionDescriptions = useMemo(() => {
+    if (!effectiveRole) return [];
+    
+    const roleInfo = ROLE_POSITIONS[effectiveRole];
+    return selectedSide === 'T' ? roleInfo.tSidePositions : roleInfo.ctSidePositions;
+  }, [effectiveRole, selectedSide]);
   
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label className="text-sm font-medium mb-1 block">Map</label>
-          <Select 
-            value={selectedMap}
-            onValueChange={setSelectedMap}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select map" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableMaps.map((map) => (
-                <SelectItem key={map.id} value={map.id}>
-                  {map.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div>
-          <label className="text-sm font-medium mb-1 block">Player</label>
-          <Select 
-            value={selectedPlayer || ''}
-            onValueChange={setSelectedPlayer}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select player" />
-            </SelectTrigger>
-            <SelectContent>
-              {players.map((player) => (
-                <SelectItem key={player.id} value={player.id}>
-                  {player.name} ({player.team})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div>
-          <label className="text-sm font-medium mb-1 block">Metric</label>
-          <Tabs 
-            value={heatmapMetric}
-            onValueChange={(value) => setHeatmapMetric(value as HeatmapMetric)}
-            className="w-full"
-          >
-            <TabsList className="grid grid-cols-4 w-full">
-              <TabsTrigger value="preference" className="text-xs">Preference</TabsTrigger>
-              <TabsTrigger value="kills" className="text-xs">Kills</TabsTrigger>
-              <TabsTrigger value="deaths" className="text-xs">Deaths</TabsTrigger>
-              <TabsTrigger value="utility" className="text-xs">Utility</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2">
-          <Alert variant="default" className="bg-muted">
-            <AlertDescription className="flex gap-2 items-center">
-              <SiCounterstrike className="h-4 w-4" />
-              <span>
-                {heatmapMetric === 'preference'
-                  ? 'Showing position preferences based on player role'
-                  : `Showing ${heatmapMetric} data for ${currentPlayer?.name || 'selected player'}`}
-              </span>
-            </AlertDescription>
-          </Alert>
-          
-          <div className="bg-card rounded-md border p-4 mt-4">
-            <div className="relative w-full aspect-square bg-muted rounded-md overflow-hidden">
-              {selectedMap === 'de_inferno' ? (
-                <div className="absolute inset-0 opacity-40 bg-cover bg-center"
-                     style={{ backgroundImage: `url('@assets/de_inferno.gif')` }}></div>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                  Map image not available
-                </div>
-              )}
-              
-              {/* Position Indicators */}
-              <div className="absolute inset-0">
-                {currentMapPositions.map(pos => (
-                  renderPositionIndicator(pos.id)
-                ))}
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* Control Panel */}
+        <Card className="lg:w-1/3">
+          <CardContent className="pt-6">
+            <h3 className="text-base font-semibold mb-4">Positional Analysis</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Select Player</label>
+                <Select 
+                  value={selectedPlayer || ''} 
+                  onValueChange={setSelectedPlayer}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select player" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {players.map(player => (
+                      <SelectItem key={player.id} value={player.id}>
+                        {player.name} ({player.team})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               
-              {/* Map Side Toggle */}
-              <div className="absolute top-2 right-2">
-                <Tabs 
-                  value={mapSide}
-                  onValueChange={(value) => setMapSide(value as HeatmapSide)}
-                  className="w-full"
-                >
-                  <TabsList className="grid grid-cols-3 w-full">
-                    <TabsTrigger value="T" className="text-xs">T Side</TabsTrigger>
-                    <TabsTrigger value="CT" className="text-xs">CT Side</TabsTrigger>
-                    <TabsTrigger value="Both" className="text-xs">Both</TabsTrigger>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Map</label>
+                <Select value={selectedMap} onValueChange={setSelectedMap}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select map" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dust2">Dust II</SelectItem>
+                    <SelectItem value="mirage">Mirage</SelectItem>
+                    <SelectItem value="inferno">Inferno</SelectItem>
+                    <SelectItem value="nuke">Nuke</SelectItem>
+                    <SelectItem value="overpass">Overpass</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-1 block">Side</label>
+                <Tabs value={selectedSide} onValueChange={(value) => setSelectedSide(value as 'T' | 'CT')}>
+                  <TabsList className="grid grid-cols-2 w-full">
+                    <TabsTrigger value="T">T Side</TabsTrigger>
+                    <TabsTrigger value="CT">CT Side</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
               
-              {/* Map Controls */}
-              <div className="absolute bottom-2 right-2 flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => {
-                    // Regenerate data with random seeds
-                    setHeatmapMetric(prev => prev);
-                  }}
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div>
-          <Card>
-            <CardContent className="p-4">
-              <h3 className="text-lg font-semibold mb-2">Position Analysis</h3>
-              {currentPlayer ? (
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium">{currentPlayer.name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {currentPlayer.team} - {currentPlayer.role}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-sm font-medium mb-1">Role Distribution</h4>
-                    <div className="flex gap-2">
-                      <div className="bg-muted rounded p-2 text-xs flex-1 text-center">
-                        <p>T Side</p>
-                        <p className="font-medium">{currentPlayer.tRole}</p>
-                      </div>
-                      <div className="bg-muted rounded p-2 text-xs flex-1 text-center">
-                        <p>CT Side</p>
-                        <p className="font-medium">{currentPlayer.ctRole}</p>
-                      </div>
+              {player && effectiveRole && (
+                <div className="mt-6">
+                  <h4 className="font-medium">Player Profile</h4>
+                  <div className="mt-2 space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Player:</span>
+                      <span className="text-sm font-medium">{player.name}</span>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-sm font-medium mb-1">Preferred Positions</h4>
-                    <div className="space-y-2">
-                      {heatmapData
-                        .sort((a, b) => b.score - a.score)
-                        .slice(0, 5)
-                        .map((position, idx) => (
-                          <div 
-                            key={position.id} 
-                            className="flex justify-between items-center p-2 rounded bg-muted"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm">{position.name}</span>
-                              <span className="text-xs text-muted-foreground">
-                                ({position.side} Side)
-                              </span>
-                            </div>
-                            <div className="flex items-center">
-                              <div className="h-2 bg-primary rounded-full" 
-                                   style={{ width: `${position.score * 50}px` }}></div>
-                            </div>
-                          </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Team:</span>
+                      <span className="text-sm font-medium">{player.team}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Role:</span>
+                      <span className="text-sm font-medium">{ROLE_POSITIONS[effectiveRole].name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Side:</span>
+                      <span className="text-sm font-medium">{selectedSide === 'T' ? 'Terrorist' : 'Counter-Terrorist'}</span>
+                    </div>
+                    
+                    <Separator className="my-2" />
+                    
+                    <div>
+                      <span className="text-sm text-muted-foreground block mb-1">Role Description:</span>
+                      <p className="text-sm">{ROLE_POSITIONS[effectiveRole].description}</p>
+                    </div>
+                    
+                    <div>
+                      <span className="text-sm text-muted-foreground block mb-1">Common Positions:</span>
+                      <ul className="text-sm list-disc pl-5">
+                        {positionDescriptions.map((pos, idx) => (
+                          <li key={idx}>{pos}</li>
                         ))}
+                      </ul>
                     </div>
                   </div>
-                  
-                  {heatmapMetric === 'preference' && (
-                    <div className="text-xs text-muted-foreground">
-                      <p>Position preferences are calculated based on player role and side preferences.</p>
-                      <p className="mt-1">
-                        {currentPlayer.role === PlayerRole.AWP && "AWPers typically prefer long sightlines and defensive positions."}
-                        {currentPlayer.role === PlayerRole.IGL && "IGLs often position for map control and information gathering."}
-                        {currentPlayer.role === PlayerRole.Lurker && "Lurkers favor flanking routes and positions to catch opponents off-guard."}
-                        {currentPlayer.role === PlayerRole.Support && "Support players typically position to assist teammates with utility."}
-                        {currentPlayer.role === PlayerRole.Spacetaker && "Entry fraggers position for aggressive pushes into contested areas."}
-                        {currentPlayer.role === PlayerRole.Anchor && "Anchors hold defensive positions to secure bombsites."}
-                        {currentPlayer.role === PlayerRole.Rotator && "Rotators position between sites for quick response to enemy movements."}
-                      </p>
-                    </div>
-                  )}
                 </div>
-              ) : (
-                <p className="text-muted-foreground">Select a player to view position analysis</p>
               )}
-            </CardContent>
-          </Card>
-          
-          <div className="mt-4">
-            <h3 className="text-sm font-medium mb-2">Intensity Legend</h3>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-full bg-blue-500/20 border border-white/30"></div>
-              <div className="h-4 w-4 rounded-full bg-blue-500/40 border border-white/30"></div>
-              <div className="h-4 w-4 rounded-full bg-blue-500/60 border border-white/30"></div>
-              <div className="h-4 w-4 rounded-full bg-blue-500/80 border border-white/30"></div>
-              <div className="h-4 w-4 rounded-full bg-blue-500 border border-white/30"></div>
-              <span className="text-xs text-muted-foreground">Low to High</span>
             </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="text-center text-muted-foreground text-xs px-4">
-        <p>
-          Note: This is a conceptual visualization based on role preferences. 
-          In a production environment, this would use actual positional data from matches.
-        </p>
+          </CardContent>
+        </Card>
+        
+        {/* Heatmap Visualization */}
+        <Card className="lg:w-2/3">
+          <CardHeader>
+            <CardTitle>
+              {selectedMap.charAt(0).toUpperCase() + selectedMap.slice(1)} - {selectedSide === 'T' ? 'T Side' : 'CT Side'} Positioning
+            </CardTitle>
+            <CardDescription>
+              Showing positional effectiveness for {player?.name || 'selected player'} as a {effectiveRole ? ROLE_POSITIONS[effectiveRole].name : 'player'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!player ? (
+              <div className="flex items-center justify-center h-[300px]">
+                <p className="text-muted-foreground">Select a player to view positional analysis</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {heatmapData.map((area, index) => (
+                    <div 
+                      key={index} 
+                      className="border rounded-md p-4 flex flex-col items-center justify-center transition-all hover:shadow-md"
+                    >
+                      <div className="text-sm font-medium">{area.area}</div>
+                      <div 
+                        className={`w-full h-4 mt-2 rounded-full ${getHeatColor(area.value)}`} 
+                        style={{ width: '100%' }}
+                      ></div>
+                      <div className="text-xs mt-1 text-muted-foreground">
+                        {area.value}% effectiveness
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex items-center justify-center mt-4 space-x-4">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full bg-blue-300/40 mr-1"></div>
+                    <span className="text-xs">Low</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/60 mr-1"></div>
+                    <span className="text-xs">Medium</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full bg-red-500/80 mr-1"></div>
+                    <span className="text-xs">High</span>
+                  </div>
+                </div>
+                
+                <div className="mt-4 text-center text-sm text-muted-foreground">
+                  <p>This visualization shows predicted positioning effectiveness based on player role and playstyle.</p>
+                  <p className="text-xs mt-1">Data is derived from role analysis and typical positioning patterns.</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

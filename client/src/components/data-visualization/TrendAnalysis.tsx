@@ -1,617 +1,488 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
-  ResponsiveContainer,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { PlayerWithPIV } from '@shared/types';
+import {
   LineChart,
   Line,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
-  ReferenceLine,
-  ComposedChart,
-  Area,
+  ResponsiveContainer,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  BarChart,
+  Bar,
 } from 'recharts';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, ArrowUpDown, BarChart2, LineChart as LineChartIcon } from 'lucide-react';
-import { PlayerWithPIV } from '@shared/types';
-import { Card, CardContent } from '@/components/ui/card';
-import RoleBadge from '@/components/ui/role-badge';
 
 interface TrendAnalysisProps {
   players: PlayerWithPIV[];
 }
 
-// Available metric options and their calculation functions
-interface MetricOption {
-  key: string;
-  label: string;
-  valueFunction: (player: PlayerWithPIV) => number;
-  description: string;
-  format?: (value: number) => string;
-  baseline?: number;
-}
-
-// Helper function to safely access raw stats
-const getRawStat = (player: PlayerWithPIV, key: string, defaultValue: number = 0): number => {
-  return player.rawStats ? (player.rawStats[key as keyof typeof player.rawStats] as number || defaultValue) : defaultValue;
+// Metrics categories for analysis
+const TREND_METRICS = {
+  performance: [
+    { key: 'piv', label: 'PIV (Overall)' },
+    { key: 'ctPIV', label: 'CT Side PIV' },
+    { key: 'tPIV', label: 'T Side PIV' },
+    { key: 'metrics.rcs.value', label: 'RCS', accessor: (player: PlayerWithPIV) => player.metrics?.rcs?.value },
+    { key: 'metrics.icf.value', label: 'ICF', accessor: (player: PlayerWithPIV) => player.metrics?.icf?.value },
+    { key: 'metrics.sc.value', label: 'SC', accessor: (player: PlayerWithPIV) => player.metrics?.sc?.value },
+  ],
+  offensive: [
+    { key: 'kills', label: 'Kills' },
+    { key: 'headshots', label: 'Headshots' },
+    { key: 'kd', label: 'K/D Ratio' },
+    { key: 'firstKills', label: 'First Kills' },
+    { key: 'rawStats.tFirstKills', label: 'T Side First Kills', accessor: (player: PlayerWithPIV) => player.rawStats?.tFirstKills },
+    { key: 'rawStats.ctFirstKills', label: 'CT Side First Kills', accessor: (player: PlayerWithPIV) => player.rawStats?.ctFirstKills },
+  ],
+  defensive: [
+    { key: 'rawStats.deaths', label: 'Deaths', accessor: (player: PlayerWithPIV) => player.rawStats?.deaths },
+    { key: 'rawStats.firstDeaths', label: 'First Deaths', accessor: (player: PlayerWithPIV) => player.rawStats?.firstDeaths },
+    { key: 'rawStats.tFirstDeaths', label: 'T Side First Deaths', accessor: (player: PlayerWithPIV) => player.rawStats?.tFirstDeaths },
+    { key: 'rawStats.ctFirstDeaths', label: 'CT Side First Deaths', accessor: (player: PlayerWithPIV) => player.rawStats?.ctFirstDeaths },
+  ],
+  utility: [
+    { key: 'rawStats.flashesThrown', label: 'Flashes Thrown', accessor: (player: PlayerWithPIV) => player.rawStats?.flashesThrown },
+    { key: 'rawStats.smokesThrown', label: 'Smokes Thrown', accessor: (player: PlayerWithPIV) => player.rawStats?.smokesThrown },
+    { key: 'rawStats.heThrown', label: 'HE Grenades Thrown', accessor: (player: PlayerWithPIV) => player.rawStats?.heThrown },
+    { key: 'rawStats.infernosThrown', label: 'Molotovs Thrown', accessor: (player: PlayerWithPIV) => player.rawStats?.infernosThrown },
+    { key: 'rawStats.assistedFlashes', label: 'Flash Assists', accessor: (player: PlayerWithPIV) => player.rawStats?.assistedFlashes },
+  ],
 };
 
-// Format as percentage
-const formatPercent = (value: number): string => {
-  return `${(value * 100).toFixed(1)}%`;
-};
-
-// Format to 2 decimal places
-const formatDecimal = (value: number): string => {
-  return value.toFixed(2);
-};
-
-// Define the metrics for trend analysis
-const metricOptions: MetricOption[] = [
-  { 
-    key: 'piv', 
-    label: 'PIV',
-    description: 'Player Impact Value - overall performance metric',
-    valueFunction: (player) => player.piv,
-    format: formatDecimal,
-    baseline: 1.0
-  },
-  { 
-    key: 'kd', 
-    label: 'K/D Ratio',
-    description: 'Kill to death ratio',
-    valueFunction: (player) => player.kd,
-    format: formatDecimal,
-    baseline: 1.0
-  },
-  { 
-    key: 'tPIV', 
-    label: 'T-Side PIV',
-    description: 'Player Impact Value on T-side',
-    valueFunction: (player) => player.tPIV,
-    format: formatDecimal,
-    baseline: 1.0
-  },
-  { 
-    key: 'ctPIV', 
-    label: 'CT-Side PIV',
-    description: 'Player Impact Value on CT-side',
-    valueFunction: (player) => player.ctPIV,
-    format: formatDecimal,
-    baseline: 1.0
-  },
-  { 
-    key: 'adr', 
-    label: 'ADR',
-    description: 'Average damage per round',
-    valueFunction: (player) => getRawStat(player, 'adrTotal'),
-    format: formatDecimal,
-    baseline: 75
-  },
-  { 
-    key: 'hs_percent', 
-    label: 'Headshot %',
-    description: 'Percentage of kills that are headshots',
-    valueFunction: (player) => {
-      const headshots = getRawStat(player, 'headshots');
-      const kills = getRawStat(player, 'kills');
-      return kills > 0 ? headshots / kills : 0;
-    },
-    format: formatPercent,
-    baseline: 0.4
-  },
-  { 
-    key: 'first_kill_ratio', 
-    label: 'First Kill Ratio',
-    description: 'Ratio of first kills to first deaths',
-    valueFunction: (player) => {
-      const firstKills = getRawStat(player, 'firstKills');
-      const firstDeaths = getRawStat(player, 'firstDeaths');
-      return firstDeaths > 0 ? firstKills / firstDeaths : firstKills;
-    },
-    format: formatDecimal,
-    baseline: 1.0
-  },
-  { 
-    key: 'flash_assists', 
-    label: 'Flash Assists',
-    description: 'Number of kills assisted by player flashes',
-    valueFunction: (player) => getRawStat(player, 'assistedFlashes'),
-    format: formatDecimal
-  },
-  { 
-    key: 'util_damage', 
-    label: 'Utility Damage',
-    description: 'Average damage per round from utility',
-    valueFunction: (player) => {
-      const totalUtilDmg = getRawStat(player, 'totalUtilDmg');
-      const totalRounds = Math.max(
-        getRawStat(player, 'tRoundsWon') + getRawStat(player, 'ctRoundsWon'),
-        1
-      );
-      return totalUtilDmg / totalRounds;
-    },
-    format: formatDecimal,
-    baseline: 10
-  },
-  { 
-    key: 'kast', 
-    label: 'KAST %',
-    description: 'Percentage of rounds with kill, assist, survival, or trade',
-    valueFunction: (player) => getRawStat(player, 'kastTotal'),
-    format: formatPercent,
-    baseline: 0.7
-  }
+// Colors for player data visualization
+const PLAYER_COLORS = [
+  '#8884d8',
+  '#82ca9d',
+  '#ffc658',
+  '#ff8042',
+  '#0088fe',
 ];
 
-// Chart type options
-type ChartType = 'bar' | 'line' | 'area' | 'composed';
-
-// Standardization options
-type StandardizationType = 'none' | 'zscore' | 'percent';
+// Chart types for visualization
+type ChartType = 'line' | 'radar' | 'bar';
 
 export default function TrendAnalysis({ players }: TrendAnalysisProps) {
-  const [selectedMetric, setSelectedMetric] = useState<string>('piv');
-  const [chartType, setChartType] = useState<ChartType>('bar');
-  const [standardization, setStandardization] = useState<StandardizationType>('none');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['piv', 'kd']);
+  const [chartType, setChartType] = useState<ChartType>('line');
+  const [category, setCategory] = useState<string>('performance');
+  const [normalizeValues, setNormalizeValues] = useState<boolean>(true);
   
-  // Get the selected metric definition
-  const getMetric = (): MetricOption => {
-    return metricOptions.find(m => m.key === selectedMetric) || metricOptions[0];
-  };
-
-  // Apply standardization to the metric values
-  const getStandardizedValue = (rawValue: number, metric: MetricOption): number => {
-    if (standardization === 'none') {
-      return rawValue;
+  // Get available metrics based on selected category
+  const availableMetrics = useMemo(() => {
+    switch (category) {
+      case 'performance':
+        return TREND_METRICS.performance;
+      case 'offensive':
+        return TREND_METRICS.offensive;
+      case 'defensive':
+        return TREND_METRICS.defensive;
+      case 'utility':
+        return TREND_METRICS.utility;
+      default:
+        return TREND_METRICS.performance;
     }
-    
-    // Calculate statistics across all players for this metric
-    const allValues = players.map(p => metric.valueFunction(p));
-    const sum = allValues.reduce((acc, val) => acc + val, 0);
-    const mean = sum / allValues.length;
-    
-    if (standardization === 'percent') {
-      // Express as percentage of mean
-      return (rawValue / mean) * 100;
-    } else if (standardization === 'zscore') {
-      // Z-score standardization
-      const squaredDiffs = allValues.map(val => Math.pow(val - mean, 2));
-      const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / allValues.length;
-      const stdDev = Math.sqrt(variance);
+  }, [category]);
+  
+  // Helper function to get player value based on metric key
+  const getPlayerValue = (player: PlayerWithPIV, metricKey: string): number => {
+    // Check if the metric has a custom accessor
+    const metric = Object.values(TREND_METRICS)
+      .flat()
+      .find(m => m.key === metricKey);
       
-      return stdDev === 0 ? 0 : (rawValue - mean) / stdDev;
+    if (metric?.accessor) {
+      return metric.accessor(player) || 0;
     }
     
-    return rawValue;
-  };
-
-  // Prepare the chart data
-  const prepareChartData = () => {
-    const metric = getMetric();
+    // Handle nested properties like 'metrics.rcs.value'
+    if (metricKey.includes('.')) {
+      let value: any = player;
+      metricKey.split('.').forEach(key => {
+        if (value) value = value[key as keyof typeof value];
+      });
+      return typeof value === 'number' ? value : 0;
+    }
     
-    // Calculate and sort values
-    let result = players.map(player => {
-      const rawValue = metric.valueFunction(player);
-      const standardizedValue = getStandardizedValue(rawValue, metric);
+    // Check for basic properties on player
+    return player[metricKey as keyof typeof player] as number || 0;
+  };
+  
+  // Helper function to get a metric label from its key
+  const getMetricLabel = (key: string): string => {
+    const metric = Object.values(TREND_METRICS)
+      .flat()
+      .find(m => m.key === key);
+    return metric?.label || key;
+  };
+  
+  // Toggle selection of a metric
+  const toggleMetricSelection = (metricKey: string) => {
+    if (selectedMetrics.includes(metricKey)) {
+      setSelectedMetrics(selectedMetrics.filter(key => key !== metricKey));
+    } else {
+      // Limit to 5 metrics for visualization clarity
+      if (selectedMetrics.length < 5) {
+        setSelectedMetrics([...selectedMetrics, metricKey]);
+      }
+    }
+  };
+  
+  // Prepare data for charts
+  const chartData = useMemo(() => {
+    if (!players.length || !selectedMetrics.length) return [];
+    
+    if (chartType === 'radar') {
+      // For radar chart, prepare data with metrics as attributes
+      return players.map(player => {
+        const playerData: any = {
+          name: player.name,
+          team: player.team,
+          role: player.role,
+        };
+        
+        // Add metrics to player data
+        selectedMetrics.forEach(metricKey => {
+          const rawValue = getPlayerValue(player, metricKey);
+          playerData[getMetricLabel(metricKey)] = rawValue;
+        });
+        
+        return playerData;
+      });
+    } else {
+      // For line and bar charts, prepare data with players as categories
+      return selectedMetrics.map(metricKey => {
+        // Calculate the max value for normalization if needed
+        const maxValue = normalizeValues
+          ? Math.max(...players.map(player => getPlayerValue(player, metricKey)))
+          : 1;
+          
+        return {
+          name: getMetricLabel(metricKey),
+          ...players.reduce((acc, player, index) => {
+            const value = getPlayerValue(player, metricKey);
+            acc[player.name] = normalizeValues 
+              ? maxValue > 0 
+                ? (value / maxValue) * 100 
+                : 0
+              : value;
+            return acc;
+          }, {} as Record<string, number>),
+        };
+      });
+    }
+  }, [players, selectedMetrics, chartType, normalizeValues]);
+  
+  // Prepare radar data with fixed format
+  const radarData = useMemo(() => {
+    if (!players.length || !selectedMetrics.length) return [];
+    
+    // Need to normalize values for radar chart
+    const maxValues: Record<string, number> = {};
+    
+    // Calculate max values for each metric
+    selectedMetrics.forEach(metricKey => {
+      maxValues[metricKey] = Math.max(...players.map(player => getPlayerValue(player, metricKey)));
+    });
+    
+    // Create data points for each player
+    return selectedMetrics.map(metricKey => {
+      const metricLabel = getMetricLabel(metricKey);
+      const maxValue = maxValues[metricKey] || 1;
       
       return {
-        name: player.name,
-        team: player.team,
-        role: player.role,
-        value: standardizedValue,
-        rawValue: rawValue,
-        formatted: metric.format ? metric.format(rawValue) : rawValue.toString()
+        metric: metricLabel,
+        ...players.reduce((acc, player) => {
+          const value = getPlayerValue(player, metricKey);
+          acc[player.name] = normalizeValues 
+            ? maxValue > 0 
+              ? (value / maxValue) * 100 
+              : 0
+            : value;
+          return acc;
+        }, {} as Record<string, number>),
       };
     });
+  }, [players, selectedMetrics, normalizeValues]);
+  
+  // Simple radar chart format
+  const simpleRadarData = useMemo(() => {
+    if (!players.length || !selectedMetrics.length) return [];
     
-    // Sort the data
-    result.sort((a, b) => {
-      return sortDirection === 'asc' 
-        ? a.value - b.value 
-        : b.value - a.value;
+    return players.map(player => {
+      const playerData: any = {
+        name: player.name,
+      };
+      
+      selectedMetrics.forEach(metricKey => {
+        const maxValue = Math.max(...players.map(p => getPlayerValue(p, metricKey))) || 1;
+        const value = getPlayerValue(player, metricKey);
+        
+        playerData[getMetricLabel(metricKey)] = normalizeValues 
+          ? (value / maxValue) * 100 
+          : value;
+      });
+      
+      return playerData;
     });
-    
-    return result;
-  };
+  }, [players, selectedMetrics, normalizeValues]);
   
-  // Calculate the average value
-  const calculateAverage = (): number => {
-    const metric = getMetric();
-    const values = players.map(p => metric.valueFunction(p));
-    const sum = values.reduce((acc, val) => acc + val, 0);
-    const mean = sum / Math.max(values.length, 1);
-    
-    return standardization === 'zscore' ? 0 : 
-           standardization === 'percent' ? 100 : 
-           mean;
-  };
-  
-  // Determine if a value is above or below baseline
-  const getValueColor = (value: number): string => {
-    const metric = getMetric();
-    const baseline = metric.baseline || calculateAverage();
-    
-    if (standardization === 'zscore') {
-      return value > 0 ? 'fill-green-500' : value < 0 ? 'fill-red-500' : 'fill-yellow-500';
-    }
-    
-    const comparisonValue = standardization === 'percent' ? 100 : baseline;
-    return value > comparisonValue ? 'fill-green-500' : value < comparisonValue ? 'fill-red-500' : 'fill-yellow-500';
-  };
-  
-  // Get tooltip label for standardized values
-  const getTooltipValueLabel = (): string => {
-    if (standardization === 'zscore') {
-      return 'Z-Score';
-    } else if (standardization === 'percent') {
-      return '% of Average';
-    } else {
-      return getMetric().label;
-    }
-  };
-  
-  // Chart data
-  const chartData = prepareChartData();
-  
-  // Average line value
-  const averageValue = calculateAverage();
-  
-  // Render different chart types
-  const renderChart = () => {
-    const metric = getMetric();
-    
-    // Formatter for tooltip and axis labels
-    const valueFormatter = (value: number) => {
-      if (standardization === 'zscore') {
-        return value.toFixed(2);
-      } else if (standardization === 'percent') {
-        return `${value.toFixed(1)}%`;
+  // Custom tooltip for charts
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      if (chartType === 'radar') {
+        return (
+          <Card className="bg-background border shadow-md p-0">
+            <CardContent className="p-2">
+              <p className="font-semibold">{label}</p>
+              <div className="text-xs mt-1">
+                {payload.map((entry: any, index: number) => (
+                  <p key={index} style={{ color: entry.color }}>
+                    <span className="font-medium">{entry.name}:</span> {normalizeValues ? `${entry.value.toFixed(1)}%` : entry.value.toFixed(2)}
+                  </p>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        );
       } else {
-        return metric.format ? metric.format(value) : value.toString();
+        return (
+          <Card className="bg-background border shadow-md p-0">
+            <CardContent className="p-2">
+              <p className="font-semibold">{label}</p>
+              <div className="text-xs mt-1">
+                {payload.map((entry: any, index: number) => (
+                  <p key={index} style={{ color: entry.color }}>
+                    <span className="font-medium">{entry.name}:</span> {normalizeValues ? `${entry.value.toFixed(1)}%` : entry.value.toFixed(2)}
+                  </p>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        );
       }
-    };
-    
-    // Bar chart
-    if (chartType === 'bar') {
-      return (
-        <ResponsiveContainer width="100%" height={500}>
-          <BarChart
-            data={chartData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 150 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="name" 
-              interval={0}
-              angle={-45}
-              textAnchor="end"
-              height={100}
-            />
-            <YAxis tickFormatter={valueFormatter} />
-            <Tooltip 
-              formatter={(value, name) => {
-                if (name === 'value') {
-                  return [valueFormatter(value as number), getTooltipValueLabel()];
-                }
-                return [value, name];
-              }}
-              content={({ active, payload }) => {
-                if (active && payload && payload.length) {
-                  const data = payload[0].payload;
-                  return (
-                    <div className="bg-background border rounded-md shadow-md p-3">
-                      <p className="font-bold">{data.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {data.team} - <RoleBadge role={data.role} size="xs" />
-                      </p>
-                      <div className="mt-2">
-                        <p className="flex justify-between gap-4">
-                          <span>{getMetric().label}:</span>
-                          <span className="font-medium">{data.formatted}</span>
-                        </p>
-                        
-                        {standardization !== 'none' && (
-                          <p className="flex justify-between gap-4">
-                            <span>{getTooltipValueLabel()}:</span>
-                            <span className="font-medium">{valueFormatter(data.value)}</span>
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                }
-                return null;
-              }}
-            />
-            <Legend />
-            <ReferenceLine y={averageValue} stroke="#FF4500" strokeDasharray="3 3" />
-            <Bar 
-              dataKey="value" 
-              name={getMetric().label} 
-              fill="#317039"
-              className="transition-all duration-300"
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      );
     }
-    
-    // Line chart
-    if (chartType === 'line') {
-      return (
-        <ResponsiveContainer width="100%" height={500}>
-          <LineChart
-            data={chartData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 150 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="name" 
-              interval={0}
-              angle={-45}
-              textAnchor="end"
-              height={100}
-            />
-            <YAxis tickFormatter={valueFormatter} />
-            <Tooltip 
-              formatter={(value, name) => {
-                if (name === 'value') {
-                  return [valueFormatter(value as number), getTooltipValueLabel()];
-                }
-                return [value, name];
-              }}
-            />
-            <Legend />
-            <ReferenceLine y={averageValue} stroke="#FF4500" strokeDasharray="3 3" />
-            <Line 
-              type="monotone" 
-              dataKey="value" 
-              name={getMetric().label} 
-              stroke="#317039" 
-              strokeWidth={2}
-              activeDot={{ r: 8 }} 
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      );
-    }
-    
-    // Area chart
-    if (chartType === 'area') {
-      return (
-        <ResponsiveContainer width="100%" height={500}>
-          <ComposedChart
-            data={chartData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 150 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="name" 
-              interval={0}
-              angle={-45}
-              textAnchor="end"
-              height={100}
-            />
-            <YAxis tickFormatter={valueFormatter} />
-            <Tooltip 
-              formatter={(value, name) => {
-                if (name === 'value') {
-                  return [valueFormatter(value as number), getTooltipValueLabel()];
-                }
-                return [value, name];
-              }}
-            />
-            <Legend />
-            <ReferenceLine y={averageValue} stroke="#FF4500" strokeDasharray="3 3" />
-            <Area 
-              type="monotone" 
-              dataKey="value" 
-              name={getMetric().label} 
-              fill="#317039" 
-              stroke="#317039"
-              fillOpacity={0.6}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      );
-    }
-    
-    // Composed chart (bar + line)
-    return (
-      <ResponsiveContainer width="100%" height={500}>
-        <ComposedChart
-          data={chartData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 150 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis 
-            dataKey="name" 
-            interval={0}
-            angle={-45}
-            textAnchor="end"
-            height={100}
-          />
-          <YAxis tickFormatter={valueFormatter} />
-          <Tooltip 
-            formatter={(value, name) => {
-              if (name === 'value') {
-                return [valueFormatter(value as number), getTooltipValueLabel()];
-              }
-              return [value, name];
-            }}
-          />
-          <Legend />
-          <ReferenceLine y={averageValue} stroke="#FF4500" strokeDasharray="3 3" />
-          <Bar 
-            dataKey="value" 
-            name={getMetric().label} 
-            barSize={20}
-            fill="#317039" 
-          />
-          <Line 
-            type="monotone" 
-            dataKey="value" 
-            name={`${getMetric().label} Trend`} 
-            stroke="#FF4500" 
-            strokeWidth={2}
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
-    );
+    return null;
   };
   
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
-        <Card className="p-4">
-          <div className="flex flex-col">
-            <span className="text-sm text-muted-foreground">Metric</span>
-            <span className="text-xl font-bold">{getMetric().label}</span>
-            <span className="text-xs text-muted-foreground mt-1">
-              {getMetric().description}
-            </span>
-          </div>
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* Controls */}
+        <Card className="lg:w-1/3">
+          <CardContent className="pt-6">
+            <h3 className="text-base font-semibold mb-4">Trend Analysis Controls</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Chart Type</label>
+                <Tabs value={chartType} onValueChange={(value) => setChartType(value as ChartType)}>
+                  <TabsList className="grid grid-cols-3 w-full">
+                    <TabsTrigger value="line">Line</TabsTrigger>
+                    <TabsTrigger value="radar">Radar</TabsTrigger>
+                    <TabsTrigger value="bar">Bar</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-1 block">Metric Category</label>
+                <Tabs value={category} onValueChange={setCategory}>
+                  <TabsList className="grid grid-cols-4 w-full">
+                    <TabsTrigger value="performance">Performance</TabsTrigger>
+                    <TabsTrigger value="offensive">Offense</TabsTrigger>
+                    <TabsTrigger value="defensive">Defense</TabsTrigger>
+                    <TabsTrigger value="utility">Utility</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+              
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">Selected Metrics ({selectedMetrics.length}/5)</label>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setSelectedMetrics([])}
+                    disabled={selectedMetrics.length === 0}
+                  >
+                    Clear
+                  </Button>
+                </div>
+                
+                <div className="mt-2 space-y-2">
+                  {availableMetrics.map(metric => (
+                    <div 
+                      key={metric.key}
+                      className={`flex items-center p-2 rounded-md border cursor-pointer ${
+                        selectedMetrics.includes(metric.key) 
+                          ? 'border-primary bg-primary/10' 
+                          : 'border-border hover:bg-secondary/50'
+                      }`}
+                      onClick={() => toggleMetricSelection(metric.key)}
+                    >
+                      <div className="flex-1">{metric.label}</div>
+                      {selectedMetrics.includes(metric.key) && (
+                        <div className="w-3 h-3 rounded-full bg-primary"></div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <div className="flex-1">
+                  <label className="text-sm font-medium">Normalize Values</label>
+                  <p className="text-xs text-muted-foreground">
+                    Scale values to percentages for easier comparison
+                  </p>
+                </div>
+                <Button
+                  variant={normalizeValues ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setNormalizeValues(!normalizeValues)}
+                >
+                  {normalizeValues ? "On" : "Off"}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
         </Card>
         
-        <Card className="p-4">
-          <div className="flex flex-col">
-            <span className="text-sm text-muted-foreground">Average Value</span>
-            <span className="text-xl font-bold">
-              {getMetric().format 
-                ? getMetric().format(calculateAverage()) 
-                : calculateAverage().toFixed(2)}
-            </span>
-            <span className="text-xs text-muted-foreground mt-1">
-              Across {players.length} players
-            </span>
-          </div>
+        {/* Visualization */}
+        <Card className="lg:w-2/3">
+          <CardContent className="pt-6">
+            <div className="h-[400px] w-full">
+              {selectedMetrics.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <p className="text-muted-foreground">
+                    Select at least one metric to visualize
+                  </p>
+                </div>
+              ) : chartType === 'line' ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={chartData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                    <XAxis dataKey="name" />
+                    <YAxis 
+                      label={normalizeValues 
+                        ? { value: 'Percentage (%)', angle: -90, position: 'insideLeft' } 
+                        : undefined
+                      } 
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend />
+                    {players.map((player, index) => (
+                      <Line
+                        key={player.id}
+                        type="monotone"
+                        dataKey={player.name}
+                        stroke={PLAYER_COLORS[index % PLAYER_COLORS.length]}
+                        activeDot={{ r: 8 }}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : chartType === 'radar' ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart 
+                    outerRadius={130} 
+                    width={500} 
+                    height={500} 
+                    data={simpleRadarData[0] ? Object.keys(simpleRadarData[0])
+                      .filter(key => key !== 'name')
+                      .map(key => ({
+                        subject: key,
+                        ...simpleRadarData.reduce((acc, player) => {
+                          acc[player.name] = player[key];
+                          return acc;
+                        }, {} as Record<string, number>),
+                        fullMark: normalizeValues ? 100 : undefined,
+                      })) : []}
+                  >
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="subject" />
+                    <PolarRadiusAxis 
+                      angle={90} 
+                      domain={normalizeValues ? [0, 100] : undefined} 
+                    />
+                    {players.map((player, index) => (
+                      <Radar
+                        key={player.id}
+                        name={player.name}
+                        dataKey={player.name}
+                        stroke={PLAYER_COLORS[index % PLAYER_COLORS.length]}
+                        fill={PLAYER_COLORS[index % PLAYER_COLORS.length]}
+                        fillOpacity={0.2}
+                      />
+                    ))}
+                    <Legend />
+                    <Tooltip content={<CustomTooltip />} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    width={500}
+                    height={300}
+                    data={chartData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                    <XAxis dataKey="name" />
+                    <YAxis 
+                      label={normalizeValues 
+                        ? { value: 'Percentage (%)', angle: -90, position: 'insideLeft' } 
+                        : undefined
+                      } 
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend />
+                    {players.map((player, index) => (
+                      <Bar
+                        key={player.id}
+                        dataKey={player.name}
+                        fill={PLAYER_COLORS[index % PLAYER_COLORS.length]}
+                      />
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+            
+            <div className="mt-2 text-center text-sm text-muted-foreground">
+              {selectedMetrics.length === 0 ? (
+                "Select metrics from the left panel to analyze trends"
+              ) : normalizeValues ? (
+                "Values are normalized as percentages of the maximum value for each metric"
+              ) : (
+                "Showing raw values without normalization"
+              )}
+            </div>
+          </CardContent>
         </Card>
-        
-        <Card className="p-4">
-          <div className="flex flex-col">
-            <span className="text-sm text-muted-foreground">Data View</span>
-            <span className="text-xl font-bold">
-              {standardization === 'zscore' ? 'Z-Score' : 
-               standardization === 'percent' ? 'Percent of Average' : 
-               'Raw Values'}
-            </span>
-            <span className="text-xs text-muted-foreground mt-1">
-              {standardization === 'zscore' 
-                ? 'Standard deviations from mean'
-                : standardization === 'percent'
-                ? 'Percentage of average value'
-                : 'Actual metric values'}
-            </span>
-          </div>
-        </Card>
-      </div>
-      
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full sm:w-auto">
-          <div>
-            <label className="text-sm font-medium mb-1 block">Metric</label>
-            <Select 
-              value={selectedMetric}
-              onValueChange={setSelectedMetric}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select metric" />
-              </SelectTrigger>
-              <SelectContent>
-                {metricOptions.map((metric) => (
-                  <SelectItem key={metric.key} value={metric.key}>
-                    {metric.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
-            <label className="text-sm font-medium mb-1 block">Chart Type</label>
-            <Tabs 
-              value={chartType}
-              onValueChange={(value) => setChartType(value as ChartType)}
-              className="w-full"
-            >
-              <TabsList className="grid grid-cols-4 w-full">
-                <TabsTrigger value="bar" className="px-2">
-                  <BarChart2 className="h-4 w-4" />
-                </TabsTrigger>
-                <TabsTrigger value="line" className="px-2">
-                  <LineChartIcon className="h-4 w-4" />
-                </TabsTrigger>
-                <TabsTrigger value="area" className="text-xs px-2">
-                  Area
-                </TabsTrigger>
-                <TabsTrigger value="composed" className="text-xs px-2">
-                  Multi
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-          
-          <div>
-            <label className="text-sm font-medium mb-1 block">Standardization</label>
-            <Select 
-              value={standardization}
-              onValueChange={(value) => setStandardization(value as StandardizationType)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Data view" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Raw Values</SelectItem>
-                <SelectItem value="percent">% of Average</SelectItem>
-                <SelectItem value="zscore">Z-Scores</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="flex items-end">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
-              className="flex items-center gap-1 h-10 w-full justify-center"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-              <span>{sortDirection === 'asc' ? 'Ascending' : 'Descending'}</span>
-            </Button>
-          </div>
-        </div>
-        
-        <Button variant="outline" size="sm" className="flex items-center gap-1">
-          <Download className="h-4 w-4" />
-          <span>Export</span>
-        </Button>
-      </div>
-      
-      {/* Chart Visualization */}
-      <div className="bg-card rounded-md border p-4">
-        {renderChart()}
-      </div>
-      
-      <div className="text-center text-muted-foreground text-sm">
-        <p>
-          The orange reference line indicates the average value ({getMetric().format 
-            ? getMetric().format(calculateAverage()) 
-            : calculateAverage().toFixed(2)})
-          {standardization === 'percent' ? ' (100%)' : standardization === 'zscore' ? ' (0)' : ''}.
-        </p>
       </div>
     </div>
   );

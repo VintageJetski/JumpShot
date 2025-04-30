@@ -255,31 +255,6 @@ export default function AdvancedAnalyticsPage() {
                   Advanced metrics and comparative analysis tools
                 </CardDescription>
               </div>
-              
-              <Tabs 
-                value={activeTab} 
-                onValueChange={(value) => setActiveTab(value as AnalyticsTab)}
-                className="w-full md:w-auto"
-              >
-                <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full md:w-auto">
-                  <TabsTrigger value={AnalyticsTab.AdvancedStats} className="flex items-center gap-1">
-                    <Sigma className="h-4 w-4" />
-                    <span className="hidden md:inline">Advanced Stats</span>
-                  </TabsTrigger>
-                  <TabsTrigger value={AnalyticsTab.Correlation} className="flex items-center gap-1">
-                    <Calculator className="h-4 w-4" />
-                    <span className="hidden md:inline">Correlation</span>
-                  </TabsTrigger>
-                  <TabsTrigger value={AnalyticsTab.Trends} className="flex items-center gap-1">
-                    <TrendingUp className="h-4 w-4" />
-                    <span className="hidden md:inline">Trends</span>
-                  </TabsTrigger>
-                  <TabsTrigger value={AnalyticsTab.Positioning} className="flex items-center gap-1">
-                    <BarChart4 className="h-4 w-4" />
-                    <span className="hidden md:inline">Positioning</span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
             </div>
           </CardHeader>
           
@@ -293,7 +268,32 @@ export default function AdvancedAnalyticsPage() {
                 </p>
               </div>
             ) : (
-              <>
+              <Tabs 
+                value={activeTab} 
+                onValueChange={(value) => setActiveTab(value as AnalyticsTab)}
+                className="w-full"
+              >
+                <div className="flex justify-end mb-4">
+                  <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full md:w-auto">
+                    <TabsTrigger value={AnalyticsTab.AdvancedStats} className="flex items-center gap-1">
+                      <Sigma className="h-4 w-4" />
+                      <span className="hidden md:inline">Advanced Stats</span>
+                    </TabsTrigger>
+                    <TabsTrigger value={AnalyticsTab.Correlation} className="flex items-center gap-1">
+                      <Calculator className="h-4 w-4" />
+                      <span className="hidden md:inline">Correlation</span>
+                    </TabsTrigger>
+                    <TabsTrigger value={AnalyticsTab.Trends} className="flex items-center gap-1">
+                      <TrendingUp className="h-4 w-4" />
+                      <span className="hidden md:inline">Trends</span>
+                    </TabsTrigger>
+                    <TabsTrigger value={AnalyticsTab.Positioning} className="flex items-center gap-1">
+                      <BarChart4 className="h-4 w-4" />
+                      <span className="hidden md:inline">Positioning</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+                
                 <TabsContent value={AnalyticsTab.AdvancedStats} className="mt-0">
                   <AdvancedStatsTable 
                     players={selectedPlayerData} 
@@ -318,7 +318,7 @@ export default function AdvancedAnalyticsPage() {
                     players={selectedPlayerData}
                   />
                 </TabsContent>
-              </>
+              </Tabs>
             )}
           </CardContent>
         </Card>

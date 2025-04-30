@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -6,509 +6,375 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuCheckboxItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  ArrowUpDown, 
-  Download, 
-  Filter, 
-  Info, 
-  PlusCircle,
+  FileDown, 
+  SortAsc, 
+  SortDesc, 
   Search,
-  X
-} from "lucide-react";
-import { PlayerWithPIV, PlayerRole } from '@shared/types';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
-import RoleBadge from '@/components/ui/role-badge';
+  X,
+  Filter
+} from 'lucide-react';
+import { PlayerWithPIV } from '@shared/types';
 
+// Define stat categories
+type StatCategory = 'all' | 'offense' | 'defense' | 'utility';
+
+// Define props for component
 interface AdvancedStatsTableProps {
   players: PlayerWithPIV[];
-  statFilter: 'all' | 'offense' | 'defense' | 'utility';
+  statFilter: StatCategory;
 }
 
-// Define advanced metric types and their descriptions
-interface AdvancedMetric {
-  key: string;
-  label: string;
-  description: string;
-  category: 'offense' | 'defense' | 'utility' | 'overall';
-  valueFunction: (player: PlayerWithPIV) => number | string;
-  formatter?: (value: number) => string;
-}
-
-// Function to get value from player.rawStats with fallbacks
-const getRawStat = (player: PlayerWithPIV, key: string, defaultValue: number = 0): number => {
-  return player.rawStats ? (player.rawStats[key as keyof typeof player.rawStats] as number || defaultValue) : defaultValue;
+// Stat columns for different categories
+const STATS_COLUMNS = {
+  offense: [
+    { key: 'kills', label: 'Kills' },
+    { key: 'headshots', label: 'HS %', format: (player: any) => `${((player.headshots / player.kills) * 100).toFixed(1)}%` },
+    { key: 'kd', label: 'K/D' },
+    { key: 'firstKills', label: 'First Kills' },
+    { key: 'tFirstKills', label: 'T First Kills' },
+    { key: 'wallbangKills', label: 'Wallbang Kills' },
+    { key: 'blindKills', label: 'Blind Kills' },
+    { key: 'throughSmoke', label: 'Through Smoke' },
+  ],
+  defense: [
+    { key: 'deaths', label: 'Deaths' },
+    { key: 'firstDeaths', label: 'First Deaths' },
+    { key: 'ctFirstDeaths', label: 'CT First Deaths' },
+    { key: 'victimBlindKills', label: 'Died While Blind' },
+    { key: 'kd', label: 'K/D' },
+  ],
+  utility: [
+    { key: 'flashesThrown', label: 'Flashes Thrown' },
+    { key: 'assistedFlashes', label: 'Flash Assists' },
+    { key: 'smokesThrown', label: 'Smokes Thrown' },
+    { key: 'heThrown', label: 'HE Thrown' },
+    { key: 'infernosThrown', label: 'Molotovs Thrown' },
+    { key: 'totalUtilityThrown', label: 'Total Utility' },
+  ],
+  piv: [
+    { key: 'piv', label: 'PIV' },
+    { key: 'ctPIV', label: 'CT PIV' },
+    { key: 'tPIV', label: 'T PIV' },
+    { key: 'metrics.rcs.value', label: 'RCS', accessor: (player: PlayerWithPIV) => player.metrics.rcs.value },
+    { key: 'metrics.icf.value', label: 'ICF', accessor: (player: PlayerWithPIV) => player.metrics.icf.value },
+    { key: 'metrics.sc.value', label: 'SC', accessor: (player: PlayerWithPIV) => player.metrics.sc.value },
+  ]
 };
-
-// Function to format percentages
-const formatPercent = (value: number): string => {
-  return `${(value * 100).toFixed(1)}%`;
-};
-
-// Function to format ratios to 2 decimal places
-const formatRatio = (value: number): string => {
-  return value.toFixed(2);
-};
-
-// Advanced metrics definitions
-const advancedMetrics: AdvancedMetric[] = [
-  // Overall metrics
-  {
-    key: 'piv',
-    label: 'PIV',
-    description: 'Player Impact Value - Overall performance metric that combines RCS, ICF, SC and OSM',
-    category: 'overall',
-    valueFunction: (player) => player.piv,
-    formatter: formatRatio,
-  },
-  {
-    key: 'tPIV',
-    label: 'T-Side PIV',
-    description: 'PIV specifically for T-side performance',
-    category: 'overall',
-    valueFunction: (player) => player.tPIV,
-    formatter: formatRatio,
-  },
-  {
-    key: 'ctPIV',
-    label: 'CT-Side PIV',
-    description: 'PIV specifically for CT-side performance',
-    category: 'overall',
-    valueFunction: (player) => player.ctPIV,
-    formatter: formatRatio,
-  },
-  {
-    key: 'kd',
-    label: 'K/D',
-    description: 'Kill-to-Death Ratio',
-    category: 'overall',
-    valueFunction: (player) => player.kd,
-    formatter: formatRatio,
-  },
-  
-  // Offensive metrics
-  {
-    key: 'entrySuccessRate',
-    label: 'Entry Success Rate',
-    description: 'Success rate of opening duels (First Kills / First Deaths)',
-    category: 'offense',
-    valueFunction: (player) => {
-      const firstKills = getRawStat(player, 'firstKills');
-      const firstDeaths = getRawStat(player, 'firstDeaths');
-      return firstDeaths > 0 ? firstKills / firstDeaths : firstKills;
-    },
-    formatter: formatRatio,
-  },
-  {
-    key: 'openingImpact',
-    label: 'Opening Impact',
-    description: 'Percentage of rounds where the player gets the opening kill',
-    category: 'offense',
-    valueFunction: (player) => {
-      const firstKills = getRawStat(player, 'firstKills');
-      const totalRounds = Math.max(
-        getRawStat(player, 'tRoundsWon') + getRawStat(player, 'ctRoundsWon'),
-        1
-      );
-      return firstKills / totalRounds;
-    },
-    formatter: formatPercent,
-  },
-  {
-    key: 'headshotRate',
-    label: 'Headshot %',
-    description: 'Percentage of kills that are headshots',
-    category: 'offense',
-    valueFunction: (player) => {
-      const headshots = getRawStat(player, 'headshots');
-      const kills = getRawStat(player, 'kills');
-      return kills > 0 ? headshots / kills : 0;
-    },
-    formatter: formatPercent,
-  },
-  {
-    key: 'multiKillRounds',
-    label: 'Multi-kill Rounds',
-    description: 'Percentage of rounds with multiple kills',
-    category: 'offense',
-    valueFunction: (player) => {
-      const multiKills = getRawStat(player, 'multiKills');
-      const totalRounds = Math.max(
-        getRawStat(player, 'tRoundsWon') + getRawStat(player, 'ctRoundsWon'),
-        1
-      );
-      return multiKills / totalRounds;
-    },
-    formatter: formatPercent,
-  },
-  {
-    key: 'adr',
-    label: 'ADR',
-    description: 'Average Damage per Round',
-    category: 'offense',
-    valueFunction: (player) => getRawStat(player, 'adrTotal'),
-    formatter: (value) => value.toFixed(1),
-  },
-  {
-    key: 'awpDependency',
-    label: 'AWP Dependency',
-    description: 'Percentage of kills with an AWP',
-    category: 'offense',
-    valueFunction: (player) => {
-      const awpKills = getRawStat(player, 'awpKills');
-      const kills = getRawStat(player, 'kills');
-      return kills > 0 ? awpKills / kills : 0;
-    },
-    formatter: formatPercent,
-  },
-  
-  // Defensive metrics
-  {
-    key: 'survivalRate',
-    label: 'Survival Rate',
-    description: 'Percentage of rounds survived',
-    category: 'defense',
-    valueFunction: (player) => {
-      const deaths = getRawStat(player, 'deaths');
-      const totalRounds = Math.max(
-        getRawStat(player, 'tRoundsWon') + getRawStat(player, 'ctRoundsWon'),
-        1
-      );
-      return 1 - (deaths / totalRounds);
-    },
-    formatter: formatPercent,
-  },
-  {
-    key: 'tradeEfficiency',
-    label: 'Trade Efficiency',
-    description: 'Ratio of trade kills to trade deaths',
-    category: 'defense',
-    valueFunction: (player) => {
-      const tradeKills = getRawStat(player, 'tradeKills');
-      const tradeDeaths = getRawStat(player, 'tradeDeaths');
-      return tradeDeaths > 0 ? tradeKills / tradeDeaths : tradeKills;
-    },
-    formatter: formatRatio,
-  },
-  {
-    key: 'clutchRating',
-    label: 'Clutch Factor',
-    description: 'Effectiveness in 1vX situations',
-    category: 'defense',
-    valueFunction: (player) => {
-      // This is a placeholder calculation since we don't have explicit clutch data
-      const kd = player.kd;
-      const survivalRate = 1 - (getRawStat(player, 'deaths') / Math.max(getRawStat(player, 'tRoundsWon') + getRawStat(player, 'ctRoundsWon'), 1));
-      return (kd * 0.7 + survivalRate * 0.3) * 1.2;
-    },
-    formatter: formatRatio,
-  },
-  {
-    key: 'firstDeathRate',
-    label: 'First Death Rate',
-    description: 'Percentage of rounds where player is the first to die',
-    category: 'defense',
-    valueFunction: (player) => {
-      const firstDeaths = getRawStat(player, 'firstDeaths');
-      const totalRounds = Math.max(
-        getRawStat(player, 'tRoundsWon') + getRawStat(player, 'ctRoundsWon'),
-        1
-      );
-      return firstDeaths / totalRounds;
-    },
-    formatter: formatPercent,
-  },
-  
-  // Utility metrics
-  {
-    key: 'flashAssists',
-    label: 'Flash Assists',
-    description: 'Percentage of flashes thrown that result in assisted kills',
-    category: 'utility',
-    valueFunction: (player) => {
-      const assistedFlashes = getRawStat(player, 'assistedFlashes');
-      const flashesThrown = getRawStat(player, 'flashesThrown');
-      return flashesThrown > 0 ? assistedFlashes / flashesThrown : 0;
-    },
-    formatter: formatPercent,
-  },
-  {
-    key: 'smokeUsage',
-    label: 'Smoke Usage',
-    description: 'Number of smokes used per round',
-    category: 'utility',
-    valueFunction: (player) => {
-      const smokesThrown = getRawStat(player, 'smokesThrown');
-      const totalRounds = Math.max(
-        getRawStat(player, 'tRoundsWon') + getRawStat(player, 'ctRoundsWon'),
-        1
-      );
-      return smokesThrown / totalRounds;
-    },
-    formatter: formatRatio,
-  },
-  {
-    key: 'utilDamage',
-    label: 'Util Damage',
-    description: 'Average damage dealt with utility per round',
-    category: 'utility',
-    valueFunction: (player) => {
-      const utilDmg = getRawStat(player, 'totalUtilDmg');
-      const totalRounds = Math.max(
-        getRawStat(player, 'tRoundsWon') + getRawStat(player, 'ctRoundsWon'),
-        1
-      );
-      return utilDmg / totalRounds;
-    },
-    formatter: (value) => value.toFixed(1),
-  },
-  {
-    key: 'kastRating',
-    label: 'KAST %',
-    description: 'Percentage of rounds with a Kill, Assist, Survived, or Traded death',
-    category: 'utility',
-    valueFunction: (player) => getRawStat(player, 'kastTotal'),
-    formatter: formatPercent,
-  },
-  {
-    key: 'utilityEconomy',
-    label: 'Utility Economy',
-    description: 'Overall effectiveness of utility usage',
-    category: 'utility',
-    valueFunction: (player) => {
-      const utilDmg = getRawStat(player, 'totalUtilDmg');
-      const totalUtil = getRawStat(player, 'totalUtilityThrown');
-      return totalUtil > 0 ? utilDmg / totalUtil : 0;
-    },
-    formatter: formatRatio,
-  },
-  {
-    key: 'flashesPerRound',
-    label: 'Flashes/Round',
-    description: 'Number of flashbangs thrown per round',
-    category: 'utility',
-    valueFunction: (player) => {
-      const flashesThrown = getRawStat(player, 'flashesThrown');
-      const totalRounds = Math.max(
-        getRawStat(player, 'tRoundsWon') + getRawStat(player, 'ctRoundsWon'),
-        1
-      );
-      return flashesThrown / totalRounds;
-    },
-    formatter: formatRatio,
-  },
-];
 
 export default function AdvancedStatsTable({ players, statFilter }: AdvancedStatsTableProps) {
-  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'piv', direction: 'desc' });
-  const [visibleMetrics, setVisibleMetrics] = useState<string[]>(advancedMetrics.map(m => m.key));
-  const [searchTerm, setSearchTerm] = useState('');
-
-  // Filter metrics based on category and search term
-  const filteredMetrics = advancedMetrics.filter(metric => {
-    if (statFilter !== 'all' && metric.category !== statFilter && metric.category !== 'overall') {
-      return false;
-    }
-    
-    if (searchTerm && !metric.label.toLowerCase().includes(searchTerm.toLowerCase()) && 
-        !metric.description.toLowerCase().includes(searchTerm.toLowerCase())) {
-      return false;
-    }
-    
-    return visibleMetrics.includes(metric.key);
-  });
-
-  // Sort players based on the selected metric
-  const sortedPlayers = [...players].sort((a, b) => {
-    const metricToSort = advancedMetrics.find(m => m.key === sortConfig.key);
-    if (!metricToSort) return 0;
-    
-    const valueA = Number(metricToSort.valueFunction(a));
-    const valueB = Number(metricToSort.valueFunction(b));
-    
-    return sortConfig.direction === 'asc' ? valueA - valueB : valueB - valueA;
-  });
-
-  // Toggle column visibility
-  const toggleMetricVisibility = (metricKey: string) => {
-    if (visibleMetrics.includes(metricKey)) {
-      setVisibleMetrics(visibleMetrics.filter(key => key !== metricKey));
+  const [sortBy, setSortBy] = useState<string>('piv');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedTab, setSelectedTab] = useState<string>('piv');
+  const [customColumns, setCustomColumns] = useState<string[]>([]);
+  
+  // Filter stats based on selected category
+  const statColumns = useMemo(() => {
+    if (selectedTab === 'all') {
+      return [
+        ...STATS_COLUMNS.piv,
+        ...STATS_COLUMNS.offense,
+        ...STATS_COLUMNS.defense,
+        ...STATS_COLUMNS.utility
+      ];
+    } else if (selectedTab === 'custom' && customColumns.length > 0) {
+      return [
+        { key: 'piv', label: 'PIV' }, // Always include PIV for reference
+        ...Object.values(STATS_COLUMNS)
+          .flat()
+          .filter(col => customColumns.includes(col.key))
+      ];
     } else {
-      setVisibleMetrics([...visibleMetrics, metricKey]);
+      return STATS_COLUMNS[selectedTab as keyof typeof STATS_COLUMNS] || STATS_COLUMNS.piv;
     }
-  };
+  }, [selectedTab, customColumns]);
 
-  // Toggle sort direction
-  const handleSort = (metricKey: string) => {
-    if (sortConfig.key === metricKey) {
-      setSortConfig({
-        key: metricKey,
-        direction: sortConfig.direction === 'asc' ? 'desc' : 'asc'
+  // Sort players based on selected column and direction
+  const sortedPlayers = useMemo(() => {
+    return [...players].sort((a, b) => {
+      let aValue: any = a;
+      let bValue: any = b;
+      
+      // Handle nested properties like 'metrics.rcs.value'
+      sortBy.split('.').forEach(key => {
+        if (aValue && bValue) {
+          aValue = aValue[key];
+          bValue = bValue[key];
+        }
       });
+      
+      // For nested object access, might need special accessor functions
+      const column = statColumns.find(col => col.key === sortBy);
+      if (column && column.accessor) {
+        aValue = column.accessor(a);
+        bValue = column.accessor(b);
+      }
+      
+      // Handle strings vs numbers
+      if (typeof aValue === 'string') {
+        const comparison = aValue.localeCompare(bValue);
+        return sortDirection === 'asc' ? comparison : -comparison;
+      } else {
+        // For numerical sort
+        return sortDirection === 'asc' 
+          ? (aValue || 0) - (bValue || 0) 
+          : (bValue || 0) - (aValue || 0);
+      }
+    });
+  }, [players, sortBy, sortDirection, statColumns]);
+
+  // Filter players by search query
+  const filteredPlayers = useMemo(() => {
+    if (!searchQuery) return sortedPlayers;
+    
+    return sortedPlayers.filter(player => 
+      player.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      player.team.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [sortedPlayers, searchQuery]);
+
+  // Toggle sort direction or change sort column
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
-      setSortConfig({
-        key: metricKey,
-        direction: 'desc'
-      });
+      setSortBy(column);
+      setSortDirection('desc'); // Default to descending order when changing columns
     }
   };
 
-  // Calculate league average for a metric
-  const getLeagueAverage = (metricKey: string): number => {
-    const metric = advancedMetrics.find(m => m.key === metricKey);
-    if (!metric) return 0;
+  // Format cell value based on column definition
+  const formatCellValue = (player: PlayerWithPIV, column: any) => {
+    if (column.format) {
+      return column.format(player.rawStats);
+    }
     
-    const sum = players.reduce((total, player) => {
-      return total + Number(metric.valueFunction(player));
-    }, 0);
+    if (column.accessor) {
+      return typeof column.accessor(player) === 'number' 
+        ? column.accessor(player).toFixed(2) 
+        : column.accessor(player);
+    }
     
-    return sum / Math.max(players.length, 1);
+    // Handle nested properties like 'metrics.rcs.value'
+    if (column.key.includes('.')) {
+      let value = player;
+      column.key.split('.').forEach((key: string) => {
+        if (value) value = value[key as keyof typeof value];
+      });
+      return typeof value === 'number' ? value.toFixed(2) : value;
+    }
+    
+    // Access raw stats for basic stats
+    if (column.key in player.rawStats) {
+      const value = player.rawStats[column.key as keyof typeof player.rawStats];
+      return typeof value === 'number' && !Number.isInteger(value) ? value.toFixed(2) : value;
+    }
+    
+    // Otherwise try to access the player object directly
+    const value = player[column.key as keyof typeof player];
+    return typeof value === 'number' ? value.toFixed(2) : value;
   };
 
-  // Get cell color based on comparison to league average
-  const getCellColor = (metricKey: string, value: number): string => {
-    const leagueAvg = getLeagueAverage(metricKey);
-    const percentDiff = ((value - leagueAvg) / leagueAvg) * 100;
-    
-    if (percentDiff > 15) return 'text-green-500';
-    if (percentDiff < -15) return 'text-red-500';
-    return '';
+  // Handle adding a column to custom selection
+  const handleAddCustomColumn = (columnKey: string) => {
+    if (!customColumns.includes(columnKey)) {
+      setCustomColumns([...customColumns, columnKey]);
+    }
   };
+
+  // Handle removing a column from custom selection
+  const handleRemoveCustomColumn = (columnKey: string) => {
+    setCustomColumns(customColumns.filter(key => key !== columnKey));
+  };
+
+  // Get all available columns for the custom selection
+  const allAvailableColumns = useMemo(() => {
+    return [
+      ...STATS_COLUMNS.piv,
+      ...STATS_COLUMNS.offense,
+      ...STATS_COLUMNS.defense,
+      ...STATS_COLUMNS.utility
+    ].filter(col => !customColumns.includes(col.key));
+  }, [customColumns]);
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <div className="flex-1 flex items-center gap-2">
-          <div className="relative flex-1">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <div className="relative w-full md:w-64">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search metrics..."
+              placeholder="Search players or teams..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
             />
-            {searchTerm && (
-              <X 
-                className="absolute right-2 top-2.5 h-4 w-4 text-muted-foreground cursor-pointer" 
-                onClick={() => setSearchTerm('')}
-              />
+            {searchQuery && (
+              <button 
+                className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
+                onClick={() => setSearchQuery('')}
+              >
+                <X className="h-4 w-4" />
+              </button>
             )}
           </div>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center gap-1">
-                <Filter className="h-4 w-4" />
-                <span>Columns</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[200px]">
-              {advancedMetrics.map((metric) => (
-                <DropdownMenuCheckboxItem
-                  key={metric.key}
-                  checked={visibleMetrics.includes(metric.key)}
-                  onCheckedChange={() => toggleMetricVisibility(metric.key)}
-                  className="capitalize"
-                >
-                  {metric.label}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <Button variant="outline" size="sm" className="flex items-center gap-1">
-            <Download className="h-4 w-4" />
-            <span>Export</span>
-          </Button>
         </div>
         
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-green-500"></span>
-            Above Average
-          </Badge>
-          <Badge variant="outline" className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-red-500"></span>
-            Below Average
-          </Badge>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <Tabs 
+            value={selectedTab} 
+            onValueChange={setSelectedTab}
+            className="w-full md:w-auto"
+          >
+            <TabsList className="grid grid-cols-5 w-full">
+              <TabsTrigger value="piv">PIV</TabsTrigger>
+              <TabsTrigger value="offense">Offense</TabsTrigger>
+              <TabsTrigger value="defense">Defense</TabsTrigger>
+              <TabsTrigger value="utility">Utility</TabsTrigger>
+              <TabsTrigger value="custom">Custom</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
+          <Button variant="outline" size="icon" disabled>
+            <FileDown className="h-4 w-4" />
+          </Button>
         </div>
       </div>
-
-      <div className="rounded-md border overflow-hidden">
-        <div className="max-h-[600px] overflow-auto">
-          <Table>
-            <TableHeader className="sticky top-0 bg-background z-10">
-              <TableRow>
-                <TableHead className="sticky left-0 bg-background">Player</TableHead>
-                {filteredMetrics.map((metric) => (
-                  <TableHead key={metric.key} className="whitespace-nowrap">
-                    <div 
-                      className="flex items-center gap-1 cursor-pointer"
-                      onClick={() => handleSort(metric.key)}
+      
+      {selectedTab === 'custom' && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Custom Column Selection</CardTitle>
+            <CardDescription>
+              Choose up to 8 metrics to display in your custom table
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {customColumns.map(columnKey => {
+                const column = allAvailableColumns.find(col => col.key === columnKey) || 
+                               Object.values(STATS_COLUMNS).flat().find(col => col.key === columnKey);
+                return (
+                  <div key={columnKey} className="flex items-center bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm">
+                    {column?.label || columnKey}
+                    <button 
+                      onClick={() => handleRemoveCustomColumn(columnKey)}
+                      className="ml-1 text-muted-foreground hover:text-foreground"
                     >
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="flex items-center gap-1">
-                              {metric.label}
-                              <Info className="h-3 w-3 text-muted-foreground" />
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="w-[250px]">{metric.description}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      
-                      <ArrowUpDown 
-                        className={`h-3 w-3 ${sortConfig.key === metric.key ? 'text-primary' : 'text-muted-foreground'}`} 
-                      />
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })}
+              {customColumns.length === 0 && (
+                <div className="text-muted-foreground text-sm">No columns selected yet</div>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Select 
+                onValueChange={handleAddCustomColumn}
+                disabled={customColumns.length >= 8}
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Add column" />
+                </SelectTrigger>
+                <SelectContent>
+                  <div className="max-h-[300px] overflow-y-auto">
+                    {allAvailableColumns.map(column => (
+                      <SelectItem key={column.key} value={column.key}>
+                        {column.label}
+                      </SelectItem>
+                    ))}
+                  </div>
+                </SelectContent>
+              </Select>
+              
+              {customColumns.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setCustomColumns([])}
+                >
+                  Clear All
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      <div className="rounded-md border overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[180px] sticky left-0 bg-background">Player</TableHead>
+                {statColumns.map(column => (
+                  <TableHead 
+                    key={column.key}
+                    className="cursor-pointer hover:bg-secondary/50"
+                    onClick={() => handleSort(column.key)}
+                  >
+                    <div className="flex items-center gap-1">
+                      {column.label}
+                      {sortBy === column.key && (
+                        sortDirection === 'asc' 
+                          ? <SortAsc className="h-3 w-3" /> 
+                          : <SortDesc className="h-3 w-3" />
+                      )}
                     </div>
                   </TableHead>
                 ))}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedPlayers.map((player) => (
-                <TableRow key={player.id}>
-                  <TableCell className="font-medium sticky left-0 bg-background">
-                    <div className="flex flex-col">
-                      <span>{player.name}</span>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <span>{player.team}</span>
-                        <RoleBadge role={player.role} size="xs" />
-                      </div>
-                    </div>
+              {filteredPlayers.length === 0 ? (
+                <TableRow>
+                  <TableCell 
+                    colSpan={statColumns.length + 1} 
+                    className="h-24 text-center"
+                  >
+                    No results found.
                   </TableCell>
-                  
-                  {filteredMetrics.map((metric) => {
-                    const rawValue = Number(metric.valueFunction(player));
-                    const displayValue = metric.formatter ? metric.formatter(rawValue) : String(rawValue);
-                    const colorClass = getCellColor(metric.key, rawValue);
-                    
-                    return (
-                      <TableCell key={`${player.id}-${metric.key}`} className={`text-right ${colorClass}`}>
-                        {displayValue}
-                      </TableCell>
-                    );
-                  })}
                 </TableRow>
-              ))}
+              ) : (
+                filteredPlayers.map(player => (
+                  <TableRow key={player.id}>
+                    <TableCell className="font-medium sticky left-0 bg-background whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <span>{player.name}</span>
+                        <span className="text-xs text-muted-foreground">{player.team}</span>
+                      </div>
+                    </TableCell>
+                    
+                    {statColumns.map(column => (
+                      <TableCell key={column.key} className="text-right">
+                        {formatCellValue(player, column)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>

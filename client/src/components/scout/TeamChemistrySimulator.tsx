@@ -163,6 +163,52 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
       calculateTeamChemistry(newPositions);
     }
   }, [selectedTeam, playersWithScoutMetrics]);
+  
+  // Handle selectedPlayerId when it changes
+  useEffect(() => {
+    // Make sure we have a team selected and players loaded
+    if (selectedPlayerId && players && positions.length > 0) {
+      const selectedPlayer = players.find(p => p.id === selectedPlayerId);
+      
+      if (selectedPlayer) {
+        // Find the first empty position
+        const emptyPositionIndex = positions.findIndex(p => p.player === null);
+        
+        if (emptyPositionIndex !== -1) {
+          // Create a copy of positions
+          const newPositions = [...positions];
+          
+          // Find the player with scout metrics
+          const playerWithScout = playersWithScoutMetrics.find(p => p.id === selectedPlayerId);
+          
+          if (playerWithScout) {
+            // Add the player to the empty position
+            newPositions[emptyPositionIndex].player = playerWithScout;
+            
+            // Try to match the position role with the player's primary role
+            if (playerWithScout.role) {
+              newPositions[emptyPositionIndex].role = playerWithScout.role;
+            }
+            
+            // Update positions
+            setPositions(newPositions);
+            calculateTeamChemistry(newPositions);
+            
+            toast({
+              title: "Player Added",
+              description: `${playerWithScout.name} has been added to the ${newPositions[emptyPositionIndex].name} position.`,
+            });
+          }
+        } else {
+          toast({
+            title: "Team Full",
+            description: "Remove a player first to add a new one.",
+            variant: "destructive"
+          });
+        }
+      }
+    }
+  }, [selectedPlayerId, players, playersWithScoutMetrics, positions, toast]);
 
   // Handle team selection
   const handleTeamSelect = (teamName: string) => {

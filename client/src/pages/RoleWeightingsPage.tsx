@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts';
-import { RotateCcw as ResetIcon, Save as SaveIcon } from 'lucide-react';
+import { RotateCcw as ResetIcon, Save as SaveIcon, FileDown } from 'lucide-react';
+import exportToPDF from '@/lib/pdfExport';
 
 export default function RoleWeightingsPage() {
   const [activeTab, setActiveTab] = useState<string>(PlayerRole.AWP);
@@ -19,6 +20,12 @@ export default function RoleWeightingsPage() {
   
   // Local state for adjustable weights
   const [customWeights, setCustomWeights] = useState<{[role: string]: {[metric: string]: number}}>({});
+  
+  // Handle PDF export
+  const handleExportToPDF = () => {
+    const filename = `CS2_Role_Weightings_${roleInfo[activeTab as PlayerRole].title.replace(/\s+/g, '_')}.pdf`;
+    exportToPDF("weightings-content", filename);
+  };
   
   // Get all players for statistical analysis
   const { data: players = [], isLoading } = useQuery({
@@ -394,9 +401,19 @@ export default function RoleWeightingsPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-8 bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
-        PIV Weighting System and Role Analysis
-      </h1>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8">
+        <h1 className="text-3xl font-bold mb-4 md:mb-0 bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
+          PIV Weighting System and Role Analysis
+        </h1>
+        <Button 
+          onClick={handleExportToPDF}
+          className="flex items-center gap-2"
+          variant="outline"
+        >
+          <FileDown className="h-4 w-4" />
+          Export as PDF
+        </Button>
+      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <Card className="bg-background-light rounded-lg border border-gray-700">

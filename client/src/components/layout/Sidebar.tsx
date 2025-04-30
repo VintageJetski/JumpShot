@@ -12,7 +12,9 @@ import {
   Activity,
   Image,
   Search,
-  PieChart
+  PieChart,
+  BarChart4,
+  Sigma
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -139,16 +141,27 @@ export default function Sidebar() {
             <PieChart className="h-5 w-5 mr-2" />
             Data Visualization
           </Link>
+          
+          <Link href="/advanced-analytics" 
+            className={`w-full flex items-center justify-start px-4 py-2 ${
+              isActive("/advanced-analytics")
+                ? "bg-primary text-white"
+                : "text-gray-300 hover:bg-gray-700"
+            } rounded font-medium`}
+          >
+            <Sigma className="h-5 w-5 mr-2" />
+            Advanced Analytics
+          </Link>
         </div>
         
         <div className="mt-8">
           <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">About</h3>
           <div className="mt-2 space-y-1">
             <div className="px-4 py-2 text-gray-400 text-sm">
-              CS2 Analytics v1.3
+              CS2 Analytics v1.4
             </div>
             <div className="px-4 py-2 text-gray-400 text-xs">
-              Updated: April 24, 2024
+              Updated: April 30, 2025
             </div>
           </div>
         </div>

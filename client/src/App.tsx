@@ -35,6 +35,7 @@ function Router() {
         <Route path="/scout/search-players" component={SearchPlayersPage} />
         <Route path="/statistical-analysis" component={StatisticalAnalysisPage} />
         <Route path="/data-visualization" component={DataVisualizationPage} />
+        <Route path="/advanced-analytics" component={AdvancedAnalyticsPage} />
         <Route path="/players/:id" component={PlayerDetailPage} />
         <Route path="/teams/:name" component={TeamDetailPage} />
         <Route component={NotFound} />

@@ -583,17 +583,51 @@ export default function TeamChemistrySimulator() {
                                       {...provided.dragHandleProps}
                                       className="w-full text-center"
                                     >
-                                      <div className="text-lg font-bold mb-1">
+                                      <div className="text-lg font-bold truncate">
                                         {position.player?.name || ''}
                                       </div>
-                                      <div className="mb-2 text-xs text-muted-foreground">
+                                      <div className="mb-1 text-xs text-muted-foreground">
                                         {position.player?.team || ''}
                                       </div>
-                                      <div className="mb-2">
-                                        <div className="w-12 h-12 mx-auto rounded-full bg-white flex items-center justify-center text-black text-xl font-bold">
-                                          {position.player ? Math.round(position.player.scoutMetrics.roleScore) : 0}
-                                        </div>
-                                      </div>
+                                      
+                                      {position.player && (
+                                        <>
+                                          <div className="mb-2 grid grid-cols-2 gap-1">
+                                            <Badge variant="outline" className="text-xs flex items-center justify-center">
+                                              <span className="text-amber-500 mr-1">T:</span> 
+                                              <RoleBadge role={position.player.tRole} size="xs" />
+                                            </Badge>
+                                            <Badge variant="outline" className="text-xs flex items-center justify-center">
+                                              <span className="text-blue-500 mr-1">CT:</span> 
+                                              <RoleBadge role={position.player.ctRole} size="xs" />
+                                            </Badge>
+                                          </div>
+                                          
+                                          <div className="grid grid-cols-2 gap-2 mb-2 text-xs">
+                                            <div className="flex flex-col items-center">
+                                              <span className="text-muted-foreground mb-1">PIV</span>
+                                              <span className="font-bold">{position.player.piv.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex flex-col items-center">
+                                              <span className="text-muted-foreground mb-1">K/D</span>
+                                              <span className="font-bold">{position.player.kd.toFixed(2)}</span>
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="w-14 h-14 mx-auto rounded-full bg-primary/25 border-2 border-primary flex items-center justify-center text-black mb-1">
+                                            <div className="flex flex-col items-center">
+                                              <span className="text-[10px] text-foreground">FIT</span>
+                                              <span className="text-xl font-bold text-foreground">
+                                                {Math.round(position.player.scoutMetrics.roleScore)}
+                                              </span>
+                                            </div>
+                                          </div>
+                                          
+                                          {position.player.isIGL && (
+                                            <Badge className="mb-1 bg-purple-600">IGL</Badge>
+                                          )}
+                                        </>
+                                      )}
                                       <div className="flex gap-1 justify-center mt-2">
                                         <Button 
                                           variant="destructive" 
@@ -688,42 +722,163 @@ export default function TeamChemistrySimulator() {
           {/* Chemistry Network */}
           <Card className="mt-4">
             <CardHeader>
-              <CardTitle>Team Chemistry Network</CardTitle>
+              <CardTitle>Team Chemistry Analysis</CardTitle>
+              <CardDescription>
+                See how players work together and their synergistic relationships
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-4 justify-center p-4">
-                {positions.filter(p => p.player).map((position, index) => (
-                  <div key={position.id} className="relative">
-                    <div className="w-16 h-16 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="text-xs font-bold">{position.player?.name.split(' ')[0]}</div>
-                        <div className="text-[10px]">{position.role}</div>
-                      </div>
+              {positions.some(p => p.player) ? (
+                <>
+                  {/* Player synergy network visualization */}
+                  <div className="relative h-[240px] border rounded-lg p-4 mb-4">
+                    <div className="flex flex-wrap gap-2 justify-center items-center h-full">
+                      {positions.filter(p => p.player).map((position, index) => {
+                        const positionsWithPlayers = positions.filter(p => p.player);
+                        const totalPlayers = positionsWithPlayers.length;
+                        // Calculate angular position in a circle for more than 2 players
+                        const angle = (2 * Math.PI * index) / totalPlayers;
+                        const radius = 100; // pixels
+                        const centerX = 50; // percentage
+                        const centerY = 50; // percentage
+                        
+                        // Only create position if we have more than 1 player
+                        const x = totalPlayers > 2 ? centerX + (radius * Math.cos(angle) / 240 * 100) : (index === 0 ? 30 : 70);
+                        const y = totalPlayers > 2 ? centerY + (radius * Math.sin(angle) / 240 * 100) : 50;
+                        
+                        return (
+                          <div 
+                            key={position.id} 
+                            className="absolute"
+                            style={{
+                              left: `${x}%`,
+                              top: `${y}%`,
+                              transform: 'translate(-50%, -50%)'
+                            }}
+                          >
+                            <div className={`w-16 h-16 rounded-full flex items-center justify-center`}
+                                style={{
+                                  backgroundColor: position.player?.isIGL ? '#a855f7' : '#3b82f6',
+                                  opacity: 0.8,
+                                  border: '2px solid white'
+                                }}
+                            >
+                              <div className="text-center text-white">
+                                <div className="text-xs font-bold">{position.player?.name.split(' ')[0]}</div>
+                                <RoleBadge role={position.player?.role || PlayerRole.Support} size="xs" />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      
+                      {/* Draw connection lines between players */}
+                      {positions.filter(p => p.player).length > 1 && teamChemistry.length > 0 && (
+                        <svg className="absolute inset-0 w-full h-full" style={{ zIndex: -1 }}>
+                          {positions.filter(p => p.player).flatMap((pos1, i) => {
+                            return positions.filter(p => p.player).slice(i + 1).map((pos2, j) => {
+                              const totalPlayers = positions.filter(p => p.player).length;
+                              
+                              // Calculate positions
+                              const angle1 = (2 * Math.PI * i) / totalPlayers;
+                              const angle2 = (2 * Math.PI * (i + j + 1)) / totalPlayers;
+                              
+                              const radius = 100; // pixels
+                              const centerX = 240 / 2; // pixels
+                              const centerY = 240 / 2; // pixels
+                              
+                              // Position calculations
+                              const x1 = totalPlayers > 2 ? centerX + (radius * Math.cos(angle1)) : (i === 0 ? centerX - 50 : centerX + 50);
+                              const y1 = totalPlayers > 2 ? centerY + (radius * Math.sin(angle1)) : centerY;
+                              const x2 = totalPlayers > 2 ? centerX + (radius * Math.cos(angle2)) : (i === 0 ? centerX + 50 : centerX - 50);
+                              const y2 = totalPlayers > 2 ? centerY + (radius * Math.sin(angle2)) : centerY;
+                              
+                              // Chemistry value
+                              const chemistryIndex = (i * (totalPlayers - 1)) + j - (i * (i + 1)) / 2;
+                              const chemistry = teamChemistry[chemistryIndex] || 50;
+                              
+                              // Line color based on chemistry
+                              const lineColor = chemistry > 75 ? '#10b981' : chemistry > 50 ? '#f59e0b' : '#ef4444';
+                              const lineWidth = chemistry / 20;
+                              
+                              return (
+                                <line
+                                  key={`${pos1.id}-${pos2.id}`}
+                                  x1={x1}
+                                  y1={y1}
+                                  x2={x2}
+                                  y2={y2}
+                                  stroke={lineColor}
+                                  strokeWidth={lineWidth}
+                                  strokeOpacity={0.7}
+                                />
+                              );
+                            });
+                          })}
+                        </svg>
+                      )}
                     </div>
                   </div>
-                ))}
-              </div>
-              
-              {/* Chemistry ratings */}
-              {teamChemistry.length > 0 && (
-                <div className="mt-4">
-                  <div className="text-sm font-medium mb-2">Player Chemistry Ratings</div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {teamChemistry.map((chemistry, index) => (
-                      <div key={index} className="flex items-center">
-                        <div 
-                          className="w-4 h-4 rounded-full mr-2" 
-                          style={{ 
-                            backgroundColor: 
-                              chemistry > 75 ? '#10b981' : 
-                              chemistry > 50 ? '#f59e0b' : 
-                              '#ef4444' 
-                          }}
-                        />
-                        <div className="text-sm">Chemistry: {chemistry.toFixed(0)}</div>
+                  
+                  {/* Chemistry ratings */}
+                  {teamChemistry.length > 0 && (
+                    <div>
+                      <div className="text-sm font-medium mb-2">Player Chemistry Pairs</div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {teamChemistry.map((chemistry, index) => {
+                          const positionsWithPlayers = positions.filter(p => p.player);
+                          
+                          // Map the chemistry index back to player pairs
+                          let pair1Index = 0;
+                          let pair2Index = 0;
+                          let count = 0;
+                          
+                          for (let i = 0; i < positionsWithPlayers.length - 1; i++) {
+                            for (let j = i + 1; j < positionsWithPlayers.length; j++) {
+                              if (count === index) {
+                                pair1Index = i;
+                                pair2Index = j;
+                                break;
+                              }
+                              count++;
+                            }
+                            if (count === index) break;
+                          }
+                          
+                          const player1 = positionsWithPlayers[pair1Index].player;
+                          const player2 = positionsWithPlayers[pair2Index].player;
+                          
+                          if (!player1 || !player2) return null;
+                          
+                          return (
+                            <div key={index} className="border rounded-md p-2">
+                              <div className="flex justify-between mb-1">
+                                <div className="text-xs font-medium truncate">{player1.name.split(' ')[0]}</div>
+                                <div className="text-xs font-medium truncate">{player2.name.split(' ')[0]}</div>
+                              </div>
+                              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full" 
+                                  style={{ 
+                                    width: `${chemistry}%`,
+                                    backgroundColor: 
+                                      chemistry > 75 ? '#10b981' : 
+                                      chemistry > 50 ? '#f59e0b' : 
+                                      '#ef4444' 
+                                  }}
+                                />
+                              </div>
+                              <div className="text-xs text-center mt-1">{chemistry.toFixed(0)}%</div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center p-8 text-center">
+                  <div className="text-muted-foreground mb-2">Add players to your lineup to see chemistry analysis</div>
                 </div>
               )}
             </CardContent>
@@ -754,23 +909,49 @@ export default function TeamChemistrySimulator() {
                 </div>
                 
                 <div>
-                  <div className="text-sm font-medium mb-1">Role Coverage</div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {Object.values(PlayerRole).map(role => {
-                      const hasRole = positions.some(p => p.player && 
-                        (p.player.role === role || p.player.tRole === role || p.player.ctRole === role));
-                      
-                      return (
-                        <div key={role} className="flex items-center">
-                          <div 
-                            className={`w-3 h-3 rounded-full mr-2 ${
-                              hasRole ? 'bg-green-500' : 'bg-red-500'
-                            }`} 
-                          />
-                          <div className="text-xs">{role}</div>
-                        </div>
-                      );
-                    })}
+                  <div className="text-sm font-medium mb-2">Role Coverage</div>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="text-xs font-semibold mb-1 text-amber-500">T Side</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {Object.values(PlayerRole).map(role => {
+                          const hasRole = positions.some(p => p.player && 
+                            (p.player.tRole === role));
+                          
+                          return (
+                            <div key={`T-${role}`} className="flex items-center">
+                              <div 
+                                className={`w-3 h-3 rounded-full mr-2 ${
+                                  hasRole ? 'bg-green-500' : 'bg-red-500'
+                                }`} 
+                              />
+                              <div className="text-xs">{role}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-xs font-semibold mb-1 text-blue-500">CT Side</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {Object.values(PlayerRole).map(role => {
+                          const hasRole = positions.some(p => p.player && 
+                            (p.player.ctRole === role));
+                          
+                          return (
+                            <div key={`CT-${role}`} className="flex items-center">
+                              <div 
+                                className={`w-3 h-3 rounded-full mr-2 ${
+                                  hasRole ? 'bg-green-500' : 'bg-red-500'
+                                }`} 
+                              />
+                              <div className="text-xs">{role}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
@@ -875,14 +1056,24 @@ export default function TeamChemistrySimulator() {
                   </div>
                   <div className="flex-1">
                     <div className="font-medium">{player.name}</div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-2">
+                    <div className="text-xs text-muted-foreground">
                       <span>{player.team}</span>
-                      <RoleBadge role={player.role} />
+                    </div>
+                    <div className="text-xs flex items-center gap-2 mt-1">
+                      <span className="text-amber-500 font-medium">T:</span>
+                      <RoleBadge role={player.tRole} size="xs" />
+                      <span className="text-blue-500 font-medium">CT:</span>
+                      <RoleBadge role={player.ctRole} size="xs" />
+                      {player.isIGL && <Badge variant="outline" className="text-xs ml-1">IGL</Badge>}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-xs">Synergy</div>
-                    <div className="font-medium">{player.scoutMetrics.synergy.toFixed(0)}</div>
+                    <div className="grid grid-cols-2 gap-x-3 text-xs">
+                      <div>Synergy</div>
+                      <div>PIV</div>
+                      <div className="font-medium">{player.scoutMetrics.synergy.toFixed(0)}</div>
+                      <div className="font-medium">{player.piv.toFixed(2)}</div>
+                    </div>
                   </div>
                 </div>
               ))}

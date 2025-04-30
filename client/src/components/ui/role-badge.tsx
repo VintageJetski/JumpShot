@@ -22,7 +22,9 @@ export default function RoleBadge({ role, className = "", size = "" }: RoleBadge
 
   // Apply size classes
   let sizeClasses = "";
-  if (size === "sm") {
+  if (size === "xs") {
+    sizeClasses = "text-[10px] px-1 py-0 h-4 font-normal";
+  } else if (size === "sm") {
     sizeClasses = "text-xs px-1.5 py-0";
   } else if (size === "lg") {
     sizeClasses = "text-base px-3 py-1";

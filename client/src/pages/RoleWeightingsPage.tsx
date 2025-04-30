@@ -222,104 +222,90 @@ export default function RoleWeightingsPage() {
       consistencyFactors: basicConsistencyMetrics[PlayerRole.IGL],
       synergy: { 
         name: "In-game Impact Rating", 
-        description: "IGLs' ability to enable teammates and create space for plays.",
-        formula: "Assists / Kills Ratio (40%) + K/D Factor (20%)" 
+        description: "IGLs' ability to enable teammates and create strategic advantages.",
+        formula: "Team KAST % (40%) + Round Win % After Timeout (35%) + Team Flash Assists (25%)" 
       }
     },
     [PlayerRole.Spacetaker]: {
-      title: "Entry Fragger / Spacetaker",
-      description: "Aggressive players who create space and take map control.",
+      title: "Spacetaker",
+      description: "Aggressive players who create space and gain map control for their team.",
       basicMetrics: basicRoleMetrics[PlayerRole.Spacetaker],
       advancedMetrics: advancedRoleMetrics[PlayerRole.Spacetaker],
       consistencyFactors: basicConsistencyMetrics[PlayerRole.Spacetaker],
       synergy: { 
-        name: "Utility Effectiveness Score", 
-        description: "Entry fraggers' effectiveness with utility to create space.",
-        formula: "Assisted Flashes / Kills (50%) + K/D Factor (35%)" 
+        name: "Entry Success Synergy", 
+        description: "Spacetakers' ability to create openings and be effectively traded.",
+        formula: "Traded % (45%) + Team Trade Success After Entry (35%) + Opening Duel Win % (20%)" 
       }
     },
     [PlayerRole.Lurker]: {
       title: "Lurker",
-      description: "Players who flank, gather information, and disrupt opponent rotations.",
+      description: "Solo players who work the flanks and gather information for their team.",
       basicMetrics: basicRoleMetrics[PlayerRole.Lurker],
       advancedMetrics: advancedRoleMetrics[PlayerRole.Lurker],
       consistencyFactors: basicConsistencyMetrics[PlayerRole.Lurker],
       synergy: { 
-        name: "Information Retrieval Success", 
-        description: "Lurkers' ability to gather and act on information.",
-        formula: "Through Smoke Kills / Kills (40%) + K/D Factor (25%)" 
+        name: "Map Control Synergy", 
+        description: "Lurkers' effectiveness in controlling areas and disrupting enemy rotations.",
+        formula: "Flanking Success Rate (40%) + Impact in Late-Round Scenarios (35%) + K/D Ratio (25%)" 
       }
     },
     [PlayerRole.Anchor]: {
       title: "Anchor",
-      description: "Defensive specialists who hold bombsites securely on CT side.",
+      description: "Defenders who specialize in holding bombsites against enemy attacks.",
       basicMetrics: basicRoleMetrics[PlayerRole.Anchor],
       advancedMetrics: advancedRoleMetrics[PlayerRole.Anchor],
       consistencyFactors: basicConsistencyMetrics[PlayerRole.Anchor],
       synergy: { 
-        name: "Site Hold Effectiveness", 
-        description: "Anchors' effectiveness in site defense and retakes.",
-        formula: "CT Rounds Won / Total Rounds (45%) + K/D Factor (25%)" 
+        name: "Site Defense Synergy", 
+        description: "Anchors' ability to hold positions and delay enemy advances.",
+        formula: "Multi-Kill % on Site Defense (45%) + Survival Time in Site Takes (30%) + Utility Damage (25%)" 
       }
     },
     [PlayerRole.Support]: {
       title: "Support",
-      description: "Utility-focused players who enable teammates' success.",
+      description: "Utility-focused players who enable their teammates' success through coordination.",
       basicMetrics: basicRoleMetrics[PlayerRole.Support],
       advancedMetrics: advancedRoleMetrics[PlayerRole.Support],
       consistencyFactors: basicConsistencyMetrics[PlayerRole.Support],
       synergy: { 
-        name: "Utility Contribution Score", 
-        description: "Support players' ability to enable teammates with utility.",
-        formula: "Assisted Flashes / Total Utility (65%) + K/D Factor (15%)" 
+        name: "Utility Support Synergy", 
+        description: "Supports' effectiveness in enabling team success through utility and coordination.",
+        formula: "Flash Assist Percentage (40%) + Smoke/Molotov Effectiveness (35%) + Team Success in Executes (25%)" 
       }
     },
     [PlayerRole.Rotator]: {
       title: "Rotator",
-      description: "Flexible players who move between sites and adapt to different situations.",
+      description: "Dynamic defenders who quickly move between positions to reinforce teammates.",
       basicMetrics: basicRoleMetrics[PlayerRole.Rotator],
       advancedMetrics: advancedRoleMetrics[PlayerRole.Rotator],
       consistencyFactors: basicConsistencyMetrics[PlayerRole.Rotator],
       synergy: { 
-        name: "Rotation Efficiency", 
-        description: "Rotators' effectiveness in different positions and situations.",
-        formula: "CT Rounds Won / Total Rounds (40%) + K/D Factor (25%)" 
+        name: "Rotation Efficiency Synergy", 
+        description: "Rotators' ability to provide timely reinforcement and maintain map control.",
+        formula: "Rotation Speed Rating (40%) + Post-Rotation Impact (35%) + Through Smoke Kills / Kills (25%)" 
       }
     },
   };
 
-  const PIVFactors = [
-    { name: "RCS (Role Core Score)", weight: 0.40, description: "Measures how well a player performs in their specific role" },
-    { name: "ICF (Individual Consistency Factor)", weight: 0.25, description: "Measures player consistency across matches and rounds" },
-    { name: "SC (Synergy Contribution)", weight: 0.25, description: "Measures how well a player enables teammates' success" },
-    { name: "OSM (Opponent Strength Multiplier)", weight: 0.10, description: "Adjusts for the level of opposition faced" },
+  // PIV Formula Components
+  const pivComponents = [
+    { name: "Role Core Score (RCS)", description: "Measures how well a player performs core metrics for their assigned role", weight: 0.40, examples: "AWP: Opening kills, site control | Support: Flash assists, trades" },
+    { name: "Individual Consistency Factor (ICF)", description: "Measures player's consistency across matches and maps", weight: 0.20, examples: "Low variance in K/D, ADR, KAST across maps and matches" },
+    { name: "Synergy Contribution (SC)", description: "Measures how player enhances teammates' performance", weight: 0.25, examples: "Entry: Creating space | Support: Flash assists | Lurker: Flank timing" },
+    { name: "Opponent Strength Multiplier (OSM)", description: "Accounts for quality of opposition faced", weight: 0.15, examples: "Performance against top-10 teams weighted more heavily" }
   ];
-  
-  const ICFFactors = [
-    { name: "Base K/D Impact", role: "All Roles", weight: 1.8, description: "Baseline influence of K/D ratio on consistency" },
-    { name: "IGL Adjustment", role: PlayerRole.IGL, weight: -0.25, description: "Reduction factor applied to IGLs to balance scoring" },
-    { name: "Star Player Bonus", role: "Non-IGL with K/D > 1.2", weight: "+0.25 per 0.1 K/D", description: "Bonus for exceptional fraggers" },
-    { name: "Base Formula", role: "All Roles", formula: "ICF = 1 / (1 + σ)", description: "Where σ represents the K/D-based volatility" },
-  ];
-  
-  const rolePivComposition = [
-    { name: "AWP", rcs: 0.40, icf: 0.20, sc: 0.30, kd: 0.15 },
-    { name: "IGL", rcs: 0.45, icf: 0.15, sc: 0.30, kd: 0.10 },
-    { name: "Spacetaker", rcs: 0.35, icf: 0.20, sc: 0.25, kd: 0.20 },
-    { name: "Lurker", rcs: 0.40, icf: 0.20, sc: 0.25, kd: 0.15 },
-    { name: "Anchor", rcs: 0.45, icf: 0.20, sc: 0.20, kd: 0.15 },
-    { name: "Support", rcs: 0.45, icf: 0.15, sc: 0.30, kd: 0.10 },
-    { name: "Rotator", rcs: 0.40, icf: 0.20, sc: 0.25, kd: 0.15 },
-  ];
-  
-  const roleMetricsRadarData = [
-    { metric: "Mechanical Skill", AWP: 90, IGL: 60, Spacetaker: 85, Lurker: 70, Anchor: 65, Support: 60, Rotator: 75 },
-    { metric: "Positioning", AWP: 85, IGL: 70, Spacetaker: 65, Lurker: 80, Anchor: 90, Support: 75, Rotator: 80 },
-    { metric: "Game Sense", AWP: 75, IGL: 95, Spacetaker: 70, Lurker: 85, Anchor: 80, Support: 80, Rotator: 85 },
+
+  // Sample comparative role data
+  const roleComparisonData = [
+    { metric: "Opening Kill Impact", AWP: 90, IGL: 60, Spacetaker: 85, Lurker: 60, Anchor: 65, Support: 50, Rotator: 60 },
+    { metric: "Clutch Win Impact", AWP: 75, IGL: 65, Spacetaker: 70, Lurker: 85, Anchor: 80, Support: 60, Rotator: 70 },
+    { metric: "K/D Influence", AWP: 85, IGL: 60, Spacetaker: 80, Lurker: 75, Anchor: 75, Support: 65, Rotator: 70 },
+    { metric: "Multi-Kill Emphasis", AWP: 80, IGL: 55, Spacetaker: 75, Lurker: 70, Anchor: 85, Support: 60, Rotator: 75 },
     { metric: "Utility Usage", AWP: 60, IGL: 85, Spacetaker: 70, Lurker: 75, Anchor: 80, Support: 90, Rotator: 75 },
     { metric: "Team Play", AWP: 65, IGL: 90, Spacetaker: 70, Lurker: 65, Anchor: 70, Support: 85, Rotator: 80 },
   ];
-  
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-8">
@@ -330,63 +316,36 @@ export default function RoleWeightingsPage() {
     );
   }
 
+  // Initialize weights from metrics data if not already initialized
   useEffect(() => {
-    setActiveChart('radar');
-    
-    // Initialize custom weights if empty
-    setCustomWeights(prev => {
-      if (!Object.keys(prev).length) {
-        const initialWeights: {[role: string]: {[metric: string]: number}} = {};
+    if (Object.keys(customWeights).length === 0) {
+      const initialWeights: {[role: string]: {[metric: string]: number}} = {};
+      
+      Object.keys(roleInfo).forEach((role) => {
+        initialWeights[role] = {};
         
-        Object.values(PlayerRole).forEach(role => {
-          initialWeights[role] = {};
-          
-          // Set weights for basic metrics
-          basicRoleMetrics[role].forEach(metric => {
-            initialWeights[role][metric.name] = metric.weight;
-          });
-          
-          // Set weights for advanced metrics
-          advancedRoleMetrics[role].forEach(metric => {
-            initialWeights[role][metric.name] = metric.weight;
-          });
+        // Initialize basic metrics
+        roleInfo[role as PlayerRole].basicMetrics.forEach(metric => {
+          initialWeights[role][metric.name] = metric.weight;
         });
         
-        return initialWeights;
-      }
-      return prev;
-    });
-  }, []);
-
-  // Reset weights to default
-  const handleResetWeights = () => {
-    const defaultWeights: {[role: string]: {[metric: string]: number}} = {};
-    
-    Object.values(PlayerRole).forEach(role => {
-      defaultWeights[role] = {};
-      
-      // Reset basic metrics to default (50% of original weights)
-      basicRoleMetrics[role].forEach(metric => {
-        defaultWeights[role][metric.name] = metric.weight;
+        // Initialize advanced metrics
+        roleInfo[role as PlayerRole].advancedMetrics.forEach(metric => {
+          initialWeights[role][metric.name] = metric.weight;
+        });
       });
       
-      // Reset advanced metrics to default (50% of original weights)
-      advancedRoleMetrics[role].forEach(metric => {
-        defaultWeights[role][metric.name] = metric.weight;
-      });
-    });
-    
-    setCustomWeights(defaultWeights);
-    setWeightsModified(false);
-  };
+      setCustomWeights(initialWeights);
+    }
+  }, [roleInfo]);
 
-  // Update a metric weight
-  const handleUpdateWeight = (role: string, metricName: string, newWeight: number) => {
+  // Handle weight adjustment
+  const handleWeightChange = (role: string, metricName: string, newValue: number) => {
     setCustomWeights(prev => ({
       ...prev,
       [role]: {
         ...prev[role],
-        [metricName]: newWeight
+        [metricName]: newValue
       }
     }));
     setWeightsModified(true);
@@ -417,322 +376,239 @@ export default function RoleWeightingsPage() {
       
       <div id="weightings-content">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <Card className="bg-background-light rounded-lg border border-gray-700">
-          <CardHeader>
-            <CardTitle>PIV Formula Components</CardTitle>
-            <CardDescription>
-              The Player Impact Value (PIV) formula combines multiple factors to create a comprehensive score
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {PIVFactors.map((factor) => (
-                <div key={factor.name} className="mb-4">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-medium">{factor.name}</span>
-                    <span className="text-sm text-gray-400">{(factor.weight * 100).toFixed(0)}%</span>
+          <Card className="bg-background-light rounded-lg border border-gray-700">
+            <CardHeader>
+              <CardTitle>
+                PIV (Player Impact Value) Formula Components
+              </CardTitle>
+              <CardDescription>
+                How different factors contribute to a player's overall impact rating
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {pivComponents.map((component, idx) => (
+                  <div key={idx} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{component.name} ({component.weight * 100}%)</span>
+                      <span className="text-sm text-gray-400">{component.weight * 100}%</span>
+                    </div>
+                    <Progress value={component.weight * 100} className="h-2" />
+                    <p className="text-sm text-gray-400">{component.description}</p>
+                    <p className="text-xs text-gray-500">Examples: {component.examples}</p>
                   </div>
-                  <Progress value={factor.weight * 100} className="h-2" />
-                  <p className="text-xs text-gray-500 mt-1">{factor.description}</p>
-                </div>
-              ))}
-              
-              <div className="bg-gray-800 p-4 rounded-lg mt-4">
-                <div className="text-sm font-semibold mb-2">PIV Calculation Formula</div>
-                <div className="font-mono text-xs bg-gray-900 p-2 rounded">
-                  PIV = [(RCS × ICF) + SC] × OSM × K/D Factor
-                </div>
-                <div className="text-xs text-gray-400 mt-2">
-                  The formula is then scaled by 100 for display purposes (0.765 → 77)
-                </div>
+                ))}
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-background-light rounded-lg border border-gray-700">
-          <CardHeader>
-            <CardTitle>Role-Specific PIV Factor Weightings</CardTitle>
-            <CardDescription>
-              Different roles have different emphasis on PIV factors in their calculations
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart
-                  data={rolePivComposition}
-                  margin={{ top: 20, right: 30, left: 0, bottom: 30 }}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-background-light rounded-lg border border-gray-700">
+            <CardHeader>
+              <CardTitle>
+                Role Comparison
+              </CardTitle>
+              <CardDescription>
+                Relative weighting of metrics across different roles
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex mb-4 space-x-2">
+                <Button 
+                  onClick={() => setActiveChart('radar')}
+                  variant={activeChart === 'radar' ? 'default' : 'outline'}
+                  size="sm"
                 >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="name" 
-                    tick={{ fontSize: 12 }}
-                    interval={0}
-                  />
-                  <YAxis 
-                    tickFormatter={(value) => `${(value * 100).toFixed(0)}%`} 
-                    domain={[0, 1]}
-                  />
-                  <Tooltip 
-                    formatter={(value) => `${(Number(value) * 100).toFixed(0)}%`}
-                    labelFormatter={(label) => `${label} Role`}
-                  />
-                  <Legend />
-                  <Bar dataKey="rcs" name="RCS (Role Core Score)" stackId="a" fill="#8884d8" />
-                  <Bar dataKey="icf" name="ICF (Consistency)" stackId="a" fill="#82ca9d" />
-                  <Bar dataKey="sc" name="SC (Synergy)" stackId="a" fill="#ffc658" />
-                  <Bar dataKey="kd" name="K/D Factor" stackId="a" fill="#ff8042" />
-                </BarChart>
-              </ResponsiveContainer>
-              <div className="text-xs text-gray-400 mt-4">
-                Chart shows how PIV composition varies by role. IGLs and Supports have higher weight on synergy while Spacetakers (Entry Fraggers) emphasize K/D more heavily.
+                  Radar Chart
+                </Button>
+                <Button 
+                  onClick={() => setActiveChart('bar')}
+                  variant={activeChart === 'bar' ? 'default' : 'outline'}
+                  size="sm"
+                >
+                  Bar Chart
+                </Button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <div className="bg-background-light rounded-lg border border-gray-700 mb-8">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">Role Analysis and Metrics</h2>
-            <div className="flex gap-4">
-              <div className="flex items-center gap-2">
-                <Switch 
-                  id="showBasicMetrics" 
-                  checked={showBasicMetrics} 
-                  onCheckedChange={setShowBasicMetrics}
-                />
-                <label htmlFor="showBasicMetrics" className="text-sm">Basic Metrics</label>
+              
+              <div className="h-80">
+                {activeChart === 'radar' ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart outerRadius={90} data={roleComparisonData}>
+                      <PolarGrid />
+                      <PolarAngleAxis dataKey="metric" />
+                      <PolarRadiusAxis domain={[0, 100]} />
+                      <Radar name="AWP" dataKey="AWP" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
+                      <Radar name="IGL" dataKey="IGL" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.3} />
+                      <Radar name="Spacetaker" dataKey="Spacetaker" stroke="#ffc658" fill="#ffc658" fillOpacity={0.3} />
+                      <Radar name="Support" dataKey="Support" stroke="#ff8042" fill="#ff8042" fillOpacity={0.3} />
+                      <Legend />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={roleComparisonData}
+                      layout="vertical"
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" domain={[0, 100]} />
+                      <YAxis dataKey="metric" type="category" width={120} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="AWP" fill="#8884d8" name="AWP" />
+                      <Bar dataKey="IGL" fill="#82ca9d" name="IGL" />
+                      <Bar dataKey="Spacetaker" fill="#ffc658" name="Spacetaker" />
+                      <Bar dataKey="Support" fill="#ff8042" name="Support" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <Switch 
-                  id="showAdvancedMetrics" 
-                  checked={showAdvancedMetrics} 
-                  onCheckedChange={setShowAdvancedMetrics}
-                />
-                <label htmlFor="showAdvancedMetrics" className="text-sm">Advanced Metrics</label>
-              </div>
-            </div>
-          </div>
-          
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-3 md:grid-cols-7 w-full">
-              {Object.values(PlayerRole).map((role) => (
-                <TabsTrigger key={role} value={role}>{roleInfo[role].title}</TabsTrigger>
-              ))}
-            </TabsList>
-            
-            <TabsContent value={activeTab} className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <div className="bg-gray-800 p-4 rounded-lg mb-6">
-                    <h3 className="text-xl font-semibold">{roleInfo[activeTab as PlayerRole].title}</h3>
-                    <p className="text-gray-400 mt-2">{roleInfo[activeTab as PlayerRole].description}</p>
-                  </div>
-                  
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-medium">Metrics and Weights</h3>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={handleResetWeights}
-                        disabled={!weightsModified}
-                        className="flex items-center gap-1 text-xs"
-                      >
-                        <ResetIcon className="h-3 w-3" />
-                        Reset
-                      </Button>
-                      <Button 
-                        variant="default" 
-                        size="sm"
-                        onClick={handleApplyWeights}
-                        disabled={!weightsModified}
-                        className="flex items-center gap-1 text-xs"
-                      >
-                        <SaveIcon className="h-3 w-3" />
-                        Apply
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {showBasicMetrics && (
-                    <>
-                      <h4 className="text-md font-medium mb-3 mt-4 text-primary">Basic Metrics (50% Weighting)</h4>
-                      <div className="space-y-4 bg-gray-800 p-4 rounded-lg">
-                        {basicRoleMetrics[activeTab as PlayerRole].map((metric) => (
-                          <div key={metric.name}>
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-sm">{metric.name}</span>
-                              <span className="text-xs text-gray-400">
-                                {((customWeights[activeTab]?.[metric.name] || metric.weight) * 100).toFixed(0)}%
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Slider 
-                                value={[(customWeights[activeTab]?.[metric.name] || metric.weight) * 100]} 
-                                min={0} 
-                                max={50} 
-                                step={1}
-                                onValueChange={(value) => handleUpdateWeight(activeTab, metric.name, value[0] / 100)}
-                                className="flex-1"
-                              />
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">{metric.description}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  
-                  {showAdvancedMetrics && (
-                    <>
-                      <h4 className="text-md font-medium mb-3 mt-4 text-green-500">Advanced Metrics (50% Weighting)</h4>
-                      <div className="space-y-4 bg-gray-800 p-4 rounded-lg">
-                        {advancedRoleMetrics[activeTab as PlayerRole].map((metric) => (
-                          <div key={metric.name}>
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-sm">{metric.name}</span>
-                              <span className="text-xs text-gray-400">
-                                {((customWeights[activeTab]?.[metric.name] || metric.weight) * 100).toFixed(0)}%
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Slider 
-                                value={[(customWeights[activeTab]?.[metric.name] || metric.weight) * 100]} 
-                                min={0} 
-                                max={50} 
-                                step={1}
-                                onValueChange={(value) => handleUpdateWeight(activeTab, metric.name, value[0] / 100)}
-                                className="flex-1"
-                              />
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">{metric.description}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  
-                  <div className="mt-6">
-                    <h3 className="text-lg font-medium mb-2">Consistency Factors</h3>
-                    <div className="bg-gray-800 p-3 rounded-lg">
-                      <h4 className="text-md font-medium mb-2">Basic Consistency Metrics</h4>
-                      <div className="space-y-2">
-                        {basicConsistencyMetrics[activeTab as PlayerRole].map((metric) => (
-                          <div key={metric.name} className="flex justify-between items-center">
-                            <span className="text-sm">{metric.name}</span>
-                            <span className="text-xs text-gray-400">{(metric.weight * 100).toFixed(0)}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-6">
-                    <h3 className="text-lg font-medium mb-2">Synergy Contribution</h3>
-                    <div className="bg-gray-800 p-3 rounded-lg">
-                      <div className="text-sm font-medium">{roleInfo[activeTab as PlayerRole].synergy.name}</div>
-                      <p className="text-xs text-gray-400 mt-1">{roleInfo[activeTab as PlayerRole].synergy.description}</p>
-                      <div className="bg-gray-900 p-2 rounded mt-2">
-                        <div className="text-xs font-mono">{roleInfo[activeTab as PlayerRole].synergy.formula}</div>
-                      </div>
-                    </div>
-                  </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mb-8">
+          <Card className="bg-background-light rounded-lg border border-gray-700">
+            <CardHeader>
+              <CardTitle>
+                Role-Specific Metrics and Weights
+              </CardTitle>
+              <CardDescription>
+                Customize how different metrics contribute to each role's PIV calculation
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-end mb-4 space-x-4">
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm">Show Basic Metrics</label>
+                  <Switch 
+                    checked={showBasicMetrics} 
+                    onCheckedChange={setShowBasicMetrics}
+                  />
                 </div>
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm">Show Advanced Metrics</label>
+                  <Switch 
+                    checked={showAdvancedMetrics} 
+                    onCheckedChange={setShowAdvancedMetrics}
+                  />
+                </div>
+                {weightsModified && (
+                  <div className="flex space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => window.location.reload()}
+                      className="flex items-center gap-1"
+                    >
+                      <ResetIcon className="h-4 w-4" />
+                      Reset
+                    </Button>
+                    <Button 
+                      size="sm"
+                      onClick={handleApplyWeights}
+                      className="flex items-center gap-1"
+                    >
+                      <SaveIcon className="h-4 w-4" />
+                      Apply Changes
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
+              <Tabs defaultValue={PlayerRole.AWP} onValueChange={setActiveTab}>
+                <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 mb-4">
+                  <TabsTrigger value={PlayerRole.AWP}>AWPer</TabsTrigger>
+                  <TabsTrigger value={PlayerRole.IGL}>IGL</TabsTrigger>
+                  <TabsTrigger value={PlayerRole.Spacetaker}>Spacetaker</TabsTrigger>
+                  <TabsTrigger value={PlayerRole.Lurker}>Lurker</TabsTrigger>
+                  <TabsTrigger value={PlayerRole.Anchor}>Anchor</TabsTrigger>
+                  <TabsTrigger value={PlayerRole.Support}>Support</TabsTrigger>
+                  <TabsTrigger value={PlayerRole.Rotator}>Rotator</TabsTrigger>
+                </TabsList>
                 
-                <div>
-                  <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-medium">Role Comparison</h3>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => setActiveChart('radar')}
-                          className={`px-2 py-1 text-xs rounded ${activeChart === 'radar' ? 'bg-primary text-white' : 'bg-gray-700'}`}
-                        >
-                          Radar
-                        </button>
-                        <button 
-                          onClick={() => setActiveChart('bar')}
-                          className={`px-2 py-1 text-xs rounded ${activeChart === 'bar' ? 'bg-primary text-white' : 'bg-gray-700'}`}
-                        >
-                          Bar
-                        </button>
+                {Object.entries(roleInfo).map(([role, info]) => (
+                  <TabsContent key={role} value={role} className="space-y-6">
+                    <div className="space-y-2">
+                      <h3 className="text-xl font-semibold">{info.title}</h3>
+                      <p className="text-gray-400">{info.description}</p>
+                    </div>
+                    
+                    {showBasicMetrics && (
+                      <div className="space-y-4">
+                        <h4 className="font-medium border-b border-gray-700 pb-2">Basic Metrics (50% Weighting)</h4>
+                        {info.basicMetrics.map((metric, idx) => (
+                          <div key={idx} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span>{metric.name}</span>
+                              <span className="text-sm text-gray-400">{(customWeights[role]?.[metric.name] * 2 * 100).toFixed(1)}%</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Slider 
+                                defaultValue={[metric.weight * 2 * 100]} 
+                                max={100} 
+                                step={1}
+                                onValueChange={(values) => handleWeightChange(role, metric.name, values[0] / 100 / 2)}
+                              />
+                            </div>
+                            <p className="text-xs text-gray-500">{metric.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {showAdvancedMetrics && (
+                      <div className="space-y-4">
+                        <h4 className="font-medium border-b border-gray-700 pb-2">Advanced Metrics (50% Weighting)</h4>
+                        {info.advancedMetrics.map((metric, idx) => (
+                          <div key={idx} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span>{metric.name}</span>
+                              <span className="text-sm text-gray-400">{(customWeights[role]?.[metric.name] * 2 * 100).toFixed(1)}%</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Slider 
+                                defaultValue={[metric.weight * 2 * 100]} 
+                                max={100} 
+                                step={1}
+                                onValueChange={(values) => handleWeightChange(role, metric.name, values[0] / 100 / 2)}
+                              />
+                            </div>
+                            <p className="text-xs text-gray-500">{metric.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="space-y-3">
+                      <h4 className="font-medium border-b border-gray-700 pb-2">Role Synergy Calculation</h4>
+                      <div className="p-3 bg-card rounded-md">
+                        <p className="font-medium">{info.synergy.name}</p>
+                        <p className="text-sm text-gray-400 mt-1">{info.synergy.description}</p>
+                        <p className="text-xs bg-accent p-2 rounded mt-2 font-mono">Formula: {info.synergy.formula}</p>
                       </div>
                     </div>
                     
-                    {activeChart === 'radar' ? (
-                      <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <RadarChart outerRadius={90} data={roleMetricsRadarData}>
-                            <PolarGrid />
-                            <PolarAngleAxis dataKey="metric" tick={{ fill: '#e0e0e0', fontSize: 10 }} />
-                            <PolarRadiusAxis angle={30} domain={[0, 100]} />
-                            <Radar 
-                              name={activeTab}
-                              dataKey={activeTab as string}
-                              stroke="#8884d8"
-                              fill="#8884d8"
-                              fillOpacity={0.6}
-                            />
-                            <Tooltip />
-                          </RadarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    ) : (
-                      <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart
-                            data={roleMetricsRadarData}
-                            margin={{ top: 5, right: 0, left: 0, bottom: 40 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis 
-                              dataKey="metric" 
-                              angle={-45} 
-                              textAnchor="end" 
-                              height={60} 
-                              tick={{ fontSize: 10 }}
-                            />
-                            <YAxis />
-                            <Tooltip />
-                            <Bar dataKey={activeTab as string} fill="#8884d8" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    )}
-                    <div className="text-xs text-gray-400 mt-2">
-                      {activeTab} compared across fundamental skills required for CS2
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gray-800 rounded-lg p-4">
-                    <h3 className="text-lg font-medium mb-4">Individual Consistency Factor</h3>
-                    <div className="space-y-4">
-                      {ICFFactors.filter(f => f.role === "All Roles" || f.role === activeTab).map((factor) => (
-                        <div key={factor.name} className="text-sm">
-                          <div className="flex justify-between">
-                            <span>{factor.name}</span>
-                            {typeof factor.weight === 'number' && (
-                              <span className="text-gray-400">{factor.weight > 0 ? `+${factor.weight}` : factor.weight}</span>
-                            )}
-                            {!factor.weight && factor.formula && (
-                              <span className="text-xs font-mono text-gray-400">{factor.formula}</span>
-                            )}
+                    <div className="space-y-3">
+                      <h4 className="font-medium border-b border-gray-700 pb-2">Basic Consistency Factors</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {info.consistencyFactors.map((factor, idx) => (
+                          <div key={idx} className="p-3 bg-card rounded-md">
+                            <div className="flex justify-between items-center mb-1">
+                              <p className="font-medium">{factor.name}</p>
+                              <span className="text-xs text-gray-400">{factor.weight * 100}%</span>
+                            </div>
+                            <p className="text-xs text-gray-500">{factor.description}</p>
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">{factor.description}</p>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+                  </TabsContent>
+                ))}
+              </Tabs>
+            </CardContent>
+          </Card>
         </div>
-      </div>
       </div>
     </div>
   );

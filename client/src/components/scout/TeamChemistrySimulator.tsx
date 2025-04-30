@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { DragDropContext, Draggable, Droppable, DropResult } from "react-beautiful-dnd";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { 
   Card, 
   CardContent, 
@@ -31,7 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Users, Trash2, RefreshCw, PlusCircle } from "lucide-react";
+import { Search, Users, Trash2, RefreshCw, PlusCircle, UserSearch } from "lucide-react";
 import RoleBadge from "@/components/ui/role-badge";
 import { PlayerRole, PlayerWithPIV, TeamWithTIR } from "@shared/types";
 import { calculatePlayerScoutData, PlayerScoutData } from "@/lib/scoutCalculator";
@@ -59,6 +60,7 @@ export default function TeamChemistrySimulator() {
   const [replacementSuggestions, setReplacementSuggestions] = useState<PlayerWithScout[]>([]);
   
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   // Fetch teams data
   const { data: teams, isLoading: isLoadingTeams } = useQuery<TeamWithTIR[]>({
@@ -532,6 +534,10 @@ export default function TeamChemistrySimulator() {
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setSelectedTeam(null)}>
             Change Team
+          </Button>
+          <Button variant="outline" onClick={() => setLocation('/scout/search-players')}>
+            <UserSearch className="h-4 w-4 mr-2" />
+            Find Players
           </Button>
           <Button variant="default" onClick={optimizeTeamComposition}>
             <RefreshCw className="h-4 w-4 mr-2" />

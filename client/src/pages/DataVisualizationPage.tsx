@@ -216,14 +216,14 @@ export default function DataVisualizationPage() {
                   <div>
                     <label className="text-sm font-medium mb-1 block">Filter by Team</label>
                     <Select 
-                      value={filters.teamName} 
-                      onValueChange={(value) => setFilters({ ...filters, teamName: value })}
+                      value={filters.teamName || "all-teams"} 
+                      onValueChange={(value) => setFilters({ ...filters, teamName: value === "all-teams" ? "" : value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select team" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Teams</SelectItem>
+                        <SelectItem value="all-teams">All Teams</SelectItem>
                         {teams.map((team) => (
                           <SelectItem key={team.id} value={team.name}>
                             {team.name}

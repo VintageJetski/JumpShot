@@ -16,6 +16,7 @@ import ScoutPage from "@/pages/ScoutPage";
 import SearchPlayersPage from "@/pages/SearchPlayersPage";
 import StatisticalAnalysisPage from "@/pages/StatisticalAnalysisPage";
 import DataVisualizationPage from "@/pages/DataVisualizationPage";
+import AdvancedAnalyticsPage from "@/pages/AdvancedAnalyticsPage";
 import Layout from "@/components/layout/Layout";
 
 function Router() {

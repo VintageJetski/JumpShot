@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -6,6 +7,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Calculator, 
@@ -22,9 +24,12 @@ import {
   Database,
   FileJson,
   Library,
-  Search
+  Search,
+  Download,
+  FileDown
 } from "lucide-react";
 import { ScoutDocumentation } from "@/components/documentation/ScoutDocumentation";
+import exportToPDF from "@/lib/pdfExport";
 
 export default function DocumentationPage() {
   return (

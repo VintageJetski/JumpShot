@@ -21,10 +21,13 @@ export default function RoleWeightingsPage() {
   // Local state for adjustable weights
   const [customWeights, setCustomWeights] = useState<{[role: string]: {[metric: string]: number}}>({});
   
-  // Handle PDF export
+  // Handle PDF export - exports all roles to a single PDF
   const handleExportToPDF = () => {
-    const filename = `CS2_Role_Weightings_${roleInfo[activeTab as PlayerRole].title.replace(/\s+/g, '_')}.pdf`;
-    exportToPDF("weightings-content", filename);
+    const filename = `CS2_Role_Weightings_Complete.pdf`;
+    // Use the new function to export all roles
+    import('@/lib/pdfExport').then(module => {
+      module.exportAllRolesToPDF(roleInfo, filename);
+    });
   };
   
   // Get all players for statistical analysis

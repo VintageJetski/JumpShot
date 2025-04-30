@@ -34,12 +34,15 @@ import exportToPDF from "@/lib/pdfExport";
 export default function DocumentationPage() {
   const [activeTab, setActiveTab] = useState("piv");
   
-  // Handle PDF export
+  // Handle PDF export - now exports all documentation as a single comprehensive PDF
   const handleExportToPDF = () => {
-    // Create a filename based on the current tab
-    const filename = `CS2_Analytics_Documentation_${activeTab}.pdf`;
-    // Export the current tab content
-    exportToPDF("documentation-content", filename);
+    // Create a comprehensive filename
+    const filename = `CS2_Analytics_Documentation_Complete.pdf`;
+    
+    // Use the exportDocumentationToPDF function to generate a complete documentation PDF
+    import('@/lib/pdfExport').then(module => {
+      module.exportDocumentationToPDF(filename);
+    });
   };
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">

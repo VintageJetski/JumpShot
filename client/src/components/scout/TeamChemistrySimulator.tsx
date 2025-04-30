@@ -648,15 +648,15 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
                                       
                                       {position.player && (
                                         <>
-                                          <div className="mb-2 grid grid-cols-2 gap-1">
-                                            <Badge variant="outline" className="text-xs flex items-center justify-center">
-                                              <span className="text-amber-500 mr-1">T:</span> 
+                                          <div className="flex items-center justify-between mb-1">
+                                            <div className="flex items-center gap-1">
+                                              <span className="text-amber-500 text-xs">T:</span> 
                                               <RoleBadge role={position.player.tRole} size="xs" />
-                                            </Badge>
-                                            <Badge variant="outline" className="text-xs flex items-center justify-center">
-                                              <span className="text-blue-500 mr-1">CT:</span> 
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                              <span className="text-blue-500 text-xs">CT:</span> 
                                               <RoleBadge role={position.player.ctRole} size="xs" />
-                                            </Badge>
+                                            </div>
                                           </div>
                                           
                                           <div className="grid grid-cols-2 gap-2 mb-2 text-xs">
@@ -670,17 +670,19 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
                                             </div>
                                           </div>
                                           
-                                          <div className="w-14 h-14 mx-auto rounded-full bg-primary/25 border-2 border-primary flex items-center justify-center text-black mb-1">
+                                          <div className="w-12 h-12 mx-auto rounded-full bg-primary/25 border-2 border-primary flex items-center justify-center mb-1">
                                             <div className="flex flex-col items-center">
-                                              <span className="text-[10px] text-foreground">FIT</span>
-                                              <span className="text-xl font-bold text-foreground">
+                                              <span className="text-[9px] text-foreground">FIT</span>
+                                              <span className="text-lg font-bold text-foreground">
                                                 {Math.round(position.player.scoutMetrics.roleScore)}
                                               </span>
                                             </div>
                                           </div>
                                           
                                           {position.player.isIGL && (
-                                            <Badge className="mb-1 bg-purple-600">IGL</Badge>
+                                            <div className="flex justify-center">
+                                              <Badge className="mb-1 bg-purple-600 text-xs">IGL</Badge>
+                                            </div>
                                           )}
                                         </>
                                       )}

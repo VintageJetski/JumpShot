@@ -15,6 +15,7 @@ import MatchInfographicPage from "@/pages/MatchInfographicPage";
 import ScoutPage from "@/pages/ScoutPage";
 import SearchPlayersPage from "@/pages/SearchPlayersPage";
 import StatisticalAnalysisPage from "@/pages/StatisticalAnalysisPage";
+import DataVisualizationPage from "@/pages/DataVisualizationPage";
 import Layout from "@/components/layout/Layout";
 
 function Router() {
@@ -32,6 +33,7 @@ function Router() {
         <Route path="/scout" component={ScoutPage} />
         <Route path="/scout/search-players" component={SearchPlayersPage} />
         <Route path="/statistical-analysis" component={StatisticalAnalysisPage} />
+        <Route path="/data-visualization" component={DataVisualizationPage} />
         <Route path="/players/:id" component={PlayerDetailPage} />
         <Route path="/teams/:name" component={TeamDetailPage} />
         <Route component={NotFound} />

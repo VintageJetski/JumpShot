@@ -32,14 +32,15 @@ export default function ScoutPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Scout 2.0</h1>
-          <p className="text-muted-foreground mt-1">
-            Build, optimize, and analyze CS2 team compositions
-          </p>
-        </div>
-        
+      {/* Move Scout 2.0 header to full width at the top */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">Scout 2.0</h1>
+        <p className="text-muted-foreground mt-1">
+          Build, optimize, and analyze CS2 team compositions
+        </p>
+      </div>
+
+      <div className="flex justify-end mb-6">
         <Tabs 
           value={activeTab} 
           onValueChange={(value) => setActiveTab(value as ScoutTab)}

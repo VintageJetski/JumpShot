@@ -30,6 +30,32 @@ export default function RoleWeightingsPage() {
     });
   };
   
+  // New synergy metrics description for documentation
+  const synergyMetricsInfo = {
+    lineupSynergy: {
+      title: "Lineup Synergy Matrix",
+      description: "An advanced matrix system to calculate player-to-player synergy in potential lineups.",
+      metrics: [
+        { name: "Role Complementarity", weight: 35, description: "How well players' roles complement each other" },
+        { name: "Playstyle Compatibility", weight: 30, description: "Similarity in aggression levels and positioning" },
+        { name: "Historical Performance", weight: 20, description: "Past performance when playing together or against similar players" },
+        { name: "Communication Style", weight: 15, description: "Estimated compatibility in communication patterns" }
+      ],
+      formula: "Synergy = RC(35%) + PC(30%) + HP(20%) + CS(15%)"
+    },
+    playerRecommendation: {
+      title: "Player Replacement Scout",
+      description: "An intelligent system that recommends optimal player replacements based on PIV projections.",
+      metrics: [
+        { name: "Role Match", weight: 40, description: "How well the player fits the required role" },
+        { name: "PIV Uplift", weight: 35, description: "Projected improvement to team's average PIV" },
+        { name: "Synergy Potential", weight: 15, description: "Projected chemistry with existing players" },
+        { name: "Experience Compatibility", weight: 10, description: "Match in competitive experience and playstyle" }
+      ],
+      formula: "RecommendationScore = RM(40%) + PIV↑(35%) + SP(15%) + EC(10%)"
+    }
+  };
+  
   // Get all players for statistical analysis
   const { data: players = [], isLoading } = useQuery({
     queryKey: ['/api/players'],

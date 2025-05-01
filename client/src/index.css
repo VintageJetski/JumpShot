@@ -1,19 +1,79 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --font-sans: 'Inter', system-ui, sans-serif;
+  }
+  
   * {
     @apply border-border;
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased bg-gradient-to-b from-gray-950 to-gray-900 text-foreground min-h-screen;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-black/20 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/50 rounded-full transition-colors;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/80;
   }
 }
 
 @layer components {
+  /* Gradient text effect */
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-400;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-sky-400;
+  }
+
+  /* Gradient background */
+  .bg-gradient {
+    @apply bg-gradient-to-r from-blue-700 to-sky-500;
+  }
+
+  /* Glass effect for containers */
+  .glassmorphism {
+    @apply bg-black/40 backdrop-blur-lg border border-white/10 shadow-xl;
+  }
+  
+  /* Card hover animation */
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-lg hover:shadow-primary/20;
+  }
+  
+  /* Page transition animation */
+  .page-transition {
+    @apply animate-in fade-in zoom-in-95 duration-500;
+  }
+  
+  /* Data visualization animations */
+  .data-appear {
+    @apply animate-in slide-in-from-bottom-4 duration-700;
+  }
+
+  /* High contrast borders */
+  .border-glow {
+    @apply border border-blue-500/50 shadow-sm shadow-blue-500/30;
+  }
+
+  /* Section transitions */
+  .section-appear {
+    @apply animate-in slide-in-from-bottom-2 duration-500;
   }
 }

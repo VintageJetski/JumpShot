@@ -1,21 +1,20 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { PlayerWithPIV, PlayerRole } from "@shared/schema";
-import { motion, AnimatePresence } from "framer-motion";
-import { Search, User2, Target, Shield, Lightbulb, CircleDot, Users, Medal, Filter } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Search, Filter, Users, Medal, User2, Target, Lightbulb, Shield, CircleDot } from "lucide-react";
+import { PlayerWithPIV, PlayerRole } from "@shared/schema";
 import { DataTable } from "@/components/ui/data-table";
-import EnhancedStatsCard from "@/components/stats/EnhancedStatsCard";
 import PlayerCard from "@/components/players/PlayerCard";
-import RoleFilterChips from "@/components/players/RoleFilterChips";
 import TeamGroup from "@/components/players/TeamGroup";
+import RoleFilterChips from "@/components/players/RoleFilterChips";
+import EnhancedStatsCard from "@/components/stats/EnhancedStatsCard";
 
 export default function PlayersPage() {
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("All Roles");
   const [viewMode, setViewMode] = useState<"cards" | "table" | "teams">("cards");
@@ -26,7 +25,7 @@ export default function PlayersPage() {
   });
 
   // Generate teams data from players
-  const [teams, setTeams] = useState<{[key: string]: PlayerWithPIV[]}>({}); 
+  const [teams, setTeams] = useState<{[key: string]: PlayerWithPIV[]}>({});
   
   useEffect(() => {
     if (players) {
@@ -236,52 +235,112 @@ export default function PlayersPage() {
       transition={{ duration: 0.5 }}
     >
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold mb-1 text-gradient">Players</h1>
-          <p className="text-blue-300/80 text-sm">Ranked by Player Impact Value (PIV)</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        >
+          <motion.h1 
+            className="text-3xl font-bold mb-1 text-gradient"
+            initial={{ backgroundPosition: "200% 0" }}
+            animate={{ backgroundPosition: "0% 0" }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
+          >
+            Players
+          </motion.h1>
+          <motion.p 
+            className="text-blue-300/80 text-sm"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            Ranked by Player Impact Value (PIV)
+          </motion.p>
+        </motion.div>
         
-        <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 mt-4 md:mt-0">
-          {/* Search Input */}
-          <div className="relative">
+        <motion.div 
+          className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 mt-4 md:mt-0"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          {/* Search Input with animation */}
+          <motion.div 
+            className="relative"
+            initial={{ width: "90%" }}
+            animate={{ width: "100%" }}
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.3 }}
+          >
             <Input
               type="text"
               placeholder="Search players..."
-              className="rounded-lg bg-blue-900/20 border-blue-500/30 text-sm py-2 pl-10 pr-4 w-full sm:w-64"
+              className="rounded-lg bg-blue-900/20 border-blue-500/30 text-sm py-2 pl-10 pr-4 w-full sm:w-64 focus:border-blue-500 transition-all duration-300"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <Search className="h-5 w-5 text-blue-400 absolute left-3 top-2.5" />
-          </div>
+            <motion.div
+              className="absolute left-3 top-2.5"
+              animate={{
+                scale: searchQuery ? [1, 1.2, 1] : 1,
+              }}
+              transition={{ duration: 0.3 }}
+            >
+              <Search className="h-5 w-5 text-blue-400" />
+            </motion.div>
+          </motion.div>
           
           {/* View Mode Selector */}
-          <div className="glassmorphism rounded-lg flex p-1">
+          <div className="glassmorphism rounded-lg flex p-1 relative overflow-hidden">
+            {/* Animated background highlight */}
+            <motion.div 
+              className="absolute h-8 rounded-md bg-blue-600 z-0"
+              layoutId="viewModeHighlight"
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 30
+              }}
+              style={{
+                width: viewMode === "cards" ? "82px" : viewMode === "teams" ? "85px" : "80px",
+                left: viewMode === "cards" ? "4px" : viewMode === "teams" ? "90px" : "180px",
+                top: "4px"
+              }}
+            />
+            
+            {/* Buttons */}
             <Button
-              variant={viewMode === "cards" ? "default" : "ghost"}
+              variant="ghost"
               size="sm"
-              className={`px-3 ${viewMode === "cards" ? "bg-blue-600" : "bg-transparent text-blue-300 hover:text-blue-100"}`}
+              className={`px-3 relative z-10 ${viewMode === "cards" ? "text-white" : "text-blue-300 hover:text-blue-100"}`}
               onClick={() => setViewMode("cards")}
             >
-              <Filter className="h-4 w-4 mr-1" /> Cards
+              <motion.span className="flex items-center" animate={{ scale: viewMode === "cards" ? 1.05 : 1 }}>
+                <Filter className="h-4 w-4 mr-1" /> Cards
+              </motion.span>
             </Button>
             <Button
-              variant={viewMode === "teams" ? "default" : "ghost"}
+              variant="ghost"
               size="sm"
-              className={`px-3 ${viewMode === "teams" ? "bg-blue-600" : "bg-transparent text-blue-300 hover:text-blue-100"}`}
+              className={`px-3 relative z-10 ${viewMode === "teams" ? "text-white" : "text-blue-300 hover:text-blue-100"}`}
               onClick={() => setViewMode("teams")}
             >
-              <Users className="h-4 w-4 mr-1" /> Teams
+              <motion.span className="flex items-center" animate={{ scale: viewMode === "teams" ? 1.05 : 1 }}>
+                <Users className="h-4 w-4 mr-1" /> Teams
+              </motion.span>
             </Button>
             <Button
-              variant={viewMode === "table" ? "default" : "ghost"}
+              variant="ghost"
               size="sm"
-              className={`px-3 ${viewMode === "table" ? "bg-blue-600" : "bg-transparent text-blue-300 hover:text-blue-100"}`}
+              className={`px-3 relative z-10 ${viewMode === "table" ? "text-white" : "text-blue-300 hover:text-blue-100"}`}
               onClick={() => setViewMode("table")}
             >
-              <Medal className="h-4 w-4 mr-1" /> Table
+              <motion.span className="flex items-center" animate={{ scale: viewMode === "table" ? 1.05 : 1 }}>
+                <Medal className="h-4 w-4 mr-1" /> Table
+              </motion.span>
             </Button>
           </div>
-        </div>
+        </motion.div>
       </div>
       
       {/* Role Filter */}
@@ -352,9 +411,10 @@ export default function PlayersPage() {
             <motion.div 
               key="loading"
               className="flex items-center justify-center h-64"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
             >
               <div className="text-center">
                 <div className="h-12 w-12 rounded-full border-4 border-t-blue-500 border-r-blue-500 border-b-blue-500/20 border-l-blue-500/20 animate-spin mx-auto"></div>
@@ -365,9 +425,10 @@ export default function PlayersPage() {
             <motion.div 
               key="error"
               className="flex items-center justify-center h-64"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
             >
               <div className="text-center text-red-400">
                 <p>Error loading player data. Please try again.</p>
@@ -380,10 +441,15 @@ export default function PlayersPage() {
                 <motion.div 
                   key="cards"
                   className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
+                  initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.98, y: -10 }}
+                  transition={{ 
+                    duration: 0.5,
+                    ease: [0.22, 1, 0.36, 1], // Custom cubic bezier for smooth feel
+                    staggerChildren: 0.05
+                  }}
+                  layout
                 >
                   {filteredPlayers.map((player, index) => (
                     <PlayerCard key={player.id} player={player} index={index} />
@@ -396,10 +462,16 @@ export default function PlayersPage() {
                 <motion.div 
                   key="teams"
                   className="space-y-6"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ 
+                    duration: 0.5,
+                    ease: "easeOut",
+                    staggerChildren: 0.1,
+                    delayChildren: 0.1
+                  }}
+                  layout
                 >
                   {Object.entries(teams)
                     .filter(([teamName]) => 
@@ -413,12 +485,21 @@ export default function PlayersPage() {
                       return avgPivB - avgPivA; // Sort by highest average PIV
                     })
                     .map(([teamName, players], idx) => (
-                      <TeamGroup 
-                        key={teamName} 
-                        teamName={teamName} 
-                        players={players.filter(p => hasRole(p, roleFilter))} 
-                        expanded={idx === 0} // First team starts expanded
-                      />
+                      <motion.div
+                        key={teamName}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ 
+                          duration: 0.4, 
+                          delay: idx * 0.08 // Stagger team groups
+                        }}
+                      >
+                        <TeamGroup 
+                          teamName={teamName} 
+                          players={players.filter(p => hasRole(p, roleFilter))} 
+                          expanded={idx === 0} // First team starts expanded
+                        />
+                      </motion.div>
                     ))
                   }
                 </motion.div>
@@ -428,19 +509,31 @@ export default function PlayersPage() {
               {viewMode === "table" && (
                 <motion.div 
                   key="table"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
+                  initial={{ opacity: 0, y: 20, x: 5 }}
+                  animate={{ opacity: 1, y: 0, x: 0 }}
+                  exit={{ opacity: 0, y: -20, x: -5 }}
+                  transition={{ 
+                    duration: 0.4, 
+                    type: "spring", 
+                    damping: 18, 
+                    stiffness: 120 
+                  }}
+                  layout
                 >
                   <Card className="glassmorphism border-glow overflow-hidden">
-                    <DataTable
-                      columns={columns}
-                      data={filteredPlayers}
-                      pageSize={15}
-                      defaultSortField="piv"
-                      defaultSortDir="desc"
-                    />
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.2, duration: 0.3 }}
+                    >
+                      <DataTable
+                        columns={columns}
+                        data={filteredPlayers}
+                        pageSize={15}
+                        defaultSortField="piv"
+                        defaultSortDir="desc"
+                      />
+                    </motion.div>
                   </Card>
                 </motion.div>
               )}

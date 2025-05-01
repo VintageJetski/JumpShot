@@ -74,73 +74,229 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
   // Create a delay for staggered animation
   const staggerDelay = index * 0.05;
 
+  // Animation variants
+  const cardVariants = {
+    hidden: { opacity: 0, y: 30, scale: 0.95 },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      scale: 1,
+      transition: { 
+        type: "spring", 
+        stiffness: 150, 
+        damping: 15,
+        delay: staggerDelay,
+        duration: 0.4,
+        when: "beforeChildren",
+        staggerChildren: 0.05
+      } 
+    },
+    hover: { 
+      y: -8, 
+      scale: 1.03, 
+      transition: { type: "spring", stiffness: 400, damping: 15 },
+      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1)",
+    }
+  };
+
+  const headerVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { 
+        type: "spring", 
+        stiffness: 200, 
+        damping: 20,
+        delay: staggerDelay + 0.1
+      } 
+    },
+    hover: { 
+      scale: 1.02,
+      transition: { duration: 0.2 } 
+    }
+  };
+
+  const contentVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { 
+        delay: staggerDelay + 0.2,
+        when: "beforeChildren",
+        staggerChildren: 0.05
+      } 
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 10, opacity: 0 },
+    visible: { 
+      y: 0, 
+      opacity: 1,
+      transition: { type: "spring", stiffness: 150, damping: 15 }
+    }
+  };
+
+  const buttonVariants = {
+    hidden: { opacity: 0, scale: 0.9 },
+    visible: { 
+      opacity: 1, 
+      scale: 1,
+      transition: { 
+        delay: staggerDelay + 0.3,
+        type: "spring", 
+        stiffness: 150, 
+        damping: 15 
+      } 
+    },
+    hover: { 
+      scale: 1.05, 
+      backgroundColor: "rgba(37, 99, 235, 0.4)",
+      transition: { duration: 0.2 } 
+    },
+    tap: { 
+      scale: 0.95,
+      transition: { duration: 0.1 } 
+    }
+  };
+
+  const roleIconVariants = {
+    hover: { 
+      rotate: [0, -5, 5, 0],
+      transition: { duration: 0.5, repeat: Infinity, repeatType: "reverse" as const }
+    }
+  };
+
   return (
     <motion.div 
-      className="glassmorphism border-glow card-hover rounded-lg overflow-hidden transition-all duration-300"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: staggerDelay }}
-      whileHover={{ y: -5, transition: { duration: 0.2 } }}
+      className="glassmorphism border-glow card-hover rounded-lg overflow-hidden"
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+      whileHover="hover"
+      layout
     >
       {/* Player Header with Role Gradient */}
-      <div className={`bg-gradient-to-r ${roleGradient} p-4 relative`}>
+      <motion.div 
+        className={`bg-gradient-to-r ${roleGradient} p-4 relative`}
+        variants={headerVariants}
+      >
         {/* Team Badge */}
-        <div className="absolute top-3 right-3 bg-black/30 backdrop-blur-sm text-white text-xs font-medium py-1 px-2 rounded">
+        <motion.div 
+          className="absolute top-3 right-3 bg-black/30 backdrop-blur-sm text-white text-xs font-medium py-1 px-2 rounded"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: staggerDelay + 0.2, duration: 0.3 }}
+          whileHover={{ scale: 1.1, backgroundColor: "rgba(0,0,0,0.4)" }}
+        >
           {player.team}
-        </div>
+        </motion.div>
         
         {/* Player Avatar Circle */}
         <div className="flex items-center">
-          <div className="flex-shrink-0 h-12 w-12 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-xl font-bold text-white border border-white/20">
+          <motion.div 
+            className="flex-shrink-0 h-12 w-12 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-xl font-bold text-white border border-white/20"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: staggerDelay + 0.15, type: "spring", stiffness: 200 }}
+            whileHover={{ scale: 1.1, borderColor: "rgba(255,255,255,0.5)" }}
+          >
             {player.name.charAt(0)}
-          </div>
+          </motion.div>
           <div className="ml-3">
-            <h3 className="text-lg font-bold text-white">{player.name}</h3>
-            <div className="flex flex-wrap gap-1 mt-1">
+            <motion.h3 
+              className="text-lg font-bold text-white"
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: staggerDelay + 0.2 }}
+            >
+              {player.name}
+            </motion.h3>
+            <motion.div 
+              className="flex flex-wrap gap-1 mt-1"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: staggerDelay + 0.25 }}
+            >
               {Array.from(rolesToDisplay).map((role, i) => (
-                <div 
+                <motion.div 
                   key={i} 
                   className="flex items-center bg-black/30 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded-full"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: staggerDelay + 0.25 + (i * 0.07) }}
+                  whileHover="hover"
                 >
-                  {roleIcons[role]}
+                  <motion.div variants={roleIconVariants}>
+                    {roleIcons[role]}
+                  </motion.div>
                   <span className="ml-1">{role}</span>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </div>
-      </div>
+      </motion.div>
       
       {/* Stats Section */}
-      <div className="p-4">
+      <motion.div 
+        className="p-4"
+        variants={contentVariants}
+      >
         {/* PIV Score with visual indicator */}
-        <div className="mb-4">
+        <motion.div 
+          className="mb-4"
+          variants={itemVariants}
+        >
           <div className="flex justify-between items-center mb-1">
             <span className="text-sm text-blue-300">Player Impact Value</span>
-            <span className={`text-lg font-bold ${getPivColor(pivScore)}`}>{pivScore}</span>
+            <motion.span 
+              className={`text-lg font-bold ${getPivColor(pivScore)}`}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: staggerDelay + 0.3, type: "spring" }}
+            >
+              {pivScore}
+            </motion.span>
           </div>
           <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
             <motion.div 
               className={`h-full bg-gradient-to-r from-blue-600 to-blue-400`}
               initial={{ width: 0 }}
               animate={{ width: `${Math.min(pivScore, 100)}%` }}
-              transition={{ duration: 1, delay: staggerDelay + 0.3, ease: 'easeOut' }}
+              transition={{ 
+                duration: 1.2, 
+                delay: staggerDelay + 0.3, 
+                ease: [0.34, 1.56, 0.64, 1] // Custom spring-like cubic bezier
+              }}
             />
           </div>
-        </div>
+        </motion.div>
         
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-blue-900/20 border border-blue-500/20 rounded-lg p-2">
+        <motion.div 
+          className="grid grid-cols-2 gap-3 mb-4"
+          variants={itemVariants}
+        >
+          <motion.div 
+            className="bg-blue-900/20 border border-blue-500/20 rounded-lg p-2"
+            whileHover={{ scale: 1.05, backgroundColor: "rgba(30, 64, 175, 0.3)" }}
+            transition={{ type: "spring", stiffness: 300, damping: 15 }}
+          >
             <div className="text-xs text-blue-300 mb-1 flex items-center">
               <Gauge className="h-3 w-3 mr-1" /> K/D Ratio
             </div>
             <div className={`text-base font-medium ${player.kd >= 1.0 ? 'text-green-400' : 'text-yellow-400'}`}>
               {player.kd.toFixed(2)}
             </div>
-          </div>
+          </motion.div>
           
-          <div className="bg-blue-900/20 border border-blue-500/20 rounded-lg p-2">
+          <motion.div 
+            className="bg-blue-900/20 border border-blue-500/20 rounded-lg p-2"
+            whileHover={{ scale: 1.05, backgroundColor: "rgba(30, 64, 175, 0.3)" }}
+            transition={{ type: "spring", stiffness: 300, damping: 15 }}
+          >
             <div className="text-xs text-blue-300 mb-1 truncate">
               {player.primaryMetric.name}
             </div>
@@ -149,34 +305,56 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
                 player.primaryMetric.value.toFixed(2) : 
                 player.primaryMetric.value}
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
         
         {/* Side Stats */}
-        <div className="grid grid-cols-2 gap-2 text-xs text-blue-300/80 mb-4">
-          <div className="flex items-center justify-between px-2 py-1 border-b border-blue-500/10">
+        <motion.div 
+          className="grid grid-cols-2 gap-2 text-xs text-blue-300/80 mb-4"
+          variants={itemVariants}
+        >
+          <motion.div 
+            className="flex items-center justify-between px-2 py-1 border-b border-blue-500/10"
+            whileHover={{ borderColor: "rgba(59, 130, 246, 0.3)" }}
+          >
             <span>CT PIV</span>
             <span className="font-medium text-blue-200">
               {player.ctPIV ? Math.round(player.ctPIV * 100) : '-'}
             </span>
-          </div>
-          <div className="flex items-center justify-between px-2 py-1 border-b border-blue-500/10">
+          </motion.div>
+          <motion.div 
+            className="flex items-center justify-between px-2 py-1 border-b border-blue-500/10"
+            whileHover={{ borderColor: "rgba(59, 130, 246, 0.3)" }}
+          >
             <span>T PIV</span>
             <span className="font-medium text-blue-200">
               {player.tPIV ? Math.round(player.tPIV * 100) : '-'}
             </span>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
         
         {/* Action Button */}
-        <button 
+        <motion.button 
           onClick={() => setLocation(`/players/${player.id}`)}
-          className="w-full flex items-center justify-center bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 hover:text-blue-100 p-2 rounded-lg transition-colors duration-200 border border-blue-500/30 mt-2"
+          className="w-full flex items-center justify-center bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 hover:text-blue-100 p-2 rounded-lg border border-blue-500/30 mt-2"
+          variants={buttonVariants}
+          whileTap="tap"
         >
           <span className="mr-1">View Details</span>
-          <ArrowRight className="h-4 w-4" />
-        </button>
-      </div>
+          <motion.div
+            animate={{ x: [0, 5, 0] }}
+            transition={{ 
+              repeat: Infinity, 
+              repeatType: "reverse", 
+              duration: 1, 
+              ease: "easeInOut",
+              repeatDelay: 1
+            }}
+          >
+            <ArrowRight className="h-4 w-4" />
+          </motion.div>
+        </motion.button>
+      </motion.div>
     </motion.div>
   );
 }

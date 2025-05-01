@@ -21,6 +21,22 @@ export default function RoleFilterChips({
   selectedRole,
   onSelectRole
 }: RoleFilterChipsProps) {
+  // Animation variants for role chips
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05,
+        delayChildren: 0.1,
+      }
+    }
+  };
+  
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0 }
+  };
   // Define role options with colors and icons
   const roleOptions: RoleOption[] = [
     { 
@@ -90,7 +106,12 @@ export default function RoleFilterChips({
   ];
 
   return (
-    <div className="flex flex-wrap gap-2 mb-6">
+    <motion.div 
+      className="flex flex-wrap gap-2 mb-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {roleOptions.map((role, index) => {
         const isActive = selectedRole === role.value;
         
@@ -104,29 +125,66 @@ export default function RoleFilterChips({
               ${isActive ? role.activeColor : role.color} 
               ${!isActive && role.hoverColor}
               ${isActive ? 'shadow-md shadow-blue-500/10' : ''}
+              relative overflow-hidden
             `}
-            whileHover={{ scale: 1.05 }}
+            variants={itemVariants}
+            whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
+            layout
           >
-            {role.icon}
-            <span className={`text-sm font-medium ${isActive ? 'text-white' : 'text-blue-200'}`}>
-              {role.label}
-            </span>
+            <motion.div className="flex items-center gap-1.5">
+              {/* Apply spring animation to icon when selected */}
+              <motion.div
+                animate={isActive ? {
+                  scale: [1, 1.2, 1],
+                  rotate: [0, -10, 10, -5, 0],
+                  transition: { duration: 0.4 }
+                } : { scale: 1 }}
+              >
+                {role.icon}
+              </motion.div>
+              
+              <span className={`text-sm font-medium ${isActive ? 'text-white' : 'text-blue-200'}`}>
+                {role.label}
+              </span>
+            </motion.div>
+            
+            {/* Animated background highlight */}
             {isActive && (
               <motion.span 
                 className="absolute inset-0 rounded-full bg-blue-500/10 z-[-1]"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                layoutId="roleHighlight"
+                transition={{ 
+                  duration: 0.3, 
+                  type: "spring", 
+                  stiffness: 200, 
+                  damping: 20 
+                }}
+              />
+            )}
+            
+            {/* Subtle particle burst effect on selection */}
+            {isActive && (
+              <motion.span
+                className="absolute inset-0 rounded-full overflow-hidden"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                layoutId="roleHighlight"
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-              />
+              >
+                <motion.span 
+                  className="absolute inset-0 bg-blue-400/10"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1.5, opacity: [0.7, 0] }}
+                  transition={{ duration: 0.5 }}
+                />
+              </motion.span>
             )}
           </motion.button>
         );
       })}
-    </div>
+    </motion.div>
   );
 }

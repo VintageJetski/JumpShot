@@ -34,7 +34,8 @@ def calculate_core_metrics(df):
     # Calculate or fix KD ratio if not present or incorrect
     if 'kd' not in df.columns:
         print("Adding KD ratio column")
-        df['kd'] = df['kills'] / df['deaths'].replace(0, 1)  # Avoid division by zero
+        # Avoid division by zero with numpy-friendly approach
+        df['kd'] = df['kills'] / df['deaths'].clip(lower=1)
     
     # Add KAST if we have the data (Kill, Assist, Survived, Traded)
     if all(col in df.columns for col in ['rounds_survived', 'times_traded']):
@@ -52,12 +53,12 @@ def calculate_core_metrics(df):
     
     # First kill success rate
     if all(col in df.columns for col in ['first_kills', 'first_deaths']):
-        df['first_kill_success'] = df['first_kills'] / (df['first_kills'] + df['first_deaths']).replace(0, 1)
+        df['first_kill_success'] = df['first_kills'] / (df['first_kills'] + df['first_deaths']).clip(lower=1)
         
         # Calculate T-side and CT-side First Kill Success separately
         if all(col in df.columns for col in ['t_first_kills', 't_first_deaths', 'ct_first_kills', 'ct_first_deaths']):
-            df['t_first_kill_success'] = df['t_first_kills'] / (df['t_first_kills'] + df['t_first_deaths']).replace(0, 1)
-            df['ct_first_kill_success'] = df['ct_first_kills'] / (df['ct_first_kills'] + df['ct_first_deaths']).replace(0, 1)
+            df['t_first_kill_success'] = df['t_first_kills'] / (df['t_first_kills'] + df['t_first_deaths']).clip(lower=1)
+            df['ct_first_kill_success'] = df['ct_first_kills'] / (df['ct_first_kills'] + df['ct_first_deaths']).clip(lower=1)
     
     # Utility metrics
     if 'total_utility_thrown' in df.columns:
@@ -71,7 +72,7 @@ def calculate_core_metrics(df):
                 df['enemies_flashed'] * 0.5 + 
                 df['damage_by_he'] / 100 + 
                 df['incendiary_damage'] / 100
-            ) / df['total_utility_thrown'].replace(0, 1)  # Normalize by utility used
+            ) / df['total_utility_thrown'].clip(lower=1)  # Normalize by utility used
         else:
             # Basic utility estimate based on available data
             df['utility_effectiveness'] = 0.5  # Default moderate effectiveness
@@ -79,7 +80,7 @@ def calculate_core_metrics(df):
     # Add consistency measure (standard deviation of kills per round)
     # This is a placeholder since we don't have round-by-round data
     # The lower the better for consistency (less variance)
-    df['consistency'] = 1 - (df['deaths'] / df['kills'].replace(0, 1)).clip(0, 1) * 0.5
+    df['consistency'] = 1 - (df['deaths'] / df['kills'].clip(lower=1)).clip(0, 1) * 0.5
     
     # Calculate impact (higher impact = higher rating)
     # Impact factors in first kills, multi-kills, and clutches
@@ -96,7 +97,10 @@ def calculate_core_metrics(df):
         # Normalize each metric before summing
         for col in available_impact_cols:
             col_norm = f"{col}_norm"
-            df[col_norm] = df[col] / df[col].max().replace(0, 1)
+            max_val = df[col].max()
+            if max_val == 0:
+                max_val = 1  # Avoid division by zero
+            df[col_norm] = df[col] / max_val
         
         # Calculate impact score as weighted sum of normalized metrics
         impact_norm_cols = [f"{col}_norm" for col in available_impact_cols]

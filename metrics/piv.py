@@ -286,15 +286,25 @@ def combine_side_metrics(t_metrics, ct_metrics, primary_role, is_igl):
             'sc': 0.85,  # Higher synergy contribution
             'osm': 1.0
         }
+        # Extract values from complex objects in the IGL case too
+        t_rcs = t_metrics['rcs'] if isinstance(t_metrics['rcs'], (int, float)) else t_metrics['rcs']['value']
+        ct_rcs = ct_metrics['rcs'] if isinstance(ct_metrics['rcs'], (int, float)) else ct_metrics['rcs']['value']
+        
+        t_icf = t_metrics['icf']['value'] if isinstance(t_metrics['icf'], dict) else t_metrics['icf']
+        ct_icf = ct_metrics['icf']['value'] if isinstance(ct_metrics['icf'], dict) else ct_metrics['icf']
+        
+        t_sc = t_metrics['sc']['value'] if isinstance(t_metrics['sc'], dict) else t_metrics['sc']
+        ct_sc = ct_metrics['sc']['value'] if isinstance(ct_metrics['sc'], dict) else ct_metrics['sc']
+        
         piv = 0.5 * calculate_piv(igl_metrics['rcs'], igl_metrics['icf'], igl_metrics['sc'], igl_metrics['osm']) + \
               weights['t'] * t_metrics['piv'] + weights['ct'] * ct_metrics['piv']
         
         return {
             'role': 'IGL',
             'metrics': {},  # Combined metrics would go here
-            'rcs': 0.5 * igl_metrics['rcs'] + weights['t'] * t_metrics['rcs'] + weights['ct'] * ct_metrics['rcs'],
-            'icf': 0.5 * igl_metrics['icf'] + weights['t'] * t_metrics['icf'] + weights['ct'] * ct_metrics['icf'],
-            'sc': 0.5 * igl_metrics['sc'] + weights['t'] * t_metrics['sc'] + weights['ct'] * ct_metrics['sc'],
+            'rcs': 0.5 * igl_metrics['rcs'] + weights['t'] * t_rcs + weights['ct'] * ct_rcs,
+            'icf': 0.5 * igl_metrics['icf'] + weights['t'] * t_icf + weights['ct'] * ct_icf,
+            'sc': 0.5 * igl_metrics['sc'] + weights['t'] * t_sc + weights['ct'] * ct_sc,
             'osm': igl_metrics['osm'],
             'piv': piv
         }
@@ -303,12 +313,22 @@ def combine_side_metrics(t_metrics, ct_metrics, primary_role, is_igl):
         weights = {'t': 0.5, 'ct': 0.5}
         
         # Basic weighted average
+        # Extract values from complex objects when needed
+        t_rcs = t_metrics['rcs'] if isinstance(t_metrics['rcs'], (int, float)) else t_metrics['rcs']['value']
+        ct_rcs = ct_metrics['rcs'] if isinstance(ct_metrics['rcs'], (int, float)) else ct_metrics['rcs']['value']
+        
+        t_icf = t_metrics['icf']['value'] if isinstance(t_metrics['icf'], dict) else t_metrics['icf']
+        ct_icf = ct_metrics['icf']['value'] if isinstance(ct_metrics['icf'], dict) else ct_metrics['icf']
+        
+        t_sc = t_metrics['sc']['value'] if isinstance(t_metrics['sc'], dict) else t_metrics['sc']
+        ct_sc = ct_metrics['sc']['value'] if isinstance(ct_metrics['sc'], dict) else ct_metrics['sc']
+        
         return {
             'role': primary_role,
             'metrics': {},  # Combined metrics would go here
-            'rcs': weights['t'] * t_metrics['rcs'] + weights['ct'] * ct_metrics['rcs'],
-            'icf': weights['t'] * t_metrics['icf'] + weights['ct'] * ct_metrics['icf'],
-            'sc': weights['t'] * t_metrics['sc'] + weights['ct'] * ct_metrics['sc'],
+            'rcs': weights['t'] * t_rcs + weights['ct'] * ct_rcs,
+            'icf': weights['t'] * t_icf + weights['ct'] * ct_icf,
+            'sc': weights['t'] * t_sc + weights['ct'] * ct_sc,
             'osm': max(t_metrics['osm'], ct_metrics['osm']),  # Use higher of the two
             'piv': weights['t'] * t_metrics['piv'] + weights['ct'] * ct_metrics['piv']
         }

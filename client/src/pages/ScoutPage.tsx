@@ -11,8 +11,15 @@ export default function ScoutPage() {
   const [selectedTeam, setSelectedTeam] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("replacement");
   
+  // Define team type
+  type Team = {
+    id: string;
+    name: string;
+    avg_piv: number;
+  };
+
   // Fetch teams for dropdown
-  const { data: teams, isLoading } = useQuery({
+  const { data: teams, isLoading } = useQuery<Team[]>({
     queryKey: ["/api/teams"],
   });
   

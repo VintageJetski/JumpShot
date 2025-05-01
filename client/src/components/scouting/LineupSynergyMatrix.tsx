@@ -29,8 +29,16 @@ export default function LineupSynergyMatrix({ className = '' }: Props) {
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const { toast } = useToast();
 
+  // Define player type for the data
+  type ApiPlayer = {
+    id: string;
+    name: string;
+    team: string;
+    role: string;
+  };
+
   // Fetch all players to allow selection
-  const { data: playersData, isLoading: isPlayersLoading } = useQuery({
+  const { data: playersData, isLoading: isPlayersLoading } = useQuery<ApiPlayer[]>({
     queryKey: [`/api/players`],
   });
 

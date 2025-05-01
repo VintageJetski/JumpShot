@@ -35,13 +35,32 @@ export default function TeamReplacementRecommender({ teamId, className = '' }: P
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const { toast } = useToast();
 
+  // Define team type for the list
+  type TeamListItem = {
+    id: string;
+    name: string;
+    avg_piv: number;
+  };
+
   // Fetch all teams to populate team selector
-  const { data: teamsData } = useQuery({
+  const { data: teamsData } = useQuery<TeamListItem[]>({
     queryKey: [`/api/teams`],
   });
 
+  // Define team data type
+  type TeamData = {
+    id: string;
+    name: string;
+    players: Array<{
+      id: string;
+      name: string;
+      role: string;
+      piv: number;
+    }>;
+  };
+
   // Get selected team data
-  const { data: teamData, isLoading: isTeamLoading } = useQuery({
+  const { data: teamData, isLoading: isTeamLoading } = useQuery<TeamData>({
     queryKey: [`/api/team/${teamId}`],
     enabled: !!teamId
   });

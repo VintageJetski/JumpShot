@@ -11,6 +11,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { RotateCcw as ResetIcon, Save as SaveIcon, FileDown } from 'lucide-react';
 import exportToPDF from '@/lib/pdfExport';
 import { ScoutingFeaturesCard } from '@/components/role/ScoutingFeaturesCard';
+import { WeightsInfo } from '@/components/weights/WeightsInfo';
 
 export default function RoleWeightingsPage() {
   const [activeTab, setActiveTab] = useState<string>(PlayerRole.AWP);

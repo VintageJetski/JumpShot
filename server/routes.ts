@@ -118,8 +118,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Weights endpoint
-
-  // Weights endpoint
   app.get('/api/weights', async (req: Request, res: Response) => {
     try {      
       const weightsPath = path.join(process.cwd(), 'clean/weights/latest/learned_weights.csv');
@@ -152,14 +150,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       // Process weights
-      const weights = {};
+      const weights: Record<string, number> = {};
       
-      records.forEach(record => {
+      records.forEach((record: any) => {
         if (record.feature.startsWith('metadata_')) {
           const key = record.feature.replace('metadata_', '');
-          metadata[key] = isNaN(record.weight) ? record.weight : parseFloat(record.weight);
+          if (key === 'date' || key === 'version') {
+            metadata[key] = String(record.weight);
+          } else if (key === 'samples') {
+            metadata[key] = parseInt(record.weight, 10) || 0;
+          }
         } else {
-          weights[record.feature] = parseFloat(record.weight);
+          weights[record.feature] = parseFloat(record.weight) || 0;
         }
       });
       
@@ -167,10 +169,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         weights,
         metadata
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching weights:', error);
       res.status(500).json({
-        error: `Error loading weights: ${error.message}`,
+        error: `Error loading weights: ${error?.message || 'Unknown error'}`,
         weights: {},
         metadata: {
           date: new Date().toISOString().split('T')[0],

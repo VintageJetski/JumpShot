@@ -22,8 +22,8 @@ export interface WeightsResponse {
  */
 export const fetchWeights = async (): Promise<WeightsResponse> => {
   try {
-    const response = await apiRequest<WeightsResponse>('/api/weights');
-    return response;
+    const response = await apiRequest('/api/weights');
+    return response as WeightsResponse;
   } catch (error) {
     console.error('Error fetching weights:', error);
     return {

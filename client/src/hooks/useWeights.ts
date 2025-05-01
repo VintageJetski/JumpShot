@@ -1,22 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchWeights, WeightsResponse } from '@/services/weightsService';
+import { fetchWeights, type WeightsResponse } from '@/services/weightsService';
 
 /**
- * Hook to fetch and use the learned weights for PIV calculations
+ * Custom hook to fetch and use the learned weights for PIV calculations
+ * @returns Query result containing weights data
  */
 export function useWeights() {
-  const { data, error, isLoading } = useQuery<WeightsResponse>({
-    queryKey: ['weights'],
+  return useQuery<WeightsResponse>({
+    queryKey: ['/api/weights'],
     queryFn: fetchWeights,
-    // Refetch weights only occasionally as they don't change often
-    staleTime: 1000 * 60 * 60, // 1 hour
-    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 15, // 15 minutes
   });
-
-  return {
-    weights: data?.weights || {},
-    metadata: data?.metadata,
-    error,
-    isLoading,
-  };
 }

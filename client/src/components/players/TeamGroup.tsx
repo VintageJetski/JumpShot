@@ -71,7 +71,7 @@ export default function TeamGroup({ teamName, players, expanded = true }: TeamGr
       transition: {
         duration: 1,
         repeat: Infinity,
-        repeatType: "loop",
+        repeatType: "loop" as const,
         repeatDelay: 1
       }
     }

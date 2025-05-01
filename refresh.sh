@@ -18,4 +18,8 @@ python -m metrics.simple_piv
 echo "Step 3b: Calculating PIV v1.4 values with metrics/piv_v14.py"
 python -m metrics.piv_v14
 
+# Run the weight learning and team impact rating calculation
+echo "Step 4: Learning metric weights and calculating team impact ratings"
+python -m metrics.learn_weights
+
 echo "Data pipeline refresh complete!"

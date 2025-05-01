@@ -1,1 +1,1 @@
-# Initialize metrics package
+# metrics package

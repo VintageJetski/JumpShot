@@ -1,1 +1,1 @@
-# Initialize insights package
+# insights package

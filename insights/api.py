@@ -1,276 +1,305 @@
-from flask import Blueprint, request, jsonify, Flask
+#!/usr/bin/env python
+# insights/api.py - Flask API for serving CS2 analytics
+from flask import Blueprint, request, jsonify
 import pandas as pd
 import numpy as np
-import os.path
+from pathlib import Path
+import os
+import json
 
-# Create Blueprint for API routes
-bp = Blueprint("data", __name__)
+# File paths
+EVENTS_PATH = 'clean/events.parquet'
+ENRICHED_PATH = 'clean/enriched.parquet'
+PIV_PATH = 'clean/piv.parquet'
 
-# Global cache for dataframes - auto-reloaded each time script restarts
-PIV = None
-TEAM_TIR = None
+# Global data stores
+players_df = None
+teams_df = None
+
+# Create blueprint
+api = Blueprint('api', __name__)
 
 def load_data():
     """Load data from parquet files - called at startup and when refresh happens"""
-    global PIV, TEAM_TIR
+    global players_df, teams_df
     
-    # Load PIV data
-    piv_path = "clean/piv.parquet"
-    if os.path.exists(piv_path):
-        PIV = pd.read_parquet(piv_path)
-        print(f"Loaded {len(PIV)} player records from {piv_path}")
-    else:
-        print(f"Warning: {piv_path} not found. Player data unavailable.")
-        # Create empty dataframe with expected columns
-        PIV = pd.DataFrame(columns=['steam_id', 'user_name', 'team_clan_name', 'piv', 'ct_piv', 't_piv'])
-    
-    # Load Team TIR data if available
-    tir_path = "clean/team_tir.csv"
-    if os.path.exists(tir_path):
-        TEAM_TIR = pd.read_csv(tir_path)
-        print(f"Loaded {len(TEAM_TIR)} team records from {tir_path}")
-    else:
-        print(f"Warning: {tir_path} not found. Team data unavailable.")
-        # Create empty dataframe with expected columns
-        TEAM_TIR = pd.DataFrame(columns=['team_name', 'tir', 'tir_scaled'])
+    try:
+        print("Loading player data...")
+        if os.path.exists(PIV_PATH):
+            players_df = pd.read_parquet(PIV_PATH)
+            print(f"Loaded {len(players_df)} players with PIV data")
+        elif os.path.exists(ENRICHED_PATH):
+            players_df = pd.read_parquet(ENRICHED_PATH)
+            print(f"Loaded {len(players_df)} players from enriched data (no PIV)")
+        elif os.path.exists(EVENTS_PATH):
+            players_df = pd.read_parquet(EVENTS_PATH)
+            print(f"Loaded {len(players_df)} players from basic events data")
+        else:
+            print("No player data found!")
+            players_df = pd.DataFrame()
+        
+        # Create teams dataframe from player data
+        if not players_df.empty and 'team' in players_df.columns:
+            teams = players_df['team'].unique()
+            teams_df = pd.DataFrame({'name': teams})
+            teams_df['id'] = teams_df['name'].str.lower().str.replace(' ', '-')
+            # Default TIR
+            teams_df['tir'] = 1.0
+            print(f"Created teams dataframe with {len(teams_df)} teams")
+        else:
+            teams_df = pd.DataFrame()
+            print("No team data created")
+        
+        return True
+    except Exception as e:
+        print(f"Error loading data: {e}")
+        return False
 
-# Load data on module import
-load_data()
-
-@bp.route("/players", methods=["GET"])
+@api.route('/players', methods=['GET'])
 def players():
     """Return all players with optional field filtering"""
-    # Check if PIV data is loaded
-    if PIV is None or len(PIV) == 0:
-        return jsonify({"error": "Player data not available"}), 404
+    global players_df
     
-    # Get fields parameter if provided
-    fields = request.args.get("fields")
+    # Check if data is loaded
+    if players_df is None or players_df.empty:
+        if not load_data():
+            return jsonify({"error": "Failed to load player data"}), 500
+    
+    # Get fields parameter for filtering
+    fields = request.args.get('fields')
     if fields:
-        cols = fields.split(",")
-        # Only return columns that exist
-        valid_cols = [col for col in cols if col in PIV.columns]
-        if not valid_cols:
-            return jsonify({"error": "No valid fields specified"}), 400
-        return jsonify(PIV[valid_cols].to_dict(orient="records"))
+        field_list = fields.split(',')
+        # Ensure 'id' is included
+        if 'id' not in field_list and 'steam_id' in players_df.columns:
+            field_list.append('steam_id')
+        # Filter to only requested fields that exist in the dataframe
+        field_list = [f for f in field_list if f in players_df.columns]
+        filtered_df = players_df[field_list]
+    else:
+        filtered_df = players_df
     
-    # Return all data if no fields specified
-    return jsonify(PIV.to_dict(orient="records"))
+    # Convert DataFrame to list of dictionaries for JSON response
+    players_list = filtered_df.to_dict(orient='records')
+    
+    # Ensure each player has a proper ID
+    for player in players_list:
+        if 'id' not in player and 'steam_id' in player:
+            player['id'] = player['steam_id']
+    
+    return jsonify(players_list)
 
-@bp.route("/player/<steam_id>")
+@api.route('/player/<steam_id>', methods=['GET'])
 def player(steam_id):
     """Return a single player by steam_id"""
-    # Check if PIV data is loaded
-    if PIV is None or len(PIV) == 0:
-        return jsonify({"error": "Player data not available"}), 404
+    global players_df
     
-    try:
-        # Convert to int if it's a numeric string
-        if steam_id.isdigit():
-            steam_id_val = int(steam_id)
-            row = PIV.loc[PIV.steam_id == steam_id_val]
-        else:
-            # Try matching by username if not numeric
-            row = PIV.loc[PIV.user_name == steam_id]
-        
-        if len(row) == 0:
-            return jsonify({"error": f"Player with ID {steam_id} not found"}), 404
-        
-        return jsonify(row.to_dict(orient="records")[0])
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # Check if data is loaded
+    if players_df is None or players_df.empty:
+        if not load_data():
+            return jsonify({"error": "Failed to load player data"}), 500
+    
+    # Find player by steam_id
+    if 'steam_id' in players_df.columns:
+        player_row = players_df[players_df['steam_id'] == steam_id]
+    else:
+        return jsonify({"error": "Steam ID column not found in data"}), 404
+    
+    # Check if player exists
+    if len(player_row) == 0:
+        return jsonify({"error": f"Player with steam_id {steam_id} not found"}), 404
+    
+    # Convert single row to dictionary
+    player_data = player_row.iloc[0].to_dict()
+    
+    # Ensure player has an ID
+    if 'id' not in player_data:
+        player_data['id'] = steam_id
+    
+    return jsonify(player_data)
 
-@bp.route("/teams", methods=["GET"])
+@api.route('/teams', methods=['GET'])
 def teams():
     """Return all teams with their TIR"""
-    # Check if TEAM_TIR data is loaded
-    if TEAM_TIR is None or len(TEAM_TIR) == 0:
-        return jsonify({"error": "Team data not available"}), 404
+    global teams_df
     
-    # Get fields parameter if provided
-    fields = request.args.get("fields")
+    # Check if data is loaded
+    if teams_df is None or teams_df.empty:
+        if not load_data():
+            return jsonify({"error": "Failed to load team data"}), 500
+    
+    # Get fields parameter for filtering
+    fields = request.args.get('fields')
     if fields:
-        cols = fields.split(",")
-        # Only return columns that exist
-        valid_cols = [col for col in cols if col in TEAM_TIR.columns]
-        if not valid_cols:
-            return jsonify({"error": "No valid fields specified"}), 400
-        return jsonify(TEAM_TIR[valid_cols].to_dict(orient="records"))
+        field_list = fields.split(',')
+        # Ensure 'id' is included
+        if 'id' not in field_list:
+            field_list.append('id')
+        # Filter to only requested fields that exist in the dataframe
+        field_list = [f for f in field_list if f in teams_df.columns]
+        filtered_df = teams_df[field_list]
+    else:
+        filtered_df = teams_df
     
-    # Return all data if no fields specified
-    return jsonify(TEAM_TIR.to_dict(orient="records"))
+    # Convert DataFrame to list of dictionaries for JSON response
+    teams_list = filtered_df.to_dict(orient='records')
+    
+    return jsonify(teams_list)
 
-@bp.route("/team/<team_name>")
+@api.route('/team/<team_name>', methods=['GET'])
 def team(team_name):
     """Return a single team by name"""
-    # Check if TEAM_TIR data is loaded
-    if TEAM_TIR is None or len(TEAM_TIR) == 0:
-        return jsonify({"error": "Team data not available"}), 404
+    global teams_df, players_df
     
-    try:
-        # Match by team name
-        row = TEAM_TIR.loc[TEAM_TIR.team_name == team_name]
-        
-        if len(row) == 0:
-            return jsonify({"error": f"Team with name {team_name} not found"}), 404
-        
-        # Get players for this team
-        if PIV is not None and len(PIV) > 0:
-            team_players = PIV.loc[PIV.team_clan_name == team_name]
-            team_dict = row.to_dict(orient="records")[0]
-            team_dict["players"] = team_players.to_dict(orient="records")
-            return jsonify(team_dict)
-        else:
-            return jsonify(row.to_dict(orient="records")[0])
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # Check if data is loaded
+    if teams_df is None or teams_df.empty or players_df is None or players_df.empty:
+        if not load_data():
+            return jsonify({"error": "Failed to load team data"}), 500
+    
+    # Try to match by ID first (lowercase with hyphens)
+    team_id = team_name.lower().replace(' ', '-')
+    team_row = teams_df[teams_df['id'] == team_id]
+    
+    # If not found, try by name
+    if len(team_row) == 0:
+        team_row = teams_df[teams_df['name'] == team_name]
+    
+    # Check if team exists
+    if len(team_row) == 0:
+        return jsonify({"error": f"Team '{team_name}' not found"}), 404
+    
+    # Get team data
+    team_data = team_row.iloc[0].to_dict()
+    
+    # Get all players for this team
+    if 'team' in players_df.columns:
+        team_players = players_df[players_df['team'] == team_data['name']]
+        team_data['players'] = team_players.to_dict(orient='records')
+    else:
+        team_data['players'] = []
+    
+    return jsonify(team_data)
 
-@bp.route("/lineup/synergy", methods=["POST"])
+@api.route('/lineup/synergy', methods=['POST'])
 def lineup_synergy():
     """Calculate synergy matrix for a set of players"""
-    # Check if PIV data is loaded
-    if PIV is None or len(PIV) == 0:
-        return jsonify({"error": "Player data not available"}), 404
+    # Get player IDs from request
+    data = request.get_json()
+    if not data or 'playerIds' not in data:
+        return jsonify({"error": "playerIds array is required"}), 400
     
-    try:
-        # Get player IDs from request
-        data = request.json
-        if not data or "ids" not in data:
-            return jsonify({"error": "No player IDs provided"}), 400
-        
-        ids = data["ids"]
-        if not ids or len(ids) < 2:
-            return jsonify({"error": "At least 2 player IDs required"}), 400
-        
-        # Calculate synergy matrix
-        synergy_data = synergy_matrix(ids)
-        return jsonify(synergy_data)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    player_ids = data['playerIds']
+    if not isinstance(player_ids, list) or len(player_ids) < 2:
+        return jsonify({"error": "At least two playerIds are required"}), 400
+    
+    # Calculate synergy matrix
+    synergy_data = synergy_matrix(player_ids)
+    
+    return jsonify(synergy_data)
 
 def synergy_matrix(player_ids):
     """Calculate synergy ratings between players"""
-    # Check if PIV data is loaded
-    if PIV is None or len(PIV) == 0:
-        return {"error": "Player data not available"}
+    global players_df
     
-    # Get players
-    players = []
-    for pid in player_ids:
-        player_row = None
-        if isinstance(pid, int) or (isinstance(pid, str) and pid.isdigit()):
-            # Match by steam_id
-            player_row = PIV.loc[PIV.steam_id == int(pid)]
-        else:
-            # Match by username
-            player_row = PIV.loc[PIV.user_name == pid]
-        
-        if len(player_row) > 0:
-            players.append(player_row.iloc[0])
+    # Check if data is loaded
+    if players_df is None or players_df.empty:
+        load_data()
     
-    if len(players) < 2:
-        return {"error": "Not enough valid players found"}
+    # Filter for requested players
+    if 'steam_id' in players_df.columns:
+        player_filter = players_df['steam_id'].isin(player_ids)
+        selected_players = players_df[player_filter].copy()
+    else:
+        # Fallback if steam_id column doesn't exist
+        return {"error": "Player ID column not found in data"}
     
-    # Calculate synergy score for each pair
-    n = len(players)
-    synergy = np.zeros((n, n))
-    player_info = []
+    if len(selected_players) == 0:
+        return {"error": "None of the requested players were found"}
     
-    for i in range(n):
-        player_info.append({
-            "id": players[i]["steam_id"] if "steam_id" in players[i] else None,
-            "name": players[i]["user_name"] if "user_name" in players[i] else f"Player {i}",
-            "role": players[i]["primary_role"] if "primary_role" in players[i] else None,
-            "piv": players[i]["piv"] if "piv" in players[i] else 0.0
-        })
-        
-        for j in range(n):
-            if i == j:
-                # Self-synergy is always 1.0 (perfect)
-                synergy[i, j] = 1.0
-            else:
-                # Calculate synergy between players i and j
-                synergy[i, j] = calculate_player_synergy(players[i], players[j])
-    
-    # Return the data in a format suitable for the UI
-    return {
-        "players": player_info,
-        "matrix": synergy.tolist()
+    # Create matrix structure
+    matrix = {
+        "players": [],
+        "synergy": []
     }
+    
+    # Add player info
+    for _, player in selected_players.iterrows():
+        player_info = {
+            "id": player['steam_id'] if 'steam_id' in player else '',
+            "name": player['name'] if 'name' in player else '',
+            "role": player['role'] if 'role' in player else 'Support',
+            "piv": float(player['piv']) if 'piv' in player else 1.0
+        }
+        matrix["players"].append(player_info)
+    
+    # Calculate synergy scores between pairs
+    for i, player1 in enumerate(matrix["players"]):
+        synergy_row = []
+        for j, player2 in enumerate(matrix["players"]):
+            if i == j:  # Self-synergy is 1.0
+                synergy_row.append(1.0)
+            else:
+                # Find full player data
+                p1_data = selected_players[selected_players['steam_id'] == player1["id"]].iloc[0]
+                p2_data = selected_players[selected_players['steam_id'] == player2["id"]].iloc[0]
+                
+                # Calculate synergy
+                synergy = calculate_player_synergy(p1_data, p2_data)
+                synergy_row.append(synergy)
+        
+        matrix["synergy"].append(synergy_row)
+    
+    return matrix
 
 def calculate_player_synergy(player1, player2):
     """Calculate synergy score between two players"""
     # Base synergy score
-    synergy = 0.5
+    base_synergy = 0.5
     
-    # Adjust based on roles
-    if "primary_role" in player1 and "primary_role" in player2:
-        role1 = player1["primary_role"]
-        role2 = player2["primary_role"]
-        
-        # Higher synergy for complementary roles
-        role_synergy_map = {
-            # IGL (7) has good synergy with everyone
-            (7, 1): 0.8,  # IGL + AWP
-            (7, 2): 0.7,  # IGL + Lurker
-            (7, 3): 0.75, # IGL + Support
-            (7, 4): 0.85, # IGL + Spacetaker
-            (7, 5): 0.7,  # IGL + Anchor
-            (7, 6): 0.7,  # IGL + Rotator
-            
-            # AWP (1) synergies
-            (1, 3): 0.8,  # AWP + Support
-            (1, 4): 0.7,  # AWP + Spacetaker
-            (1, 2): 0.6,  # AWP + Lurker
-            (1, 5): 0.65, # AWP + Anchor
-            (1, 6): 0.65, # AWP + Rotator
-            
-            # Other role pairs
-            (4, 3): 0.75, # Spacetaker + Support
-            (2, 5): 0.6,  # Lurker + Anchor
-            (3, 5): 0.7,  # Support + Anchor
-            (3, 6): 0.7,  # Support + Rotator
-            (5, 6): 0.5,  # Anchor + Rotator (neutral)
-        }
-        
-        # Get role synergy value (or default to neutral)
-        key = (role1, role2)
-        reverse_key = (role2, role1)
-        
-        if key in role_synergy_map:
-            synergy = role_synergy_map[key]
-        elif reverse_key in role_synergy_map:
-            synergy = role_synergy_map[reverse_key]
-        else:
-            # Penalty for duplicate roles (except Support)
-            if role1 == role2 and role1 != 3:  # 3 is Support
-                synergy = 0.3  # Duplicate roles have lower synergy
-            else:
-                synergy = 0.5  # Neutral synergy
+    # Role complementarity (different roles are better)
+    if 'role' in player1 and 'role' in player2:
+        role_synergy = 0.7 if player1['role'] != player2['role'] else 0.3
+    else:
+        role_synergy = 0.5
     
-    # Adjust based on play styles
-    # Assuming PIV components reflect play style
-    style_synergy = 0.5
+    # Team familiarity (same team is better)
+    if 'team' in player1 and 'team' in player2:
+        team_synergy = 0.8 if player1['team'] == player2['team'] else 0.4
+    else:
+        team_synergy = 0.5
     
-    # Combine all factors
-    final_synergy = synergy * 0.7 + style_synergy * 0.3
+    # PIV compatibility (higher is better)
+    if 'piv' in player1 and 'piv' in player2:
+        # Higher combined PIV = better synergy
+        piv_sum = float(player1['piv']) + float(player2['piv'])
+        piv_synergy = min(max(piv_sum / 4.0, 0.3), 0.9)  # Scale between 0.3-0.9
+    else:
+        piv_synergy = 0.5
     
-    # Ensure result is between 0 and 1
-    return max(0.1, min(1.0, final_synergy))
+    # Calculate overall synergy
+    synergy = base_synergy * 0.1 + role_synergy * 0.4 + team_synergy * 0.2 + piv_synergy * 0.3
+    
+    # Round to 2 decimal places
+    return round(synergy, 2)
 
 def create_app():
     """Create Flask app with API blueprint"""
+    from flask import Flask
+    
     app = Flask(__name__)
-    app.register_blueprint(bp, url_prefix="/api")
+    attach_routes(app)
+    
+    @app.route('/')
+    def index():
+        return jsonify({"message": "CS2 Analytics API", "version": "1.0"})
+    
     return app
-
-# If run directly
-if __name__ == "__main__":
-    # Run Flask app
-    app = create_app()
-    app.run(host="0.0.0.0", port=5001, debug=True)
 
 def attach_routes(app):
     """Register API blueprint with an existing Flask app"""
-    app.register_blueprint(bp, url_prefix="/api")
+    # Load data at startup
+    load_data()
+    
+    # Register API blueprint
+    app.register_blueprint(api, url_prefix='/api')
+    
     return app

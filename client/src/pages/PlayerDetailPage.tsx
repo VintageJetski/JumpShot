@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RoleBadge from "@/components/ui/role-badge";
 import ProgressMetric from "@/components/stats/ProgressMetric";
 import PlayerStatsRadarChart from "@/components/charts/PlayerStatsRadarChart";
+import { PIVComparison } from "@/components/players/PIVComparison";
 import { ArrowLeft, Rocket, Shield, Skull } from "lucide-react";
 import { useState } from "react";
 
@@ -214,6 +215,9 @@ export default function PlayerDetailPage() {
             <div>
               <h3 className="text-lg font-medium">PIV Calculation</h3>
               <div className="mt-4 space-y-4">
+                {/* PIV v1.3/v1.4 Comparison Card */}
+                <PIVComparison player={player} />
+                
                 <div className="bg-gray-800 rounded-lg p-4">
                   <div className="text-sm text-gray-400">PIV = [(RCS × ICF) + SC] × OSM</div>
                   <div className="text-sm font-mono text-white mt-2">

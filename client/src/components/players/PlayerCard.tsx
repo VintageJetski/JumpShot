@@ -3,7 +3,8 @@ import { PlayerWithPIV, PlayerRole } from "@shared/schema";
 import { motion } from 'framer-motion';
 import { useLocation } from 'wouter';
 import RoleBadge from '@/components/ui/role-badge';
-import { Shield, Target, Lightbulb, CircleDot, Users, Gauge, ArrowRight } from 'lucide-react';
+import { Shield, Target, Lightbulb, CircleDot, Users, Gauge, ArrowRight, ArrowUpDown } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface PlayerCardProps {
   player: PlayerWithPIV;
@@ -251,14 +252,38 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
         >
           <div className="flex justify-between items-center mb-1">
             <span className="text-sm text-blue-300">Player Impact Value</span>
-            <motion.span 
-              className={`text-lg font-bold ${getPivColor(pivScore)}`}
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: staggerDelay + 0.3, type: "spring" }}
-            >
-              {pivScore}
-            </motion.span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1">
+                    {player.PIV_v14 && (
+                      <ArrowUpDown 
+                        className={`h-3 w-3 ${parseFloat(player.PIV_v14) > player.piv ? 'text-green-400' : 'text-red-400'}`} 
+                      />
+                    )}
+                    <motion.span 
+                      className={`text-lg font-bold ${getPivColor(pivScore)}`}
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: staggerDelay + 0.3, type: "spring" }}
+                    >
+                      {pivScore}
+                    </motion.span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  {player.PIV_v14 ? (
+                    <div className="text-xs">
+                      <div>PIV v1.3: {pivScore}</div>
+                      <div>PIV v1.4: {Math.round(parseFloat(player.PIV_v14) * 100)}</div>
+                      <div className="text-xs mt-1 opacity-75">Click for details</div>
+                    </div>
+                  ) : (
+                    <div className="text-xs">PIV v1.3 Rating</div>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
             <motion.div 

@@ -6,11 +6,13 @@ import numpy as np
 from pathlib import Path
 import os
 import json
+from datetime import datetime
 
 # File paths
 EVENTS_PATH = 'clean/events.parquet'
 ENRICHED_PATH = 'clean/enriched.parquet'
 PIV_PATH = 'clean/piv.parquet'
+WEIGHTS_PATH = 'clean/weights/latest/learned_weights.csv'
 
 # Global data stores
 players_df = None

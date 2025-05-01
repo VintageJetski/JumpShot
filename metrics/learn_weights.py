@@ -13,7 +13,12 @@ from sklearn.model_selection import train_test_split
 INPUT_PATH = 'clean/metrics_ready.parquet'
 MATCH_RESULTS_PATH = 'attached_assets/CS Data Points (IEM_Katowice_2025) - rounds (IEM_Katowice_2025).csv'
 WEIGHTS_OUTPUT_PATH = 'clean/learned_weights.csv'
+WEIGHTS_DAILY_OUTPUT_PATH = 'clean/weights/daily/learned_weights_{date}.csv'
+WEIGHTS_LATEST_PATH = 'clean/weights/latest/learned_weights.csv'
 TIR_OUTPUT_PATH = 'clean/team_impact_ratings.parquet'
+
+# Import datetime for versioning
+from datetime import datetime
 
 # Ensure output directory exists
 output_dir = os.path.dirname(WEIGHTS_OUTPUT_PATH)
@@ -173,11 +178,38 @@ def calculate_team_impact_rating(team_metrics_df, match_results_df=None):
             for k in weights:
                 weights[k] = weights[k] / weight_sum
                 
-        # Save weights to CSV
+        # Save weights to CSV with metadata
+        today = datetime.now().strftime("%Y-%m-%d")
+        version = datetime.now().strftime("%Y%m%d%H%M")
+        
         weights_df = pd.DataFrame(list(weights.items()), columns=['feature', 'weight'])
         weights_df = weights_df.sort_values('weight', ascending=False)
+        
+        # Add metadata
+        metadata = pd.DataFrame([
+            {'feature': 'metadata_version', 'weight': version},
+            {'feature': 'metadata_date', 'weight': today},
+            {'feature': 'metadata_samples', 'weight': len(X)}
+        ])
+        
+        # Combine metadata and weights
+        weights_df = pd.concat([metadata, weights_df], ignore_index=True)
+        
+        # Save to standard location
         weights_df.to_csv(WEIGHTS_OUTPUT_PATH, index=False)
         print(f"Saved learned weights to {WEIGHTS_OUTPUT_PATH}")
+        
+        # Save daily versioned copy
+        daily_path = WEIGHTS_DAILY_OUTPUT_PATH.format(date=today)
+        os.makedirs(os.path.dirname(daily_path), exist_ok=True)
+        weights_df.to_csv(daily_path, index=False)
+        print(f"Saved daily versioned weights to {daily_path}")
+        
+        # Save latest version for frontend to access
+        latest_dir = os.path.dirname(WEIGHTS_LATEST_PATH)
+        os.makedirs(latest_dir, exist_ok=True)
+        weights_df.to_csv(WEIGHTS_LATEST_PATH, index=False)
+        print(f"Saved latest weights for frontend to {WEIGHTS_LATEST_PATH}")
         print("\nTop features by weight:")
         print(weights_df.head(10))
     

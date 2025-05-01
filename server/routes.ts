@@ -6,7 +6,9 @@ import { processPlayerStatsWithRoles } from "./newPlayerAnalytics";
 import { calculateTeamImpactRatings } from "./teamAnalytics";
 import { loadPlayerRoles } from "./roleParser";
 import { initializeRoundData } from "./roundDataLoader";
-import path from "path";
+import * as fs from 'fs';
+import * as path from 'path';
+import { parse } from 'csv-parse/sync';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize data on server start
@@ -112,6 +114,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching round metrics:', error);
       res.status(500).json({ message: 'Failed to fetch round metrics' });
+    }
+  });
+
+  // Weights endpoint
+
+  // Weights endpoint
+  app.get('/api/weights', async (req: Request, res: Response) => {
+    try {      
+      const weightsPath = path.join(process.cwd(), 'clean/weights/latest/learned_weights.csv');
+      
+      // Check if weights file exists
+      if (!fs.existsSync(weightsPath)) {
+        return res.status(404).json({
+          error: 'No learned weights available',
+          weights: {},
+          metadata: {
+            date: new Date().toISOString().split('T')[0],
+            version: 'default',
+            samples: 0
+          }
+        });
+      }
+      
+      // Read and parse weights CSV
+      const fileContent = fs.readFileSync(weightsPath, 'utf8');
+      const records = parse(fileContent, {
+        columns: true,
+        skip_empty_lines: true
+      });
+      
+      // Extract metadata
+      const metadata = {
+        date: new Date().toISOString().split('T')[0],
+        version: 'unknown',
+        samples: 0
+      };
+      
+      // Process weights
+      const weights = {};
+      
+      records.forEach(record => {
+        if (record.feature.startsWith('metadata_')) {
+          const key = record.feature.replace('metadata_', '');
+          metadata[key] = isNaN(record.weight) ? record.weight : parseFloat(record.weight);
+        } else {
+          weights[record.feature] = parseFloat(record.weight);
+        }
+      });
+      
+      res.json({
+        weights,
+        metadata
+      });
+    } catch (error) {
+      console.error('Error fetching weights:', error);
+      res.status(500).json({
+        error: `Error loading weights: ${error.message}`,
+        weights: {},
+        metadata: {
+          date: new Date().toISOString().split('T')[0],
+          version: 'error',
+          samples: 0
+        }
+      });
     }
   });
 

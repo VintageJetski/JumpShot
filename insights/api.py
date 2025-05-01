@@ -204,6 +204,131 @@ def lineup_synergy():
     
     return jsonify(synergy_data)
 
+@api.route('/recommend/replacement', methods=['POST'])
+def recommend_replacement():
+    """Recommend player replacements for a team based on PIV impact"""
+    # Get request data
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Request body is required"}), 400
+        
+    # Team to find replacements for
+    if 'teamId' not in data:
+        return jsonify({"error": "teamId is required"}), 400
+    team_id = data['teamId']
+    
+    # Optional player pool (if not provided, use all players not in the team)
+    candidate_pool = data.get('candidatePool', [])
+    
+    # Optional role to replace
+    target_role = data.get('targetRole', None)
+    
+    # Generate recommendations
+    recommendations = recommend_swap(team_id, candidate_pool, target_role)
+    
+    return jsonify(recommendations)
+
+def recommend_swap(team_id, candidate_pool=None, target_role=None):
+    """Recommend player replacements for a team based on PIV impact"""
+    global players_df
+    
+    # Check if data is loaded
+    if players_df is None or players_df.empty:
+        load_data()
+        
+    if players_df is None or players_df.empty:
+        return {"error": "No player data available"}
+        
+    # Get team players
+    if 'team' in players_df.columns:
+        # Find team name from ID
+        team_name = None
+        for _, team_row in players_df.iterrows():
+            if team_row.get('team', '').lower().replace(' ', '-') == team_id:
+                team_name = team_row.get('team')
+                break
+                
+        if not team_name:
+            return {"error": f"Team with ID {team_id} not found"}
+            
+        # Get all players in the team
+        team_players = players_df[players_df['team'] == team_name].copy()
+    else:
+        return {"error": "Team data not available"}
+        
+    if len(team_players) == 0:
+        return {"error": f"No players found for team {team_id}"}
+        
+    # Filter by role if specified
+    if target_role and 'role' in team_players.columns:
+        team_players_to_replace = team_players[team_players['role'] == target_role]
+        if len(team_players_to_replace) == 0:
+            return {"error": f"No players with role {target_role} found in team {team_id}"}
+    else:
+        team_players_to_replace = team_players
+        
+    # Calculate team's average PIV
+    if 'PIV_v14' in team_players.columns:
+        piv_col = 'PIV_v14'
+    elif 'piv' in team_players.columns:
+        piv_col = 'piv'
+    else:
+        return {"error": "PIV data not available"}
+        
+    team_avg_piv = team_players[piv_col].mean()
+    
+    # Get candidate players (players not in the team)
+    if candidate_pool and len(candidate_pool) > 0:
+        # Use provided candidate pool
+        if 'steam_id' in players_df.columns:
+            candidates = players_df[players_df['steam_id'].isin(candidate_pool)].copy()
+        else:
+            return {"error": "Player ID column not found"}
+    else:
+        # Use all players not in the team
+        candidates = players_df[players_df['team'] != team_name].copy()
+        
+    # Filter candidates by role if target_role is specified
+    if target_role and 'role' in candidates.columns:
+        candidates = candidates[candidates['role'] == target_role]
+        
+    if len(candidates) == 0:
+        return {"error": "No suitable candidates found"}
+        
+    # Calculate projected PIV gain
+    candidates['projected_gain'] = candidates[piv_col] - team_avg_piv
+    
+    # Sort by projected gain (descending)
+    candidates = candidates.sort_values('projected_gain', ascending=False)
+    
+    # Get top 10 candidates
+    top_candidates = candidates.head(10)
+    
+    # Prepare result
+    result = {
+        "team": {
+            "id": team_id,
+            "name": team_name,
+            "avg_piv": float(team_avg_piv)
+        },
+        "recommendations": []
+    }
+    
+    # Add recommendations
+    for _, candidate in top_candidates.iterrows():
+        recommendation = {
+            "id": candidate['steam_id'] if 'steam_id' in candidate else '',
+            "name": candidate['name'] if 'name' in candidate else '',
+            "team": candidate['team'] if 'team' in candidate else '',
+            "role": candidate['role'] if 'role' in candidate else '',
+            "piv": float(candidate[piv_col]),
+            "projected_gain": float(candidate['projected_gain']),
+            "percentage_improvement": float(candidate['projected_gain'] / team_avg_piv * 100) if team_avg_piv > 0 else 0
+        }
+        result["recommendations"].append(recommendation)
+        
+    return result
+
 def synergy_matrix(player_ids):
     """Calculate synergy ratings between players"""
     global players_df
@@ -259,35 +384,54 @@ def synergy_matrix(player_ids):
     return matrix
 
 def calculate_player_synergy(player1, player2):
-    """Calculate synergy score between two players"""
-    # Base synergy score
-    base_synergy = 0.5
+    """Calculate synergy score between two players based on complementary metrics"""
+    # Extract needed metrics with fallbacks
+    p1_flash_efficiency = float(player1.get('flash_efficiency', 0))
+    p1_utility_dmg = float(player1.get('utility_dmg_round', 0))
+    p2_entry_ratio = float(player2.get('entry_ratio', 0)) 
+    p2_kd = float(player2.get('kd', 1.0))
     
-    # Role complementarity (different roles are better)
-    if 'role' in player1 and 'role' in player2:
-        role_synergy = 0.7 if player1['role'] != player2['role'] else 0.3
-    else:
-        role_synergy = 0.5
+    # Base synergy calculation from example code (normalized to 0-1 scale)
+    base_synergy = (
+        (p1_flash_efficiency * p2_entry_ratio) +
+        (p1_utility_dmg * p2_kd)
+    ) / 2
     
-    # Team familiarity (same team is better)
-    if 'team' in player1 and 'team' in player2:
-        team_synergy = 0.8 if player1['team'] == player2['team'] else 0.4
-    else:
-        team_synergy = 0.5
+    # Normalize to reasonable range (0.3-0.9)
+    base_synergy = min(max(base_synergy * 0.6 + 0.3, 0.3), 0.9)
     
-    # PIV compatibility (higher is better)
-    if 'piv' in player1 and 'piv' in player2:
-        # Higher combined PIV = better synergy
-        piv_sum = float(player1['piv']) + float(player2['piv'])
-        piv_synergy = min(max(piv_sum / 4.0, 0.3), 0.9)  # Scale between 0.3-0.9
-    else:
-        piv_synergy = 0.5
+    # Role synergy modifiers
+    role_synergy = 0
     
-    # Calculate overall synergy
-    synergy = base_synergy * 0.1 + role_synergy * 0.4 + team_synergy * 0.2 + piv_synergy * 0.3
+    # Extract roles with fallbacks
+    p1_role = str(player1.get('role', '')).lower()
+    p2_role = str(player2.get('role', '')).lower()
     
-    # Round to 2 decimal places
-    return round(synergy, 2)
+    # Higher synergy between complementary roles
+    role_pairs = {
+        ('support', 'spacetaker'): 0.15,  # Support players work well with entry fraggers
+        ('support', 'awp'): 0.2,         # Support players help AWPers 
+        ('awp', 'spacetaker'): 0.1,      # AWPers create space for entry
+        ('igl', 'support'): 0.15,        # IGLs often work with support players
+        ('lurker', 'spacetaker'): 0.1,   # Lurkers benefit from entry distraction
+        ('anchor', 'rotator'): 0.2,      # Good CT side synergy
+    }
+    
+    # Check if this role combination has a synergy bonus
+    for (role1, role2), bonus in role_pairs.items():
+        if (p1_role == role1 and p2_role == role2) or \
+           (p1_role == role2 and p2_role == role1):
+            role_synergy = bonus
+            break
+    
+    # Team synergy (players from same team have higher baseline synergy)
+    team_synergy = 0.1 if player1.get('team') == player2.get('team') else 0
+    
+    # Combine all synergy factors
+    total_synergy = base_synergy * (1 + role_synergy + team_synergy)
+    
+    # Cap at 1.0 and round to 2 decimal places  
+    return round(min(total_synergy, 1.0), 2)
 
 def create_app():
     """Create Flask app with API blueprint"""

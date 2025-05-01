@@ -385,6 +385,53 @@ def synergy_matrix(player_ids):
     
     return matrix
 
+@api.route('/weights', methods=['GET'])
+def get_weights():
+    """Return the current learned weights for PIV and TIR calculations"""
+    try:
+        # Check if weights file exists
+        if not os.path.exists(WEIGHTS_PATH):
+            return jsonify({
+                "error": "No learned weights available",
+                "weights": {},
+                "metadata": {
+                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "version": "default",
+                    "samples": 0
+                }
+            }), 404
+            
+        # Load weights from CSV
+        weights_df = pd.read_csv(WEIGHTS_PATH)
+        
+        # Extract metadata
+        metadata = {
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "version": "unknown",
+            "samples": 0
+        }
+        
+        # Get metadata rows
+        for _, row in weights_df.iterrows():
+            if row['feature'].startswith('metadata_'):
+                key = row['feature'].replace('metadata_', '')
+                metadata[key] = row['weight']
+        
+        # Filter out metadata rows
+        weights_df = weights_df[~weights_df['feature'].str.startswith('metadata_')]
+        
+        # Convert to dictionary
+        weights = {}
+        for _, row in weights_df.iterrows():
+            weights[row['feature']] = float(row['weight'])
+            
+        return jsonify({
+            "weights": weights,
+            "metadata": metadata
+        })
+    except Exception as e:
+        return jsonify({"error": f"Error loading weights: {str(e)}"}), 500
+
 def calculate_player_synergy(player1, player2):
     """Calculate synergy score between two players based on complementary metrics"""
     # Extract needed metrics with fallbacks

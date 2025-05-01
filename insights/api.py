@@ -77,6 +77,10 @@ def players():
         filtered_df = players_df[field_list]
     else:
         filtered_df = players_df
+        
+    # Add PIV_v14 to filtered_df if it exists in the original dataframe but not in filtered
+    if 'PIV_v14' in players_df.columns and 'PIV_v14' not in filtered_df.columns:
+        filtered_df = filtered_df.assign(PIV_v14=players_df['PIV_v14'])
     
     # Convert DataFrame to list of dictionaries for JSON response
     players_list = filtered_df.to_dict(orient='records')
@@ -110,6 +114,10 @@ def player(steam_id):
     
     # Convert single row to dictionary
     player_data = player_row.iloc[0].to_dict()
+    
+    # Add PIV_v14 if it exists in the original dataframe but not in the player data
+    if 'PIV_v14' in players_df.columns and 'PIV_v14' not in player_data:
+        player_data['PIV_v14'] = float(players_df.loc[player_row.index[0], 'PIV_v14'])
     
     # Ensure player has an ID
     if 'id' not in player_data:

@@ -11,8 +11,11 @@ python clean.py
 echo "Step 2: Calculating core metrics with metrics/core.py"
 python -m metrics.core
 
-# Run the simplified PIV calculation
-echo "Step 3: Calculating PIV values with metrics/simple_piv.py"
+# Run the PIV calculations (both simple and v1.4)
+echo "Step 3a: Calculating simple PIV values with metrics/simple_piv.py"
 python -m metrics.simple_piv
+
+echo "Step 3b: Calculating PIV v1.4 values with metrics/piv_v14.py"
+python -m metrics.piv_v14
 
 echo "Data pipeline refresh complete!"

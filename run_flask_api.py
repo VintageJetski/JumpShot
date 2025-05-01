@@ -22,6 +22,10 @@ def run_data_pipeline():
         print("Running metrics/simple_piv.py")
         subprocess.call(['python', '-m', 'metrics.simple_piv'])
         
+        # Process with PIV v1.4
+        print("Running metrics/piv_v14.py")
+        subprocess.call(['python', '-m', 'metrics.piv_v14'])
+        
         # At this point we have all the metrics ready
         # We're temporarily using simple_piv.py instead of the full piv.py
         # learn_weights.py will be added in future iterations

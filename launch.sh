@@ -1,20 +1,29 @@
-#!/usr/bin/env bash
+#!/bin/bash
+# launch.sh - Launch both the frontend and backend servers
 
-# Start the file watcher in the background
-./watch.sh &
-WATCH_PID=$!
+echo "Starting CS2 Performance Analytics Platform..."
 
-# Store PID for cleanup on exit
-echo $WATCH_PID > .watch.pid
+# Create raw_events directory if it doesn't exist
+mkdir -p raw_events clean
 
-# Echo some helpful information
-echo "File watcher started with PID $WATCH_PID"
-echo "It will automatically run refresh.sh when new CSV files are dropped into raw_events/"
-echo "Starting application server..."
-echo "-----------------------------------------"
+# Run the data pipeline to ensure data is up to date
+echo "Running data pipeline..."
+./refresh.sh
 
-# Start the application
+# Start the Flask API server in the background
+echo "Starting Flask API server..."
+python run_flask_api.py &
+FLASK_PID=$!
+
+# Give the Flask server a moment to start up
+sleep 2
+
+echo "Flask API server running on port 5001"
+echo "Access API endpoints at: http://localhost:5001/api/players"
+
+# Start the frontend server
+echo "Starting frontend server..."
 npm run dev
 
-# Cleanup watch process when this script exits
-trap "kill $WATCH_PID 2>/dev/null; rm .watch.pid 2>/dev/null" EXIT
+# If the frontend server stops, kill the Flask server
+kill $FLASK_PID

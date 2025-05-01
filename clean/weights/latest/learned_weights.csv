@@ -1,0 +1,10 @@
+feature,weight
+metadata_version,1.0
+metadata_date,2025-05-01
+metadata_samples,148
+kd,0.24
+adr,0.19
+flash_assists,0.15
+utility_dmg,0.12
+trade_success,0.16
+entry_success,0.14

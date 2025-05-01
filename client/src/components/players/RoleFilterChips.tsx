@@ -117,7 +117,7 @@ export default function RoleFilterChips({
             </span>
             {isActive && (
               <motion.span 
-                className="absolute inset-0 rounded-full bg-blue-500/10"
+                className="absolute inset-0 rounded-full bg-blue-500/10 z-[-1]"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 layoutId="roleHighlight"

@@ -20,9 +20,9 @@ export default function PlayersPage() {
   const [roleFilter, setRoleFilter] = useState<string>("All Roles");
   const [viewMode, setViewMode] = useState<"cards" | "table" | "teams">("cards");
   
-  // Fetch players data
+  // Fetch all players data (we'll filter client-side for more flexibility)
   const { data: players, isLoading, isError } = useQuery<PlayerWithPIV[]>({
-    queryKey: [roleFilter === "All Roles" ? "/api/players" : `/api/players?role=${roleFilter}`],
+    queryKey: ["/api/players"],
   });
 
   // Generate teams data from players
@@ -42,24 +42,51 @@ export default function PlayersPage() {
     }
   }, [players]);
 
-  // Apply search filter
+  // Helper function to check if a player has a specific role
+  const hasRole = (player: PlayerWithPIV, role: string): boolean => {
+    if (role === "All Roles") return true;
+    
+    return (
+      player.role === role ||
+      player.ctRole === role ||
+      player.tRole === role ||
+      (role === PlayerRole.IGL && player.isIGL === true)
+    );
+  };
+  
+  // Apply search and role filters
   const filteredPlayers = players ? players
-    .filter(player => 
-      player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      player.team.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    .filter(player => {
+      // Text search filter
+      const matchesSearch = 
+        player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        player.team.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Role filter
+      const matchesRole = hasRole(player, roleFilter);
+      
+      return matchesSearch && matchesRole;
+    })
     .sort((a, b) => b.piv - a.piv) : [];
 
-  // Extract top players by role
+  // Extract top players by role with comprehensive role checking
+  const findTopPlayerByRole = (role: PlayerRole) => {
+    return filteredPlayers.find(p => 
+      p.role === role || 
+      p.ctRole === role || 
+      p.tRole === role
+    ) || null;
+  };
+  
   const topPlayersByRole = {
     highest: filteredPlayers[0] || null,
-    awper: filteredPlayers.find(p => p.role === PlayerRole.AWP) || null,
-    lurker: filteredPlayers.find(p => p.role === PlayerRole.Lurker) || null,
-    igl: filteredPlayers.find(p => p.role === PlayerRole.IGL) || null,
-    spacetaker: filteredPlayers.find(p => p.role === PlayerRole.Spacetaker) || null,
-    anchor: filteredPlayers.find(p => p.role === PlayerRole.Anchor) || null,
-    support: filteredPlayers.find(p => p.role === PlayerRole.Support) || null,
-    rotator: filteredPlayers.find(p => p.role === PlayerRole.Rotator) || null,
+    awper: findTopPlayerByRole(PlayerRole.AWP),
+    lurker: findTopPlayerByRole(PlayerRole.Lurker),
+    igl: findTopPlayerByRole(PlayerRole.IGL),
+    spacetaker: findTopPlayerByRole(PlayerRole.Spacetaker),
+    anchor: findTopPlayerByRole(PlayerRole.Anchor),
+    support: findTopPlayerByRole(PlayerRole.Support),
+    rotator: findTopPlayerByRole(PlayerRole.Rotator),
   };
 
   // Table columns definition
@@ -389,10 +416,7 @@ export default function PlayersPage() {
                       <TeamGroup 
                         key={teamName} 
                         teamName={teamName} 
-                        players={players.filter(p => 
-                          roleFilter === "All Roles" || p.role === roleFilter ||
-                          p.ctRole === roleFilter || p.tRole === roleFilter
-                        )} 
+                        players={players.filter(p => hasRole(p, roleFilter))} 
                         expanded={idx === 0} // First team starts expanded
                       />
                     ))

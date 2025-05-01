@@ -76,4 +76,26 @@
   .section-appear {
     @apply animate-in slide-in-from-bottom-2 duration-500;
   }
+  
+  /* CS2 background overlay */
+  .cs2-bg {
+    @apply relative overflow-hidden;
+  }
+  
+  .cs2-bg::before {
+    @apply content-[''] absolute inset-0 bg-black/80 z-[-1];
+  }
+  
+  .cs2-bg::after {
+    @apply content-[''] absolute inset-0 bg-[url('/bg-pattern.png')] bg-repeat opacity-[0.15] z-[-1];
+  }
+  
+  /* Tab styling */
+  .data-tab[data-state='active'] {
+    @apply bg-gradient text-white shadow-md shadow-blue-500/30 font-medium;
+  }
+  
+  .data-tab {
+    @apply border-0 text-blue-300 hover:text-white transition-all duration-200;
+  }
 }

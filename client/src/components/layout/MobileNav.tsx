@@ -7,15 +7,18 @@ import {
   BarChart2, 
   ArrowRightLeft, 
   Percent,
-  Menu,
   Image,
-  Search
+  Search,
+  PieChart,
+  Sigma,
+  Sparkles
 } from "lucide-react";
 import {
   Sheet,
   SheetContent,
   SheetTrigger
 } from "@/components/ui/sheet";
+import { motion } from "framer-motion";
 
 export default function MobileNav() {
   const [location] = useLocation();
@@ -24,95 +27,175 @@ export default function MobileNav() {
     return location === path;
   };
 
+  const MobileNavItem = ({ href, icon, label, isActive }: { href: string; icon: React.ReactNode; label: string; isActive: boolean }) => (
+    <Link href={href} 
+      className={`flex flex-col items-center px-3 py-2 relative ${isActive ? "text-blue-400" : "text-blue-200/60"}`}
+    >
+      {isActive && (
+        <motion.div 
+          className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-400 rounded-full"
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        />
+      )}
+      <div className="relative">
+        {isActive && (
+          <motion.div 
+            className="absolute inset-0 bg-blue-500/20 blur-sm rounded-full"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          />
+        )}
+        <div className="relative">
+          {icon}
+        </div>
+      </div>
+      <span className="text-xs mt-1.5 font-medium">{label}</span>
+    </Link>
+  );
+
+  const SheetNavItem = ({ href, icon, label, isActive }: { href: string; icon: React.ReactNode; label: string; isActive: boolean }) => (
+    <Link href={href}
+      className={`flex items-center px-4 py-3 rounded-md transition-all duration-200 ${isActive ? 
+        "bg-gradient border-glow text-white" : 
+        "text-blue-50/80 hover:text-blue-100 hover:bg-black/30"
+      }`}
+    >
+      <div className={`h-5 w-5 mr-3 ${isActive ? "text-white" : "text-blue-300"}`}>
+        {icon}
+      </div>
+      <span className="font-medium">{label}</span>
+      {isActive && (
+        <div className="ml-auto w-1.5 h-6 rounded-full bg-blue-300/80"></div>
+      )}
+    </Link>
+  );
+
   return (
-    <nav className="md:hidden bg-background-light py-2 px-4 border-t border-gray-700">
+    <nav className="md:hidden glassmorphism py-3 px-4 border-t border-white/5 z-40">
       <div className="flex justify-around">
-        <Link href="/players" 
-          className={`flex flex-col items-center px-3 py-2 ${
-            isActive("/") || isActive("/players") ? "text-primary" : "text-gray-400"
-          }`}>
-          <Users className="h-6 w-6" />
-          <span className="text-xs mt-1">Players</span>
-        </Link>
+        <MobileNavItem 
+          href="/players" 
+          icon={<Users className="h-6 w-6" />} 
+          label="Players" 
+          isActive={isActive("/") || isActive("/players")} 
+        />
         
-        <Link href="/teams"
-          className={`flex flex-col items-center px-3 py-2 ${
-            isActive("/teams") ? "text-primary" : "text-gray-400"
-          }`}>
-          <UsersRound className="h-6 w-6" />
-          <span className="text-xs mt-1">Teams</span>
-        </Link>
+        <MobileNavItem 
+          href="/teams" 
+          icon={<UsersRound className="h-6 w-6" />} 
+          label="Teams" 
+          isActive={isActive("/teams")} 
+        />
         
         <Sheet>
-          <SheetTrigger className={`flex flex-col items-center px-3 py-2 ${
-            isActive("/player-comparisons") || isActive("/match-predictor") || isActive("/match-infographic") || isActive("/scout") || isActive("/statistical-analysis") ? "text-primary" : "text-gray-400"
+          <SheetTrigger className={`flex flex-col items-center px-3 py-2 relative ${
+            isActive("/player-comparisons") || 
+            isActive("/match-predictor") || 
+            isActive("/match-infographic") || 
+            isActive("/scout") || 
+            isActive("/statistical-analysis") || 
+            isActive("/data-visualization") || 
+            isActive("/advanced-analytics") ? 
+            "text-blue-400" : "text-blue-200/60"
           }`}>
-            <BarChart2 className="h-6 w-6" />
-            <span className="text-xs mt-1">Advanced</span>
+            <div className="relative">
+              {(isActive("/player-comparisons") || 
+                isActive("/match-predictor") || 
+                isActive("/match-infographic") || 
+                isActive("/scout") || 
+                isActive("/statistical-analysis") || 
+                isActive("/data-visualization") || 
+                isActive("/advanced-analytics")) && (
+                <motion.div 
+                  className="absolute inset-0 bg-blue-500/20 blur-sm rounded-full"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+              )}
+              <div className="relative">
+                <BarChart2 className="h-6 w-6" />
+              </div>
+            </div>
+            <span className="text-xs mt-1.5 font-medium">Advanced</span>
           </SheetTrigger>
-          <SheetContent side="bottom" className="rounded-t-xl h-auto bg-background-light">
+          <SheetContent side="bottom" className="glassmorphism rounded-t-xl h-auto border-t border-white/10 backdrop-blur-xl p-4">
             <div className="py-4 space-y-4">
-              <h3 className="text-sm text-gray-400 uppercase font-semibold px-4">Advanced Analytics</h3>
-              <div className="space-y-1">
-                <Link href="/player-comparisons"
-                  className={`flex items-center px-4 py-3 ${
-                    isActive("/player-comparisons") ? "bg-primary/20 text-primary" : "text-gray-300 hover:bg-gray-700/50"
-                  } rounded-md`}>
-                  <ArrowRightLeft className="h-5 w-5 mr-3" />
-                  <span>Player Comparisons</span>
-                </Link>
+              <div className="flex items-center px-4 mb-2">
+                <Sparkles className="h-4 w-4 text-blue-400 mr-2" />
+                <h3 className="text-sm text-blue-300 uppercase font-semibold">Advanced Analytics</h3>
+                <div className="ml-2 h-px flex-grow bg-gradient-to-r from-blue-500/50 to-transparent"></div>
+              </div>
+              <div className="space-y-1.5">
+                <SheetNavItem 
+                  href="/player-comparisons" 
+                  icon={<ArrowRightLeft />} 
+                  label="Player Comparisons" 
+                  isActive={isActive("/player-comparisons")} 
+                />
                 
-                <Link href="/match-predictor"
-                  className={`flex items-center px-4 py-3 ${
-                    isActive("/match-predictor") ? "bg-primary/20 text-primary" : "text-gray-300 hover:bg-gray-700/50"
-                  } rounded-md`}>
-                  <Percent className="h-5 w-5 mr-3" />
-                  <span>Match Predictor</span>
-                </Link>
+                <SheetNavItem 
+                  href="/match-predictor" 
+                  icon={<Percent />} 
+                  label="Match Predictor" 
+                  isActive={isActive("/match-predictor")} 
+                />
                 
-                <Link href="/match-infographic"
-                  className={`flex items-center px-4 py-3 ${
-                    isActive("/match-infographic") ? "bg-primary/20 text-primary" : "text-gray-300 hover:bg-gray-700/50"
-                  } rounded-md`}>
-                  <Image className="h-5 w-5 mr-3" />
-                  <span>Match Infographic</span>
-                </Link>
+                <SheetNavItem 
+                  href="/match-infographic" 
+                  icon={<Image />} 
+                  label="Match Infographic" 
+                  isActive={isActive("/match-infographic")} 
+                />
                 
-                <Link href="/scout"
-                  className={`flex items-center px-4 py-3 ${
-                    isActive("/scout") ? "bg-primary/20 text-primary" : "text-gray-300 hover:bg-gray-700/50"
-                  } rounded-md`}>
-                  <Search className="h-5 w-5 mr-3" />
-                  <span>Scout</span>
-                </Link>
+                <SheetNavItem 
+                  href="/scout" 
+                  icon={<Search />} 
+                  label="Scout" 
+                  isActive={isActive("/scout")} 
+                />
                 
-                <Link href="/statistical-analysis"
-                  className={`flex items-center px-4 py-3 ${
-                    isActive("/statistical-analysis") ? "bg-primary/20 text-primary" : "text-gray-300 hover:bg-gray-700/50"
-                  } rounded-md`}>
-                  <BarChart2 className="h-5 w-5 mr-3" />
-                  <span>Statistical Analysis</span>
-                </Link>
+                <SheetNavItem 
+                  href="/statistical-analysis" 
+                  icon={<BarChart2 />} 
+                  label="Statistical Analysis" 
+                  isActive={isActive("/statistical-analysis")} 
+                />
+
+                <SheetNavItem 
+                  href="/data-visualization" 
+                  icon={<PieChart />} 
+                  label="Data Visualization" 
+                  isActive={isActive("/data-visualization")} 
+                />
+                
+                <SheetNavItem 
+                  href="/advanced-analytics" 
+                  icon={<Sigma />} 
+                  label="Advanced Analytics" 
+                  isActive={isActive("/advanced-analytics")} 
+                />
               </div>
             </div>
           </SheetContent>
         </Sheet>
         
-        <Link href="/role-weightings"
-          className={`flex flex-col items-center px-3 py-2 ${
-            isActive("/role-weightings") ? "text-primary" : "text-gray-400"
-          }`}>
-          <LineChart className="h-6 w-6" />
-          <span className="text-xs mt-1">Roles</span>
-        </Link>
+        <MobileNavItem 
+          href="/role-weightings" 
+          icon={<LineChart className="h-6 w-6" />} 
+          label="Roles" 
+          isActive={isActive("/role-weightings")} 
+        />
         
-        <Link href="/documentation"
-          className={`flex flex-col items-center px-3 py-2 ${
-            isActive("/documentation") ? "text-primary" : "text-gray-400"
-          }`}>
-          <FileText className="h-6 w-6" />
-          <span className="text-xs mt-1">Docs</span>
-        </Link>
+        <MobileNavItem 
+          href="/documentation" 
+          icon={<FileText className="h-6 w-6" />} 
+          label="Docs" 
+          isActive={isActive("/documentation")} 
+        />
       </div>
     </nav>
   );

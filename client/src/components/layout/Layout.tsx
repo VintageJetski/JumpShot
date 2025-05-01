@@ -1,26 +1,42 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Sidebar from "./Sidebar";
 import MobileNav from "./MobileNav";
-import { BarChartBig } from "lucide-react";
+import { BarChartBig, BarChart } from "lucide-react";
+import { useLocation } from "wouter";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export default function Layout({ children }: LayoutProps) {
+  const [location] = useLocation();
+  
+  // Reset scroll position when changing pages
+  useEffect(() => {
+    const contentArea = document.getElementById('content-area');
+    if (contentArea) {
+      contentArea.scrollTop = 0;
+    }
+  }, [location]);
+
   return (
-    <div className="flex flex-col h-screen bg-background-dark text-gray-100">
+    <div className="flex flex-col h-screen">
       {/* Header */}
-      <header className="bg-background-light py-4 px-6 shadow-md">
+      <header className="glassmorphism py-4 px-6 border-b border-white/5 shadow-lg sticky top-0 z-50">
         <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <BarChartBig className="h-8 w-8 text-primary" />
-            <h1 className="text-xl font-bold">CS2 Player Impact Analytics</h1>
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-sky-400 rounded-full blur-sm opacity-75"></div>
+              <div className="relative bg-black p-1.5 rounded-full">
+                <BarChartBig className="h-7 w-7 text-blue-400" />
+              </div>
+            </div>
+            <h1 className="text-xl font-bold text-gradient">CS2 Analytics Platform</h1>
           </div>
           <div className="hidden md:flex items-center space-x-4">
-            <span className="text-sm text-gray-400">Data Source: IEM Katowice 2025</span>
-            <div className="bg-primary/20 rounded-full px-3 py-1 text-xs font-medium text-primary">
-              CSDK v1.0
+            <span className="text-sm text-blue-200/60">Data Source: IEM Katowice 2025</span>
+            <div className="border border-blue-500/30 bg-blue-950/30 shadow-inner shadow-blue-500/5 rounded-full px-4 py-1.5 text-xs font-medium text-blue-300">
+              CSDK v1.4
             </div>
           </div>
         </div>
@@ -32,8 +48,10 @@ export default function Layout({ children }: LayoutProps) {
         <Sidebar />
 
         {/* Content Area */}
-        <div className="flex-grow overflow-y-auto p-4 md:p-6 bg-gray-900">
-          {children}
+        <div id="content-area" className="flex-grow overflow-y-auto p-4 md:p-6">
+          <div className="page-transition">
+            {children}
+          </div>
         </div>
       </main>
 

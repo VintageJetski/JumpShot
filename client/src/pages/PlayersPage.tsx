@@ -12,6 +12,7 @@ import PlayerCard from "@/components/players/PlayerCard";
 import TeamGroup from "@/components/players/TeamGroup";
 import RoleFilterChips from "@/components/players/RoleFilterChips";
 import EnhancedStatsCard from "@/components/stats/EnhancedStatsCard";
+import StatisticalOutliers from "@/components/players/StatisticalOutliers";
 
 export default function PlayersPage() {
   const [, setLocation] = useLocation();
@@ -342,6 +343,11 @@ export default function PlayersPage() {
           </div>
         </motion.div>
       </div>
+      
+      {/* Statistical Outliers - Players excelling in specific metrics */}
+      {!isLoading && !isError && players && (
+        <StatisticalOutliers players={players} />
+      )}
       
       {/* Role Filter */}
       <RoleFilterChips 

@@ -3,7 +3,7 @@
 import subprocess
 import time
 import os
-from insights.main import app
+from insights.main import create_app
 
 def run_data_pipeline():
     """Run the complete data pipeline as a background process"""
@@ -43,7 +43,8 @@ def main():
     
     # Start Flask API
     print(f"Starting Flask API on port {port}")
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app = create_app()
+    app.run(host='0.0.0.0', port=port, debug=False)  # Debug mode off to avoid reloading issues
 
 if __name__ == "__main__":
     main()

@@ -1,22 +1,32 @@
-#!/usr/bin/env bash
+#!/bin/bash
+# watch.sh - Watch for changes in the raw_events directory and refresh the data pipeline
 
-# Initialize checksum
-CSVS_CHECKSUM=$(ls -1 raw_events/*.csv 2>/dev/null | md5sum)
+echo "Starting data pipeline watch..."
 
-# Watch for changes to CSV files
+# Create raw_events directory if it doesn't exist
+mkdir -p raw_events
+
+# Initial refresh
+./refresh.sh
+
+echo "Watching for changes in raw_events directory..."
+echo "Press Ctrl+C to stop watching."
+
+# This is a simple implementation without inotify for portability
 while true; do
-  # Sleep for 60 seconds
-  sleep 60
+  # Check if any files in raw_events are newer than the pipeline output
+  NEWEST_RAW=$(find raw_events -type f -name "*.csv" -printf "%T@ %p\n" 2>/dev/null | sort -n | tail -1 | cut -f2- -d" ")
+  NEWEST_RAW_TIME=$(stat -c %Y "$NEWEST_RAW" 2>/dev/null || echo 0)
   
-  # Calculate new checksum
-  NEW_CHECKSUM=$(ls -1 raw_events/*.csv 2>/dev/null | md5sum)
+  NEWEST_CLEAN=$(find clean -type f -name "*.parquet" -printf "%T@ %p\n" 2>/dev/null | sort -n | tail -1 | cut -f2- -d" ")
+  NEWEST_CLEAN_TIME=$(stat -c %Y "$NEWEST_CLEAN" 2>/dev/null || echo 0)
   
-  # If checksum has changed, run refresh
-  if [ "$CSVS_CHECKSUM" != "$NEW_CHECKSUM" ]; then
-    echo "CSV files changed, running refresh..."
+  # If raw files are newer than clean files, refresh pipeline
+  if [ "$NEWEST_RAW_TIME" -gt "$NEWEST_CLEAN_TIME" ]; then
+    echo "Changes detected in raw_events directory."
     ./refresh.sh
-    
-    # Update checksum
-    CSVS_CHECKSUM=$NEW_CHECKSUM
   fi
+  
+  # Sleep for 30 seconds before checking again
+  sleep 30
 done

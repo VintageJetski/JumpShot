@@ -1,95 +1,96 @@
-import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Search, Users, GitMerge, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import TeamChemistrySimulator from "@/components/scout/TeamChemistrySimulator";
-
-// Define the tabs for the Scout page
-enum ScoutTab {
-  TeamSelector = "team-selector",
-  PlayerSearch = "player-search"
-}
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import TeamReplacementRecommender from '@/components/scouting/TeamReplacementRecommender';
+import LineupSynergyMatrix from '@/components/scouting/LineupSynergyMatrix';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Users, UserCheck, UserSearch, Loader2 } from 'lucide-react';
 
 export default function ScoutPage() {
-  const [activeTab, setActiveTab] = useState<ScoutTab>(ScoutTab.TeamSelector);
-  const [location, setLocation] = useLocation();
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-
-  // Parse URL parameters when the component mounts or location changes
-  useEffect(() => {
-    // Extract the selectedPlayer parameter from the URL if it exists
-    const params = new URLSearchParams(location.split('?')[1]);
-    const playerParam = params.get('selectedPlayer');
-    
-    if (playerParam) {
-      setSelectedPlayerId(playerParam);
-      // Ensure we're on the team chemistry tab
-      setActiveTab(ScoutTab.TeamSelector);
-    }
-  }, [location]);
-
+  const [selectedTeam, setSelectedTeam] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<string>("replacement");
+  
+  // Fetch teams for dropdown
+  const { data: teams, isLoading } = useQuery({
+    queryKey: ["/api/teams"],
+  });
+  
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Move Scout 2.0 header to full width at the top */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Scout 2.0</h1>
-        <p className="text-muted-foreground mt-1">
-          Build, optimize, and analyze CS2 team compositions
+    <div className="container py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">CS2 Scouting System</h1>
+        <p className="text-gray-500 dark:text-gray-400 max-w-3xl">
+          Use advanced analytics to find optimal player replacements and analyze potential lineups for your team.
         </p>
       </div>
-
-      <div className="flex justify-end mb-6">
-        <Tabs 
-          value={activeTab} 
-          onValueChange={(value) => setActiveTab(value as ScoutTab)}
-          className="w-full md:w-auto"
-        >
-          <TabsList className="grid grid-cols-2 w-full md:w-[400px]">
-            <TabsTrigger value={ScoutTab.TeamSelector} className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              <span>Team Chemistry</span>
+      
+      <Tabs defaultValue="replacement" onValueChange={setActiveTab} className="w-full">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+          <TabsList className="mb-4 md:mb-0">
+            <TabsTrigger value="replacement" className="flex items-center gap-2">
+              <UserCheck className="h-4 w-4" />
+              Replacement Scout
             </TabsTrigger>
-            <TabsTrigger value={ScoutTab.PlayerSearch} className="flex items-center gap-2">
-              <Search className="h-4 w-4" />
-              <span>Player Search</span>
+            <TabsTrigger value="synergy" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Lineup Synergy
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value={ScoutTab.TeamSelector} className="mt-6">
-            <TeamChemistrySimulator selectedPlayerId={selectedPlayerId} />
-          </TabsContent>
-          
-          <TabsContent value={ScoutTab.PlayerSearch} className="mt-6">
-            <Card className="mb-6">
+          {activeTab === "replacement" && (
+            <div className="w-full md:w-64">
+              <Select
+                value={selectedTeam}
+                onValueChange={setSelectedTeam}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a team" />
+                </SelectTrigger>
+                <SelectContent>
+                  {isLoading ? (
+                    <div className="flex items-center justify-center py-2">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      <span>Loading teams...</span>
+                    </div>
+                  ) : (
+                    teams?.map(team => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+        
+        <TabsContent value="replacement" className="space-y-4">
+          {selectedTeam ? (
+            <TeamReplacementRecommender teamId={selectedTeam} />
+          ) : (
+            <Card>
               <CardHeader>
-                <CardTitle>Player Scout</CardTitle>
+                <CardTitle>Player Replacement Scout</CardTitle>
                 <CardDescription>
-                  Search for players that match specific role requirements and team synergy
+                  Select a team to get started
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center justify-center p-8 text-center">
-                  <Search className="h-12 w-12 text-primary mb-4" />
-                  <h3 className="text-xl font-bold mb-2">Find Players</h3>
-                  <p className="text-muted-foreground max-w-md mb-6">
-                    Our enhanced player search lets you filter by role, stats, and more.
-                    Find the perfect player for your team based on performance metrics and team fit.
-                  </p>
-                  <Button 
-                    onClick={() => setLocation('/scout/search-players')}
-                    className="gap-2"
-                  >
-                    Go to Player Search
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <UserSearch className="h-16 w-16 text-muted-foreground/30 mb-4" />
+                <p className="text-center text-muted-foreground max-w-md">
+                  Please select a team from the dropdown above to see player replacement recommendations
+                </p>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="synergy" className="space-y-4">
+          <LineupSynergyMatrix />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

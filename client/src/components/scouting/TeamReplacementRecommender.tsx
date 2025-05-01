@@ -55,14 +55,14 @@ export default function TeamReplacementRecommender({ teamId, className = '' }: P
   const handleGetRecommendations = async () => {
     try {
       // Call the recommendation API
-      const response = await apiRequest('/api/recommend/replacement', {
+      await apiRequest('/api/recommend/replacement', {
         method: 'POST',
         body: JSON.stringify({
           teamId,
           targetRole: targetRole || undefined,
           candidatePool: selectedCandidates.length > 0 ? selectedCandidates : undefined
         })
-      });
+      } as RequestInit);
       
       // Trigger refetch to update UI
       refetch();

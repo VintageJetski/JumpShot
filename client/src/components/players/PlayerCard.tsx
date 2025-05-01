@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayerWithPIV, PlayerRole } from "@shared/types";
+import { PlayerWithPIV, PlayerRole } from "@shared/schema";
 import { motion } from 'framer-motion';
 import { useLocation } from 'wouter';
 import RoleBadge from '@/components/ui/role-badge';
@@ -156,11 +156,15 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
         <div className="grid grid-cols-2 gap-2 text-xs text-blue-300/80 mb-4">
           <div className="flex items-center justify-between px-2 py-1 border-b border-blue-500/10">
             <span>CT PIV</span>
-            <span className="font-medium text-blue-200">{Math.round(player.ctPIV * 100)}</span>
+            <span className="font-medium text-blue-200">
+              {player.ctPIV ? Math.round(player.ctPIV * 100) : '-'}
+            </span>
           </div>
           <div className="flex items-center justify-between px-2 py-1 border-b border-blue-500/10">
             <span>T PIV</span>
-            <span className="font-medium text-blue-200">{Math.round(player.tPIV * 100)}</span>
+            <span className="font-medium text-blue-200">
+              {player.tPIV ? Math.round(player.tPIV * 100) : '-'}
+            </span>
           </div>
         </div>
         

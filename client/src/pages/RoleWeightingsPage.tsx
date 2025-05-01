@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts';
 import { RotateCcw as ResetIcon, Save as SaveIcon, FileDown } from 'lucide-react';
 import exportToPDF from '@/lib/pdfExport';
+import { ScoutingFeaturesCard } from '@/components/role/ScoutingFeaturesCard';
 
 export default function RoleWeightingsPage() {
   const [activeTab, setActiveTab] = useState<string>(PlayerRole.AWP);
@@ -405,6 +406,10 @@ export default function RoleWeightingsPage() {
       
       <div id="weightings-content">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <ScoutingFeaturesCard
+            lineupSynergy={synergyMetricsInfo.lineupSynergy}
+            playerRecommendation={synergyMetricsInfo.playerRecommendation}
+          />
           <Card className="bg-background-light rounded-lg border border-gray-700">
             <CardHeader>
               <CardTitle>

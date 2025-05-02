@@ -292,63 +292,38 @@ export default function PlayersPage() {
           </motion.div>
           
           {/* View Mode Selector */}
-          <div className="glassmorphism rounded-lg flex p-1 relative overflow-hidden">
-            {/* Animated background highlight */}
-            <motion.div 
-              className="absolute h-8 rounded-md bg-blue-600 z-0"
-              layoutId="viewModeHighlight"
-              transition={{
-                type: "spring",
-                stiffness: 300,
-                damping: 30
-              }}
-              style={{
-                width: viewMode === "cards" ? "82px" : viewMode === "list" ? "72px" : viewMode === "teams" ? "85px" : "80px",
-                left: viewMode === "cards" ? "4px" : viewMode === "list" ? "90px" : viewMode === "teams" ? "175px" : "265px",
-                top: "4px"
-              }}
-            />
-            
-            {/* Buttons */}
+          <div className="flex bg-blue-900/30 border border-blue-500/20 rounded-lg overflow-hidden">
             <Button
-              variant="ghost"
+              variant={viewMode === "cards" ? "default" : "ghost"}
               size="sm"
-              className={`px-3 relative z-10 ${viewMode === "cards" ? "text-white" : "text-blue-300 hover:text-blue-100"}`}
+              className={`px-3 rounded-none ${viewMode === "cards" ? "bg-blue-600 text-white" : "bg-transparent text-blue-300 hover:text-blue-100"}`}
               onClick={() => setViewMode("cards")}
             >
-              <motion.span className="flex items-center" animate={{ scale: viewMode === "cards" ? 1.05 : 1 }}>
-                <Filter className="h-4 w-4 mr-1" /> Cards
-              </motion.span>
+              <Filter className="h-4 w-4 mr-1" /> Cards
             </Button>
             <Button
-              variant="ghost"
+              variant={viewMode === "list" ? "default" : "ghost"}
               size="sm"
-              className={`px-3 relative z-10 ${viewMode === "list" ? "text-white" : "text-blue-300 hover:text-blue-100"}`}
+              className={`px-3 rounded-none ${viewMode === "list" ? "bg-blue-600 text-white" : "bg-transparent text-blue-300 hover:text-blue-100"}`}
               onClick={() => setViewMode("list")}
             >
-              <motion.span className="flex items-center" animate={{ scale: viewMode === "list" ? 1.05 : 1 }}>
-                <List className="h-4 w-4 mr-1" /> List
-              </motion.span>
+              <List className="h-4 w-4 mr-1" /> List
             </Button>
             <Button
-              variant="ghost"
+              variant={viewMode === "teams" ? "default" : "ghost"}
               size="sm"
-              className={`px-3 relative z-10 ${viewMode === "teams" ? "text-white" : "text-blue-300 hover:text-blue-100"}`}
+              className={`px-3 rounded-none ${viewMode === "teams" ? "bg-blue-600 text-white" : "bg-transparent text-blue-300 hover:text-blue-100"}`}
               onClick={() => setViewMode("teams")}
             >
-              <motion.span className="flex items-center" animate={{ scale: viewMode === "teams" ? 1.05 : 1 }}>
-                <Users className="h-4 w-4 mr-1" /> Teams
-              </motion.span>
+              <Users className="h-4 w-4 mr-1" /> Teams
             </Button>
             <Button
-              variant="ghost"
+              variant={viewMode === "table" ? "default" : "ghost"}
               size="sm"
-              className={`px-3 relative z-10 ${viewMode === "table" ? "text-white" : "text-blue-300 hover:text-blue-100"}`}
+              className={`px-3 rounded-none ${viewMode === "table" ? "bg-blue-600 text-white" : "bg-transparent text-blue-300 hover:text-blue-100"}`}
               onClick={() => setViewMode("table")}
             >
-              <motion.span className="flex items-center" animate={{ scale: viewMode === "table" ? 1.05 : 1 }}>
-                <Medal className="h-4 w-4 mr-1" /> Table
-              </motion.span>
+              <Medal className="h-4 w-4 mr-1" /> Table
             </Button>
           </div>
         </motion.div>

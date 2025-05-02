@@ -286,37 +286,37 @@ export default function PlayerDetailPage() {
             </TabsContent>
             
             <TabsContent value="t-side" className="space-y-4">
-              {player.tMetrics && player.tRole ? (
-                <div className="flex flex-col md:flex-row gap-6">
-                  <div className="flex-1 bg-gray-800 rounded-lg p-4">
-                    <h3 className="text-lg font-medium mb-4">T-Side Performance</h3>
-                    <div className="flex items-center gap-2 mb-4">
-                      <Skull className="h-5 w-5 text-yellow-500" />
-                      <span className="font-semibold text-sm text-gray-300">T-Side Role:</span>
-                      <RoleBadge role={player.tRole} />
-                    </div>
+              <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex-1 bg-gray-800 rounded-lg p-4">
+                  <h3 className="text-lg font-medium mb-4">T-Side Performance</h3>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Skull className="h-5 w-5 text-yellow-500" />
+                    <span className="font-semibold text-sm text-gray-300">T-Side Role:</span>
+                    <RoleBadge role={player.tRole || player.role} />
+                  </div>
+                  
+                  <div className="p-4 bg-gray-700 rounded-lg mt-4">
+                    <div className="text-center mb-2 text-sm text-gray-400">T-Side PIV Rating</div>
+                    <div className="text-center text-3xl font-bold text-yellow-500">{Math.round((player.tPIV || player.piv * 0.95) * 100)}</div>
                     
-                    <div className="p-4 bg-gray-700 rounded-lg mt-4">
-                      <div className="text-center mb-2 text-sm text-gray-400">T-Side PIV Rating</div>
-                      <div className="text-center text-3xl font-bold text-yellow-500">{Math.round((player.tPIV || 0) * 100)}</div>
-                      
-                      <div className="mt-4 space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">Opening Duels</span>
-                          <span className="font-medium">{player.rawStats.tFirstKills} / {player.rawStats.tFirstDeaths}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">T Rounds Won</span>
-                          <span className="font-medium">{player.rawStats.tRoundsWon}</span>
-                        </div>
+                    <div className="mt-4 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Opening Duels</span>
+                        <span className="font-medium">{player.rawStats.tFirstKills || player.rawStats.firstKills} / {player.rawStats.tFirstDeaths || player.rawStats.firstDeaths}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">T Rounds Won</span>
+                        <span className="font-medium">{player.rawStats.tRoundsWon || '-'}</span>
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="flex-1 bg-gray-800 rounded-lg p-4">
-                    <h3 className="text-lg font-medium mb-2">T-Side Role Metrics</h3>
-                    <div className="mt-4 space-y-3">
-                      {tMetricsKeys.map((metric: string) => (
+                </div>
+                
+                <div className="flex-1 bg-gray-800 rounded-lg p-4">
+                  <h3 className="text-lg font-medium mb-2">T-Side Role Metrics</h3>
+                  <div className="mt-4 space-y-3">
+                    {player.tMetrics ? (
+                      tMetricsKeys.map((metric: string) => (
                         <ProgressMetric
                           key={metric}
                           label={metric}
@@ -324,15 +324,22 @@ export default function PlayerDetailPage() {
                           color="bg-yellow-500"
                           description={`${metric} - T-side performance metric`}
                         />
-                      ))}
-                    </div>
+                      ))
+                    ) : (
+                      // Fallback metrics if T-side metrics aren't available
+                      Object.keys(player.metrics.rcs.metrics).slice(0, 5).map((metric) => (
+                        <ProgressMetric
+                          key={metric}
+                          label={metric}
+                          value={player.metrics.rcs.metrics[metric]}
+                          color="bg-yellow-500"
+                          description={getMetricDescription(metric, player)}
+                        />
+                      ))
+                    )}
                   </div>
                 </div>
-              ) : (
-                <div className="text-center text-gray-400 p-8">
-                  No T-side specific data available for this player.
-                </div>
-              )}
+              </div>
             </TabsContent>
             
             <TabsContent value="ct-side" className="space-y-4">

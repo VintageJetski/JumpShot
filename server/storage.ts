@@ -373,13 +373,30 @@ export class HybridStorage implements IStorage {
     // Clear the cache
     this.playersCache.clear();
     
+    // Create a unique set of players by steam ID
+    // This prevents duplicates like ZywOo appearing twice
+    const uniquePlayers = new Map<string, PlayerWithPIV>();
+    for (const player of players) {
+      // If we already have this player, keep the one with the highest PIV
+      if (uniquePlayers.has(player.id)) {
+        const existingPlayer = uniquePlayers.get(player.id)!;
+        if (player.piv > existingPlayer.piv) {
+          uniquePlayers.set(player.id, player);
+        }
+      } else {
+        uniquePlayers.set(player.id, player);
+      }
+    }
+    
+    console.log(`Filtered ${players.length} players to ${uniquePlayers.size} unique players`);
+    
     // Start a transaction
     await db.transaction(async (tx) => {
       // Delete existing player data
       await tx.delete(playerStats);
       
       // Insert new player data
-      for (const player of players) {
+      for (const player of uniquePlayers.values()) {
         // Cache players for future requests
         this.playersCache.set(player.id, player);
         

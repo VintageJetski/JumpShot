@@ -109,18 +109,18 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
   return (
     <div ref={infographicRef} className="w-full rounded-md overflow-hidden bg-gradient-to-br from-gray-900 via-black to-gray-900">
       {/* Infographic Header */}
-      <div className="bg-gradient-to-r from-blue-900 via-purple-900 to-red-900 p-6 text-center">
+      <div className="bg-gradient-to-r from-orange-900 via-amber-800 to-red-900 p-6 text-center">
         <h2 className="text-3xl font-bold text-white">CS2 MATCH ANALYSIS</h2>
         <div className="mt-3 text-lg text-gray-200">Powered by JumpShot</div>
         
         {/* Team Matchup */}
         <div className="mt-6 flex justify-between items-center">
           <div className="text-center">
-            <div className="h-20 w-20 mx-auto rounded-full bg-blue-800 flex items-center justify-center text-4xl font-bold">
+            <div className="h-20 w-20 mx-auto rounded-full bg-orange-800 flex items-center justify-center text-4xl font-bold">
               {team1.name.charAt(0).toUpperCase()}
             </div>
             <div className="mt-2 text-xl font-bold">{team1.name}</div>
-            <div className="text-sm text-blue-300">TIR: {team1.tir}</div>
+            <div className="text-sm text-orange-300">TIR: {team1.tir}</div>
           </div>
           
           <div className="text-3xl font-bold text-white">VS</div>
@@ -148,14 +148,14 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-blue-400">{team1.name}</span>
+                  <span className="text-orange-400">{team1.name}</span>
                   <span className="text-red-400">{team2.name}</span>
                 </div>
                 <div className="relative pt-1">
                   <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-700">
                     <div
                       style={{ width: `${(team1.tir / (team1.tir + team2.tir)) * 100}%` }}
-                      className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500"
+                      className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-orange-500"
                     />
                     <div
                       style={{ width: `${(team2.tir / (team1.tir + team2.tir)) * 100}%` }}
@@ -170,7 +170,7 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
                   <h4 className="text-sm text-gray-400 mb-2">Top Advantages</h4>
                   <div className="space-y-1">
                     {team1Advantages.map((advantage, i) => (
-                      <Badge key={i} variant="outline" className="bg-blue-900/30 text-blue-300 mr-1 mb-1">
+                      <Badge key={i} variant="outline" className="bg-orange-900/30 text-orange-300 mr-1 mb-1">
                         {advantage}
                       </Badge>
                     ))}
@@ -203,7 +203,7 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
             <div className="grid grid-cols-2 gap-4">
               {/* Team 1 Key Players */}
               <div>
-                <h4 className="text-sm text-blue-400 mb-2">{team1.name}</h4>
+                <h4 className="text-sm text-orange-400 mb-2">{team1.name}</h4>
                 
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
@@ -214,7 +214,7 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
                         <span className="ml-1 text-gray-400">Top Performer</span>
                       </div>
                     </div>
-                    <div className="text-lg font-bold text-blue-400">
+                    <div className="text-lg font-bold text-orange-400">
                       {Math.round(team1TopPlayer.piv * 100)}
                     </div>
                   </div>
@@ -228,7 +228,7 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
                           <span className="ml-1 text-gray-400">AWPer</span>
                         </div>
                       </div>
-                      <div className="text-lg font-bold text-blue-400">
+                      <div className="text-lg font-bold text-orange-400">
                         {Math.round(team1AWPer.piv * 100)}
                       </div>
                     </div>
@@ -243,7 +243,7 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
                           <span className="ml-1 text-gray-400">IGL</span>
                         </div>
                       </div>
-                      <div className="text-lg font-bold text-blue-400">
+                      <div className="text-lg font-bold text-orange-400">
                         {Math.round(team1IGL.piv * 100)}
                       </div>
                     </div>

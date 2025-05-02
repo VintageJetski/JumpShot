@@ -38,8 +38,8 @@ export default function Layout({ children }: LayoutProps) {
             <h1 className="text-xl font-bold text-gradient">JumpShot</h1>
           </div>
           <div className="hidden md:flex items-center space-x-4">
-            <span className="text-sm text-blue-200/60">Data Source: IEM Katowice 2025</span>
-            <div className="border border-blue-500/30 bg-blue-950/30 shadow-inner shadow-blue-500/5 rounded-full px-4 py-1.5 text-xs font-medium text-blue-300">
+            <span className="text-sm text-orange-200/60">Data Source: IEM Katowice 2025</span>
+            <div className="border border-orange-500/30 bg-orange-950/30 shadow-inner shadow-orange-500/5 rounded-full px-4 py-1.5 text-xs font-medium text-orange-300">
               CSDK v1.4
             </div>
           </div>

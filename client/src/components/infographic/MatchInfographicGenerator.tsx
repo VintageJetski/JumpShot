@@ -203,7 +203,7 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
             <div className="grid grid-cols-2 gap-4">
               {/* Team 1 Key Players */}
               <div>
-                <h4 className="text-sm text-orange-400 mb-2">{team1.name}</h4>
+                <h4 className="text-sm text-blue-400 mb-2">{team1.name}</h4>
                 
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
@@ -214,7 +214,7 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
                         <span className="ml-1 text-gray-400">Top Performer</span>
                       </div>
                     </div>
-                    <div className="text-lg font-bold text-orange-400">
+                    <div className="text-lg font-bold text-blue-400">
                       {Math.round(team1TopPlayer.piv * 100)}
                     </div>
                   </div>
@@ -228,7 +228,7 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
                           <span className="ml-1 text-gray-400">AWPer</span>
                         </div>
                       </div>
-                      <div className="text-lg font-bold text-orange-400">
+                      <div className="text-lg font-bold text-blue-400">
                         {Math.round(team1AWPer.piv * 100)}
                       </div>
                     </div>
@@ -243,7 +243,7 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
                           <span className="ml-1 text-gray-400">IGL</span>
                         </div>
                       </div>
-                      <div className="text-lg font-bold text-orange-400">
+                      <div className="text-lg font-bold text-blue-400">
                         {Math.round(team1IGL.piv * 100)}
                       </div>
                     </div>
@@ -318,12 +318,12 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
                 <div className="flex justify-between text-sm mb-1">
                   <span>Pistol Win Rate</span>
                   <div className="flex space-x-3">
-                    <span className="text-orange-400">{Math.round(team1RoundMetrics.pistolRoundWinRate * 100)}%</span>
+                    <span className="text-blue-400">{Math.round(team1RoundMetrics.pistolRoundWinRate * 100)}%</span>
                     <span className="text-red-400">{Math.round(team2RoundMetrics.pistolRoundWinRate * 100)}%</span>
                   </div>
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-2.5">
-                  <div className="bg-orange-500 h-2.5 rounded-l-full" style={{ width: `${team1RoundMetrics.pistolRoundWinRate * 100}%` }}></div>
+                  <div className="bg-blue-500 h-2.5 rounded-l-full" style={{ width: `${team1RoundMetrics.pistolRoundWinRate * 100}%` }}></div>
                 </div>
               </div>
               
@@ -332,13 +332,13 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
                 <div className="flex justify-between text-sm mb-1">
                   <span>Economy Efficiency</span>
                   <div className="flex space-x-3">
-                    <span className="text-orange-400">{team1RoundMetrics.econEfficiencyRatio.toFixed(1)}</span>
+                    <span className="text-blue-400">{team1RoundMetrics.econEfficiencyRatio.toFixed(1)}</span>
                     <span className="text-red-400">{team2RoundMetrics.econEfficiencyRatio.toFixed(1)}</span>
                   </div>
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-2.5">
                   <div 
-                    className="bg-orange-500 h-2.5 rounded-l-full" 
+                    className="bg-blue-500 h-2.5 rounded-l-full" 
                     style={{ 
                       width: `${(team1RoundMetrics.econEfficiencyRatio / (team1RoundMetrics.econEfficiencyRatio + team2RoundMetrics.econEfficiencyRatio)) * 100}%` 
                     }}
@@ -351,12 +351,12 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
                 <div className="flex justify-between text-sm mb-1">
                   <span>Force Buy Success</span>
                   <div className="flex space-x-3">
-                    <span className="text-orange-400">{Math.round(team1RoundMetrics.forceRoundWinRate * 100)}%</span>
+                    <span className="text-blue-400">{Math.round(team1RoundMetrics.forceRoundWinRate * 100)}%</span>
                     <span className="text-red-400">{Math.round(team2RoundMetrics.forceRoundWinRate * 100)}%</span>
                   </div>
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-2.5">
-                  <div className="bg-orange-500 h-2.5 rounded-l-full" style={{ width: `${team1RoundMetrics.forceRoundWinRate * 100}%` }}></div>
+                  <div className="bg-blue-500 h-2.5 rounded-l-full" style={{ width: `${team1RoundMetrics.forceRoundWinRate * 100}%` }}></div>
                 </div>
               </div>
               
@@ -365,12 +365,12 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
                 <div className="flex justify-between text-sm mb-1">
                   <span>Comeback Factor</span>
                   <div className="flex space-x-3">
-                    <span className="text-orange-400">{Math.round(team1RoundMetrics.comebackFactor * 100)}%</span>
+                    <span className="text-blue-400">{Math.round(team1RoundMetrics.comebackFactor * 100)}%</span>
                     <span className="text-red-400">{Math.round(team2RoundMetrics.comebackFactor * 100)}%</span>
                   </div>
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-2.5">
-                  <div className="bg-orange-500 h-2.5 rounded-l-full" style={{ width: `${team1RoundMetrics.comebackFactor * 100}%` }}></div>
+                  <div className="bg-blue-500 h-2.5 rounded-l-full" style={{ width: `${team1RoundMetrics.comebackFactor * 100}%` }}></div>
                 </div>
               </div>
             </div>
@@ -403,7 +403,7 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
                       <div className="flex items-end space-x-3">
                         <div className="text-center">
                           <div className="text-xs text-gray-400">{team1.name}</div>
-                          <div className="text-lg font-bold text-orange-400">
+                          <div className="text-lg font-bold text-blue-400">
                             {Math.round(((mapWithHighestDiff.team1.ctWinRate + mapWithHighestDiff.team1.tWinRate) / 2) * 100)}%
                           </div>
                         </div>
@@ -427,7 +427,7 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
                         <div className="flex justify-between mb-1">
                           <span className="text-gray-400">CT</span>
                           <div>
-                            <span className="text-orange-400">{Math.round(map.team1.ctWinRate * 100)}%</span>
+                            <span className="text-blue-400">{Math.round(map.team1.ctWinRate * 100)}%</span>
                             <span className="text-gray-500 mx-1">vs</span>
                             <span className="text-red-400">{Math.round(map.team2.ctWinRate * 100)}%</span>
                           </div>
@@ -435,7 +435,7 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
                         <div className="flex justify-between">
                           <span className="text-gray-400">T</span>
                           <div>
-                            <span className="text-orange-400">{Math.round(map.team1.tWinRate * 100)}%</span>
+                            <span className="text-blue-400">{Math.round(map.team1.tWinRate * 100)}%</span>
                             <span className="text-gray-500 mx-1">vs</span>
                             <span className="text-red-400">{Math.round(map.team2.tWinRate * 100)}%</span>
                           </div>

@@ -304,7 +304,7 @@ export default function PlayersPage() {
               }}
               style={{
                 width: viewMode === "cards" ? "82px" : viewMode === "list" ? "72px" : viewMode === "teams" ? "85px" : "80px",
-                left: viewMode === "cards" ? "4px" : viewMode === "list" ? "90px" : viewMode === "teams" ? "166px" : "255px",
+                left: viewMode === "cards" ? "4px" : viewMode === "list" ? "90px" : viewMode === "teams" ? "175px" : "265px",
                 top: "4px"
               }}
             />

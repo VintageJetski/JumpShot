@@ -35,12 +35,15 @@ export default function StatisticalOutliers({ players }: StatisticalOutlierProps
       icon: <Target className="h-6 w-6 text-amber-400" />,
       gradient: "from-amber-700 to-amber-500",
       calculation: (players) => {
-        return players
+        const playersWithScores = players
           .filter(p => p.rawStats.firstKills > 0)
-          .sort((a, b) => (
-            (b.rawStats.firstKills / Math.max(b.rawStats.firstKills + b.rawStats.firstDeaths, 1)) -
-            (a.rawStats.firstKills / Math.max(a.rawStats.firstKills + a.rawStats.firstDeaths, 1))
-          ))[0] || null;
+          .map(player => {
+            const openingKillRatio = player.rawStats.firstKills / Math.max(player.rawStats.firstKills + player.rawStats.firstDeaths, 1);
+            return { player, score: openingKillRatio };
+          })
+          .sort((a, b) => b.score - a.score);
+          
+        return playersWithScores.length > 0 ? playersWithScores[0].player : null;
       }
     },
     {
@@ -50,7 +53,8 @@ export default function StatisticalOutliers({ players }: StatisticalOutlierProps
       icon: <Zap className="h-6 w-6 text-red-400" />,
       gradient: "from-red-700 to-red-500",
       calculation: (players) => {
-        return players
+        // Store the original player objects with their calculated scores to preserve correct IDs
+        const playersWithScores = players
           .filter(p => p.rawStats.kills > 0) // Ensure some baseline activity
           .map(player => {
             // Calculate a pistol score based on utility usage and effectiveness in pistol rounds
@@ -64,9 +68,11 @@ export default function StatisticalOutliers({ players }: StatisticalOutlierProps
             const firstKillRatio = player.rawStats.firstKills / Math.max(player.rawStats.firstKills + player.rawStats.firstDeaths, 1);
             // Create a composite pistol score
             const pistolScore = (pistolUtilityUsage * 0.6) + (firstKillRatio * 0.4);
-            return { ...player, pistolScore };
+            return { player, pistolScore };
           })
-          .sort((a, b) => b.pistolScore - a.pistolScore)[0] || null;
+          .sort((a, b) => b.pistolScore - a.pistolScore);
+          
+        return playersWithScores.length > 0 ? playersWithScores[0].player : null;
       }
     },
     {
@@ -76,12 +82,15 @@ export default function StatisticalOutliers({ players }: StatisticalOutlierProps
       icon: <Sparkles className="h-6 w-6 text-blue-400" />,
       gradient: "from-blue-700 to-blue-500",
       calculation: (players) => {
-        return players
+        const playersWithScores = players
           .filter(p => p.rawStats.totalUtilityThrown > 20) // Minimum utility usage
-          .sort((a, b) => (
-            (b.rawStats.assistedFlashes / Math.max(b.rawStats.flashesThrown, 1)) -
-            (a.rawStats.assistedFlashes / Math.max(a.rawStats.flashesThrown, 1))
-          ))[0] || null;
+          .map(player => {
+            const flashEfficiency = player.rawStats.assistedFlashes / Math.max(player.rawStats.flashesThrown, 1);
+            return { player, score: flashEfficiency };
+          })
+          .sort((a, b) => b.score - a.score);
+          
+        return playersWithScores.length > 0 ? playersWithScores[0].player : null;
       }
     },
     {

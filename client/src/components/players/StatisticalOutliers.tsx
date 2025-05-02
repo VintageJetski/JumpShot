@@ -106,6 +106,32 @@ export default function StatisticalOutliers({ players }: StatisticalOutlierProps
         
         return clutchScore.sort((a, b) => b.score - a.score)[0]?.player || null;
       }
+    },
+    {
+      title: "Consistency King",
+      description: "Most reliable performance",
+      metricKey: "Consistency Factor",
+      icon: <Activity className="h-6 w-6 text-purple-400" />,
+      gradient: "from-purple-700 to-purple-500",
+      calculation: (players) => {
+        // For consistency, we'll use players with lowest variance in performance
+        // A good proxy is K/D that's consistently >1.0, with balanced CT and T side metrics
+        const consistencyScore = players
+          .filter(p => p.kd >= 0.9 && typeof p.ctPIV === 'number' && typeof p.tPIV === 'number')
+          .map(p => {
+            // Calculate difference between CT and T performance (less difference = more consistent)
+            // TypeScript safety: we've already filtered for players with numeric ctPIV and tPIV
+            const sideDiff = Math.abs(p.ctPIV! - p.tPIV!);
+            const kdBonus = p.kd > 1.0 ? (p.kd - 1.0) * 2 : 0; // Bonus for KD above 1.0
+            
+            return {
+              player: p,
+              score: (p.piv * 2) - sideDiff + kdBonus
+            };
+          });
+        
+        return consistencyScore.sort((a, b) => b.score - a.score)[0]?.player || null;
+      }
     }
   ];
 

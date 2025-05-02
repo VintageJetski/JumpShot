@@ -159,8 +159,16 @@ def concat_events(folder=RAW_FOLDER):
                 if col not in player_columns and pd.api.types.is_numeric_dtype(player_stats_df[col]):
                     player_columns.append(col)
             
-            # Select columns and save
-            player_df = player_stats_df[player_columns]
+            # Deduplicate players - keep only the most recent data for each player
+            # This ensures players who didn't play in the latest event still appear
+            # with their previous event data
+            player_df = player_stats_df[player_columns].sort_values(by=['name', 'event'])
+            
+            # Get unique players by taking the most recent record for each player
+            # This keeps players from previous events even if they're not in current event
+            player_df = player_df.drop_duplicates(subset=['name'], keep='last')
+            
+            # Save the processed data
             player_df.to_parquet(f"{OUTPUT_FOLDER}/events.parquet", index=False)
             print(f"Saved {len(player_df)} player statistics to {OUTPUT_FOLDER}/events.parquet")
             

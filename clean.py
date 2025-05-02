@@ -28,13 +28,20 @@ def standardise_cols(df):
     col_map = {
         'steamid': 'steam_id',
         'username': 'name',
-        'teamname': 'team'
+        'user_name': 'name',
+        'teamname': 'team',
+        'team_clan_name': 'team'
     }
     
     # Rename columns if they exist
     for old_col, new_col in col_map.items():
         if old_col in df.columns:
             df = df.rename(columns={old_col: new_col})
+    
+    # Ensure all object columns are strings
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            df[col] = df[col].astype(str)
     
     return df
 

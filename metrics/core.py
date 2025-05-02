@@ -208,10 +208,25 @@ def main():
     # Normalize metrics within teams
     df = normalize_team_metrics(df)
     
+    # Fix data types before saving
+    # Convert all object columns to string to avoid PyArrow issues
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            print(f"Converting column {col} to string...")
+            df[col] = df[col].astype(str)
+    
     # Save to parquet
     print(f"Saving enriched data to {OUTPUT_PATH}")
-    df.to_parquet(OUTPUT_PATH, index=False)
-    print(f"Saved enriched data with {len(df)} rows")
+    try:
+        df.to_parquet(OUTPUT_PATH, index=False)
+        print(f"Saved enriched data with {len(df)} rows")
+    except Exception as e:
+        print(f"Error saving to parquet: {e}")
+        # Fallback to CSV if parquet fails
+        csv_path = OUTPUT_PATH.replace('.parquet', '.csv')
+        print(f"Falling back to CSV format: {csv_path}")
+        df.to_csv(csv_path, index=False)
+        print(f"Saved enriched data to CSV with {len(df)} rows")
 
 if __name__ == "__main__":
     main()

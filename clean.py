@@ -9,14 +9,8 @@ from pathlib import Path
 # Constants
 RAW_FOLDER = 'raw_events'
 OUTPUT_FOLDER = 'clean'
-
-# IEM Katowice 2025 data
-IEM_PLAYER_STATS_PATH = 'attached_assets/CS Data Points (IEM_Katowice_2025) - player_stats (IEM_Katowice_2025).csv'
-IEM_ROUNDS_PATH = 'attached_assets/CS Data Points (IEM_Katowice_2025) - rounds (IEM_Katowice_2025).csv'
-
-# PGL Bucharest 2025 data
-PGL_PLAYER_STATS_PATH = 'attached_assets/CS Data Points - player_stats (PGL_Bucharest_2025).csv'
-PGL_ROUNDS_PATH = 'attached_assets/CS Data Points - rounds (PGL_Bucharest_2025).csv'
+CS_PLAYER_STATS_PATH = 'attached_assets/CS Data Points (IEM_Katowice_2025) - player_stats (IEM_Katowice_2025).csv'
+CS_ROUNDS_PATH = 'attached_assets/CS Data Points (IEM_Katowice_2025) - rounds (IEM_Katowice_2025).csv'
 
 # Make sure output folder exists
 Path(OUTPUT_FOLDER).mkdir(exist_ok=True)
@@ -30,9 +24,7 @@ def standardise_cols(df):
     col_map = {
         'steamid': 'steam_id',
         'username': 'name',
-        'teamname': 'team',
-        'team_clan_name': 'team',
-        'user_name': 'name'
+        'teamname': 'team'
     }
     
     # Rename columns if they exist
@@ -67,20 +59,11 @@ def concat_events(folder=RAW_FOLDER):
     # Find all CSV files
     csv_paths = glob.glob(f"{folder}/*.csv")
     
-    # If no files found, look in attached_assets for all events
+    # If no files found, look for IEM_Katowice_2025 files specifically
     if not csv_paths:
-        # First add IEM Katowice data
-        csv_paths = []
-        if os.path.exists(IEM_PLAYER_STATS_PATH):
-            csv_paths.append(IEM_PLAYER_STATS_PATH)
-        if os.path.exists(IEM_ROUNDS_PATH):
-            csv_paths.append(IEM_ROUNDS_PATH)
-        
-        # Add PGL Bucharest data
-        if os.path.exists(PGL_PLAYER_STATS_PATH):
-            csv_paths.append(PGL_PLAYER_STATS_PATH)
-        if os.path.exists(PGL_ROUNDS_PATH):
-            csv_paths.append(PGL_ROUNDS_PATH)
+        csv_paths = [CS_PLAYER_STATS_PATH]
+        if os.path.exists(CS_ROUNDS_PATH):
+            csv_paths.append(CS_ROUNDS_PATH)
     
     # Check if we found any files
     if not csv_paths:
@@ -104,44 +87,25 @@ def concat_events(folder=RAW_FOLDER):
         print("No data loaded!")
         return None
     
-    # Group data frames by type
-    player_stats_dfs = []
-    rounds_dfs = []
+    # If we have player stats and rounds, process them separately
+    player_stats_df = None
+    rounds_df = None
     
-    # Sort data frames into appropriate categories
+    # Check if we have specific IEM Katowice files
     for df in dfs:
         source = df['source_file'].iloc[0]
-        # Check for player stats files based on column names
-        if 'steam_id' in df.columns and 'kills' in df.columns and 'deaths' in df.columns:
-            print(f"Detected player stats in {source}")
-            player_stats_dfs.append(df)
-        # Check for rounds files based on column names
-        elif 'round_num' in df.columns and 'winner' in df.columns and 'winner_clan_name' in df.columns:
-            print(f"Detected rounds data in {source}")
-            rounds_dfs.append(df)
-        # Fall back to filename pattern matching if column detection fails
-        elif 'player_stats' in source:
-            print(f"Detected player stats by filename: {source}")
-            player_stats_dfs.append(df)
+        if 'player_stats' in source:
+            player_stats_df = df
         elif 'rounds' in source:
-            print(f"Detected rounds by filename: {source}")
-            rounds_dfs.append(df)
+            rounds_df = df
     
-    # Process player stats if we have any
-    if player_stats_dfs:
-        print(f"Processing player statistics from {len(player_stats_dfs)} sources...")
-        
-        # Concatenate all player stats first
-        if len(player_stats_dfs) > 1:
-            player_stats_df = pd.concat(player_stats_dfs, ignore_index=True)
-            print(f"Combined {len(player_stats_df)} player records from multiple sources")
-        else:
-            player_stats_df = player_stats_dfs[0]
-        
-        # Make sure we have required columns
+    # Process player stats
+    if player_stats_df is not None:
+        print("Processing player statistics...")
+        # Extract only the necessary columns
         if 'steam_id' in player_stats_df.columns and 'name' in player_stats_df.columns and 'team' in player_stats_df.columns:
             # Basic player info and stats
-            player_columns = ['steam_id', 'name', 'team', 'source_file']
+            player_columns = ['steam_id', 'name', 'team']
             # Add all numeric columns (stats)
             for col in player_stats_df.columns:
                 if col not in player_columns and pd.api.types.is_numeric_dtype(player_stats_df[col]):
@@ -152,22 +116,7 @@ def concat_events(folder=RAW_FOLDER):
             player_df.to_parquet(f"{OUTPUT_FOLDER}/events.parquet", index=False)
             print(f"Saved {len(player_df)} player statistics to {OUTPUT_FOLDER}/events.parquet")
             
-            # Process rounds data if we have any
-            if rounds_dfs:
-                print(f"Processing rounds data from {len(rounds_dfs)} sources...")
-                
-                # Concatenate all rounds data
-                if len(rounds_dfs) > 1:
-                    rounds_df = pd.concat(rounds_dfs, ignore_index=True)
-                    print(f"Combined {len(rounds_df)} round records from multiple sources")
-                else:
-                    rounds_df = rounds_dfs[0]
-                
-                # Save rounds data
-                rounds_df.to_parquet(f"{OUTPUT_FOLDER}/rounds.parquet", index=False)
-                print(f"Saved {len(rounds_df)} round records to {OUTPUT_FOLDER}/rounds.parquet")
-            
-            # Return the player data for further processing
+            # Return the dataframe for further processing
             return player_df
     
     # If we don't have specific files, just concatenate everything

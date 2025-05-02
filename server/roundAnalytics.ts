@@ -1,86 +1,45 @@
 import { PlayerRawStats, PlayerRole, PlayerWithPIV, RoundData, TeamRoundMetrics, TeamWithTIR } from '@shared/schema';
-import { parseRoundsCSV, loadAllRoundsData } from './newDataParser';
+import { parseRoundsCSV } from './newDataParser';
 import path from 'path';
 
 /**
- * Load round data from all available CSV files
+ * Load round data from CSV file
  */
 export async function loadRoundData(): Promise<RoundData[]> {
   try {
-    console.log('Loading round data from all events...');
-    const roundsData = await loadAllRoundsData();
+    const filePath = path.join(process.cwd(), 'attached_assets', 'CS Data Points (IEM_Katowice_2025) - rounds (IEM_Katowice_2025).csv');
+    console.log(`Loading round data from: ${filePath}`);
+    const roundsData = await parseRoundsCSV(filePath);
     
     // Transform raw CSV data to our RoundData interface
     return roundsData.map(round => {
       // Extract map name from demo filename
-      const demoName = round.demo_file_name || '';
-      const mapName = demoName ? (demoName.split('-').pop()?.split('.')[0] || '') : 'unknown';
+      const demoName = round.demo_file_name;
+      const mapName = demoName.split('-').pop()?.split('.')[0] || '';
       
-      try {
-        // Safely parse numeric values with fallbacks
-        const safeParseInt = (value: any) => {
-          if (value === undefined || value === null || value === '') return 0;
-          const parsed = parseInt(value, 10);
-          return isNaN(parsed) ? 0 : parsed;
-        };
-        
-        const safeParseFloat = (value: any) => {
-          if (value === undefined || value === null || value === '') return 0;
-          const cleaned = typeof value === 'string' ? value.replace(/,/g, '') : value;
-          const parsed = parseFloat(cleaned);
-          return isNaN(parsed) ? 0 : parsed;
-        };
-        
-        return {
-          roundNum: safeParseInt(round.round_num),
-          winner: (round.winner || 'ct') as 'ct' | 't',
-          reason: (round.reason || 'ct_killed') as 'ct_killed' | 't_killed' | 'bomb_exploded' | 'bomb_defused',
-          bombPlant: Boolean(round.bomb_plant),
-          bombSite: (round.bomb_site || 'not_planted') as 'bombsite_a' | 'bombsite_b' | 'not_planted',
-          ctTeam: round.CT_team_clan_name || 'Unknown CT',
-          tTeam: round.T_team_clan_name || 'Unknown T',
-          winnerTeam: round.winner_clan_name || 'Unknown Winner',
-          ctEquipValue: safeParseFloat(round.CT_team_current_equip_value),
-          tEquipValue: safeParseFloat(round.T_team_current_equip_value),
-          ctLosingStreak: safeParseInt(round.ct_losing_streak),
-          tLosingStreak: safeParseInt(round.t_losing_streak),
-          ctBuyType: round.CT_buy_type || 'Unknown',
-          tBuyType: round.T_buy_type || 'Unknown',
-          firstAdvantage: (round['5v4_advantage'] || 'ct') as 'ct' | 't',
-          demoFileName: round.demo_file_name || '',
-          map: mapName,
-          start: round.start || '',
-          freeze_end: round.freeze_end || '',
-          end: round.end || '',
-          bomb_plant: round.bomb_plant ? round.bomb_plant : undefined
-        };
-      } catch (error) {
-        console.error('Error parsing round data:', error, round);
-        // Return a safe fallback object with default values
-        return {
-          roundNum: 0,
-          winner: 'ct' as 'ct' | 't',
-          reason: 'ct_killed' as 'ct_killed' | 't_killed' | 'bomb_exploded' | 'bomb_defused',
-          bombPlant: false,
-          bombSite: 'not_planted' as 'bombsite_a' | 'bombsite_b' | 'not_planted',
-          ctTeam: 'Unknown CT',
-          tTeam: 'Unknown T',
-          winnerTeam: 'Unknown',
-          ctEquipValue: 0,
-          tEquipValue: 0,
-          ctLosingStreak: 0,
-          tLosingStreak: 0,
-          ctBuyType: 'Unknown',
-          tBuyType: 'Unknown',
-          firstAdvantage: 'ct' as 'ct' | 't',
-          demoFileName: '',
-          map: 'unknown',
-          start: '',
-          freeze_end: '',
-          end: '',
-          bomb_plant: undefined
-        };
-      }
+      return {
+        roundNum: parseInt(round.round_num),
+        winner: round.winner as 'ct' | 't',
+        reason: round.reason as 'ct_killed' | 't_killed' | 'bomb_exploded' | 'bomb_defused',
+        bombPlant: round.bomb_plant !== '',
+        bombSite: round.bomb_site as 'bombsite_a' | 'bombsite_b' | 'not_planted',
+        ctTeam: round.CT_team_clan_name,
+        tTeam: round.T_team_clan_name,
+        winnerTeam: round.winner_clan_name,
+        ctEquipValue: parseFloat(round.CT_team_current_equip_value.replace(/,/g, '')),
+        tEquipValue: parseFloat(round.T_team_current_equip_value.replace(/,/g, '')),
+        ctLosingStreak: parseInt(round.ct_losing_streak),
+        tLosingStreak: parseInt(round.t_losing_streak),
+        ctBuyType: round.CT_buy_type,
+        tBuyType: round.T_buy_type,
+        firstAdvantage: round['5v4_advantage'] as 'ct' | 't',
+        demoFileName: round.demo_file_name,
+        map: mapName,
+        start: round.start,
+        freeze_end: round.freeze_end,
+        end: round.end,
+        bomb_plant: round.bomb_plant !== '' ? round.bomb_plant : undefined
+      };
     });
   } catch (error) {
     console.error('Error loading round data:', error);

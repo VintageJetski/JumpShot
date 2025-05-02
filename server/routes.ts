@@ -6,6 +6,7 @@ import { processPlayerStatsWithRoles } from "./newPlayerAnalytics";
 import { calculateTeamImpactRatings } from "./teamAnalytics";
 import { loadPlayerRoles } from "./roleParser";
 import { initializeRoundData } from "./roundDataLoader";
+import { loadParquetData } from "./parquetDataLoader";
 import * as fs from 'fs';
 import * as path from 'path';
 import { parse } from 'csv-parse/sync';
@@ -13,8 +14,22 @@ import { parse } from 'csv-parse/sync';
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize data on server start
   try {
-    console.log('Loading and processing player data...');
-    const rawPlayerStats = await loadNewPlayerStats();
+    // Try to load from parquet first (processed combined data from both tournaments)
+    let rawPlayerStats;
+    let sourceDescription = '';
+    
+    try {
+      console.log('Loading data from processed parquet files...');
+      rawPlayerStats = await loadParquetData();
+      sourceDescription = 'parquet';
+      console.log(`Loaded ${rawPlayerStats.length} players from parquet files`);
+    } catch (parquetError) {
+      console.error('Error loading from parquet, falling back to CSV:', parquetError);
+      console.log('Loading player data from CSV...');
+      rawPlayerStats = await loadNewPlayerStats();
+      sourceDescription = 'CSV';
+      console.log(`Loaded ${rawPlayerStats.length} players from CSV files`);
+    }
     
     // Load player roles from CSV
     console.log('Loading player roles from CSV...');
@@ -30,7 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await storage.setPlayers(playersWithPIV);
     await storage.setTeams(teamsWithTIR);
     
-    console.log(`Processed ${playersWithPIV.length} players and ${teamsWithTIR.length} teams`);
+    console.log(`Processed ${playersWithPIV.length} players from ${sourceDescription} and ${teamsWithTIR.length} teams`);
     
     // Load and process round data
     await initializeRoundData();
@@ -143,7 +158,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Extract metadata
-      const metadata = {
+      const metadata: { 
+        date: string;
+        version: string;
+        samples: number;
+        [key: string]: string | number; // Allow indexing with string
+      } = {
         date: new Date().toISOString().split('T')[0],
         version: 'unknown',
         samples: 0

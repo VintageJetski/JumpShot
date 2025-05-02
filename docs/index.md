@@ -26,7 +26,7 @@ Welcome to the documentation for JumpShot. This comprehensive suite of tools is 
 The platform uses several data sources:
 
 1. **Match Data CSV Files**
-   - Player statistics from IEM Katowice 2025
+   - Player statistics from multiple tournaments (IEM Katowice 2025, PGL Bucharest 2025)
    - Round-by-round data
    - Map-specific performance metrics
 
@@ -38,6 +38,8 @@ The platform uses several data sources:
 3. **Metric Weights Configuration**
    - Role-specific metric importance weights
    - Performance evaluation parameters
+
+For detailed information on data upload and processing, see [Data Upload and Processing](data_upload.md).
 
 ## Technical Architecture
 

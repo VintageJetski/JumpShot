@@ -1,6 +1,6 @@
-# CS2 Analytics Platform Documentation
+# JumpShot Documentation
 
-Welcome to the documentation for the CS2 Analytics Platform. This comprehensive suite of tools is designed to analyze Counter-Strike 2 player and team performance using advanced metrics and AI-powered predictions.
+Welcome to the documentation for JumpShot. This comprehensive suite of tools is designed to analyze Counter-Strike 2 player and team performance using advanced metrics and AI-powered predictions.
 
 ## Core Features
 

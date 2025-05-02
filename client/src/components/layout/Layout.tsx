@@ -26,12 +26,16 @@ export default function Layout({ children }: LayoutProps) {
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-3">
             <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-sky-400 rounded-full blur-sm opacity-75"></div>
+              <div className="absolute -inset-1 bg-gradient-to-r from-orange-600 to-amber-400 rounded-full blur-sm opacity-75"></div>
               <div className="relative bg-black p-1.5 rounded-full">
-                <BarChartBig className="h-7 w-7 text-blue-400" />
+                <svg className="h-7 w-7 text-orange-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 19V5" />
+                  <path d="M5 12l7-7 7 7" />
+                  <path d="M12 19c-4.4 0-8-3.6-8-8h16c0 4.4-3.6 8-8 8z" />
+                </svg>
               </div>
             </div>
-            <h1 className="text-xl font-bold text-gradient">CS2 Analytics Platform</h1>
+            <h1 className="text-xl font-bold text-gradient">JumpShot</h1>
           </div>
           <div className="hidden md:flex items-center space-x-4">
             <span className="text-sm text-blue-200/60">Data Source: IEM Katowice 2025</span>

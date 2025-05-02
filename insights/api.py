@@ -491,7 +491,7 @@ def create_app():
     
     @app.route('/')
     def index():
-        return jsonify({"message": "CS2 Analytics API", "version": "1.0"})
+        return jsonify({"message": "JumpShot API", "version": "1.0"})
     
     return app
 

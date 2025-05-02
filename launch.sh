@@ -1,7 +1,7 @@
 #!/bin/bash
 # launch.sh - Launch both the frontend and backend servers
 
-echo "Starting CS2 Performance Analytics Platform..."
+echo "Starting JumpShot Analytics Platform..."
 
 # Create raw_events directory if it doesn't exist
 mkdir -p raw_events clean

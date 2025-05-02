@@ -111,7 +111,7 @@ const MatchInfographicGenerator: React.FC<MatchInfographicGeneratorProps> = ({
       {/* Infographic Header */}
       <div className="bg-gradient-to-r from-blue-900 via-purple-900 to-red-900 p-6 text-center">
         <h2 className="text-3xl font-bold text-white">CS2 MATCH ANALYSIS</h2>
-        <div className="mt-3 text-lg text-gray-200">Powered by CS2 Analytics Platform</div>
+        <div className="mt-3 text-lg text-gray-200">Powered by JumpShot</div>
         
         {/* Team Matchup */}
         <div className="mt-6 flex justify-between items-center">

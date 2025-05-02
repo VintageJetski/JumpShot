@@ -10,8 +10,9 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 
 # File paths
-INPUT_PATH = 'clean/metrics_ready.parquet'
-MATCH_RESULTS_PATH = 'attached_assets/CS Data Points (IEM_Katowice_2025) - rounds (IEM_Katowice_2025).csv'
+INPUT_PATH = 'clean/piv.parquet'
+KATOWICE_ROUNDS_PATH = 'attached_assets/CS Data Points (IEM_Katowice_2025) - rounds (IEM_Katowice_2025).csv'
+BUCHAREST_ROUNDS_PATH = 'raw_events/PGL_Bucharest_2025/CS Data Points - rounds (PGL_Bucharest_2025).csv'
 WEIGHTS_OUTPUT_PATH = 'clean/learned_weights.csv'
 WEIGHTS_DAILY_OUTPUT_PATH = 'clean/weights/daily/learned_weights_{date}.csv'
 WEIGHTS_LATEST_PATH = 'clean/weights/latest/learned_weights.csv'
@@ -37,23 +38,88 @@ def load_piv_data():
         return None
 
 def load_match_results():
-    """Load match results from CSV"""
-    print(f"Loading match results from {MATCH_RESULTS_PATH}")
+    """Load match results from CSV files for both events"""
+    all_rounds = []
+    
+    # Load Katowice rounds
+    if os.path.exists(KATOWICE_ROUNDS_PATH):
+        print(f"Loading Katowice match results from {KATOWICE_ROUNDS_PATH}")
+        try:
+            katowice_df = pd.read_csv(KATOWICE_ROUNDS_PATH)
+            katowice_df['event'] = 'IEM_Katowice_2025'  # Add event tag
+            all_rounds.append(katowice_df)
+            print(f"Loaded {len(katowice_df)} rounds from Katowice")
+        except Exception as e:
+            print(f"Error loading Katowice results: {e}")
+    
+    # Load Bucharest rounds
+    if os.path.exists(BUCHAREST_ROUNDS_PATH):
+        print(f"Loading Bucharest match results from {BUCHAREST_ROUNDS_PATH}")
+        try:
+            bucharest_df = pd.read_csv(BUCHAREST_ROUNDS_PATH)
+            bucharest_df['event'] = 'PGL_Bucharest_2025'  # Add event tag
+            all_rounds.append(bucharest_df)
+            print(f"Loaded {len(bucharest_df)} rounds from Bucharest")
+        except Exception as e:
+            print(f"Error loading Bucharest results: {e}")
+    
+    if not all_rounds:
+        print("No match results found!")
+        return None
+    
+    # Combine all rounds
     try:
-        # Load round results CSV
-        rounds_df = pd.read_csv(MATCH_RESULTS_PATH)
+        rounds_df = pd.concat(all_rounds, ignore_index=True)
+        print(f"Combined {len(rounds_df)} total rounds from all events")
         
-        # Process to get win percentages per team per event
-        rounds_df['round_win'] = rounds_df['round_winner'] == rounds_df['team']
+        # Ensure columns are standardized
+        col_map = {
+            'winner': 'round_winner',
+            'ct_team_clan_name': 'ct_team',
+            't_team_clan_name': 't_team'
+        }
         
-        # Group by event and team to get win percentages
-        match_results = rounds_df.groupby(['event', 'team'])['round_win'].mean().reset_index()
+        for old_col, new_col in col_map.items():
+            if old_col in rounds_df.columns and new_col not in rounds_df.columns:
+                rounds_df[new_col] = rounds_df[old_col]
+        
+        # For each round, determine if each team won or lost
+        team_rounds = []
+        
+        # Standardize column types
+        for col in rounds_df.columns:
+            if rounds_df[col].dtype == 'object':
+                rounds_df[col] = rounds_df[col].astype(str)
+        
+        # Process each round to get team outcomes
+        for _, round_row in rounds_df.iterrows():
+            # For CT team
+            if 'ct_team' in rounds_df.columns and round_row['ct_team'] != 'None':
+                ct_win = round_row['round_winner'] == round_row['ct_team']
+                team_rounds.append({
+                    'event': round_row['event'],
+                    'team': round_row['ct_team'],
+                    'round_win': ct_win
+                })
+            
+            # For T team
+            if 't_team' in rounds_df.columns and round_row['t_team'] != 'None':
+                t_win = round_row['round_winner'] == round_row['t_team']
+                team_rounds.append({
+                    'event': round_row['event'],
+                    'team': round_row['t_team'],
+                    'round_win': t_win
+                })
+        
+        # Create dataframe and group by event and team to get win percentages
+        team_rounds_df = pd.DataFrame(team_rounds)
+        match_results = team_rounds_df.groupby(['event', 'team'])['round_win'].mean().reset_index()
         match_results.rename(columns={'round_win': 'round_win_pct'}, inplace=True)
         
-        print(f"Processed {len(match_results)} team-event combinations")
+        print(f"Processed {len(match_results)} team-event combinations with win percentages")
         return match_results
     except Exception as e:
-        print(f"Error loading match results: {e}")
+        print(f"Error processing match results: {e}")
         return None
 
 def calculate_team_metrics(piv_df):
@@ -291,9 +357,22 @@ def main():
     # Calculate Team Impact Rating
     tir_df = calculate_team_impact_rating(team_metrics, match_results)
     
+    # Add data type handling for TIR save
+    for col in tir_df.columns:
+        if tir_df[col].dtype == 'object':
+            print(f"Converting TIR column {col} to string...")
+            tir_df[col] = tir_df[col].astype(str)
+    
     # Save TIR data
-    tir_df.to_parquet(TIR_OUTPUT_PATH)
-    print(f"Saved Team Impact Ratings to {TIR_OUTPUT_PATH}")
+    try:
+        tir_df.to_parquet(TIR_OUTPUT_PATH, index=False)
+        print(f"Saved Team Impact Ratings to {TIR_OUTPUT_PATH}")
+    except Exception as e:
+        print(f"Error saving TIR: {e}")
+        # Fallback to CSV
+        csv_path = TIR_OUTPUT_PATH.replace('.parquet', '.csv')
+        tir_df.to_csv(csv_path, index=False)
+        print(f"Saved Team Impact Ratings to CSV: {csv_path}")
     
     # Generate match predictions
     predictions = generate_match_predictions(tir_df, match_results)

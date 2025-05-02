@@ -197,10 +197,24 @@ def main():
     # Calculate PIV v1.4
     df = calculate_piv_v14(df, role_weights)
     
+    # Fix object data types before saving
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            print(f"Converting column {col} to string...")
+            df[col] = df[col].astype(str)
+    
     # Save PIV data
     print(f"Saving PIV data to {OUTPUT_PATH}")
-    df.to_parquet(OUTPUT_PATH, index=False)
-    print(f"Saved {len(df)} player records with PIV v1.4 calculations")
+    try:
+        df.to_parquet(OUTPUT_PATH, index=False)
+        print(f"Saved {len(df)} player records with PIV v1.4 calculations")
+    except Exception as e:
+        print(f"Error saving to parquet: {e}")
+        # Fallback to CSV if parquet fails
+        csv_path = OUTPUT_PATH.replace('.parquet', '.csv')
+        print(f"Falling back to CSV format: {csv_path}")
+        df.to_csv(csv_path, index=False)
+        print(f"Saved {len(df)} player records to CSV")
 
 if __name__ == "__main__":
     main()

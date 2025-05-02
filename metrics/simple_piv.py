@@ -74,10 +74,25 @@ def main():
     # Calculate simplified PIV
     df = calculate_simple_piv(df)
     
+    # Fix object data types before saving
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            print(f"Converting column {col} to string...")
+            df[col] = df[col].astype(str)
+    
     # Save PIV data
     print(f"Saving simplified PIV data to {OUTPUT_PATH}")
-    df.to_parquet(OUTPUT_PATH)
-    print(f"Saved {len(df)} player records with simplified PIV calculations")
+    try:
+        df.to_parquet(OUTPUT_PATH, index=False)
+        print(f"Saved {len(df)} player records with simplified PIV calculations")
+    except Exception as e:
+        print(f"Error saving to parquet: {e}")
+        # Fallback to CSV if parquet fails
+        csv_path = OUTPUT_PATH.replace('.parquet', '.csv')
+        print(f"Falling back to CSV format: {csv_path}")
+        df.to_csv(csv_path, index=False)
+        print(f"Saved {len(df)} player records to CSV")
+
 
 if __name__ == "__main__":
     main()

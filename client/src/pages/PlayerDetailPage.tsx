@@ -292,7 +292,11 @@ export default function PlayerDetailPage() {
                   <div className="flex items-center gap-2 mb-4">
                     <Skull className="h-5 w-5 text-yellow-500" />
                     <span className="font-semibold text-sm text-gray-300">T-Side Role:</span>
-                    <RoleBadge role={player.tRole || player.role} />
+                    {player.tRole ? (
+                      <RoleBadge role={player.tRole} />
+                    ) : (
+                      <span className="text-gray-400 text-sm">No T role data</span>
+                    )}
                   </div>
                   
                   <div className="p-4 bg-gray-700 rounded-lg mt-4">
@@ -349,7 +353,11 @@ export default function PlayerDetailPage() {
                   <div className="flex items-center gap-2 mb-4">
                     <Shield className="h-5 w-5 text-blue-500" />
                     <span className="font-semibold text-sm text-gray-300">CT-Side Role:</span>
-                    <RoleBadge role={player.ctRole || player.secondaryRole || player.role} />
+                    {player.ctRole ? (
+                      <RoleBadge role={player.ctRole} />
+                    ) : (
+                      <span className="text-gray-400 text-sm">No CT role data</span>
+                    )}
                   </div>
                   
                   <div className="p-4 bg-gray-700 rounded-lg mt-4">
@@ -402,55 +410,93 @@ export default function PlayerDetailPage() {
         </div>
         
         <div className="mt-8">
-          <h3 className="text-lg font-medium">Raw Statistics</h3>
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <h3 className="text-lg font-medium mb-4">Raw Statistics</h3>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="col-span-2 md:col-span-3 lg:col-span-6 bg-gray-800 rounded-lg p-4">
+              <div className="text-sm text-gray-400 mb-2">Overall Performance</div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-gray-700 rounded-lg p-3">
+                  <div className="text-xs text-gray-400">K/D</div>
+                  <div className="text-lg font-medium mt-1">
+                    {(() => {
+                      const kd = player.rawStats.kd || 0;
+                      return isNaN(kd) ? '0.00' : kd.toFixed(2);
+                    })()}
+                  </div>
+                </div>
+                <div className="bg-gray-700 rounded-lg p-3">
+                  <div className="text-xs text-gray-400">KPR</div>
+                  <div className="text-lg font-medium mt-1">
+                    {(() => {
+                      const totalRounds = (player.rawStats.tRoundsWon || 0) + (player.rawStats.ctRoundsWon || 0) + (player.rawStats.deaths || 0);
+                      return totalRounds > 0 ? ((player.rawStats.kills || 0) / totalRounds).toFixed(2) : '0.00';
+                    })()}
+                  </div>
+                </div>
+                <div className="bg-gray-700 rounded-lg p-3">
+                  <div className="text-xs text-gray-400">HS %</div>
+                  <div className="text-lg font-medium mt-1">
+                    {(() => {
+                      const kills = player.rawStats.kills || 0;
+                      const headshots = player.rawStats.headshots || 0;
+                      return kills > 0 ? `${Math.round((headshots / kills) * 100)}%` : '0%';
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-sm text-gray-400">K/D</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.kd.toFixed(2)}</div>
+              <div className="text-xs text-gray-400">Kills</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.kills || 0}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-sm text-gray-400">Kills</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.kills}</div>
+              <div className="text-xs text-gray-400">Deaths</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.deaths || 0}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-sm text-gray-400">Deaths</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.deaths}</div>
+              <div className="text-xs text-gray-400">Assists</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.assists || 0}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-sm text-gray-400">Assists</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.assists}</div>
+              <div className="text-xs text-gray-400">Headshots</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.headshots || 0}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-sm text-gray-400">Headshots</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.headshots}</div>
+              <div className="text-xs text-gray-400">Flash Assists</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.assistedFlashes || 0}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-sm text-gray-400">Flash Assists</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.assistedFlashes}</div>
+              <div className="text-xs text-gray-400">Utility</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.totalUtilityThrown || 0}</div>
+            </div>
+          </div>
+          
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="bg-gray-800 rounded-lg p-3">
+              <div className="text-xs text-gray-400">First Kills</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.firstKills || 0}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-sm text-gray-400">First Kills</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.firstKills}</div>
+              <div className="text-xs text-gray-400">First Deaths</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.firstDeaths || 0}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-sm text-gray-400">First Deaths</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.firstDeaths}</div>
+              <div className="text-xs text-gray-400">No Scope</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.noScope || 0}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-sm text-gray-400">Utility Thrown</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.totalUtilityThrown}</div>
+              <div className="text-xs text-gray-400">Smoke Kills</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.throughSmoke || 0}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-sm text-gray-400">No Scope Kills</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.noScope}</div>
+              <div className="text-xs text-gray-400">Blind Kills</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.blindKills || 0}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-sm text-gray-400">Smoke Kills</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.throughSmoke}</div>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-sm text-gray-400">Blind Kills</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.blindKills}</div>
+              <div className="text-xs text-gray-400">Wallbangs</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.wallbangKills || 0}</div>
             </div>
           </div>
         </div>

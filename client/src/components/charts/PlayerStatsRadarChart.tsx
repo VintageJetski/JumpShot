@@ -7,12 +7,24 @@ interface PlayerStatsRadarChartProps {
 }
 
 export default function PlayerStatsRadarChart({ player, teamAverages }: PlayerStatsRadarChartProps) {
-  // Extract normalized metrics
-  const metrics = player.metrics?.rcs?.metrics || {};
+  // Extract normalized metrics with safety checks
+  const metrics = player?.metrics?.rcs?.metrics || {};
+  
+  // Check if metrics object exists and has content
+  if (!metrics || Object.keys(metrics).length === 0) {
+    return (
+      <div className="flex flex-col h-full">
+        <h3 className="text-lg font-medium mb-2">Performance Metrics</h3>
+        <div className="bg-gray-800 rounded-lg p-4 text-center h-64 flex items-center justify-center">
+          <span className="text-gray-400">No metrics data available for this player</span>
+        </div>
+      </div>
+    );
+  }
   
   // Convert to radar chart format
   const chartData = Object.entries(metrics)
-    .filter(([_, value]) => typeof value === 'number' && !isNaN(value))
+    .filter(([_, value]) => typeof value === 'number' && !isNaN(value) && value !== null && value !== undefined)
     .map(([key, value]) => {
       // Format the key for better display
       const formattedKey = key
@@ -22,12 +34,12 @@ export default function PlayerStatsRadarChart({ player, teamAverages }: PlayerSt
         .replace(/ Rate/g, '')
         .replace(/ Ratio/g, '');
       
-      // Add team average if available
-      const teamValue = teamAverages?.[key] || 0;
+      // Add team average if available with safety check
+      const teamValue = teamAverages && typeof teamAverages[key] === 'number' ? teamAverages[key] : 0;
       
       return {
         metric: formattedKey,
-        player: value,
+        player: typeof value === 'number' ? value : 0,
         team: teamValue,
       };
     })

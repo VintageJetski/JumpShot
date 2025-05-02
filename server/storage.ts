@@ -393,7 +393,9 @@ export class HybridStorage implements IStorage {
     const uniquePlayers = new Map<string, PlayerWithPIV>();
     const nameToIdMap = new Map<string, string>(); // track which names map to which IDs
     
-    for (const [id, player] of uniquePlayersById.entries()) {
+    // Convert the map entries to an array to avoid TypeScript iteration issues
+    const playerEntries = Array.from(uniquePlayersById.entries());
+    for (const [id, player] of playerEntries) {
       if (!player.name) continue; // Skip players without names
       
       const normalizedName = player.name.toLowerCase().trim();

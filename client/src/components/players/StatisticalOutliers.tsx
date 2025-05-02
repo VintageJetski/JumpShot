@@ -44,18 +44,29 @@ export default function StatisticalOutliers({ players }: StatisticalOutlierProps
       }
     },
     {
-      title: "Headshot Machine",
-      description: "Highest headshot percentage",
-      metricKey: "Headshot %",
+      title: "Pistol Master",
+      description: "Best pistol round performance",
+      metricKey: "Pistol Round Rating",
       icon: <Zap className="h-6 w-6 text-red-400" />,
       gradient: "from-red-700 to-red-500",
       calculation: (players) => {
         return players
-          .filter(p => p.rawStats.kills > 10) // Minimum kill threshold for relevance
-          .sort((a, b) => (
-            (b.rawStats.headshots / Math.max(b.rawStats.kills, 1)) -
-            (a.rawStats.headshots / Math.max(a.rawStats.kills, 1))
-          ))[0] || null;
+          .filter(p => p.rawStats.kills > 0) // Ensure some baseline activity
+          .map(player => {
+            // Calculate a pistol score based on utility usage and effectiveness in pistol rounds
+            const pistolUtilityUsage = (
+              player.rawStats.flashesThrownInPistolRound +
+              player.rawStats.heThrownInPistolRound +
+              player.rawStats.infernosThrownInPistolRound +
+              player.rawStats.smokesThrownInPistolRound
+            );
+            // Combine with first kill ratio to measure overall pistol round impact
+            const firstKillRatio = player.rawStats.firstKills / Math.max(player.rawStats.firstKills + player.rawStats.firstDeaths, 1);
+            // Create a composite pistol score
+            const pistolScore = (pistolUtilityUsage * 0.6) + (firstKillRatio * 0.4);
+            return { ...player, pistolScore };
+          })
+          .sort((a, b) => b.pistolScore - a.pistolScore)[0] || null;
       }
     },
     {
@@ -94,32 +105,6 @@ export default function StatisticalOutliers({ players }: StatisticalOutlierProps
         });
         
         return clutchScore.sort((a, b) => b.score - a.score)[0]?.player || null;
-      }
-    },
-    {
-      title: "Consistency King",
-      description: "Most reliable performance",
-      metricKey: "Consistency Factor",
-      icon: <Activity className="h-6 w-6 text-purple-400" />,
-      gradient: "from-purple-700 to-purple-500",
-      calculation: (players) => {
-        // For consistency, we'll use players with lowest variance in performance
-        // A good proxy is K/D that's consistently >1.0, with balanced CT and T side metrics
-        const consistencyScore = players
-          .filter(p => p.kd >= 0.9 && typeof p.ctPIV === 'number' && typeof p.tPIV === 'number')
-          .map(p => {
-            // Calculate difference between CT and T performance (less difference = more consistent)
-            // TypeScript safety: we've already filtered for players with numeric ctPIV and tPIV
-            const sideDiff = Math.abs(p.ctPIV! - p.tPIV!);
-            const kdBonus = p.kd > 1.0 ? (p.kd - 1.0) * 2 : 0; // Bonus for KD above 1.0
-            
-            return {
-              player: p,
-              score: (p.piv * 2) - sideDiff + kdBonus
-            };
-          });
-        
-        return consistencyScore.sort((a, b) => b.score - a.score)[0]?.player || null;
       }
     }
   ];
@@ -177,10 +162,16 @@ export default function StatisticalOutliers({ players }: StatisticalOutlierProps
 
   // Format a metric value as a percentage
   const formatMetricValue = (player: PlayerWithPIV, metricKey: string): string => {
-    // For headshot percentage
-    if (metricKey === "Headshot %") {
-      const hsPercentage = (player.rawStats.headshots / Math.max(player.rawStats.kills, 1)) * 100;
-      return `${hsPercentage.toFixed(1)}%`;
+    // For pistol round rating
+    if (metricKey === "Pistol Round Rating") {
+      // Get pistol utility count
+      const pistolUtility = (
+        player.rawStats.flashesThrownInPistolRound +
+        player.rawStats.heThrownInPistolRound +
+        player.rawStats.infernosThrownInPistolRound +
+        player.rawStats.smokesThrownInPistolRound
+      );
+      return `${pistolUtility} util`;
     }
     
     // For first blood impact

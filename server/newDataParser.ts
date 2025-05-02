@@ -73,13 +73,33 @@ export async function parsePlayerStatsCSV(filePath: string): Promise<PlayerRawSt
 }
 
 /**
- * Load player stats from the new IEM Katowice 2025 dataset
+ * Load player stats from both IEM Katowice 2025 and PGL Bucharest 2025 datasets
  */
 export async function loadNewPlayerStats(): Promise<PlayerRawStats[]> {
   try {
-    const filePath = path.join(process.cwd(), 'attached_assets', 'CS Data Points (IEM_Katowice_2025) - player_stats (IEM_Katowice_2025).csv');
-    console.log(`Loading new player stats from: ${filePath}`);
-    return await parsePlayerStatsCSV(filePath);
+    // Load IEM Katowice 2025 data
+    const iemFilePath = path.join(process.cwd(), 'attached_assets', 'CS Data Points (IEM_Katowice_2025) - player_stats (IEM_Katowice_2025).csv');
+    console.log(`Loading IEM Katowice player stats from: ${iemFilePath}`);
+    const iemPlayers = await parsePlayerStatsCSV(iemFilePath);
+    
+    // Load PGL Bucharest 2025 data
+    const pglFilePath = path.join(process.cwd(), 'attached_assets', 'CS Data Points - player_stats (PGL_Bucharest_2025).csv');
+    console.log(`Loading PGL Bucharest player stats from: ${pglFilePath}`);
+    let pglPlayers: PlayerRawStats[] = [];
+    
+    try {
+      pglPlayers = await parsePlayerStatsCSV(pglFilePath);
+      console.log(`Successfully loaded ${pglPlayers.length} players from PGL Bucharest event`);
+    } catch (pglError) {
+      console.error('Error loading PGL Bucharest player stats:', pglError);
+      console.log('Continuing with only IEM Katowice data');
+    }
+    
+    // Combine both datasets
+    const allPlayers = [...iemPlayers, ...pglPlayers];
+    console.log(`Total players loaded: ${allPlayers.length}`);
+    
+    return allPlayers;
   } catch (error) {
     console.error('Error loading player stats:', error);
     throw error;
@@ -87,8 +107,7 @@ export async function loadNewPlayerStats(): Promise<PlayerRawStats[]> {
 }
 
 /**
- * Optional: Parse round data if needed for future metrics
- * Not currently used in PIV calculations
+ * Parse round data CSV file
  */
 export async function parseRoundsCSV(filePath: string): Promise<any[]> {
   try {
@@ -102,6 +121,40 @@ export async function parseRoundsCSV(filePath: string): Promise<any[]> {
     return records;
   } catch (error) {
     console.error(`Error parsing rounds CSV file ${filePath}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Load rounds data from both IEM Katowice 2025 and PGL Bucharest 2025 datasets
+ */
+export async function loadAllRoundsData(): Promise<any[]> {
+  try {
+    // Load IEM Katowice 2025 rounds data
+    const iemFilePath = path.join(process.cwd(), 'attached_assets', 'CS Data Points (IEM_Katowice_2025) - rounds (IEM_Katowice_2025).csv');
+    console.log(`Loading IEM Katowice rounds data from: ${iemFilePath}`);
+    const iemRounds = await parseRoundsCSV(iemFilePath);
+    
+    // Load PGL Bucharest 2025 rounds data
+    const pglFilePath = path.join(process.cwd(), 'attached_assets', 'CS Data Points - rounds (PGL_Bucharest_2025).csv');
+    console.log(`Loading PGL Bucharest rounds data from: ${pglFilePath}`);
+    let pglRounds: any[] = [];
+    
+    try {
+      pglRounds = await parseRoundsCSV(pglFilePath);
+      console.log(`Successfully loaded ${pglRounds.length} rounds from PGL Bucharest event`);
+    } catch (pglError) {
+      console.error('Error loading PGL Bucharest rounds data:', pglError);
+      console.log('Continuing with only IEM Katowice rounds data');
+    }
+    
+    // Combine both datasets
+    const allRounds = [...iemRounds, ...pglRounds];
+    console.log(`Total rounds loaded: ${allRounds.length}`);
+    
+    return allRounds;
+  } catch (error) {
+    console.error('Error loading rounds data:', error);
     throw error;
   }
 }

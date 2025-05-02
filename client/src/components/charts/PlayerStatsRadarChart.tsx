@@ -1,4 +1,4 @@
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend, Cell } from 'recharts';
 import { PlayerWithPIV } from '@shared/schema';
 
 interface PlayerStatsRadarChartProps {
@@ -44,46 +44,42 @@ export default function PlayerStatsRadarChart({ player, teamAverages }: PlayerSt
       };
     })
     .sort((a, b) => b.player - a.player) // Sort by player value (highest first)
-    .slice(0, 8); // Take top 8 metrics for readability
+    .slice(0, 6); // Take top 6 metrics for better readability in bar chart
   
   if (chartData.length === 0) {
     return <div className="text-gray-400 text-center py-8">No metrics data available</div>;
   }
   
+  // Get role color
+  const getRoleColor = (index: number) => {
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#ec4899'];
+    return colors[index % colors.length];
+  };
+
   return (
     <div className="flex flex-col h-full">
       <h3 className="text-lg font-medium mb-2">Performance Metrics</h3>
       <div className="flex-1 w-full">
         <ResponsiveContainer width="100%" height={400}>
-          <RadarChart outerRadius={150} data={chartData}>
-            <PolarGrid stroke="#374151" />
-            <PolarAngleAxis 
-              dataKey="metric" 
-              tick={{ fill: '#9ca3af', fontSize: 12 }} 
-            />
-            <PolarRadiusAxis 
-              angle={30} 
+          <BarChart
+            data={chartData}
+            layout="vertical"
+            margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
+            <XAxis 
+              type="number" 
               domain={[0, 1]} 
-              tickCount={6} 
-              stroke="#4b5563" 
+              tick={{ fill: '#9ca3af' }}
+              tickCount={6}
             />
-            <Radar
-              name={player.name}
-              dataKey="player"
-              stroke="#3b82f6"
-              fill="#3b82f6"
-              fillOpacity={0.6}
+            <YAxis 
+              type="category" 
+              dataKey="metric" 
+              tick={{ fill: '#9ca3af', fontSize: 12 }}
+              width={100}
             />
-            {teamAverages && (
-              <Radar
-                name="Team Average"
-                dataKey="team"
-                stroke="#f97316"
-                fill="#f97316"
-                fillOpacity={0.3}
-              />
-            )}
-            <Tooltip 
+            <Tooltip
               contentStyle={{ 
                 backgroundColor: '#1f2937', 
                 borderColor: '#374151',
@@ -92,7 +88,27 @@ export default function PlayerStatsRadarChart({ player, teamAverages }: PlayerSt
               formatter={(value) => [typeof value === 'number' ? value.toFixed(2) : value, 'Score']}
             />
             <Legend />
-          </RadarChart>
+            <Bar 
+              name={player.name} 
+              dataKey="player" 
+              maxBarSize={20}
+              radius={[0, 4, 4, 0]}
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={getRoleColor(index)} />
+              ))}
+            </Bar>
+            {teamAverages && (
+              <Bar 
+                name="Team Average" 
+                dataKey="team" 
+                maxBarSize={20} 
+                fill="#f97316"
+                fillOpacity={0.7}
+                radius={[0, 4, 4, 0]}
+              />
+            )}
+          </BarChart>
         </ResponsiveContainer>
       </div>
     </div>

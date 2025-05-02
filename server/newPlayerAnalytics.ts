@@ -586,16 +586,39 @@ export function processPlayerStatsWithRoles(
     // Try to find player in role map
     const roleInfo = findPlayerRoleInfo(stats.userName, roleMap);
     
-    if (!roleInfo) {
-      console.warn(`No role information found for player ${stats.userName}, skipping`);
-      // Skip players that are not in the role dataset (per user request)
-      continue;
-    }
+    // Determine if we have role information or need to infer roles
+    let tRole, ctRole, isIGL;
     
-    // Get roles from CSV data
-    const tRole = roleInfo.tRole;
-    const ctRole = roleInfo.ctRole;
-    const isIGL = roleInfo.isIGL;
+    if (roleInfo) {
+      // Get roles from CSV data
+      tRole = roleInfo.tRole;
+      ctRole = roleInfo.ctRole;
+      isIGL = roleInfo.isIGL;
+    } else {
+      console.warn(`No role information found for player ${stats.userName}, using inferred roles`);
+      // Infer roles based on stats
+      isIGL = false;
+      
+      // Infer T-side role
+      if (stats.noScope > 0) {
+        tRole = PlayerRole.AWP;
+      } else if ((stats.tFirstKills || 0) > (stats.tFirstDeaths || 0)) {
+        tRole = PlayerRole.Spacetaker;
+      } else if ((stats.assists || 0) > (stats.kills || 1) * 0.3) {
+        tRole = PlayerRole.Support;
+      } else {
+        tRole = PlayerRole.Lurker;
+      }
+      
+      // Infer CT-side role
+      if (stats.noScope > 0) {
+        ctRole = PlayerRole.AWP;
+      } else if ((stats.ctFirstKills || 0) > (stats.ctFirstDeaths || 0)) {
+        ctRole = PlayerRole.Anchor;
+      } else {
+        ctRole = PlayerRole.Rotator;
+      }
+    }
     
     // Calculate T-side metrics
     const tMetrics = evaluateTSideMetrics(stats, tRole);

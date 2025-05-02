@@ -294,8 +294,13 @@ export default function PlayerDetailPage() {
                     <span className="font-semibold text-sm text-gray-300">T-Side Role:</span>
                     {player.tRole ? (
                       <RoleBadge role={player.tRole} />
+                    ) : player.role ? (
+                      <>
+                        <RoleBadge role={player.role} />
+                        <span className="text-xs text-gray-500 ml-1">(inferred)</span>
+                      </>
                     ) : (
-                      <span className="text-gray-400 text-sm">No T role data</span>
+                      <span className="text-gray-400 text-sm">Unknown role</span>
                     )}
                   </div>
                   
@@ -355,8 +360,13 @@ export default function PlayerDetailPage() {
                     <span className="font-semibold text-sm text-gray-300">CT-Side Role:</span>
                     {player.ctRole ? (
                       <RoleBadge role={player.ctRole} />
+                    ) : player.role ? (
+                      <>
+                        <RoleBadge role={player.role} />
+                        <span className="text-xs text-gray-500 ml-1">(inferred)</span>
+                      </>
                     ) : (
-                      <span className="text-gray-400 text-sm">No CT role data</span>
+                      <span className="text-gray-400 text-sm">Unknown role</span>
                     )}
                   </div>
                   

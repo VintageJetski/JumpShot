@@ -396,7 +396,8 @@ export class HybridStorage implements IStorage {
       await tx.delete(playerStats);
       
       // Insert new player data
-      for (const player of uniquePlayers.values()) {
+      const uniquePlayerArray = Array.from(uniquePlayers.values());
+      for (const player of uniquePlayerArray) {
         // Cache players for future requests
         this.playersCache.set(player.id, player);
         

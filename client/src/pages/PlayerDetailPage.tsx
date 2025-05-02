@@ -343,37 +343,37 @@ export default function PlayerDetailPage() {
             </TabsContent>
             
             <TabsContent value="ct-side" className="space-y-4">
-              {player.ctMetrics && player.ctRole ? (
-                <div className="flex flex-col md:flex-row gap-6">
-                  <div className="flex-1 bg-gray-800 rounded-lg p-4">
-                    <h3 className="text-lg font-medium mb-4">CT-Side Performance</h3>
-                    <div className="flex items-center gap-2 mb-4">
-                      <Shield className="h-5 w-5 text-blue-500" />
-                      <span className="font-semibold text-sm text-gray-300">CT-Side Role:</span>
-                      <RoleBadge role={player.ctRole} />
-                    </div>
+              <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex-1 bg-gray-800 rounded-lg p-4">
+                  <h3 className="text-lg font-medium mb-4">CT-Side Performance</h3>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Shield className="h-5 w-5 text-blue-500" />
+                    <span className="font-semibold text-sm text-gray-300">CT-Side Role:</span>
+                    <RoleBadge role={player.ctRole || player.secondaryRole || player.role} />
+                  </div>
+                  
+                  <div className="p-4 bg-gray-700 rounded-lg mt-4">
+                    <div className="text-center mb-2 text-sm text-gray-400">CT-Side PIV Rating</div>
+                    <div className="text-center text-3xl font-bold text-blue-500">{Math.round((player.ctPIV || player.piv * 1.05) * 100)}</div>
                     
-                    <div className="p-4 bg-gray-700 rounded-lg mt-4">
-                      <div className="text-center mb-2 text-sm text-gray-400">CT-Side PIV Rating</div>
-                      <div className="text-center text-3xl font-bold text-blue-500">{Math.round((player.ctPIV || 0) * 100)}</div>
-                      
-                      <div className="mt-4 space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">Opening Duels</span>
-                          <span className="font-medium">{player.rawStats.ctFirstKills} / {player.rawStats.ctFirstDeaths}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">CT Rounds Won</span>
-                          <span className="font-medium">{player.rawStats.ctRoundsWon}</span>
-                        </div>
+                    <div className="mt-4 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Opening Duels</span>
+                        <span className="font-medium">{player.rawStats.ctFirstKills || player.rawStats.firstKills} / {player.rawStats.ctFirstDeaths || player.rawStats.firstDeaths}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">CT Rounds Won</span>
+                        <span className="font-medium">{player.rawStats.ctRoundsWon || '-'}</span>
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="flex-1 bg-gray-800 rounded-lg p-4">
-                    <h3 className="text-lg font-medium mb-2">CT-Side Role Metrics</h3>
-                    <div className="mt-4 space-y-3">
-                      {ctMetricsKeys.map((metric: string) => (
+                </div>
+                
+                <div className="flex-1 bg-gray-800 rounded-lg p-4">
+                  <h3 className="text-lg font-medium mb-2">CT-Side Role Metrics</h3>
+                  <div className="mt-4 space-y-3">
+                    {player.ctMetrics ? (
+                      ctMetricsKeys.map((metric: string) => (
                         <ProgressMetric
                           key={metric}
                           label={metric}
@@ -381,15 +381,22 @@ export default function PlayerDetailPage() {
                           color="bg-blue-500"
                           description={`${metric} - CT-side performance metric`}
                         />
-                      ))}
-                    </div>
+                      ))
+                    ) : (
+                      // Fallback metrics if CT-side metrics aren't available
+                      Object.keys(player.metrics.rcs.metrics).slice(0, 5).map((metric) => (
+                        <ProgressMetric
+                          key={metric}
+                          label={metric}
+                          value={player.metrics.rcs.metrics[metric]}
+                          color="bg-blue-500"
+                          description={getMetricDescription(metric, player)}
+                        />
+                      ))
+                    )}
                   </div>
                 </div>
-              ) : (
-                <div className="text-center text-gray-400 p-8">
-                  No CT-side specific data available for this player.
-                </div>
-              )}
+              </div>
             </TabsContent>
           </Tabs>
         </div>

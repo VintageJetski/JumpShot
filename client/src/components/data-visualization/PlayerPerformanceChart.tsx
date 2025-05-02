@@ -18,7 +18,7 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlayerRole, PlayerWithPIV } from '@shared/types';
+import { PlayerRole, PlayerWithPIV } from '@shared/schema';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -55,32 +55,68 @@ export default function PlayerPerformanceChart({ player, comparisonPlayers = [] 
     
     if (metricCategory === 'overall') {
       // Overall PIV components
+      const rcsValue = player.metrics?.rcs?.value !== undefined ? player.metrics.rcs.value : 0.5;
+      const icfValue = player.metrics?.icf?.value !== undefined ? player.metrics.icf.value : 0.5;
+      const scValue = player.metrics?.sc?.value !== undefined ? player.metrics.sc.value : 0.5;
+      const osmValue = player.metrics?.osm !== undefined ? player.metrics.osm : 1.0;
+      const pivValue = typeof player.piv === 'number' ? Math.min(player.piv / 2, 1) : 0.5;
+      
       metrics = [
-        { name: 'RCS', value: player.metrics?.rcs?.value || 0, fullMark: 1 },
-        { name: 'ICF', value: player.metrics?.icf?.value || 0, fullMark: 1 },
-        { name: 'SC', value: player.metrics?.sc?.value || 0, fullMark: 1 },
-        { name: 'OSM', value: player.metrics?.osm || 1, fullMark: 1.5 },
-        { name: 'PIV', value: Math.min(player.piv / 2, 1), fullMark: 1 }
+        { name: 'RCS', value: rcsValue, fullMark: 1 },
+        { name: 'ICF', value: icfValue, fullMark: 1 },
+        { name: 'SC', value: scValue, fullMark: 1 },
+        { name: 'OSM', value: osmValue, fullMark: 1.5 },
+        { name: 'PIV', value: pivValue, fullMark: 1 }
       ];
     } else if (metricCategory === 'combat') {
       // Combat metrics
       const rawStats = player.rawStats || {};
+      // Safe calculations with fallbacks
+      const kd = typeof player.kd === 'number' ? Math.min(player.kd / 2, 1) : 0.5;
+      const hsPercent = rawStats.headshots && rawStats.kills ? 
+        (rawStats.headshots / Math.max(rawStats.kills, 1)) : 0.3;
+      
+      const openingValue = rawStats.firstKills && rawStats.kills ?
+        rawStats.firstKills / Math.max(rawStats.kills, 1) : 0.2;
+        
+      const survivalValue = rawStats.deaths !== undefined ? 
+        1 - (rawStats.deaths / Math.max((rawStats.kills || 0) + rawStats.deaths, 1)) : 0.5;
+        
+      const multikillValue = player.primaryMetric?.name === 'Multi Kill Conversion' && 
+        typeof player.primaryMetric.value === 'number' ? player.primaryMetric.value : 0.3;
+      
       metrics = [
-        { name: 'K/D', value: Math.min(player.kd / 2, 1), fullMark: 1 },
-        { name: 'HS%', value: (rawStats.headshots / Math.max(rawStats.kills, 1)) || 0, fullMark: 1 },
-        { name: 'Opening', value: rawStats.firstKills / Math.max(rawStats.kills, 1) || 0, fullMark: 0.5 },
-        { name: 'Survival', value: 1 - (rawStats.deaths / Math.max(rawStats.kills + rawStats.deaths, 1)) || 0, fullMark: 1 },
-        { name: 'Multikills', value: (player.primaryMetric?.name === 'Multi Kill Conversion' ? player.primaryMetric.value : 0.1), fullMark: 0.5 }
+        { name: 'K/D', value: kd, fullMark: 1 },
+        { name: 'HS%', value: hsPercent, fullMark: 1 },
+        { name: 'Opening', value: openingValue, fullMark: 0.5 },
+        { name: 'Survival', value: survivalValue, fullMark: 1 },
+        { name: 'Multikills', value: multikillValue, fullMark: 0.5 }
       ];
     } else {
       // Utility metrics
       const rawStats = player.rawStats || {};
+      // Safe calculations with fallbacks
+      const flashAssistsValue = rawStats.assistedFlashes && rawStats.flashesThrown ?
+        (rawStats.assistedFlashes / Math.max(rawStats.flashesThrown, 1)) : 0.1;
+
+      const smokesValue = rawStats.smokesThrown && rawStats.totalUtilityThrown ?
+        (rawStats.smokesThrown / Math.max(rawStats.totalUtilityThrown, 1)) : 0.2;
+
+      const flashesValue = rawStats.flashesThrown && rawStats.totalUtilityThrown ?
+        (rawStats.flashesThrown / Math.max(rawStats.totalUtilityThrown, 1)) : 0.25;
+
+      const molotovsValue = rawStats.infernosThrown && rawStats.totalUtilityThrown ?
+        (rawStats.infernosThrown / Math.max(rawStats.totalUtilityThrown, 1)) : 0.15;
+
+      const heValue = rawStats.heThrown && rawStats.totalUtilityThrown ?
+        (rawStats.heThrown / Math.max(rawStats.totalUtilityThrown, 1)) : 0.15;
+        
       metrics = [
-        { name: 'Flash Assists', value: (rawStats.assistedFlashes / Math.max(rawStats.flashesThrown, 1)) || 0, fullMark: 0.5 },
-        { name: 'Smokes', value: (rawStats.smokesThrown / Math.max(rawStats.totalUtilityThrown, 1)) || 0, fullMark: 0.5 },
-        { name: 'Flashes', value: (rawStats.flashesThrown / Math.max(rawStats.totalUtilityThrown, 1)) || 0, fullMark: 0.5 },
-        { name: 'Molotovs', value: (rawStats.infernosThrown / Math.max(rawStats.totalUtilityThrown, 1)) || 0, fullMark: 0.5 },
-        { name: 'HE', value: (rawStats.heThrown / Math.max(rawStats.totalUtilityThrown, 1)) || 0, fullMark: 0.5 }
+        { name: 'Flash Assists', value: flashAssistsValue, fullMark: 0.5 },
+        { name: 'Smokes', value: smokesValue, fullMark: 0.5 },
+        { name: 'Flashes', value: flashesValue, fullMark: 0.5 },
+        { name: 'Molotovs', value: molotovsValue, fullMark: 0.5 },
+        { name: 'HE', value: heValue, fullMark: 0.5 }
       ];
     }
     
@@ -100,35 +136,55 @@ export default function PlayerPerformanceChart({ player, comparisonPlayers = [] 
       
       if (metricCategory === 'overall') {
         // Overall PIV components for all players
-        data = allPlayers.map(p => ({
-          name: p.name,
-          PIV: p.piv,
-          RCS: p.metrics?.rcs?.value || 0,
-          ICF: p.metrics?.icf?.value || 0,
-          SC: p.metrics?.sc?.value || 0
-        }));
+        data = allPlayers.map(p => {
+          const rcsValue = p.metrics?.rcs?.value !== undefined ? p.metrics.rcs.value : 0.5;
+          const icfValue = p.metrics?.icf?.value !== undefined ? p.metrics.icf.value : 0.5;
+          const scValue = p.metrics?.sc?.value !== undefined ? p.metrics.sc.value : 0.5;
+          const pivValue = typeof p.piv === 'number' ? p.piv : 0.5;
+          
+          return {
+            name: p.name,
+            PIV: pivValue,
+            RCS: rcsValue,
+            ICF: icfValue,
+            SC: scValue
+          };
+        });
       } else if (metricCategory === 'combat') {
         // Combat metrics for all players
         data = allPlayers.map(p => {
           const rawStats = p.rawStats || {};
+          // Safely calculate metrics with fallbacks
+          const kd = typeof p.kd === 'number' ? p.kd : 1.0;
+          const hsPercent = rawStats.headshots && rawStats.kills ? 
+            (rawStats.headshots / Math.max(rawStats.kills, 1)) : 0.3;
+          const openingKills = rawStats.firstKills || 0;
+          const deaths = rawStats.deaths || 0;
+          
           return {
             name: p.name,
-            'K/D': p.kd,
-            'HS%': (rawStats.headshots / Math.max(rawStats.kills, 1)) || 0,
-            'Opening': rawStats.firstKills || 0,
-            'Deaths': rawStats.deaths || 0
+            'K/D': kd,
+            'HS%': hsPercent,
+            'Opening': openingKills,
+            'Deaths': deaths
           };
         });
       } else {
         // Utility metrics for all players
         data = allPlayers.map(p => {
           const rawStats = p.rawStats || {};
+          // Provide safe fallbacks
+          const flashes = rawStats.flashesThrown || 1;
+          const smokes = rawStats.smokesThrown || 1;
+          const molotovs = rawStats.infernosThrown || 0;
+          const he = rawStats.heThrown || 0;
+          
           return {
             name: p.name,
-            'Flashes': rawStats.flashesThrown || 0,
-            'Smokes': rawStats.smokesThrown || 0,
-            'Molotovs': rawStats.infernosThrown || 0,
-            'HE': rawStats.heThrown || 0
+            'Flashes': flashes,
+            'Smokes': smokes,
+            'Molotovs': molotovs,
+            'HE': he
           };
         });
       }

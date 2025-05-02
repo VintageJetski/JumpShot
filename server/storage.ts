@@ -373,22 +373,53 @@ export class HybridStorage implements IStorage {
     // Clear the cache
     this.playersCache.clear();
     
-    // Create a unique set of players by steam ID
-    // This prevents duplicates like ZywOo appearing twice
-    const uniquePlayers = new Map<string, PlayerWithPIV>();
+    // First pass: filter by ID to get unique IDs
+    const uniquePlayersById = new Map<string, PlayerWithPIV>();
     for (const player of players) {
-      // If we already have this player, keep the one with the highest PIV
-      if (uniquePlayers.has(player.id)) {
-        const existingPlayer = uniquePlayers.get(player.id)!;
+      if (!player.id) continue; // Skip players without ID
+      
+      // If we already have this player ID, keep the one with the highest PIV
+      if (uniquePlayersById.has(player.id)) {
+        const existingPlayer = uniquePlayersById.get(player.id)!;
         if (player.piv > existingPlayer.piv) {
-          uniquePlayers.set(player.id, player);
+          uniquePlayersById.set(player.id, player);
         }
       } else {
-        uniquePlayers.set(player.id, player);
+        uniquePlayersById.set(player.id, player);
       }
     }
     
-    console.log(`Filtered ${players.length} players to ${uniquePlayers.size} unique players`);
+    // Second pass: filter by name to remove duplicates across different IDs
+    const uniquePlayers = new Map<string, PlayerWithPIV>();
+    const nameToIdMap = new Map<string, string>(); // track which names map to which IDs
+    
+    for (const [id, player] of uniquePlayersById.entries()) {
+      if (!player.name) continue; // Skip players without names
+      
+      const normalizedName = player.name.toLowerCase().trim();
+      
+      // If we've seen this name before, we have a duplicate with different ID
+      if (nameToIdMap.has(normalizedName)) {
+        const existingId = nameToIdMap.get(normalizedName)!;
+        const existingPlayer = uniquePlayers.get(existingId)!;
+        
+        // Keep the one with the highest PIV
+        if (player.piv > existingPlayer.piv) {
+          // Remove the existing player with lower PIV
+          uniquePlayers.delete(existingId);
+          // Add the new player with higher PIV
+          uniquePlayers.set(id, player);
+          // Update the name mapping
+          nameToIdMap.set(normalizedName, id);
+        }
+      } else {
+        // First time seeing this player name
+        uniquePlayers.set(id, player);
+        nameToIdMap.set(normalizedName, id);
+      }
+    }
+    
+    console.log(`Filtered ${players.length} players to ${uniquePlayers.size} unique players (after name deduplication)`);
     
     // Start a transaction
     await db.transaction(async (tx) => {

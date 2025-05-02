@@ -1,13 +1,14 @@
 import { Badge } from "@/components/ui/badge";
 import { PlayerRole } from "@shared/types";
 
-interface RoleBadgeProps {
+export interface RoleBadgeProps {
   role: PlayerRole;
   className?: string;
   size?: string;
+  isIGL?: boolean;
 }
 
-export default function RoleBadge({ role, className = "", size = "" }: RoleBadgeProps) {
+export default function RoleBadge({ role, className = "", size = "", isIGL = false }: RoleBadgeProps) {
   const roleColors: Record<PlayerRole, { bg: string, text: string }> = {
     [PlayerRole.IGL]: { bg: "bg-purple-500", text: "text-white" },
     [PlayerRole.AWP]: { bg: "bg-yellow-500", text: "text-black" },
@@ -31,8 +32,13 @@ export default function RoleBadge({ role, className = "", size = "" }: RoleBadge
   }
 
   return (
-    <Badge className={`${bg} ${text} ${sizeClasses} ${className}`}>
+    <Badge className={`${bg} ${text} ${sizeClasses} ${className} flex items-center gap-1`}>
       {role}
+      {isIGL && (
+        <span className="bg-white/20 text-white px-1 rounded-sm text-[8px] font-bold leading-[10px] flex-shrink-0">
+          IGL
+        </span>
+      )}
     </Badge>
   );
 }

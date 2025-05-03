@@ -35,6 +35,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('Loading player roles from CSV...');
     const roleMap = await loadPlayerRoles();
     
+    // Debug logging for CSV data
+    console.log(`Role map contains ${roleMap.size} players`);
+    console.log(`Looking for Ex3rcice in role map: ${roleMap.has('Ex3rcice') ? 'FOUND' : 'NOT FOUND'}`);
+    
+    // Debug logging for raw player data
+    const ex3rciceInData = rawPlayerStats.find(p => p.userName === 'Ex3rcice' || p.userName.includes('Ex3rcice'));
+    if (ex3rciceInData) {
+      console.log(`Found Ex3rcice in raw player data: ${ex3rciceInData.userName}`);
+    } else {
+      console.log(`Ex3rcice NOT found in raw player data (${rawPlayerStats.length} players total)`);
+      // Log the first 5 player names for debugging
+      console.log(`Sample players: ${rawPlayerStats.slice(0, 5).map(p => p.userName).join(', ')}`);
+    }
+    
     // Process player stats with roles and calculate PIV
     const playersWithPIV = processPlayerStatsWithRoles(rawPlayerStats, roleMap);
     

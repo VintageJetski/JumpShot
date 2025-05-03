@@ -586,6 +586,14 @@ export function processPlayerStatsWithRoles(
     // Try to find player in role map
     const roleInfo = findPlayerRoleInfo(stats.userName, roleMap);
     
+    // Debug logging for specific players
+    if (stats.userName === 'Ex3rcice' || stats.userName.includes('Ex3rcice')) {
+      console.log(`DEBUG: Found Ex3rcice in raw data. Name: ${stats.userName}, Role info found:`, roleInfo ? 'YES' : 'NO');
+      if (roleInfo) {
+        console.log(`DEBUG: Ex3rcice roles - T: ${roleInfo.tRole}, CT: ${roleInfo.ctRole}, IGL: ${roleInfo.isIGL}`);
+      }
+    }
+    
     // Check if we have role information from the CSV
     let tRole, ctRole, isIGL;
     

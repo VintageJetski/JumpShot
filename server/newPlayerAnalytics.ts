@@ -586,7 +586,7 @@ export function processPlayerStatsWithRoles(
     // Try to find player in role map
     const roleInfo = findPlayerRoleInfo(stats.userName, roleMap);
     
-    // Determine if we have role information or need to infer roles
+    // Check if we have role information from the CSV
     let tRole, ctRole, isIGL;
     
     if (roleInfo) {
@@ -599,7 +599,7 @@ export function processPlayerStatsWithRoles(
       // Infer roles based on stats
       isIGL = false;
       
-      // Infer T-side role
+      // Infer T-side role based on statistics
       if (stats.noScope > 0) {
         tRole = PlayerRole.AWP;
       } else if ((stats.tFirstKills || 0) > (stats.tFirstDeaths || 0)) {
@@ -610,7 +610,7 @@ export function processPlayerStatsWithRoles(
         tRole = PlayerRole.Lurker;
       }
       
-      // Infer CT-side role
+      // Infer CT-side role based on statistics
       if (stats.noScope > 0) {
         ctRole = PlayerRole.AWP;
       } else if ((stats.ctFirstKills || 0) > (stats.ctFirstDeaths || 0)) {
@@ -929,32 +929,47 @@ function calculatePlayerWithPIV(
  * Find a player in the role map by fuzzy name matching
  */
 function findPlayerRoleInfo(playerName: string, roleMap: Map<string, PlayerRoleInfo>): PlayerRoleInfo | undefined {
+  // Try using the common implementation but avoid circular dependencies
+  // In a real project, we'd refactor this to a shared utility file
+  
+  // Use our own implementation
   // Try direct match
   if (roleMap.has(playerName)) {
     return roleMap.get(playerName);
+  }
+  
+  // Remove any parenthetical additions and spaces
+  const cleanName = playerName.replace(/\s*\([^)]*\)\s*/g, '').trim();
+  if (roleMap.has(cleanName)) {
+    return roleMap.get(cleanName);
   }
   
   // Convert to arrays for easier iteration
   const entries = Array.from(roleMap.entries());
   
   // Try case-insensitive match
-  const lowerPlayerName = playerName.toLowerCase();
+  const lowerPlayerName = cleanName.toLowerCase();
   for (const [name, info] of entries) {
     if (name.toLowerCase() === lowerPlayerName) {
       return info;
     }
   }
   
-  // Try to match without parenthetical information
-  const basePlayerName = playerName.replace(/\s*\([^)]*\)\s*/g, '').trim();
-  if (basePlayerName !== playerName) {
-    return findPlayerRoleInfo(basePlayerName, roleMap);
-  }
-  
   // Try partial match (where player name is part of a name in the map)
   for (const [name, info] of entries) {
-    if (name.includes(playerName) || playerName.includes(name)) {
+    if (name.toLowerCase().includes(lowerPlayerName) || 
+        lowerPlayerName.includes(name.toLowerCase())) {
       return info;
+    }
+  }
+  
+  // Try first name match
+  const firstName = cleanName.split(' ')[0].toLowerCase();
+  if (firstName.length > 2) {
+    for (const [name, info] of entries) {
+      if (name.toLowerCase().startsWith(firstName)) {
+        return info;
+      }
     }
   }
   

@@ -73,21 +73,10 @@ export default function PlayerDetailPage() {
               <div className="flex items-center mt-1">
                 <span className="text-gray-400">{player.team}</span>
                 <span className="mx-2 text-gray-600">•</span>
-                {player.tRole && player.ctRole ? (
-                  <div className="flex items-center gap-1">
-                    <RoleBadge role={player.tRole} size="xs" />
-                    <span className="text-gray-600">/</span>
-                    <RoleBadge role={player.ctRole} size="xs" />
-                    {player.isIGL && (
-                      <span className="ml-1 bg-purple-500/30 text-purple-300 text-[10px] px-1 rounded">IGL</span>
-                    )}
-                  </div>
-                ) : (
-                  <RoleBadge 
-                    role={player.role} 
-                    isIGL={player.isIGL}
-                  />
-                )}
+                <RoleBadge 
+                  role={player.role} 
+                  isIGL={player.isIGL}
+                />
               </div>
             </div>
           </div>
@@ -223,22 +212,15 @@ export default function PlayerDetailPage() {
             </div>
             
             <div>
-              <h3 className="text-lg font-medium">Player Rating Summary</h3>
+              <h3 className="text-lg font-medium">PIV Calculation</h3>
               <div className="mt-4 space-y-4">
                 <div className="bg-gray-800 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-400">Player Rating (PIV)</span>
-                    <span className="text-lg font-bold text-green-400">{Math.round(player.piv * 100)}</span>
+                  <div className="text-sm text-gray-400">PIV = [(RCS × ICF) + SC] × OSM</div>
+                  <div className="text-sm font-mono text-white mt-2">
+                    = [({player.metrics.rcs.value.toFixed(2)} × {player.metrics.icf.value.toFixed(2)}) + {player.metrics.sc.value.toFixed(2)}] × {player.metrics.osm.toFixed(2)}
                   </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-green-500 rounded-full h-2" 
-                      style={{width: `${player.piv * 100}%`}}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-500 mt-1">
-                    <span>0</span>
-                    <span>100</span>
+                  <div className="text-lg font-bold text-green-400 mt-2">
+                    = {Math.round(player.piv * 100)}
                   </div>
                 </div>
               </div>
@@ -297,37 +279,37 @@ export default function PlayerDetailPage() {
             </TabsContent>
             
             <TabsContent value="t-side" className="space-y-4">
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="flex-1 bg-gray-800 rounded-lg p-4">
-                  <h3 className="text-lg font-medium mb-4">T-Side Performance</h3>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Skull className="h-5 w-5 text-yellow-500" />
-                    <span className="font-semibold text-sm text-gray-300">T-Side Role:</span>
-                    <RoleBadge role={player.tRole || player.role} />
-                  </div>
-                  
-                  <div className="p-4 bg-gray-700 rounded-lg mt-4">
-                    <div className="text-center mb-2 text-sm text-gray-400">T-Side PIV Rating</div>
-                    <div className="text-center text-3xl font-bold text-yellow-500">{Math.round((player.tPIV || player.piv * 0.95) * 100)}</div>
+              {player.tMetrics && player.tRole ? (
+                <div className="flex flex-col md:flex-row gap-6">
+                  <div className="flex-1 bg-gray-800 rounded-lg p-4">
+                    <h3 className="text-lg font-medium mb-4">T-Side Performance</h3>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Skull className="h-5 w-5 text-yellow-500" />
+                      <span className="font-semibold text-sm text-gray-300">T-Side Role:</span>
+                      <RoleBadge role={player.tRole} />
+                    </div>
                     
-                    <div className="mt-4 space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Opening Duels</span>
-                        <span className="font-medium">{player.rawStats.tFirstKills || player.rawStats.firstKills} / {player.rawStats.tFirstDeaths || player.rawStats.firstDeaths}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">T Rounds Won</span>
-                        <span className="font-medium">{player.rawStats.tRoundsWon || '-'}</span>
+                    <div className="p-4 bg-gray-700 rounded-lg mt-4">
+                      <div className="text-center mb-2 text-sm text-gray-400">T-Side PIV Rating</div>
+                      <div className="text-center text-3xl font-bold text-yellow-500">{Math.round((player.tPIV || 0) * 100)}</div>
+                      
+                      <div className="mt-4 space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Opening Duels</span>
+                          <span className="font-medium">{player.rawStats.tFirstKills} / {player.rawStats.tFirstDeaths}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">T Rounds Won</span>
+                          <span className="font-medium">{player.rawStats.tRoundsWon}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                
-                <div className="flex-1 bg-gray-800 rounded-lg p-4">
-                  <h3 className="text-lg font-medium mb-2">T-Side Role Metrics</h3>
-                  <div className="mt-4 space-y-3">
-                    {player.tMetrics ? (
-                      tMetricsKeys.map((metric: string) => (
+                  
+                  <div className="flex-1 bg-gray-800 rounded-lg p-4">
+                    <h3 className="text-lg font-medium mb-2">T-Side Role Metrics</h3>
+                    <div className="mt-4 space-y-3">
+                      {tMetricsKeys.map((metric: string) => (
                         <ProgressMetric
                           key={metric}
                           label={metric}
@@ -335,56 +317,49 @@ export default function PlayerDetailPage() {
                           color="bg-yellow-500"
                           description={`${metric} - T-side performance metric`}
                         />
-                      ))
-                    ) : (
-                      // Fallback metrics if T-side metrics aren't available
-                      Object.keys(player.metrics.rcs.metrics).slice(0, 5).map((metric) => (
-                        <ProgressMetric
-                          key={metric}
-                          label={metric}
-                          value={player.metrics.rcs.metrics[metric]}
-                          color="bg-yellow-500"
-                          description={getMetricDescription(metric, player)}
-                        />
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="ct-side" className="space-y-4">
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="flex-1 bg-gray-800 rounded-lg p-4">
-                  <h3 className="text-lg font-medium mb-4">CT-Side Performance</h3>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Shield className="h-5 w-5 text-blue-500" />
-                    <span className="font-semibold text-sm text-gray-300">CT-Side Role:</span>
-                    <RoleBadge role={player.ctRole || player.role} />
-                  </div>
-                  
-                  <div className="p-4 bg-gray-700 rounded-lg mt-4">
-                    <div className="text-center mb-2 text-sm text-gray-400">CT-Side PIV Rating</div>
-                    <div className="text-center text-3xl font-bold text-blue-500">{Math.round((player.ctPIV || player.piv * 1.05) * 100)}</div>
-                    
-                    <div className="mt-4 space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Opening Duels</span>
-                        <span className="font-medium">{player.rawStats.ctFirstKills || player.rawStats.firstKills} / {player.rawStats.ctFirstDeaths || player.rawStats.firstDeaths}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">CT Rounds Won</span>
-                        <span className="font-medium">{player.rawStats.ctRoundsWon || '-'}</span>
-                      </div>
+                      ))}
                     </div>
                   </div>
                 </div>
-                
-                <div className="flex-1 bg-gray-800 rounded-lg p-4">
-                  <h3 className="text-lg font-medium mb-2">CT-Side Role Metrics</h3>
-                  <div className="mt-4 space-y-3">
-                    {player.ctMetrics ? (
-                      ctMetricsKeys.map((metric: string) => (
+              ) : (
+                <div className="text-center text-gray-400 p-8">
+                  No T-side specific data available for this player.
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="ct-side" className="space-y-4">
+              {player.ctMetrics && player.ctRole ? (
+                <div className="flex flex-col md:flex-row gap-6">
+                  <div className="flex-1 bg-gray-800 rounded-lg p-4">
+                    <h3 className="text-lg font-medium mb-4">CT-Side Performance</h3>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Shield className="h-5 w-5 text-blue-500" />
+                      <span className="font-semibold text-sm text-gray-300">CT-Side Role:</span>
+                      <RoleBadge role={player.ctRole} />
+                    </div>
+                    
+                    <div className="p-4 bg-gray-700 rounded-lg mt-4">
+                      <div className="text-center mb-2 text-sm text-gray-400">CT-Side PIV Rating</div>
+                      <div className="text-center text-3xl font-bold text-blue-500">{Math.round((player.ctPIV || 0) * 100)}</div>
+                      
+                      <div className="mt-4 space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Opening Duels</span>
+                          <span className="font-medium">{player.rawStats.ctFirstKills} / {player.rawStats.ctFirstDeaths}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">CT Rounds Won</span>
+                          <span className="font-medium">{player.rawStats.ctRoundsWon}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 bg-gray-800 rounded-lg p-4">
+                    <h3 className="text-lg font-medium mb-2">CT-Side Role Metrics</h3>
+                    <div className="mt-4 space-y-3">
+                      {ctMetricsKeys.map((metric: string) => (
                         <ProgressMetric
                           key={metric}
                           label={metric}
@@ -392,114 +367,69 @@ export default function PlayerDetailPage() {
                           color="bg-blue-500"
                           description={`${metric} - CT-side performance metric`}
                         />
-                      ))
-                    ) : (
-                      // Fallback metrics if CT-side metrics aren't available
-                      Object.keys(player.metrics.rcs.metrics).slice(0, 5).map((metric) => (
-                        <ProgressMetric
-                          key={metric}
-                          label={metric}
-                          value={player.metrics.rcs.metrics[metric]}
-                          color="bg-blue-500"
-                          description={getMetricDescription(metric, player)}
-                        />
-                      ))
-                    )}
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="text-center text-gray-400 p-8">
+                  No CT-side specific data available for this player.
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>
         
         <div className="mt-8">
-          <h3 className="text-lg font-medium mb-4">Raw Statistics</h3>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="col-span-2 md:col-span-3 lg:col-span-6 bg-gray-800 rounded-lg p-4">
-              <div className="text-sm text-gray-400 mb-2">Overall Performance</div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-gray-700 rounded-lg p-3">
-                  <div className="text-xs text-gray-400">K/D</div>
-                  <div className="text-lg font-medium mt-1">
-                    {(() => {
-                      const kd = player.rawStats.kd || 0;
-                      return isNaN(kd) ? '0.00' : kd.toFixed(2);
-                    })()}
-                  </div>
-                </div>
-                <div className="bg-gray-700 rounded-lg p-3">
-                  <div className="text-xs text-gray-400">KPR</div>
-                  <div className="text-lg font-medium mt-1">
-                    {(() => {
-                      const totalRounds = (player.rawStats.tRoundsWon || 0) + (player.rawStats.ctRoundsWon || 0) + (player.rawStats.deaths || 0);
-                      return totalRounds > 0 ? ((player.rawStats.kills || 0) / totalRounds).toFixed(2) : '0.00';
-                    })()}
-                  </div>
-                </div>
-                <div className="bg-gray-700 rounded-lg p-3">
-                  <div className="text-xs text-gray-400">HS %</div>
-                  <div className="text-lg font-medium mt-1">
-                    {(() => {
-                      const kills = player.rawStats.kills || 0;
-                      const headshots = player.rawStats.headshots || 0;
-                      return kills > 0 ? `${Math.round((headshots / kills) * 100)}%` : '0%';
-                    })()}
-                  </div>
-                </div>
-              </div>
-            </div>
-            
+          <h3 className="text-lg font-medium">Raw Statistics</h3>
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-xs text-gray-400">Kills</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.kills || 0}</div>
+              <div className="text-sm text-gray-400">K/D</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.kd.toFixed(2)}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-xs text-gray-400">Deaths</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.deaths || 0}</div>
+              <div className="text-sm text-gray-400">Kills</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.kills}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-xs text-gray-400">Assists</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.assists || 0}</div>
+              <div className="text-sm text-gray-400">Deaths</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.deaths}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-xs text-gray-400">Headshots</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.headshots || 0}</div>
+              <div className="text-sm text-gray-400">Assists</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.assists}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-xs text-gray-400">Flash Assists</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.assistedFlashes || 0}</div>
+              <div className="text-sm text-gray-400">Headshots</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.headshots}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-xs text-gray-400">Utility</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.totalUtilityThrown || 0}</div>
-            </div>
-          </div>
-          
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-xs text-gray-400">First Kills</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.firstKills || 0}</div>
+              <div className="text-sm text-gray-400">Flash Assists</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.assistedFlashes}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-xs text-gray-400">First Deaths</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.firstDeaths || 0}</div>
+              <div className="text-sm text-gray-400">First Kills</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.firstKills}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-xs text-gray-400">No Scope</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.noScope || 0}</div>
+              <div className="text-sm text-gray-400">First Deaths</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.firstDeaths}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-xs text-gray-400">Smoke Kills</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.throughSmoke || 0}</div>
+              <div className="text-sm text-gray-400">Utility Thrown</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.totalUtilityThrown}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-xs text-gray-400">Blind Kills</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.blindKills || 0}</div>
+              <div className="text-sm text-gray-400">No Scope Kills</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.noScope}</div>
             </div>
             <div className="bg-gray-800 rounded-lg p-3">
-              <div className="text-xs text-gray-400">Wallbangs</div>
-              <div className="text-lg font-medium mt-1">{player.rawStats.wallbangKills || 0}</div>
+              <div className="text-sm text-gray-400">Smoke Kills</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.throughSmoke}</div>
+            </div>
+            <div className="bg-gray-800 rounded-lg p-3">
+              <div className="text-sm text-gray-400">Blind Kills</div>
+              <div className="text-lg font-medium mt-1">{player.rawStats.blindKills}</div>
             </div>
           </div>
         </div>

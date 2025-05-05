@@ -6,48 +6,17 @@ import { processPlayerStatsWithRoles } from "./newPlayerAnalytics";
 import { calculateTeamImpactRatings } from "./teamAnalytics";
 import { loadPlayerRoles } from "./roleParser";
 import { initializeRoundData } from "./roundDataLoader";
-import { loadParquetData } from "./parquetDataLoader";
-import * as fs from 'fs';
-import * as path from 'path';
-import { parse } from 'csv-parse/sync';
+import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize data on server start
   try {
-    // Try to load from parquet first (processed combined data from both tournaments)
-    let rawPlayerStats;
-    let sourceDescription = '';
-    
-    try {
-      console.log('Loading data from processed parquet files...');
-      rawPlayerStats = await loadParquetData();
-      sourceDescription = 'parquet';
-      console.log(`Loaded ${rawPlayerStats.length} players from parquet files`);
-    } catch (parquetError) {
-      console.error('Error loading from parquet, falling back to CSV:', parquetError);
-      console.log('Loading player data from CSV...');
-      rawPlayerStats = await loadNewPlayerStats();
-      sourceDescription = 'CSV';
-      console.log(`Loaded ${rawPlayerStats.length} players from CSV files`);
-    }
+    console.log('Loading and processing player data...');
+    const rawPlayerStats = await loadNewPlayerStats();
     
     // Load player roles from CSV
     console.log('Loading player roles from CSV...');
     const roleMap = await loadPlayerRoles();
-    
-    // Debug logging for CSV data
-    console.log(`Role map contains ${roleMap.size} players`);
-    console.log(`Looking for Ex3rcice in role map: ${roleMap.has('Ex3rcice') ? 'FOUND' : 'NOT FOUND'}`);
-    
-    // Debug logging for raw player data
-    const ex3rciceInData = rawPlayerStats.find(p => p.userName === 'Ex3rcice' || p.userName.includes('Ex3rcice'));
-    if (ex3rciceInData) {
-      console.log(`Found Ex3rcice in raw player data: ${ex3rciceInData.userName}`);
-    } else {
-      console.log(`Ex3rcice NOT found in raw player data (${rawPlayerStats.length} players total)`);
-      // Log the first 5 player names for debugging
-      console.log(`Sample players: ${rawPlayerStats.slice(0, 5).map(p => p.userName).join(', ')}`);
-    }
     
     // Process player stats with roles and calculate PIV
     const playersWithPIV = processPlayerStatsWithRoles(rawPlayerStats, roleMap);
@@ -59,7 +28,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await storage.setPlayers(playersWithPIV);
     await storage.setTeams(teamsWithTIR);
     
-    console.log(`Processed ${playersWithPIV.length} players from ${sourceDescription} and ${teamsWithTIR.length} teams`);
+    console.log(`Processed ${playersWithPIV.length} players and ${teamsWithTIR.length} teams`);
     
     // Load and process round data
     await initializeRoundData();
@@ -143,77 +112,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching round metrics:', error);
       res.status(500).json({ message: 'Failed to fetch round metrics' });
-    }
-  });
-
-  // Weights endpoint
-  app.get('/api/weights', async (req: Request, res: Response) => {
-    try {      
-      const weightsPath = path.join(process.cwd(), 'clean/weights/latest/learned_weights.csv');
-      
-      // Check if weights file exists
-      if (!fs.existsSync(weightsPath)) {
-        return res.status(404).json({
-          error: 'No learned weights available',
-          weights: {},
-          metadata: {
-            date: new Date().toISOString().split('T')[0],
-            version: 'default',
-            samples: 0
-          }
-        });
-      }
-      
-      // Read and parse weights CSV
-      const fileContent = fs.readFileSync(weightsPath, 'utf8');
-      const records = parse(fileContent, {
-        columns: true,
-        skip_empty_lines: true
-      });
-      
-      // Extract metadata
-      const metadata: { 
-        date: string;
-        version: string;
-        samples: number;
-        [key: string]: string | number; // Allow indexing with string
-      } = {
-        date: new Date().toISOString().split('T')[0],
-        version: 'unknown',
-        samples: 0
-      };
-      
-      // Process weights
-      const weights: Record<string, number> = {};
-      
-      records.forEach((record: any) => {
-        if (record.feature.startsWith('metadata_')) {
-          const key = record.feature.replace('metadata_', '');
-          if (key === 'date' || key === 'version') {
-            metadata[key] = String(record.weight);
-          } else if (key === 'samples') {
-            metadata[key] = parseInt(record.weight, 10) || 0;
-          }
-        } else {
-          weights[record.feature] = parseFloat(record.weight) || 0;
-        }
-      });
-      
-      res.json({
-        weights,
-        metadata
-      });
-    } catch (error: any) {
-      console.error('Error fetching weights:', error);
-      res.status(500).json({
-        error: `Error loading weights: ${error?.message || 'Unknown error'}`,
-        weights: {},
-        metadata: {
-          date: new Date().toISOString().split('T')[0],
-          version: 'error',
-          samples: 0
-        }
-      });
     }
   });
 

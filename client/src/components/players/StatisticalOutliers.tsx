@@ -35,44 +35,27 @@ export default function StatisticalOutliers({ players }: StatisticalOutlierProps
       icon: <Target className="h-6 w-6 text-amber-400" />,
       gradient: "from-amber-700 to-amber-500",
       calculation: (players) => {
-        const playersWithScores = players
+        return players
           .filter(p => p.rawStats.firstKills > 0)
-          .map(player => {
-            const openingKillRatio = player.rawStats.firstKills / Math.max(player.rawStats.firstKills + player.rawStats.firstDeaths, 1);
-            return { player, score: openingKillRatio };
-          })
-          .sort((a, b) => b.score - a.score);
-          
-        return playersWithScores.length > 0 ? playersWithScores[0].player : null;
+          .sort((a, b) => (
+            (b.rawStats.firstKills / Math.max(b.rawStats.firstKills + b.rawStats.firstDeaths, 1)) -
+            (a.rawStats.firstKills / Math.max(a.rawStats.firstKills + a.rawStats.firstDeaths, 1))
+          ))[0] || null;
       }
     },
     {
-      title: "Pistol Master",
-      description: "Best pistol round performance",
-      metricKey: "Pistol Round Rating",
+      title: "Headshot Machine",
+      description: "Highest headshot percentage",
+      metricKey: "Headshot %",
       icon: <Zap className="h-6 w-6 text-red-400" />,
       gradient: "from-red-700 to-red-500",
       calculation: (players) => {
-        // Store the original player objects with their calculated scores to preserve correct IDs
-        const playersWithScores = players
-          .filter(p => p.rawStats.kills > 0) // Ensure some baseline activity
-          .map(player => {
-            // Calculate a pistol score based on utility usage and effectiveness in pistol rounds
-            const pistolUtilityUsage = (
-              player.rawStats.flashesThrownInPistolRound +
-              player.rawStats.heThrownInPistolRound +
-              player.rawStats.infernosThrownInPistolRound +
-              player.rawStats.smokesThrownInPistolRound
-            );
-            // Combine with first kill ratio to measure overall pistol round impact
-            const firstKillRatio = player.rawStats.firstKills / Math.max(player.rawStats.firstKills + player.rawStats.firstDeaths, 1);
-            // Create a composite pistol score
-            const pistolScore = (pistolUtilityUsage * 0.6) + (firstKillRatio * 0.4);
-            return { player, pistolScore };
-          })
-          .sort((a, b) => b.pistolScore - a.pistolScore);
-          
-        return playersWithScores.length > 0 ? playersWithScores[0].player : null;
+        return players
+          .filter(p => p.rawStats.kills > 10) // Minimum kill threshold for relevance
+          .sort((a, b) => (
+            (b.rawStats.headshots / Math.max(b.rawStats.kills, 1)) -
+            (a.rawStats.headshots / Math.max(a.rawStats.kills, 1))
+          ))[0] || null;
       }
     },
     {
@@ -82,15 +65,12 @@ export default function StatisticalOutliers({ players }: StatisticalOutlierProps
       icon: <Sparkles className="h-6 w-6 text-blue-400" />,
       gradient: "from-blue-700 to-blue-500",
       calculation: (players) => {
-        const playersWithScores = players
+        return players
           .filter(p => p.rawStats.totalUtilityThrown > 20) // Minimum utility usage
-          .map(player => {
-            const flashEfficiency = player.rawStats.assistedFlashes / Math.max(player.rawStats.flashesThrown, 1);
-            return { player, score: flashEfficiency };
-          })
-          .sort((a, b) => b.score - a.score);
-          
-        return playersWithScores.length > 0 ? playersWithScores[0].player : null;
+          .sort((a, b) => (
+            (b.rawStats.assistedFlashes / Math.max(b.rawStats.flashesThrown, 1)) -
+            (a.rawStats.assistedFlashes / Math.max(a.rawStats.flashesThrown, 1))
+          ))[0] || null;
       }
     },
     {
@@ -197,16 +177,10 @@ export default function StatisticalOutliers({ players }: StatisticalOutlierProps
 
   // Format a metric value as a percentage
   const formatMetricValue = (player: PlayerWithPIV, metricKey: string): string => {
-    // For pistol round rating
-    if (metricKey === "Pistol Round Rating") {
-      // Get pistol utility count
-      const pistolUtility = (
-        player.rawStats.flashesThrownInPistolRound +
-        player.rawStats.heThrownInPistolRound +
-        player.rawStats.infernosThrownInPistolRound +
-        player.rawStats.smokesThrownInPistolRound
-      );
-      return `${pistolUtility} util`;
+    // For headshot percentage
+    if (metricKey === "Headshot %") {
+      const hsPercentage = (player.rawStats.headshots / Math.max(player.rawStats.kills, 1)) * 100;
+      return `${hsPercentage.toFixed(1)}%`;
     }
     
     // For first blood impact

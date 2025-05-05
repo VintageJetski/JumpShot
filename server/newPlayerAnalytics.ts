@@ -576,11 +576,6 @@ export function processPlayerStatsWithRoles(
   rawStats: PlayerRawStats[], 
   roleMap: Map<string, PlayerRoleInfo>
 ): PlayerWithPIV[] {
-  // Add custom role mapping for players not in the CSV
-  const customRoleOverrides: Record<string, { tRole: PlayerRole, ctRole: PlayerRole, isIGL: boolean }> = {
-    // Override nqz with AWP on both sides
-    'nqz': { tRole: PlayerRole.AWP, ctRole: PlayerRole.AWP, isIGL: false },
-  };
   // Group metrics by type for normalization
   const metricsByType: Record<string, number[]> = {};
   
@@ -591,54 +586,16 @@ export function processPlayerStatsWithRoles(
     // Try to find player in role map
     const roleInfo = findPlayerRoleInfo(stats.userName, roleMap);
     
-    // Debug logging for specific players
-    if (stats.userName === 'Ex3rcice' || stats.userName.includes('Ex3rcice')) {
-      console.log(`DEBUG: Found Ex3rcice in raw data. Name: ${stats.userName}, Role info found:`, roleInfo ? 'YES' : 'NO');
-      if (roleInfo) {
-        console.log(`DEBUG: Ex3rcice roles - T: ${roleInfo.tRole}, CT: ${roleInfo.ctRole}, IGL: ${roleInfo.isIGL}`);
-      }
+    if (!roleInfo) {
+      console.warn(`No role information found for player ${stats.userName}, skipping`);
+      // Skip players that are not in the role dataset (per user request)
+      continue;
     }
     
-    // Check if we have role information from the CSV or custom overrides
-    let tRole, ctRole, isIGL;
-    
-    // Check for custom role override first
-    if (customRoleOverrides[stats.userName]) {
-      console.log(`Using custom role override for player ${stats.userName}`); 
-      const override = customRoleOverrides[stats.userName];
-      tRole = override.tRole;
-      ctRole = override.ctRole;
-      isIGL = override.isIGL;
-    } else if (roleInfo) {
-      // Get roles from CSV data
-      tRole = roleInfo.tRole;
-      ctRole = roleInfo.ctRole;
-      isIGL = roleInfo.isIGL;
-    } else {
-      console.warn(`No role information found for player ${stats.userName}, using inferred roles`);
-      // Infer roles based on stats
-      isIGL = false;
-      
-      // Infer T-side role based on statistics
-      if (stats.noScope > 0) {
-        tRole = PlayerRole.AWP;
-      } else if ((stats.tFirstKills || 0) > (stats.tFirstDeaths || 0)) {
-        tRole = PlayerRole.Spacetaker;
-      } else if ((stats.assists || 0) > (stats.kills || 1) * 0.3) {
-        tRole = PlayerRole.Support;
-      } else {
-        tRole = PlayerRole.Lurker;
-      }
-      
-      // Infer CT-side role based on statistics
-      if (stats.noScope > 0) {
-        ctRole = PlayerRole.AWP;
-      } else if ((stats.ctFirstKills || 0) > (stats.ctFirstDeaths || 0)) {
-        ctRole = PlayerRole.Anchor;
-      } else {
-        ctRole = PlayerRole.Rotator;
-      }
-    }
+    // Get roles from CSV data
+    const tRole = roleInfo.tRole;
+    const ctRole = roleInfo.ctRole;
+    const isIGL = roleInfo.isIGL;
     
     // Calculate T-side metrics
     const tMetrics = evaluateTSideMetrics(stats, tRole);
@@ -949,47 +906,32 @@ function calculatePlayerWithPIV(
  * Find a player in the role map by fuzzy name matching
  */
 function findPlayerRoleInfo(playerName: string, roleMap: Map<string, PlayerRoleInfo>): PlayerRoleInfo | undefined {
-  // Try using the common implementation but avoid circular dependencies
-  // In a real project, we'd refactor this to a shared utility file
-  
-  // Use our own implementation
   // Try direct match
   if (roleMap.has(playerName)) {
     return roleMap.get(playerName);
-  }
-  
-  // Remove any parenthetical additions and spaces
-  const cleanName = playerName.replace(/\s*\([^)]*\)\s*/g, '').trim();
-  if (roleMap.has(cleanName)) {
-    return roleMap.get(cleanName);
   }
   
   // Convert to arrays for easier iteration
   const entries = Array.from(roleMap.entries());
   
   // Try case-insensitive match
-  const lowerPlayerName = cleanName.toLowerCase();
+  const lowerPlayerName = playerName.toLowerCase();
   for (const [name, info] of entries) {
     if (name.toLowerCase() === lowerPlayerName) {
       return info;
     }
   }
   
-  // Try partial match (where player name is part of a name in the map)
-  for (const [name, info] of entries) {
-    if (name.toLowerCase().includes(lowerPlayerName) || 
-        lowerPlayerName.includes(name.toLowerCase())) {
-      return info;
-    }
+  // Try to match without parenthetical information
+  const basePlayerName = playerName.replace(/\s*\([^)]*\)\s*/g, '').trim();
+  if (basePlayerName !== playerName) {
+    return findPlayerRoleInfo(basePlayerName, roleMap);
   }
   
-  // Try first name match
-  const firstName = cleanName.split(' ')[0].toLowerCase();
-  if (firstName.length > 2) {
-    for (const [name, info] of entries) {
-      if (name.toLowerCase().startsWith(firstName)) {
-        return info;
-      }
+  // Try partial match (where player name is part of a name in the map)
+  for (const [name, info] of entries) {
+    if (name.includes(playerName) || playerName.includes(name)) {
+      return info;
     }
   }
   

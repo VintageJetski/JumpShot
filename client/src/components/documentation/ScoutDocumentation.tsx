@@ -157,47 +157,9 @@ export function ScoutDocumentation() {
           </div>
           <p className="text-sm mt-2">This provides a comprehensive assessment of how well a player would integrate with the existing team structure and playstyle.</p>
         </div>
-        
-        <h3 className="text-lg font-semibold mt-8">New Scouting Features</h3>
-        
-        <div className="grid md:grid-cols-2 gap-4 mt-4">
-          <div className="border border-gray-700 rounded-md p-4">
-            <h4 className="font-medium text-primary mb-2">Player Replacement Scout</h4>
-            <p className="text-sm">This feature recommends optimal player replacements for a team based on:</p>
-            <ul className="list-disc pl-6 space-y-1 text-sm mt-2">
-              <li>Projected PIV improvement for the team</li>
-              <li>Role-specific fit within the team</li>
-              <li>Statistical compatibility with existing players</li>
-              <li>Targeted role replacement options</li>
-            </ul>
-            <p className="text-sm mt-2">The system calculates the potential percentage improvement a new player would bring to the team's average PIV, helping managers make data-driven roster decisions.</p>
-          </div>
-          
-          <div className="border border-gray-700 rounded-md p-4">
-            <h4 className="font-medium text-primary mb-2">Lineup Synergy Matrix</h4>
-            <p className="text-sm">This feature provides an interactive matrix to analyze potential chemistry between players:</p>
-            <ul className="list-disc pl-6 space-y-1 text-sm mt-2">
-              <li>Player-to-player synergy ratings</li>
-              <li>Overall team synergy score</li>
-              <li>Custom lineup selection and testing</li>
-              <li>Visualization of synergy strengths and weaknesses</li>
-            </ul>
-            <p className="text-sm mt-2">The synergy matrix helps identify complementary playstyles, role compatibilities, and potential lineup issues before finalizing roster decisions.</p>
-          </div>
-        </div>
-        
-        <div className="bg-black/20 p-4 rounded-md mt-6">
-          <h4 className="font-medium text-primary mb-2">API Integration</h4>
-          <p className="text-sm">The new scouting features are powered by dedicated backend API endpoints:</p>
-          <ul className="list-disc pl-6 space-y-1 text-sm mt-2">
-            <li><code>/api/recommend/replacement</code> - Player replacement recommendations</li>
-            <li><code>/api/lineup/synergy</code> - Lineup synergy calculations</li>
-          </ul>
-          <p className="text-sm mt-2">These endpoints perform complex calculations to determine optimal player fits and synergy ratings based on complementary metrics and playstyles.</p>
-        </div>
       </CardContent>
       <CardFooter className="text-sm text-gray-400">
-        Last updated: May 1, 2025
+        Last updated: April 28, 2024
       </CardFooter>
     </Card>
   );

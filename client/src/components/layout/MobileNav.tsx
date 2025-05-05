@@ -11,8 +11,7 @@ import {
   Search,
   PieChart,
   Sigma,
-  Sparkles,
-  Trophy
+  Sparkles
 } from "lucide-react";
 import {
   Sheet,
@@ -76,7 +75,7 @@ export default function MobileNav() {
 
   return (
     <nav className="md:hidden glassmorphism py-3 px-4 border-t border-white/5 z-40">
-      <div className="flex justify-between">
+      <div className="flex justify-around">
         <MobileNavItem 
           href="/players" 
           icon={<Users className="h-6 w-6" />} 
@@ -126,34 +125,6 @@ export default function MobileNav() {
           <SheetContent side="bottom" className="glassmorphism rounded-t-xl h-auto border-t border-white/10 backdrop-blur-xl p-4">
             <div className="py-4 space-y-4">
               <div className="flex items-center px-4 mb-2">
-                <Trophy className="h-4 w-4 text-blue-400 mr-2" />
-                <h3 className="text-sm text-blue-300 uppercase font-semibold">Teams & Roles</h3>
-                <div className="ml-2 h-px flex-grow bg-gradient-to-r from-blue-500/50 to-transparent"></div>
-              </div>
-              <div className="space-y-1.5">
-                <SheetNavItem 
-                  href="/teams" 
-                  icon={<UsersRound />} 
-                  label="Teams" 
-                  isActive={isActive("/teams")} 
-                />
-                
-                <SheetNavItem 
-                  href="/teams-roles" 
-                  icon={<Trophy />} 
-                  label="Teams & Roles" 
-                  isActive={isActive("/teams-roles")} 
-                />
-                
-                <SheetNavItem 
-                  href="/role-weightings" 
-                  icon={<LineChart />} 
-                  label="Role Weightings" 
-                  isActive={isActive("/role-weightings")} 
-                />
-              </div>
-              
-              <div className="flex items-center px-4 mb-2 mt-6">
                 <Sparkles className="h-4 w-4 text-blue-400 mr-2" />
                 <h3 className="text-sm text-blue-300 uppercase font-semibold">Advanced Analytics</h3>
                 <div className="ml-2 h-px flex-grow bg-gradient-to-r from-blue-500/50 to-transparent"></div>
@@ -213,16 +184,9 @@ export default function MobileNav() {
         </Sheet>
         
         <MobileNavItem 
-          href="/teams-roles" 
-          icon={<Trophy className="h-6 w-6" />} 
-          label="T&R" 
-          isActive={isActive("/teams-roles")} 
-        />
-        
-        <MobileNavItem 
           href="/role-weightings" 
           icon={<LineChart className="h-6 w-6" />} 
-          label="Weights" 
+          label="Roles" 
           isActive={isActive("/role-weightings")} 
         />
         

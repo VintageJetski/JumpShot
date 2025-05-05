@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Search, Filter, Users, Medal, User2, Target, Lightbulb, Shield, CircleDot, List, ChevronRight } from "lucide-react";
+import { Search, Filter, Users, Medal, User2, Target, Lightbulb, Shield, CircleDot } from "lucide-react";
 import { PlayerWithPIV, PlayerRole } from "@shared/schema";
 import { DataTable } from "@/components/ui/data-table";
 import PlayerCard from "@/components/players/PlayerCard";
@@ -18,7 +18,7 @@ export default function PlayersPage() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("All Roles");
-  const [viewMode, setViewMode] = useState<"cards" | "table" | "teams" | "list">("cards");
+  const [viewMode, setViewMode] = useState<"cards" | "table" | "teams">("cards");
   
   // Fetch all players data (we'll filter client-side for more flexibility)
   const { data: players, isLoading, isError } = useQuery<PlayerWithPIV[]>({
@@ -292,38 +292,53 @@ export default function PlayersPage() {
           </motion.div>
           
           {/* View Mode Selector */}
-          <div className="flex bg-blue-900/30 border border-blue-500/20 rounded-lg overflow-hidden">
+          <div className="glassmorphism rounded-lg flex p-1 relative overflow-hidden">
+            {/* Animated background highlight */}
+            <motion.div 
+              className="absolute h-8 rounded-md bg-blue-600 z-0"
+              layoutId="viewModeHighlight"
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 30
+              }}
+              style={{
+                width: viewMode === "cards" ? "82px" : viewMode === "teams" ? "85px" : "80px",
+                left: viewMode === "cards" ? "4px" : viewMode === "teams" ? "90px" : "180px",
+                top: "4px"
+              }}
+            />
+            
+            {/* Buttons */}
             <Button
-              variant={viewMode === "cards" ? "default" : "ghost"}
+              variant="ghost"
               size="sm"
-              className={`px-3 rounded-none ${viewMode === "cards" ? "bg-blue-600 text-white" : "bg-transparent text-blue-300 hover:text-blue-100"}`}
+              className={`px-3 relative z-10 ${viewMode === "cards" ? "text-white" : "text-blue-300 hover:text-blue-100"}`}
               onClick={() => setViewMode("cards")}
             >
-              <Filter className="h-4 w-4 mr-1" /> Cards
+              <motion.span className="flex items-center" animate={{ scale: viewMode === "cards" ? 1.05 : 1 }}>
+                <Filter className="h-4 w-4 mr-1" /> Cards
+              </motion.span>
             </Button>
             <Button
-              variant={viewMode === "list" ? "default" : "ghost"}
+              variant="ghost"
               size="sm"
-              className={`px-3 rounded-none ${viewMode === "list" ? "bg-blue-600 text-white" : "bg-transparent text-blue-300 hover:text-blue-100"}`}
-              onClick={() => setViewMode("list")}
-            >
-              <List className="h-4 w-4 mr-1" /> List
-            </Button>
-            <Button
-              variant={viewMode === "teams" ? "default" : "ghost"}
-              size="sm"
-              className={`px-3 rounded-none ${viewMode === "teams" ? "bg-blue-600 text-white" : "bg-transparent text-blue-300 hover:text-blue-100"}`}
+              className={`px-3 relative z-10 ${viewMode === "teams" ? "text-white" : "text-blue-300 hover:text-blue-100"}`}
               onClick={() => setViewMode("teams")}
             >
-              <Users className="h-4 w-4 mr-1" /> Teams
+              <motion.span className="flex items-center" animate={{ scale: viewMode === "teams" ? 1.05 : 1 }}>
+                <Users className="h-4 w-4 mr-1" /> Teams
+              </motion.span>
             </Button>
             <Button
-              variant={viewMode === "table" ? "default" : "ghost"}
+              variant="ghost"
               size="sm"
-              className={`px-3 rounded-none ${viewMode === "table" ? "bg-blue-600 text-white" : "bg-transparent text-blue-300 hover:text-blue-100"}`}
+              className={`px-3 relative z-10 ${viewMode === "table" ? "text-white" : "text-blue-300 hover:text-blue-100"}`}
               onClick={() => setViewMode("table")}
             >
-              <Medal className="h-4 w-4 mr-1" /> Table
+              <motion.span className="flex items-center" animate={{ scale: viewMode === "table" ? 1.05 : 1 }}>
+                <Medal className="h-4 w-4 mr-1" /> Table
+              </motion.span>
             </Button>
           </div>
         </motion.div>
@@ -340,7 +355,60 @@ export default function PlayersPage() {
         onSelectRole={setRoleFilter}
       />
 
-      {/* Removed the Stats Overview Cards section */}
+      {/* Stats Overview Cards (Top Players) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8">
+        {topPlayersByRole.highest && (
+          <EnhancedStatsCard
+            title="Highest PIV"
+            value={topPlayersByRole.highest.name}
+            metric={`${Math.round(topPlayersByRole.highest.piv * 100)} PIV`}
+            metricColor="text-green-400"
+            bgGradient="from-green-700 to-green-500"
+            icon={<User2 className="h-6 w-6 text-green-400" />}
+            subtext={`Team: ${topPlayersByRole.highest.team}`}
+            index={0}
+          />
+        )}
+        
+        {topPlayersByRole.igl && (
+          <EnhancedStatsCard
+            title="Best IGL"
+            value={topPlayersByRole.igl.name}
+            metric={`${Math.round(topPlayersByRole.igl.piv * 100)} PIV`}
+            metricColor="text-purple-400"
+            bgGradient="from-purple-700 to-purple-500"
+            icon={<Lightbulb className="h-6 w-6 text-purple-400" />}
+            subtext={`${topPlayersByRole.igl.primaryMetric.name}: ${topPlayersByRole.igl.primaryMetric.value.toFixed(2)}`}
+            index={1}
+          />
+        )}
+        
+        {topPlayersByRole.awper && (
+          <EnhancedStatsCard
+            title="Best AWPer"
+            value={topPlayersByRole.awper.name}
+            metric={`${Math.round(topPlayersByRole.awper.piv * 100)} PIV`}
+            metricColor="text-amber-400"
+            bgGradient="from-amber-700 to-amber-500"
+            icon={<Target className="h-6 w-6 text-amber-400" />}
+            subtext={`${topPlayersByRole.awper.primaryMetric.name}: ${topPlayersByRole.awper.primaryMetric.value.toFixed(2)}`}
+            index={2}
+          />
+        )}
+        
+        {topPlayersByRole.spacetaker && (
+          <EnhancedStatsCard
+            title="Best Spacetaker"
+            value={topPlayersByRole.spacetaker.name}
+            metric={`${Math.round(topPlayersByRole.spacetaker.piv * 100)} PIV`}
+            metricColor="text-orange-400"
+            bgGradient="from-orange-700 to-orange-500"
+            icon={<User2 className="h-6 w-6 text-orange-400" />}
+            subtext={`${topPlayersByRole.spacetaker.primaryMetric.name}: ${topPlayersByRole.spacetaker.primaryMetric.value.toFixed(2)}`}
+            index={3}
+          />
+        )}
+      </div>
       
       {/* Display filtered players based on view mode */}
       <div className="min-h-[400px]">
@@ -440,64 +508,6 @@ export default function PlayersPage() {
                       </motion.div>
                     ))
                   }
-                </motion.div>
-              )}
-              
-              {/* List View */}
-              {viewMode === "list" && (
-                <motion.div 
-                  key="list"
-                  className="space-y-2"
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -15 }}
-                  transition={{ 
-                    duration: 0.5,
-                    ease: "easeOut",
-                    staggerChildren: 0.05,
-                    delayChildren: 0.05
-                  }}
-                  layout
-                >
-                  {filteredPlayers.map((player, index) => (
-                    <motion.div
-                      key={player.id}
-                      className="glassmorphism border-glow p-3 rounded-lg flex justify-between items-center cursor-pointer hover:bg-blue-900/30 transition-colors"
-                      onClick={() => setLocation(`/players/${player.id}`)}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ 
-                        duration: 0.3, 
-                        delay: index * 0.03,
-                        ease: "easeOut"
-                      }}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                    >
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full bg-blue-900/30 border border-blue-500/30 flex items-center justify-center text-sm font-bold text-white mr-3">
-                          {player.name.charAt(0)}
-                        </div>
-                        <div>
-                          <div className="font-medium text-white">{player.name}</div>
-                          <div className="text-xs text-blue-300">{player.team} • {player.role}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <div className="text-sm text-blue-300">PIV</div>
-                          <div className="font-semibold text-green-400">{Math.round(player.piv * 100)}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-blue-300">K/D</div>
-                          <div className={`font-semibold ${player.kd >= 1.0 ? 'text-green-400' : 'text-yellow-400'}`}>
-                            {player.kd.toFixed(2)}
-                          </div>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-blue-400/50" />
-                      </div>
-                    </motion.div>
-                  ))}
                 </motion.div>
               )}
               

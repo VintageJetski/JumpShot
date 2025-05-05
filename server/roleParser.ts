@@ -78,10 +78,10 @@ function mapToPlayerRole(roleString: string): PlayerRole {
 }
 
 /**
- * Helper function to load roles from a specific file path
+ * Load player roles from the CSV file in attached_assets
  */
-async function loadRolesFromSpecificFile(filePath: string): Promise<Map<string, PlayerRoleInfo>> {
-  console.log(`Loading roles from ${filePath}`);
+export async function loadPlayerRoles(): Promise<Map<string, PlayerRoleInfo>> {
+  const filePath = path.join(process.cwd(), 'attached_assets', 'CS2dkbasics - Teams and roles.csv');
   const playerRoles = await parsePlayerRolesFromCSV(filePath);
   
   // Create a map with player name as key for easy lookup
@@ -96,24 +96,11 @@ async function loadRolesFromSpecificFile(filePath: string): Promise<Map<string, 
 }
 
 /**
- * Load player roles from the CSV file in attached_assets
- */
-export async function loadPlayerRoles(): Promise<Map<string, PlayerRoleInfo>> {
-  // Use the exact filename from the attached assets
-  const filePath = path.join(process.cwd(), 'attached_assets', 'CS2dkbasics - Teams and roles.csv');
-  
-  // Try to load the file directly
-  return loadRolesFromSpecificFile(filePath);
-}
-
-/**
  * Find role info for a player by fuzzy matching names
  */
 export function findPlayerRoleInfo(playerName: string, roleMap: Map<string, PlayerRoleInfo>): PlayerRoleInfo | undefined {
-  // Remove any parenthetical additions and whitespace
-  const cleanName = playerName.replace(/\s*\([^)]*\)\s*/g, '').trim();
-  
   // First, try exact match
+  const cleanName = playerName.replace(/\s*\([^)]*\)\s*/g, '').trim();
   if (roleMap.has(cleanName)) {
     return roleMap.get(cleanName);
   }
@@ -125,25 +112,6 @@ export function findPlayerRoleInfo(playerName: string, roleMap: Map<string, Play
   for (const key of keys) {
     if (key.toLowerCase() === lowerName) {
       return roleMap.get(key);
-    }
-  }
-  
-  // Try partial matching (more aggressive)
-  for (const key of keys) {
-    // If player name contains the key or key contains the player name
-    if (cleanName.toLowerCase().includes(key.toLowerCase()) || 
-        key.toLowerCase().includes(lowerName)) {
-      return roleMap.get(key);
-    }
-  }
-  
-  // Try matching first name only
-  const firstName = cleanName.split(' ')[0].toLowerCase();
-  if (firstName.length > 2) { // Only try if first name is reasonably long
-    for (const key of keys) {
-      if (key.toLowerCase().startsWith(firstName)) {
-        return roleMap.get(key);
-      }
     }
   }
   

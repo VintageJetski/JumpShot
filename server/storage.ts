@@ -373,64 +373,13 @@ export class HybridStorage implements IStorage {
     // Clear the cache
     this.playersCache.clear();
     
-    // First pass: filter by ID to get unique IDs
-    const uniquePlayersById = new Map<string, PlayerWithPIV>();
-    for (const player of players) {
-      if (!player.id) continue; // Skip players without ID
-      
-      // If we already have this player ID, keep the one with the highest PIV
-      if (uniquePlayersById.has(player.id)) {
-        const existingPlayer = uniquePlayersById.get(player.id)!;
-        if (player.piv > existingPlayer.piv) {
-          uniquePlayersById.set(player.id, player);
-        }
-      } else {
-        uniquePlayersById.set(player.id, player);
-      }
-    }
-    
-    // Second pass: filter by name to remove duplicates across different IDs
-    const uniquePlayers = new Map<string, PlayerWithPIV>();
-    const nameToIdMap = new Map<string, string>(); // track which names map to which IDs
-    
-    // Convert the map entries to an array to avoid TypeScript iteration issues
-    const playerEntries = Array.from(uniquePlayersById.entries());
-    for (const [id, player] of playerEntries) {
-      if (!player.name) continue; // Skip players without names
-      
-      const normalizedName = player.name.toLowerCase().trim();
-      
-      // If we've seen this name before, we have a duplicate with different ID
-      if (nameToIdMap.has(normalizedName)) {
-        const existingId = nameToIdMap.get(normalizedName)!;
-        const existingPlayer = uniquePlayers.get(existingId)!;
-        
-        // Keep the one with the highest PIV
-        if (player.piv > existingPlayer.piv) {
-          // Remove the existing player with lower PIV
-          uniquePlayers.delete(existingId);
-          // Add the new player with higher PIV
-          uniquePlayers.set(id, player);
-          // Update the name mapping
-          nameToIdMap.set(normalizedName, id);
-        }
-      } else {
-        // First time seeing this player name
-        uniquePlayers.set(id, player);
-        nameToIdMap.set(normalizedName, id);
-      }
-    }
-    
-    console.log(`Filtered ${players.length} players to ${uniquePlayers.size} unique players (after name deduplication)`);
-    
     // Start a transaction
     await db.transaction(async (tx) => {
       // Delete existing player data
       await tx.delete(playerStats);
       
       // Insert new player data
-      const uniquePlayerArray = Array.from(uniquePlayers.values());
-      for (const player of uniquePlayerArray) {
+      for (const player of players) {
         // Cache players for future requests
         this.playersCache.set(player.id, player);
         

@@ -8,7 +8,6 @@ import TeamsPage from "@/pages/TeamsPage";
 import PlayerDetailPage from "@/pages/PlayerDetailPage";
 import TeamDetailPage from "@/pages/TeamDetailPage";
 import RoleWeightingsPage from "@/pages/RoleWeightingsPage";
-import TeamsRolesPage from "@/pages/TeamsRolesPage";
 import DocumentationPage from "@/pages/DocumentationPage";
 import PlayerComparisonsPage from "@/pages/PlayerComparisonsPage";
 import MatchPredictorPage from "@/pages/MatchPredictorPage";
@@ -27,7 +26,6 @@ function Router() {
         <Route path="/" component={PlayersPage} />
         <Route path="/players" component={PlayersPage} />
         <Route path="/teams" component={TeamsPage} />
-        <Route path="/teams-roles" component={TeamsRolesPage} />
         <Route path="/role-weightings" component={RoleWeightingsPage} />
         <Route path="/documentation" component={DocumentationPage} />
         <Route path="/player-comparisons" component={PlayerComparisonsPage} />

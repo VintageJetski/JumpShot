@@ -576,6 +576,11 @@ export function processPlayerStatsWithRoles(
   rawStats: PlayerRawStats[], 
   roleMap: Map<string, PlayerRoleInfo>
 ): PlayerWithPIV[] {
+  // Add custom role mapping for players not in the CSV
+  const customRoleOverrides: Record<string, { tRole: PlayerRole, ctRole: PlayerRole, isIGL: boolean }> = {
+    // Override nqz with AWP on both sides
+    'nqz': { tRole: PlayerRole.AWP, ctRole: PlayerRole.AWP, isIGL: false },
+  };
   // Group metrics by type for normalization
   const metricsByType: Record<string, number[]> = {};
   
@@ -594,10 +599,17 @@ export function processPlayerStatsWithRoles(
       }
     }
     
-    // Check if we have role information from the CSV
+    // Check if we have role information from the CSV or custom overrides
     let tRole, ctRole, isIGL;
     
-    if (roleInfo) {
+    // Check for custom role override first
+    if (customRoleOverrides[stats.userName]) {
+      console.log(`Using custom role override for player ${stats.userName}`); 
+      const override = customRoleOverrides[stats.userName];
+      tRole = override.tRole;
+      ctRole = override.ctRole;
+      isIGL = override.isIGL;
+    } else if (roleInfo) {
       // Get roles from CSV data
       tRole = roleInfo.tRole;
       ctRole = roleInfo.ctRole;

@@ -303,16 +303,7 @@ export default function PlayerDetailPage() {
                   <div className="flex items-center gap-2 mb-4">
                     <Skull className="h-5 w-5 text-yellow-500" />
                     <span className="font-semibold text-sm text-gray-300">T-Side Role:</span>
-                    {player.tRole ? (
-                      <RoleBadge role={player.tRole} />
-                    ) : player.role ? (
-                      <>
-                        <RoleBadge role={player.role} />
-                        <span className="text-xs text-gray-500 ml-1">(inferred)</span>
-                      </>
-                    ) : (
-                      <span className="text-gray-400 text-sm">Unknown role</span>
-                    )}
+                    <RoleBadge role={player.tRole || player.role} />
                   </div>
                   
                   <div className="p-4 bg-gray-700 rounded-lg mt-4">
@@ -369,16 +360,7 @@ export default function PlayerDetailPage() {
                   <div className="flex items-center gap-2 mb-4">
                     <Shield className="h-5 w-5 text-blue-500" />
                     <span className="font-semibold text-sm text-gray-300">CT-Side Role:</span>
-                    {player.ctRole ? (
-                      <RoleBadge role={player.ctRole} />
-                    ) : player.role ? (
-                      <>
-                        <RoleBadge role={player.role} />
-                        <span className="text-xs text-gray-500 ml-1">(inferred)</span>
-                      </>
-                    ) : (
-                      <span className="text-gray-400 text-sm">Unknown role</span>
-                    )}
+                    <RoleBadge role={player.ctRole || player.role} />
                   </div>
                   
                   <div className="p-4 bg-gray-700 rounded-lg mt-4">

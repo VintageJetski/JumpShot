@@ -81,6 +81,13 @@ export default function Sidebar() {
           />
           
           <MenuItem 
+            href="/teams-roles" 
+            icon={<Trophy />} 
+            label="Teams & Roles" 
+            isActive={isActive("/teams-roles")} 
+          />
+          
+          <MenuItem 
             href="/role-weightings" 
             icon={<LineChart />} 
             label="Role Weightings" 

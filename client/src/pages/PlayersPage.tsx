@@ -12,6 +12,7 @@ import PlayerCard from "@/components/players/PlayerCard";
 import TeamGroup from "@/components/players/TeamGroup";
 import RoleFilterChips from "@/components/players/RoleFilterChips";
 import EnhancedStatsCard from "@/components/stats/EnhancedStatsCard";
+import StatisticalOutliers from "@/components/players/StatisticalOutliers";
 
 export default function PlayersPage() {
   const [, setLocation] = useLocation();
@@ -348,6 +349,11 @@ export default function PlayersPage() {
         selectedRole={roleFilter}
         onSelectRole={setRoleFilter}
       />
+
+      {/* Statistical Outliers Section */}
+      {!isLoading && !isError && filteredPlayers.length > 0 && (
+        <StatisticalOutliers players={players || []} />
+      )}
 
       {/* Stats Overview Cards (Top Players) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8">

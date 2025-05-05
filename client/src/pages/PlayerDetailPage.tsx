@@ -73,10 +73,21 @@ export default function PlayerDetailPage() {
               <div className="flex items-center mt-1">
                 <span className="text-gray-400">{player.team}</span>
                 <span className="mx-2 text-gray-600">•</span>
-                <RoleBadge 
-                  role={player.role} 
-                  isIGL={player.isIGL}
-                />
+                {player.tRole && player.ctRole ? (
+                  <div className="flex items-center gap-1">
+                    <RoleBadge role={player.tRole} size="xs" />
+                    <span className="text-gray-600">/</span>
+                    <RoleBadge role={player.ctRole} size="xs" />
+                    {player.isIGL && (
+                      <span className="ml-1 bg-purple-500/30 text-purple-300 text-[10px] px-1 rounded">IGL</span>
+                    )}
+                  </div>
+                ) : (
+                  <RoleBadge 
+                    role={player.role} 
+                    isIGL={player.isIGL}
+                  />
+                )}
               </div>
             </div>
           </div>

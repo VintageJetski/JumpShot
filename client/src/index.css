@@ -77,16 +77,16 @@
     @apply animate-in slide-in-from-bottom-2 duration-500;
   }
   
-  /* CS2 background overlay */
-  .cs2-bg {
+  /* Background overlay */
+  .app-bg {
     @apply relative overflow-hidden;
   }
   
-  .cs2-bg::before {
+  .app-bg::before {
     @apply content-[''] absolute inset-0 bg-black/80 z-[-1];
   }
   
-  .cs2-bg::after {
+  .app-bg::after {
     @apply content-[''] absolute inset-0 bg-[url('/bg-pattern.png')] bg-repeat opacity-[0.15] z-[-1];
   }
   

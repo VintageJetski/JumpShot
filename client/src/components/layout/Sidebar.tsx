@@ -164,10 +164,10 @@ export default function Sidebar() {
           </div>
           <div className="mt-2 space-y-1 px-4">
             <div className="text-blue-200/80 text-sm font-medium">
-              CS2 Analytics v1.4
+              JumpShot v1.4
             </div>
             <div className="text-blue-100/50 text-xs">
-              Updated: May 1, 2025
+              Updated: May 5, 2025
             </div>
           </div>
         </div>

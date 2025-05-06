@@ -6,6 +6,7 @@ import { processPlayerStatsWithRoles } from "./newPlayerAnalytics";
 import { calculateTeamImpactRatings } from "./teamAnalytics";
 import { loadPlayerRoles } from "./roleParser";
 import { initializeRoundData } from "./roundDataLoader";
+import { setupAuth, ensureAuthenticated } from "./auth";
 import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -115,6 +116,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Setup authentication
+  setupAuth(app);
+  
+  // Protected admin routes
+  app.get('/api/admin/stats', ensureAuthenticated, (req: Request, res: Response) => {
+    res.json({
+      message: 'Admin stats accessed successfully',
+      userCount: 1,
+      playerCount: 81,
+      teamCount: 16,
+      lastUpdated: new Date().toISOString()
+    });
+  });
+  
   const httpServer = createServer(app);
   return httpServer;
 }

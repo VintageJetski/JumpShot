@@ -12,12 +12,16 @@ import {
   PieChart,
   Sigma,
   Sparkles,
-  Trophy
+  Trophy,
+  Lock,
+  ShieldCheck
 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import { motion } from "framer-motion";
 
 export default function Sidebar() {
   const [location] = useLocation();
+  const { user, isLoggedIn } = useAuth();
 
   const isActive = (path: string) => {
     return location === path;
@@ -158,6 +162,33 @@ export default function Sidebar() {
         </div>
         
         <div className="mt-8 pt-6 border-t border-white/5">
+          {/* Administration section - only visible when not logged in or when logged in as admin */}
+          {(!isLoggedIn || (isLoggedIn && user?.username === 'Admin')) && (
+            <>
+              <div className="flex items-center px-4 mb-2">
+                <ShieldCheck className="h-4 w-4 text-blue-400 mr-2" />
+                <h3 className="text-xs font-semibold text-blue-300 uppercase tracking-wider">Administration</h3>
+              </div>
+              <div className="space-y-1 mb-6">
+                {!isLoggedIn ? (
+                  <MenuItem 
+                    href="/auth/login" 
+                    icon={<Lock />} 
+                    label="Admin Login" 
+                    isActive={isActive("/auth/login")} 
+                  />
+                ) : (
+                  <MenuItem 
+                    href="/admin" 
+                    icon={<ShieldCheck />} 
+                    label="Admin Dashboard" 
+                    isActive={isActive("/admin")} 
+                  />
+                )}
+              </div>
+            </>
+          )}
+          
           <div className="flex items-center px-4 mb-2">
             <Trophy className="h-4 w-4 text-blue-400 mr-2" />
             <h3 className="text-xs font-semibold text-blue-300 uppercase tracking-wider">About</h3>

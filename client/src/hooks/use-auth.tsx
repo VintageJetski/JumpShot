@@ -1,6 +1,5 @@
-import { createContext, ReactNode, useContext } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "../lib/queryClient";
+import { createContext, ReactNode, useContext, useState, useEffect } from "react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 type User = {
@@ -26,91 +25,92 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
-  
-  // Fetch the current user
-  const {
-    data: user,
-    error,
-    isLoading,
-  } = useQuery<User | null>({
-    queryKey: ["/api/user"],
-    queryFn: async () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkAuth = async () => {
       try {
         const res = await fetch("/api/user");
-        if (res.status === 401) return null;
-        if (!res.ok) throw new Error("Failed to fetch user");
-        return await res.json();
+        if (res.ok) {
+          const userData = await res.json();
+          setUser(userData);
+        }
       } catch (err) {
-        return null;
+        console.error("Auth check error:", err);
+      } finally {
+        setIsLoading(false);
       }
-    },
-  });
+    };
 
-  // Login mutation
-  const loginMutation = useMutation({
-    mutationFn: async (credentials: LoginCredentials) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
+    checkAuth();
+  }, []);
+
+  const login = async (username: string, password: string) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const res = await apiRequest("POST", "/api/login", { username, password });
       
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: "Invalid username or password" }));
+        const errorData = await res.json();
         throw new Error(errorData.message || "Login failed");
       }
       
-      return await res.json();
-    },
-    onSuccess: (userData: User) => {
-      queryClient.setQueryData(["/api/user"], userData);
+      const userData: User = await res.json();
+      setUser(userData);
       toast({
         title: "Login successful",
-        description: `Welcome, ${userData.username}!`,
+        description: `Welcome back, ${userData.username}!`,
       });
-    },
-    onError: (error: Error) => {
+    } catch (err) {
+      const error = err as Error;
+      setError(error);
       toast({
         title: "Login failed",
-        description: error.message,
+        description: error.message || "Invalid credentials",
         variant: "destructive",
       });
-    },
-  });
-
-  // Logout mutation
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/logout");
-      if (!res.ok) {
-        throw new Error("Logout failed");
-      }
-    },
-    onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], null);
-      toast({
-        title: "Logged out",
-        description: "You have been successfully logged out.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Logout failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Helper functions
-  const login = async (username: string, password: string) => {
-    await loginMutation.mutateAsync({ username, password });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = async () => {
-    await logoutMutation.mutateAsync();
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      await apiRequest("POST", "/api/logout");
+      setUser(null);
+      // Invalidate all queries that might contain user-specific data
+      queryClient.clear();
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out",
+      });
+    } catch (err) {
+      const error = err as Error;
+      setError(error);
+      toast({
+        title: "Logout failed",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <AuthContext.Provider
       value={{
-        user: user || null,
+        user,
         isLoading,
         error,
         isLoggedIn: !!user,

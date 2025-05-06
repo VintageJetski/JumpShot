@@ -17,7 +17,11 @@ import SearchPlayersPage from "@/pages/SearchPlayersPage";
 import StatisticalAnalysisPage from "@/pages/StatisticalAnalysisPage";
 import DataVisualizationPage from "@/pages/DataVisualizationPage";
 import AdvancedAnalyticsPage from "@/pages/AdvancedAnalyticsPage";
+import LoginPage from "@/pages/auth/login-page";
+import AdminPage from "@/pages/admin/admin-page";
 import Layout from "@/components/layout/Layout";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/components/auth/protected-route";
 
 function Router() {
   return (
@@ -38,6 +42,10 @@ function Router() {
         <Route path="/advanced-analytics" component={AdvancedAnalyticsPage} />
         <Route path="/players/:id" component={PlayerDetailPage} />
         <Route path="/teams/:name" component={TeamDetailPage} />
+        <Route path="/auth/login" component={LoginPage} />
+        <Route path="/admin">
+          {() => <AdminPage />}
+        </Route>
         <Route component={NotFound} />
       </Switch>
     </Layout>
@@ -47,8 +55,10 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
+      <AuthProvider>
+        <Router />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

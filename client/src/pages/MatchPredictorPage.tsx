@@ -73,6 +73,36 @@ function ToggleOption({
   );
 }
 
+// Calculate average PIV of a team's players
+function calculateAvgPIV(players: PlayerWithPIV[]): number {
+  if (players.length === 0) return 1.0;
+  
+  const sum = players.reduce((acc, player) => acc + player.piv, 0);
+  return sum / players.length;
+}
+
+// Calculate role coverage percentage (how well team covers necessary roles)
+function calculateRoleCoverage(players: PlayerWithPIV[]): number {
+  if (players.length === 0) return 50;
+  
+  // Check for necessary roles
+  const hasIGL = players.some(p => p.isIGL);
+  const hasAWP = players.some(p => p.role === "AWP");
+  const hasEntry = players.some(p => p.role === "Spacetaker" || p.tRole === "Spacetaker");
+  const hasSupport = players.some(p => p.role === "Support" || p.tRole === "Support");
+  const hasLurker = players.some(p => p.role === "Lurker" || p.tRole === "Lurker");
+  
+  // Calculate percentage
+  let coverage = 60; // Base coverage
+  if (hasIGL) coverage += 10;
+  if (hasAWP) coverage += 10;
+  if (hasEntry) coverage += 7;
+  if (hasSupport) coverage += 7;
+  if (hasLurker) coverage += 6;
+  
+  return Math.min(100, coverage);
+}
+
 // Calculate win probability based on team data and contextual factors
 function calculateWinProbability(
   team1: TeamWithTIR,
@@ -123,36 +153,6 @@ function calculateWinProbability(
   
   // Convert to percentage
   return adjustedProb * 100;
-}
-
-// Calculate average PIV of a team's players
-function calculateAvgPIV(players: PlayerWithPIV[]): number {
-  if (players.length === 0) return 1.0;
-  
-  const sum = players.reduce((acc, player) => acc + player.piv, 0);
-  return sum / players.length;
-}
-
-// Calculate role coverage percentage (how well team covers necessary roles)
-function calculateRoleCoverage(players: PlayerWithPIV[]): number {
-  if (players.length === 0) return 50;
-  
-  // Check for necessary roles
-  const hasIGL = players.some(p => p.isIGL);
-  const hasAWP = players.some(p => p.role === "AWP");
-  const hasEntry = players.some(p => p.role === "Spacetaker" || p.tRole === "Spacetaker");
-  const hasSupport = players.some(p => p.role === "Support" || p.tRole === "Support");
-  const hasLurker = players.some(p => p.role === "Lurker" || p.tRole === "Lurker");
-  
-  // Calculate percentage
-  let coverage = 60; // Base coverage
-  if (hasIGL) coverage += 10;
-  if (hasAWP) coverage += 10;
-  if (hasEntry) coverage += 7;
-  if (hasSupport) coverage += 7;
-  if (hasLurker) coverage += 6;
-  
-  return Math.min(100, coverage);
 }
 
 // Get tournament tier name from numerical value
@@ -845,7 +845,7 @@ export default function MatchPredictorPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <Select>
+                    <Select onValueChange={setSelectedMap} value={selectedMap}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a map" />
                       </SelectTrigger>

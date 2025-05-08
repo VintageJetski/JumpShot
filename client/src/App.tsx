@@ -125,16 +125,16 @@ function Router() {
           )}
         </Route>
         <Route path="/players/:id">
-          {(params) => (
+          {() => (
             <ProtectedRoute>
-              <PlayerDetailPage params={params} />
+              <PlayerDetailPage />
             </ProtectedRoute>
           )}
         </Route>
         <Route path="/teams/:name">
-          {(params) => (
+          {() => (
             <ProtectedRoute>
-              <TeamDetailPage params={params} />
+              <TeamDetailPage />
             </ProtectedRoute>
           )}
         </Route>

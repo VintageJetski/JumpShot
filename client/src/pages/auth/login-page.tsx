@@ -27,7 +27,7 @@ export default function LoginPage() {
 
   // Redirect if already logged in
   if (isLoggedIn) {
-    return <Redirect to="/admin" />;
+    return <Redirect to="/" />;
   }
 
   return (
@@ -53,7 +53,7 @@ export default function LoginPage() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
-            Admin Login
+            JumpShot Analytics
           </motion.h2>
           <motion.p 
             className="text-blue-300/70 text-sm"
@@ -61,7 +61,7 @@ export default function LoginPage() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4, duration: 0.5 }}
           >
-            Please enter your credentials to continue
+            Login to access the CS2 analytics platform
           </motion.p>
         </div>
 

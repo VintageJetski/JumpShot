@@ -20,33 +20,138 @@ import AdvancedAnalyticsPage from "@/pages/AdvancedAnalyticsPage";
 import LoginPage from "@/pages/auth/login-page";
 import AdminPage from "@/pages/admin/admin-page";
 import Layout from "@/components/layout/Layout";
-import { AuthProvider } from "@/hooks/use-auth";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 
 function Router() {
+  const { isLoggedIn } = useAuth();
+
   return (
     <Layout>
       <Switch>
-        <Route path="/" component={PlayersPage} />
-        <Route path="/players" component={PlayersPage} />
-        <Route path="/teams" component={TeamsPage} />
-        <Route path="/role-weightings" component={RoleWeightingsPage} />
-        <Route path="/documentation" component={DocumentationPage} />
-        <Route path="/player-comparisons" component={PlayerComparisonsPage} />
-        <Route path="/match-predictor" component={MatchPredictorPage} />
-        <Route path="/match-infographic" component={MatchInfographicPage} />
-        <Route path="/scout" component={ScoutPage} />
-        <Route path="/scout/search-players" component={SearchPlayersPage} />
-        <Route path="/statistical-analysis" component={StatisticalAnalysisPage} />
-        <Route path="/data-visualization" component={DataVisualizationPage} />
-        <Route path="/advanced-analytics" component={AdvancedAnalyticsPage} />
-        <Route path="/players/:id" component={PlayerDetailPage} />
-        <Route path="/teams/:name" component={TeamDetailPage} />
+        {/* Auth page is public */}
         <Route path="/auth/login" component={LoginPage} />
-        <Route path="/admin">
-          {() => <AdminPage />}
+
+        {/* Protected routes - require authentication */}
+        <Route path="/">
+          {() => (
+            <ProtectedRoute>
+              <PlayersPage />
+            </ProtectedRoute>
+          )}
         </Route>
-        <Route component={NotFound} />
+        <Route path="/players">
+          {() => (
+            <ProtectedRoute>
+              <PlayersPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/teams">
+          {() => (
+            <ProtectedRoute>
+              <TeamsPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/role-weightings">
+          {() => (
+            <ProtectedRoute>
+              <RoleWeightingsPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/documentation">
+          {() => (
+            <ProtectedRoute>
+              <DocumentationPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/player-comparisons">
+          {() => (
+            <ProtectedRoute>
+              <PlayerComparisonsPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/match-predictor">
+          {() => (
+            <ProtectedRoute>
+              <MatchPredictorPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/match-infographic">
+          {() => (
+            <ProtectedRoute>
+              <MatchInfographicPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/scout">
+          {() => (
+            <ProtectedRoute>
+              <ScoutPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/scout/search-players">
+          {() => (
+            <ProtectedRoute>
+              <SearchPlayersPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/statistical-analysis">
+          {() => (
+            <ProtectedRoute>
+              <StatisticalAnalysisPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/data-visualization">
+          {() => (
+            <ProtectedRoute>
+              <DataVisualizationPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/advanced-analytics">
+          {() => (
+            <ProtectedRoute>
+              <AdvancedAnalyticsPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/players/:id">
+          {(params) => (
+            <ProtectedRoute>
+              <PlayerDetailPage params={params} />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/teams/:name">
+          {(params) => (
+            <ProtectedRoute>
+              <TeamDetailPage params={params} />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/admin">
+          {() => (
+            <ProtectedRoute adminOnly={true}>
+              <AdminPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route>
+          {() => (
+            <ProtectedRoute>
+              <NotFound />
+            </ProtectedRoute>
+          )}
+        </Route>
       </Switch>
     </Layout>
   );

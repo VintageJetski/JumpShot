@@ -36,6 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Scatter, ScatterChart, ZAxis, Legend, XAxis, YAxis, CartesianGrid, BarChart, Bar, Cell, Tooltip as RechartsTooltip } from "recharts";
 import { ArrowRightLeft, Zap, Target, Crosshair, ShieldAlert, Sparkles, Brain, Lightbulb, Info, BarChart2, PieChart, BadgeInfo } from "lucide-react";
 import RoleBadge from "@/components/ui/role-badge";
+import PerformanceComparisonSlider from "@/components/player-comparison/PerformanceComparisonSlider";
 
 export default function PlayerComparisonsPage() {
   const [player1Id, setPlayer1Id] = useState<string>("");
@@ -600,42 +601,52 @@ export default function PlayerComparisonsPage() {
           </Card>
           
           {player1 && player2 && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Performance Comparison</CardTitle>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <Info className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <div className="max-w-xs p-2">
-                          <p className="text-sm">
-                            {chartType === "radar" ? 
-                              "Radar chart shows normalized metrics (0-100) for direct comparison across multiple dimensions." :
-                             chartType === "scatter" ? 
-                              "Scatter plot shows all players with highlighted comparison players. Size represents team synergy contribution." :
-                              "Bar chart shows the top differentiating metrics between players."}
-                          </p>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <CardDescription>
-                  {chartType === "radar" ? 
-                    "Multi-dimensional skill comparison across key performance metrics" :
-                   chartType === "scatter" ? 
-                    "Contextual performance view among all players" :
-                    "Direct metric comparison highlighting key differences"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <div className="h-[400px] w-full">
-                  {chartType === "radar" && radarData.length > 0 && (
+            <>
+              {/* New Performance Comparison Slider */}
+              <div className="mb-6">
+                <PerformanceComparisonSlider 
+                  player1={player1} 
+                  player2={player2}
+                  activeTab={analysisTab}
+                />
+              </div>
+              
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Performance Charts</CardTitle>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <Info className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="max-w-xs p-2">
+                            <p className="text-sm">
+                              {chartType === "radar" ? 
+                                "Radar chart shows normalized metrics (0-100) for direct comparison across multiple dimensions." :
+                               chartType === "scatter" ? 
+                                "Scatter plot shows all players with highlighted comparison players. Size represents team synergy contribution." :
+                                "Bar chart shows the top differentiating metrics between players."}
+                            </p>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <CardDescription>
+                    {chartType === "radar" ? 
+                      "Multi-dimensional skill comparison across key performance metrics" :
+                     chartType === "scatter" ? 
+                      "Contextual performance view among all players" :
+                      "Direct metric comparison highlighting key differences"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-2">
+                  <div className="h-[400px] w-full">
+                    {chartType === "radar" && radarData.length > 0 && (
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                         <PolarGrid />

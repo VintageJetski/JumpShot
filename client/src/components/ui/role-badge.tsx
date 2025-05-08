@@ -5,9 +5,11 @@ interface RoleBadgeProps {
   role: PlayerRole;
   className?: string;
   size?: string;
+  isIGL?: boolean;  // Added to support isIGL prop in PlayerDetailPage
+  small?: boolean;  // Added to support small prop in PlayerComparisonsPage
 }
 
-export default function RoleBadge({ role, className = "", size = "" }: RoleBadgeProps) {
+export default function RoleBadge({ role, className = "", size = "", isIGL = false, small = false }: RoleBadgeProps) {
   const roleColors: Record<PlayerRole, { bg: string, text: string }> = {
     [PlayerRole.IGL]: { bg: "bg-purple-500", text: "text-white" },
     [PlayerRole.AWP]: { bg: "bg-yellow-500", text: "text-black" },
@@ -30,9 +32,14 @@ export default function RoleBadge({ role, className = "", size = "" }: RoleBadge
     sizeClasses = "text-base px-3 py-1";
   }
 
+  // Apply small size through the size prop
+  if (small && !size) {
+    size = "sm";
+  }
+  
   return (
     <Badge className={`${bg} ${text} ${sizeClasses} ${className}`}>
-      {role}
+      {isIGL ? 'IGL-' : ''}{role}
     </Badge>
   );
 }

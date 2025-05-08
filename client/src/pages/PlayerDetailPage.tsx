@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RoleBadge from "@/components/ui/role-badge";
 import ProgressMetric from "@/components/stats/ProgressMetric";
 import PlayerStatsRadarChart from "@/components/charts/PlayerStatsRadarChart";
-import { ArrowLeft, Rocket, Shield, Skull } from "lucide-react";
+import PlayerHistoryTab from "@/components/player-history/PlayerHistoryTab";
+import { ArrowLeft, Rocket, Shield, Skull, History } from "lucide-react";
 import { useState } from "react";
 
 export default function PlayerDetailPage() {
@@ -230,7 +231,7 @@ export default function PlayerDetailPage() {
         
         <div className="mt-8">
           <Tabs defaultValue="overall" onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-3 w-full mb-4">
+            <TabsList className="grid grid-cols-4 w-full mb-4">
               <TabsTrigger value="overall" className="flex items-center">
                 <Rocket className="h-4 w-4 mr-2" />
                 Overall
@@ -242,6 +243,10 @@ export default function PlayerDetailPage() {
               <TabsTrigger value="ct-side" className="flex items-center">
                 <Shield className="h-4 w-4 mr-2" />
                 CT Side
+              </TabsTrigger>
+              <TabsTrigger value="history" className="flex items-center">
+                <History className="h-4 w-4 mr-2" />
+                History
               </TabsTrigger>
             </TabsList>
             

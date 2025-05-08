@@ -310,55 +310,38 @@ export default function PlayerComparisonsPage() {
     insights.push({
       title: `Team Synergy`,
       description: scDiff > 0.1
-        ? `${player1.name} contributes more to team synergy (+${(scDiff*100).toFixed(1)}%)`
+        ? `${player1.name} shows stronger team synergy (+${(scDiff*100).toFixed(1)}%)`
         : scDiff < -0.1
-          ? `${player2.name} contributes more to team synergy (+${(Math.abs(scDiff)*100).toFixed(1)}%)`
+          ? `${player2.name} shows stronger team synergy (+${(Math.abs(scDiff)*100).toFixed(1)}%)`
           : `Both players contribute similarly to team synergy`,
       icon: Sparkles,
       color: scDiff > 0.1 ? "text-green-500" : scDiff < -0.1 ? "text-red-500" : "text-yellow-500"
     });
     
-    // Complementary analysis
-    let complementaryScore = 0;
-    
-    // Different roles are complementary
+    // If different roles, add complementary insight
     if (player1.role !== player2.role) {
-      complementaryScore += 30;
-    }
-    
-    // Different teams can indicate complementary styles
-    if (player1.team !== player2.team) {
-      complementaryScore += 20;
-    }
-    
-    // Complementary strengths (one excels where the other lacks)
-    const p1Strengths = Object.entries(player1.metrics.roleMetrics)
-      .filter(([_, value]) => typeof value === 'number' && value > 0.7)
-      .map(([key]) => key);
+      insights.push({
+        title: `Role Complementarity`,
+        description: `${player1.name} (${player1.role}) and ${player2.name} (${player2.role}) have complementary roles, potentially enhancing team balance`,
+        icon: Brain,
+        color: "text-blue-500",
+        progressValue: 85
+      });
+    } else {
+      // If same roles, compare direct competition
+      const isSameTeam = player1.team === player2.team;
+      const complementaryScore = isSameTeam ? 50 : 75;
       
-    const p2Strengths = Object.entries(player2.metrics.roleMetrics)
-      .filter(([_, value]) => typeof value === 'number' && value > 0.7)
-      .map(([key]) => key);
-      
-    const uniqueStrengths = p1Strengths.filter(s => !p2Strengths.includes(s)).length + 
-                          p2Strengths.filter(s => !p1Strengths.includes(s)).length;
-    
-    complementaryScore += uniqueStrengths * 10;
-    
-    // Cap at 100
-    complementaryScore = Math.min(100, complementaryScore);
-    
-    insights.push({
-      title: `Complementary Analysis`,
-      description: complementaryScore > 70
-        ? `These players have highly complementary skills and would pair well together`
-        : complementaryScore > 40
-          ? `These players have moderately complementary skills`
-          : `These players have overlapping skill sets`,
-      icon: Brain,
-      color: complementaryScore > 70 ? "text-green-500" : complementaryScore > 40 ? "text-yellow-500" : "text-red-500",
-      progressValue: complementaryScore
-    });
+      insights.push({
+        title: `Role Competition`,
+        description: isSameTeam 
+          ? `${player1.name} and ${player2.name} compete for the same ${player1.role} role on team ${player1.team}`
+          : `${player1.name} and ${player2.name} play the same ${player1.role} role on different teams`,
+        icon: Crosshair,
+        color: "text-yellow-500",
+        progressValue: complementaryScore
+      });
+    }
     
     return insights;
   }, [player1, player2]);
@@ -388,14 +371,16 @@ export default function PlayerComparisonsPage() {
         "Pain": "#FF6600",
         "Heroic": "#AA0000",
         "Fnatic": "#FF9933",
-        "Apeks": "#33CCCC",
-        "GamerLegion": "#FF00FF",
-        "FURIA": "#33CC33",
-        "Eternal Fire": "#FF3300",
-        "ECSTATIC": "#0066CC"
       };
       
-      return teamColors[teamName] || "#7C7C7C";
+      // Team name partial match
+      for (const [key, color] of Object.entries(teamColors)) {
+        if (teamName.includes(key)) {
+          return color;
+        }
+      }
+      
+      return "#4C72B0"; // Default blue
     };
     
     return {
@@ -473,60 +458,56 @@ export default function PlayerComparisonsPage() {
                   
                   <div className="space-y-2">
                     <Input
-                      placeholder="Search player by name..."
+                      placeholder="Search players..."
                       value={searchQuery1}
                       onChange={(e) => setSearchQuery1(e.target.value)}
                       className="mb-2"
                     />
                     
-                    <div className="max-h-64 overflow-y-auto border border-gray-700 rounded-md">
+                    <div className="h-48 overflow-y-auto rounded-md border border-gray-700 bg-background p-2">
                       {players
-                        .filter(player => 
-                          player.name.toLowerCase().includes(searchQuery1.toLowerCase()) ||
-                          player.team.toLowerCase().includes(searchQuery1.toLowerCase())
+                        .filter(p => 
+                          p.name.toLowerCase().includes(searchQuery1.toLowerCase()) ||
+                          p.team.toLowerCase().includes(searchQuery1.toLowerCase())
                         )
-                        .map((player) => (
-                          <div 
+                        .map(player => (
+                          <div
                             key={player.id}
-                            className={`flex items-center justify-between p-2 hover:bg-gray-800 cursor-pointer ${
-                              player.id === player1Id ? 'bg-primary/20' : ''
+                            className={`flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-gray-800 ${
+                              player1Id === player.id ? 'bg-blue-950 border border-blue-500' : ''
                             }`}
                             onClick={() => setPlayer1Id(player.id)}
                           >
-                            <div className="flex items-center">
-                              <div className="w-6 h-6 rounded-full bg-background-light flex items-center justify-center mr-2 text-xs">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-blue-900/30 flex items-center justify-center text-xs font-medium">
                                 {player.team.substring(0, 2)}
                               </div>
                               <div>
-                                <div className="text-sm font-medium">{player.name}</div>
+                                <div className="font-medium text-sm">{player.name}</div>
                                 <div className="text-xs text-gray-400">{player.team}</div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <RoleBadge role={player.role} />
-                              <span className="text-xs font-medium">{Math.round(player.piv * 100)}</span>
-                            </div>
+                            <RoleBadge role={player.role} small />
                           </div>
                         ))}
                     </div>
                   </div>
                   
                   {player1 && (
-                    <div className="flex items-center justify-between mt-4 bg-background-light p-3 rounded-md">
-                      <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium">
+                    <div className="p-3 rounded-lg bg-gray-800/50 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-blue-900/50 flex items-center justify-center text-sm font-medium">
                           {player1.team.substring(0, 2)}
                         </div>
                         <div>
-                          <div className="font-bold">{player1.name}</div>
-                          <div className="text-sm text-gray-400">{player1.team}</div>
+                          <div className="font-medium">{player1.name}</div>
+                          <div className="text-sm text-gray-400 flex items-center gap-2">
+                            {player1.team} • <RoleBadge role={player1.role} small />
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <RoleBadge role={player1.role} />
-                        <div className="bg-primary/20 text-primary rounded-full px-3 py-1 text-sm font-medium">
-                          PIV: {Math.round(player1.piv * 100)}
-                        </div>
+                      <div className="text-right">
+                        <div className="text-sm">PIV: {Math.round(player1.piv * 100)}</div>
                       </div>
                     </div>
                   )}
@@ -538,60 +519,56 @@ export default function PlayerComparisonsPage() {
                   
                   <div className="space-y-2">
                     <Input
-                      placeholder="Search player by name..."
+                      placeholder="Search players..."
                       value={searchQuery2}
                       onChange={(e) => setSearchQuery2(e.target.value)}
                       className="mb-2"
                     />
                     
-                    <div className="max-h-64 overflow-y-auto border border-gray-700 rounded-md">
+                    <div className="h-48 overflow-y-auto rounded-md border border-gray-700 bg-background p-2">
                       {players
-                        .filter(player => 
-                          player.name.toLowerCase().includes(searchQuery2.toLowerCase()) ||
-                          player.team.toLowerCase().includes(searchQuery2.toLowerCase())
+                        .filter(p => 
+                          p.name.toLowerCase().includes(searchQuery2.toLowerCase()) ||
+                          p.team.toLowerCase().includes(searchQuery2.toLowerCase())
                         )
-                        .map((player) => (
-                          <div 
+                        .map(player => (
+                          <div
                             key={player.id}
-                            className={`flex items-center justify-between p-2 hover:bg-gray-800 cursor-pointer ${
-                              player.id === player2Id ? 'bg-primary/20' : ''
+                            className={`flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-gray-800 ${
+                              player2Id === player.id ? 'bg-blue-950 border border-blue-500' : ''
                             }`}
                             onClick={() => setPlayer2Id(player.id)}
                           >
-                            <div className="flex items-center">
-                              <div className="w-6 h-6 rounded-full bg-background-light flex items-center justify-center mr-2 text-xs">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-blue-900/30 flex items-center justify-center text-xs font-medium">
                                 {player.team.substring(0, 2)}
                               </div>
                               <div>
-                                <div className="text-sm font-medium">{player.name}</div>
+                                <div className="font-medium text-sm">{player.name}</div>
                                 <div className="text-xs text-gray-400">{player.team}</div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <RoleBadge role={player.role} />
-                              <span className="text-xs font-medium">{Math.round(player.piv * 100)}</span>
-                            </div>
+                            <RoleBadge role={player.role} small />
                           </div>
                         ))}
                     </div>
                   </div>
                   
                   {player2 && (
-                    <div className="flex items-center justify-between mt-4 bg-background-light p-3 rounded-md">
-                      <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium">
+                    <div className="p-3 rounded-lg bg-gray-800/50 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-blue-900/50 flex items-center justify-center text-sm font-medium">
                           {player2.team.substring(0, 2)}
                         </div>
                         <div>
-                          <div className="font-bold">{player2.name}</div>
-                          <div className="text-sm text-gray-400">{player2.team}</div>
+                          <div className="font-medium">{player2.name}</div>
+                          <div className="text-sm text-gray-400 flex items-center gap-2">
+                            {player2.team} • <RoleBadge role={player2.role} small />
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <RoleBadge role={player2.role} />
-                        <div className="bg-primary/20 text-primary rounded-full px-3 py-1 text-sm font-medium">
-                          PIV: {Math.round(player2.piv * 100)}
-                        </div>
+                      <div className="text-right">
+                        <div className="text-sm">PIV: {Math.round(player2.piv * 100)}</div>
                       </div>
                     </div>
                   )}
@@ -601,9 +578,9 @@ export default function PlayerComparisonsPage() {
           </Card>
           
           {player1 && player2 && (
-            <>
+            <div className="space-y-6">
               {/* New Performance Comparison Slider */}
-              <div className="mb-6">
+              <div>
                 <PerformanceComparisonSlider 
                   player1={player1} 
                   player2={player2}
@@ -743,9 +720,10 @@ export default function PlayerComparisonsPage() {
                       </BarChart>
                     </ResponsiveContainer>
                   )}
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           )}
         </div>
         
@@ -842,14 +820,46 @@ export default function PlayerComparisonsPage() {
                         <div 
                           className="h-full rounded-l-full" 
                           style={{
-                            width: `${Math.min(50, player1.kd * 25)}%`, 
+                            width: `${Math.min(50, Math.round(player1.kd * 25))}%`, 
                             backgroundColor: getBarColors.color1
                           }} 
                         />
                         <div 
                           className="h-full rounded-r-full" 
                           style={{
-                            width: `${Math.min(50, player2.kd * 25)}%`, 
+                            width: `${Math.min(50, Math.round(player2.kd * 25))}%`, 
+                            backgroundColor: getBarColors.color2
+                          }} 
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Role Score Comparison Bar */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center text-xs">
+                        <span>Role Score</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-medium" style={{color: getBarColors.color1}}>
+                            {Math.round(player1.metrics.rcs.value * 100)}
+                          </span>
+                          <span className="text-xs">vs</span>
+                          <span className="text-xs font-medium" style={{color: getBarColors.color2}}>
+                            {Math.round(player2.metrics.rcs.value * 100)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex h-2 overflow-hidden rounded-full bg-gray-800">
+                        <div 
+                          className="h-full rounded-l-full" 
+                          style={{
+                            width: `${Math.min(50, Math.round(player1.metrics.rcs.value * 50))}%`, 
+                            backgroundColor: getBarColors.color1
+                          }} 
+                        />
+                        <div 
+                          className="h-full rounded-r-full" 
+                          style={{
+                            width: `${Math.min(50, Math.round(player2.metrics.rcs.value * 50))}%`, 
                             backgroundColor: getBarColors.color2
                           }} 
                         />
@@ -873,83 +883,97 @@ export default function PlayerComparisonsPage() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex flex-col items-center justify-center bg-background-light p-4 rounded-lg">
-                    <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center">
-                      {performanceInsights.find(i => i.title === "Complementary Analysis")?.progressValue &&
-                        <span className="text-3xl font-bold">
-                          {performanceInsights.find(i => i.title === "Complementary Analysis")?.progressValue}%
-                        </span>
-                      }
-                    </div>
-                    <h3 className="mt-3 font-medium">Synergy Score</h3>
-                    <p className="text-xs text-gray-400 text-center mt-1">
-                      {
-                        performanceInsights.find(i => i.title === "Complementary Analysis")?.progressValue &&
-                        performanceInsights.find(i => i.title === "Complementary Analysis")?.progressValue as number > 70 ?
-                        "Excellent complementary skill sets that would pair well together" :
-                        performanceInsights.find(i => i.title === "Complementary Analysis")?.progressValue as number > 40 ?
-                        "Good potential, with some overlapping strengths" :
-                        "Limited synergy due to similar roles and playstyles"
-                      }
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h3 className="font-medium text-sm">Role Compatibility</h3>
-                    <div className="flex items-center gap-2">
-                      <RoleBadge role={player1.role} />
-                      <span className="text-gray-400">+</span>
-                      <RoleBadge role={player2.role} />
-                      <Badge variant={player1.role !== player2.role ? "default" : "outline"} className="ml-auto">
-                        {player1.role !== player2.role ? "Complementary" : "Overlapping"}
-                      </Badge>
-                    </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="space-y-2">
-                    <h3 className="font-medium text-sm">Unique Strengths</h3>
-                    
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <span className="text-xs" style={{color: getBarColors.color1}}>{player1.name}</span>
-                        <div className="space-y-1">
-                          {Object.entries(player1.metrics.roleMetrics)
-                            .filter(([key, value]) => 
-                              typeof value === 'number' && 
-                              value > 0.7 && 
-                              (!player2.metrics.roleMetrics[key as keyof typeof player2.metrics.roleMetrics] || 
-                               (player2.metrics.roleMetrics[key as keyof typeof player2.metrics.roleMetrics] as number) < 0.5)
-                            )
-                            .slice(0, 2)
-                            .map(([key], idx) => (
-                              <div key={idx} className="text-xs px-2 py-1 bg-background-light rounded-md truncate">
-                                {key}
-                              </div>
-                            ))
-                          }
+                    <div className="w-full flex items-center justify-center mb-4">
+                      <div className="text-center px-2">
+                        <div className="bg-blue-900/30 w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-1">
+                          {player1.team.substring(0, 2)}
+                        </div>
+                        <p className="text-sm font-medium">{player1.name}</p>
+                        <p className="text-xs text-gray-400">{player1.role}</p>
+                      </div>
+                      
+                      <div className="text-xs px-2 text-center">
+                        <div className="mx-2 my-2">
+                          <BadgeInfo className={`h-4 w-4 text-primary mx-auto ${player1.role === player2.role ? 'text-yellow-500' : 'text-green-500'}`} />
+                          <div className="h-px w-16 my-2 mx-auto bg-gradient-to-r from-transparent via-blue-500 to-transparent" />
+                          <p className="text-xs">
+                            {player1.role === player2.role 
+                              ? 'Same Role' 
+                              : 'Complementary'
+                            }
+                          </p>
                         </div>
                       </div>
                       
-                      <div className="space-y-1">
-                        <span className="text-xs" style={{color: getBarColors.color2}}>{player2.name}</span>
-                        <div className="space-y-1">
-                          {Object.entries(player2.metrics.roleMetrics)
-                            .filter(([key, value]) => 
-                              typeof value === 'number' && 
-                              value > 0.7 && 
-                              (!player1.metrics.roleMetrics[key as keyof typeof player1.metrics.roleMetrics] || 
-                               (player1.metrics.roleMetrics[key as keyof typeof player1.metrics.roleMetrics] as number) < 0.5)
-                            )
-                            .slice(0, 2)
-                            .map(([key], idx) => (
-                              <div key={idx} className="text-xs px-2 py-1 bg-background-light rounded-md truncate">
-                                {key}
-                              </div>
-                            ))
-                          }
+                      <div className="text-center px-2">
+                        <div className="bg-blue-900/30 w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-1">
+                          {player2.team.substring(0, 2)}
                         </div>
+                        <p className="text-sm font-medium">{player2.name}</p>
+                        <p className="text-xs text-gray-400">{player2.role}</p>
                       </div>
+                    </div>
+                    
+                    <div className="w-full mt-4">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span>Synergy Potential</span>
+                        <span className="font-medium">
+                          {player1.role === player2.role
+                            ? player1.team === player2.team
+                              ? "Low" // Same role, same team
+                              : "Medium" // Same role, different team
+                            : player1.team === player2.team
+                              ? "High" // Different role, same team
+                              : "Very High" // Different role, different team
+                          }
+                        </span>
+                      </div>
+                      <Progress
+                        value={
+                          player1.role === player2.role
+                            ? player1.team === player2.team
+                              ? 30 // Same role, same team
+                              : 50 // Same role, different team
+                            : player1.team === player2.team
+                              ? 75 // Different role, same team
+                              : 90 // Different role, different team
+                        }
+                        className={`h-2 ${
+                          player1.role === player2.role
+                            ? player1.team === player2.team
+                              ? "bg-red-500/20" // Same role, same team
+                              : "bg-yellow-500/20" // Same role, different team
+                            : player1.team === player2.team
+                              ? "bg-green-500/20" // Different role, same team
+                              : "bg-blue-500/20" // Different role, different team
+                        }`}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium">Key Observations</div>
+                    <div className="text-xs text-gray-400 space-y-2">
+                      <p>
+                        {player1.role === player2.role
+                          ? `Both players are ${player1.role}s ${
+                              player1.team === player2.team
+                                ? `on the same team (${player1.team}), potentially competing for the same position.`
+                                : `on different teams, allowing for direct performance comparisons.`
+                            }`
+                          : `${player1.name} (${player1.role}) and ${player2.name} (${player2.role}) have complementary roles ${
+                              player1.team === player2.team
+                                ? `on the same team (${player1.team}), potentially creating strong synergy.`
+                                : `on different teams. They would potentially work well together in a theoretical lineup.`
+                            }`
+                        }
+                      </p>
+                      
+                      {player1.role !== player2.role && (
+                        <p>
+                          The {player1.role} and {player2.role} roles naturally complement each other in team dynamics.
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

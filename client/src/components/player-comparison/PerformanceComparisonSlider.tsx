@@ -58,16 +58,22 @@ export default function PerformanceComparisonSlider({
   };
 
   // Calculate values for comparison
-  const pivDiff = getPlayerPIV(player1) - getPlayerPIV(player2);
-  const kdDiff = player1.kd - player2.kd;
-  const roleDiff = p1Metrics.rcs.value - p2Metrics.rcs.value;
-  const consistencyDiff = p1Metrics.icf.value - p2Metrics.icf.value;
+  const pivDiff = player1 && player2 ? getPlayerPIV(player1) - getPlayerPIV(player2) : 0;
+  const kdDiff = player1 && player2 ? player1.kd - player2.kd : 0;
+  const roleDiff = player1 && player2 && p1Metrics && p2Metrics ? p1Metrics.rcs.value - p2Metrics.rcs.value : 0;
+  const consistencyDiff = player1 && player2 && p1Metrics && p2Metrics ? p1Metrics.icf.value - p2Metrics.icf.value : 0;
 
   // Calculate comparison percentage for slider
   const getComparisonValue = () => {
+    if (!player1 || !player2 || !p1Metrics || !p2Metrics) {
+      return 50;
+    }
+    
     switch (compareMetric) {
       case "piv":
-        return (getPlayerPIV(player1) / (getPlayerPIV(player1) + getPlayerPIV(player2))) * 100;
+        const p1piv = getPlayerPIV(player1);
+        const p2piv = getPlayerPIV(player2);
+        return (p1piv / (p1piv + p2piv)) * 100;
       case "kd":
         return (player1.kd / (player1.kd + player2.kd)) * 100;
       case "role":
@@ -92,6 +98,10 @@ export default function PerformanceComparisonSlider({
 
   // Get player advantage text
   const getPlayerAdvantageText = () => {
+    if (!player1 || !player2) {
+      return "Loading...";
+    }
+    
     let diff = 0;
     
     switch (compareMetric) {
@@ -148,101 +158,111 @@ export default function PerformanceComparisonSlider({
           <div className="grid grid-cols-1 gap-8">
             {/* Player Cards */}
             <div className="grid grid-cols-2 gap-4">
-              {/* Player 1 */}
-              <div 
-                className={`rounded-lg p-4 ${sliderValue <= 50 ? 'bg-blue-950/30' : 'bg-blue-900/10'} 
-                  transition-all duration-300 border ${sliderValue <= 50 ? 'border-blue-500/50' : 'border-transparent'}`}
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-full bg-blue-900/30 flex items-center justify-center text-sm font-medium">
-                    {player1.team.substring(0, 2)}
+              {player1 && p1Metrics ? (
+                <div 
+                  className={`rounded-lg p-4 ${sliderValue <= 50 ? 'bg-blue-950/30' : 'bg-blue-900/10'} 
+                    transition-all duration-300 border ${sliderValue <= 50 ? 'border-blue-500/50' : 'border-transparent'}`}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-full bg-blue-900/30 flex items-center justify-center text-sm font-medium">
+                      {player1.team.substring(0, 2)}
+                    </div>
+                    <div>
+                      <div className="font-bold text-lg">{player1.name}</div>
+                      <div className="text-sm text-blue-300">{player1.team}</div>
+                    </div>
+                    <RoleBadge role={player1.role} className="ml-auto" />
                   </div>
-                  <div>
-                    <div className="font-bold text-lg">{player1.name}</div>
-                    <div className="text-sm text-blue-300">{player1.team}</div>
+                  
+                  <div className="grid grid-cols-2 gap-3 mt-4">
+                    <div className="bg-blue-950/20 rounded-lg p-2 text-center">
+                      <div className="text-xs text-blue-300 mb-1">PIV Rating</div>
+                      <div className="text-lg font-bold">{Math.round(getPlayerPIV(player1) * 100)}</div>
+                      <div className={`text-xs ${pivDiff > 0 ? 'text-green-500' : pivDiff < 0 ? 'text-red-500' : 'text-blue-400'}`}>
+                        {formatComparisonMetric(pivDiff)}
+                      </div>
+                    </div>
+                    <div className="bg-blue-950/20 rounded-lg p-2 text-center">
+                      <div className="text-xs text-blue-300 mb-1">K/D Ratio</div>
+                      <div className="text-lg font-bold">{player1.kd.toFixed(2)}</div>
+                      <div className={`text-xs ${kdDiff > 0 ? 'text-green-500' : kdDiff < 0 ? 'text-red-500' : 'text-blue-400'}`}>
+                        {formatComparisonMetric(kdDiff/2)}
+                      </div>
+                    </div>
+                    <div className="bg-blue-950/20 rounded-lg p-2 text-center">
+                      <div className="text-xs text-blue-300 mb-1">Role Score</div>
+                      <div className="text-lg font-bold">{Math.round(p1Metrics.rcs.value * 100)}</div>
+                      <div className={`text-xs ${roleDiff > 0 ? 'text-green-500' : roleDiff < 0 ? 'text-red-500' : 'text-blue-400'}`}>
+                        {formatComparisonMetric(roleDiff)}
+                      </div>
+                    </div>
+                    <div className="bg-blue-950/20 rounded-lg p-2 text-center">
+                      <div className="text-xs text-blue-300 mb-1">Consistency</div>
+                      <div className="text-lg font-bold">{Math.round(p1Metrics.icf.value * 100)}</div>
+                      <div className={`text-xs ${consistencyDiff > 0 ? 'text-green-500' : consistencyDiff < 0 ? 'text-red-500' : 'text-blue-400'}`}>
+                        {formatComparisonMetric(consistencyDiff)}
+                      </div>
+                    </div>
                   </div>
-                  <RoleBadge role={player1.role} className="ml-auto" />
                 </div>
-                
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                  <div className="bg-blue-950/20 rounded-lg p-2 text-center">
-                    <div className="text-xs text-blue-300 mb-1">PIV Rating</div>
-                    <div className="text-lg font-bold">{Math.round(getPlayerPIV(player1) * 100)}</div>
-                    <div className={`text-xs ${pivDiff > 0 ? 'text-green-500' : pivDiff < 0 ? 'text-red-500' : 'text-blue-400'}`}>
-                      {formatComparisonMetric(pivDiff)}
-                    </div>
-                  </div>
-                  <div className="bg-blue-950/20 rounded-lg p-2 text-center">
-                    <div className="text-xs text-blue-300 mb-1">K/D Ratio</div>
-                    <div className="text-lg font-bold">{player1.kd.toFixed(2)}</div>
-                    <div className={`text-xs ${kdDiff > 0 ? 'text-green-500' : kdDiff < 0 ? 'text-red-500' : 'text-blue-400'}`}>
-                      {formatComparisonMetric(kdDiff/2)}
-                    </div>
-                  </div>
-                  <div className="bg-blue-950/20 rounded-lg p-2 text-center">
-                    <div className="text-xs text-blue-300 mb-1">Role Score</div>
-                    <div className="text-lg font-bold">{Math.round(p1Metrics.rcs.value * 100)}</div>
-                    <div className={`text-xs ${roleDiff > 0 ? 'text-green-500' : roleDiff < 0 ? 'text-red-500' : 'text-blue-400'}`}>
-                      {formatComparisonMetric(roleDiff)}
-                    </div>
-                  </div>
-                  <div className="bg-blue-950/20 rounded-lg p-2 text-center">
-                    <div className="text-xs text-blue-300 mb-1">Consistency</div>
-                    <div className="text-lg font-bold">{Math.round(p1Metrics.icf.value * 100)}</div>
-                    <div className={`text-xs ${consistencyDiff > 0 ? 'text-green-500' : consistencyDiff < 0 ? 'text-red-500' : 'text-blue-400'}`}>
-                      {formatComparisonMetric(consistencyDiff)}
-                    </div>
-                  </div>
+              ) : (
+                <div className="rounded-lg p-4 bg-blue-900/10 flex items-center justify-center">
+                  <div className="text-center">Loading player data...</div>
                 </div>
-              </div>
+              )}
               
-              {/* Player 2 */}
-              <div 
-                className={`rounded-lg p-4 ${sliderValue >= 50 ? 'bg-blue-950/30' : 'bg-blue-900/10'} 
-                  transition-all duration-300 border ${sliderValue >= 50 ? 'border-blue-500/50' : 'border-transparent'}`}
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-full bg-blue-900/30 flex items-center justify-center text-sm font-medium">
-                    {player2.team.substring(0, 2)}
+              {player2 && p2Metrics ? (
+                <div 
+                  className={`rounded-lg p-4 ${sliderValue >= 50 ? 'bg-blue-950/30' : 'bg-blue-900/10'} 
+                    transition-all duration-300 border ${sliderValue >= 50 ? 'border-blue-500/50' : 'border-transparent'}`}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-full bg-blue-900/30 flex items-center justify-center text-sm font-medium">
+                      {player2.team.substring(0, 2)}
+                    </div>
+                    <div>
+                      <div className="font-bold text-lg">{player2.name}</div>
+                      <div className="text-sm text-blue-300">{player2.team}</div>
+                    </div>
+                    <RoleBadge role={player2.role} className="ml-auto" />
                   </div>
-                  <div>
-                    <div className="font-bold text-lg">{player2.name}</div>
-                    <div className="text-sm text-blue-300">{player2.team}</div>
+                  
+                  <div className="grid grid-cols-2 gap-3 mt-4">
+                    <div className="bg-blue-950/20 rounded-lg p-2 text-center">
+                      <div className="text-xs text-blue-300 mb-1">PIV Rating</div>
+                      <div className="text-lg font-bold">{Math.round(getPlayerPIV(player2) * 100)}</div>
+                      <div className={`text-xs ${pivDiff < 0 ? 'text-green-500' : pivDiff > 0 ? 'text-red-500' : 'text-blue-400'}`}>
+                        {formatComparisonMetric(-pivDiff)}
+                      </div>
+                    </div>
+                    <div className="bg-blue-950/20 rounded-lg p-2 text-center">
+                      <div className="text-xs text-blue-300 mb-1">K/D Ratio</div>
+                      <div className="text-lg font-bold">{player2.kd.toFixed(2)}</div>
+                      <div className={`text-xs ${kdDiff < 0 ? 'text-green-500' : kdDiff > 0 ? 'text-red-500' : 'text-blue-400'}`}>
+                        {formatComparisonMetric(-kdDiff/2)}
+                      </div>
+                    </div>
+                    <div className="bg-blue-950/20 rounded-lg p-2 text-center">
+                      <div className="text-xs text-blue-300 mb-1">Role Score</div>
+                      <div className="text-lg font-bold">{Math.round(p2Metrics.rcs.value * 100)}</div>
+                      <div className={`text-xs ${roleDiff < 0 ? 'text-green-500' : roleDiff > 0 ? 'text-red-500' : 'text-blue-400'}`}>
+                        {formatComparisonMetric(-roleDiff)}
+                      </div>
+                    </div>
+                    <div className="bg-blue-950/20 rounded-lg p-2 text-center">
+                      <div className="text-xs text-blue-300 mb-1">Consistency</div>
+                      <div className="text-lg font-bold">{Math.round(p2Metrics.icf.value * 100)}</div>
+                      <div className={`text-xs ${consistencyDiff < 0 ? 'text-green-500' : consistencyDiff > 0 ? 'text-red-500' : 'text-blue-400'}`}>
+                        {formatComparisonMetric(-consistencyDiff)}
+                      </div>
+                    </div>
                   </div>
-                  <RoleBadge role={player2.role} className="ml-auto" />
                 </div>
-                
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                  <div className="bg-blue-950/20 rounded-lg p-2 text-center">
-                    <div className="text-xs text-blue-300 mb-1">PIV Rating</div>
-                    <div className="text-lg font-bold">{Math.round(getPlayerPIV(player2) * 100)}</div>
-                    <div className={`text-xs ${pivDiff < 0 ? 'text-green-500' : pivDiff > 0 ? 'text-red-500' : 'text-blue-400'}`}>
-                      {formatComparisonMetric(-pivDiff)}
-                    </div>
-                  </div>
-                  <div className="bg-blue-950/20 rounded-lg p-2 text-center">
-                    <div className="text-xs text-blue-300 mb-1">K/D Ratio</div>
-                    <div className="text-lg font-bold">{player2.kd.toFixed(2)}</div>
-                    <div className={`text-xs ${kdDiff < 0 ? 'text-green-500' : kdDiff > 0 ? 'text-red-500' : 'text-blue-400'}`}>
-                      {formatComparisonMetric(-kdDiff/2)}
-                    </div>
-                  </div>
-                  <div className="bg-blue-950/20 rounded-lg p-2 text-center">
-                    <div className="text-xs text-blue-300 mb-1">Role Score</div>
-                    <div className="text-lg font-bold">{Math.round(p2Metrics.rcs.value * 100)}</div>
-                    <div className={`text-xs ${roleDiff < 0 ? 'text-green-500' : roleDiff > 0 ? 'text-red-500' : 'text-blue-400'}`}>
-                      {formatComparisonMetric(-roleDiff)}
-                    </div>
-                  </div>
-                  <div className="bg-blue-950/20 rounded-lg p-2 text-center">
-                    <div className="text-xs text-blue-300 mb-1">Consistency</div>
-                    <div className="text-lg font-bold">{Math.round(p2Metrics.icf.value * 100)}</div>
-                    <div className={`text-xs ${consistencyDiff < 0 ? 'text-green-500' : consistencyDiff > 0 ? 'text-red-500' : 'text-blue-400'}`}>
-                      {formatComparisonMetric(-consistencyDiff)}
-                    </div>
-                  </div>
+              ) : (
+                <div className="rounded-lg p-4 bg-blue-900/10 flex items-center justify-center">
+                  <div className="text-center">Loading player data...</div>
                 </div>
-              </div>
+              )}
             </div>
             
             {/* Slider */}
@@ -258,10 +278,10 @@ export default function PerformanceComparisonSlider({
               />
               
               <div className="absolute left-0 top-0 text-sm font-medium text-blue-400">
-                {player1.name}
+                {player1?.name || "Player 1"}
               </div>
               <div className="absolute right-0 top-0 text-sm font-medium text-blue-400">
-                {player2.name}
+                {player2?.name || "Player 2"}
               </div>
               
               <div className="flex justify-center items-center mt-2">

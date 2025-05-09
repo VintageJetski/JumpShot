@@ -1,12 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Responsive, WidthProvider } from 'react-grid-layout';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { motion } from 'framer-motion';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
 import { PlayerWithPIV, TeamWithTIR } from '@shared/schema';
 import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogTrigger,
@@ -16,27 +26,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Plus, Trash2, Sliders, Save, RotateCcw, Grid, MoveHorizontal } from 'lucide-react';
+import { Loader2, Grid, Plus, Save, Trash2 } from 'lucide-react';
 
 // Import widget components
 import PlayerCard from '@/components/dashboard/widgets/PlayerCard';
@@ -48,10 +41,7 @@ import PlayerPerformance from '@/components/dashboard/widgets/PlayerPerformance'
 import TeamOverview from '@/components/dashboard/widgets/TeamOverview';
 import UpcomingMatches from '@/components/dashboard/widgets/UpcomingMatches';
 
-// Configure the responsive grid layout
-const ResponsiveGridLayout = WidthProvider(Responsive);
-
-// Define the widget types
+// Widget types
 const WIDGET_TYPES = {
   PLAYER_CARD: 'player_card',
   TEAM_COMPARISON: 'team_comparison',
@@ -63,101 +53,74 @@ const WIDGET_TYPES = {
   UPCOMING_MATCHES: 'upcoming_matches',
 };
 
-// Define widget metadata
-const WIDGET_METADATA = {
+// Widget info for the UI
+const WIDGET_INFO = {
   [WIDGET_TYPES.PLAYER_CARD]: {
     name: 'Player Card',
     description: 'Shows a player\'s basic information and PIV rating',
-    minW: 2,
-    minH: 2,
-    maxW: 4,
-    maxH: 4,
-    defaultW: 2,
-    defaultH: 2,
   },
   [WIDGET_TYPES.TEAM_COMPARISON]: {
     name: 'Team Comparison',
     description: 'Compare two teams across various metrics',
-    minW: 3,
-    minH: 4,
-    maxW: 6,
-    maxH: 6,
-    defaultW: 4,
-    defaultH: 4,
   },
   [WIDGET_TYPES.PIV_CHART]: {
     name: 'PIV Comparison Chart',
     description: 'Compare PIV ratings of multiple players',
-    minW: 4,
-    minH: 3,
-    maxW: 12,
-    maxH: 6,
-    defaultW: 6,
-    defaultH: 3,
   },
   [WIDGET_TYPES.MATCH_PREDICTION]: {
     name: 'Match Prediction',
     description: 'Shows the prediction for a match between two teams',
-    minW: 3,
-    minH: 3,
-    maxW: 6,
-    maxH: 5,
-    defaultW: 4,
-    defaultH: 3,
   },
   [WIDGET_TYPES.ROLE_DISTRIBUTION]: {
     name: 'Role Distribution',
     description: 'Shows the role distribution within a team',
-    minW: 3,
-    minH: 3,
-    maxW: 6,
-    maxH: 5,
-    defaultW: 4,
-    defaultH: 3,
   },
   [WIDGET_TYPES.PLAYER_PERFORMANCE]: {
     name: 'Player Performance',
     description: 'Detailed performance metrics for a player',
-    minW: 3,
-    minH: 3,
-    maxW: 6,
-    maxH: 5,
-    defaultW: 4,
-    defaultH: 3,
   },
   [WIDGET_TYPES.TEAM_OVERVIEW]: {
     name: 'Team Overview',
     description: 'Comprehensive overview of a team',
-    minW: 3,
-    minH: 3,
-    maxW: 6,
-    maxH: 5,
-    defaultW: 4,
-    defaultH: 3,
   },
   [WIDGET_TYPES.UPCOMING_MATCHES]: {
     name: 'Upcoming Matches',
     description: 'List of upcoming matches',
-    minW: 3,
-    minH: 3,
-    maxW: 6,
-    maxH: 5,
-    defaultW: 4,
-    defaultH: 3,
   },
 };
 
-// Default configurations for new dashboards
-const DEFAULT_DASHBOARD_CONFIG = {
-  layouts: {
-    lg: [],
-    md: [],
-    sm: [],
-    xs: [],
-    xxs: [],
-  },
-  widgets: {},
-  name: 'New Dashboard',
+// Default dashboard structure
+const DEFAULT_DASHBOARD = {
+  name: 'Default Dashboard',
+  layout: [
+    {
+      id: 'player-card-1',
+      type: WIDGET_TYPES.PLAYER_CARD,
+      config: { playerId: null },
+      col: 1,
+      row: 1,
+      colSpan: 1,
+      rowSpan: 1,
+    },
+    {
+      id: 'team-comparison-1',
+      type: WIDGET_TYPES.TEAM_COMPARISON,
+      config: { team1Id: null, team2Id: null },
+      col: 2,
+      row: 1,
+      colSpan: 2,
+      rowSpan: 1,
+    },
+    {
+      id: 'piv-chart-1',
+      type: WIDGET_TYPES.PIV_CHART,
+      config: { playerIds: [] },
+      col: 1,
+      row: 2,
+      colSpan: 3,
+      rowSpan: 1,
+    },
+  ],
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };
@@ -174,121 +137,105 @@ export default function DashboardPage() {
 
   // Load dashboards from local storage
   const [dashboards, setDashboards] = useLocalStorage<Record<string, any>>('cs2-dashboards', {
-    'default': { 
-      ...DEFAULT_DASHBOARD_CONFIG,
-      name: 'Default Dashboard'
-    }
+    'default': DEFAULT_DASHBOARD
   });
 
   // Active dashboard state
   const [activeDashboardId, setActiveDashboardId] = useLocalStorage<string>('cs2-active-dashboard', 'default');
-  const [isEditMode, setIsEditMode] = useState(false);
+  
+  // State for adding/editing widgets
   const [showAddWidgetDialog, setShowAddWidgetDialog] = useState(false);
   const [showDashboardDialog, setShowDashboardDialog] = useState(false);
   const [newDashboardName, setNewDashboardName] = useState('');
   const [dashboardAction, setDashboardAction] = useState<'new' | 'rename' | 'delete'>('new');
-
-  // Widget configuration state
   const [selectedWidgetType, setSelectedWidgetType] = useState(WIDGET_TYPES.PLAYER_CARD);
   const [widgetConfig, setWidgetConfig] = useState<Record<string, any>>({});
+  const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null);
 
-  // Get the active dashboard configuration
+  // Active dashboard
   const activeDashboard = dashboards[activeDashboardId] || dashboards['default'];
 
-  // Function to generate a unique ID for widgets
+  // Generate a unique ID for widgets
   const generateWidgetId = () => `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  // Handle layout changes
-  const handleLayoutChange = (layout: any[], layouts: any) => {
-    setDashboards({
-      ...dashboards,
-      [activeDashboardId]: {
-        ...dashboards[activeDashboardId],
-        layouts: layouts,
-        updatedAt: new Date().toISOString()
-      }
-    });
-  };
-
-  // Add a new widget to the dashboard
+  // Add a widget to the dashboard
   const addWidget = () => {
-    const widgetId = generateWidgetId();
-    const widgetType = selectedWidgetType;
-    const metadata = WIDGET_METADATA[widgetType];
-
-    // Add the widget to the layouts and widgets
-    const newDashboard = {
-      ...dashboards[activeDashboardId],
-      layouts: {
-        ...dashboards[activeDashboardId].layouts,
-        lg: [
-          ...dashboards[activeDashboardId].layouts.lg,
-          {
-            i: widgetId,
-            x: 0,
-            y: Infinity, // Add to the bottom
-            w: metadata.defaultW,
-            h: metadata.defaultH,
-            minW: metadata.minW,
-            minH: metadata.minH,
-            maxW: metadata.maxW,
-            maxH: metadata.maxH,
-            isDraggable: true,
-            isResizable: true,
-          }
-        ]
-      },
-      widgets: {
-        ...dashboards[activeDashboardId].widgets,
-        [widgetId]: {
-          type: widgetType,
-          config: widgetConfig,
+    // If editing, update existing widget
+    if (editingWidgetId) {
+      const updatedLayout = activeDashboard.layout.map((widget: any) => {
+        if (widget.id === editingWidgetId) {
+          return {
+            ...widget,
+            config: widgetConfig,
+          };
         }
-      },
-      updatedAt: new Date().toISOString()
-    };
+        return widget;
+      });
 
-    setDashboards({
-      ...dashboards,
-      [activeDashboardId]: newDashboard
-    });
+      setDashboards({
+        ...dashboards,
+        [activeDashboardId]: {
+          ...activeDashboard,
+          layout: updatedLayout,
+          updatedAt: new Date().toISOString(),
+        }
+      });
+
+      toast({
+        title: 'Widget Updated',
+        description: `Updated the widget configuration.`,
+      });
+    } else {
+      // Add new widget to the end
+      const newWidget = {
+        id: generateWidgetId(),
+        type: selectedWidgetType,
+        config: widgetConfig,
+        col: 1,
+        row: activeDashboard.layout.length + 1,
+        colSpan: selectedWidgetType === WIDGET_TYPES.PIV_CHART ? 3 : (
+          selectedWidgetType === WIDGET_TYPES.TEAM_COMPARISON ? 2 : 1
+        ),
+        rowSpan: 1,
+      };
+
+      setDashboards({
+        ...dashboards,
+        [activeDashboardId]: {
+          ...activeDashboard,
+          layout: [...activeDashboard.layout, newWidget],
+          updatedAt: new Date().toISOString(),
+        }
+      });
+
+      toast({
+        title: 'Widget Added',
+        description: `Added new ${WIDGET_INFO[selectedWidgetType].name} widget to your dashboard.`,
+      });
+    }
 
     // Reset state and close dialog
     setWidgetConfig({});
+    setEditingWidgetId(null);
     setShowAddWidgetDialog(false);
-    
-    toast({
-      title: 'Widget Added',
-      description: `Added new ${metadata.name} widget to your dashboard.`,
-    });
   };
 
-  // Remove a widget from the dashboard
-  const removeWidget = (widgetId: string) => {
-    const newDashboard = {
-      ...dashboards[activeDashboardId],
-      layouts: {
-        ...dashboards[activeDashboardId].layouts,
-        lg: dashboards[activeDashboardId].layouts.lg.filter((item: any) => item.i !== widgetId),
-        md: dashboards[activeDashboardId].layouts.md.filter((item: any) => item.i !== widgetId),
-        sm: dashboards[activeDashboardId].layouts.sm.filter((item: any) => item.i !== widgetId),
-        xs: dashboards[activeDashboardId].layouts.xs.filter((item: any) => item.i !== widgetId),
-        xxs: dashboards[activeDashboardId].layouts.xxs.filter((item: any) => item.i !== widgetId),
-      },
-      widgets: Object.fromEntries(
-        Object.entries(dashboards[activeDashboardId].widgets).filter(([id]) => id !== widgetId)
-      ),
-      updatedAt: new Date().toISOString()
-    };
-
+  // Delete a widget from the dashboard
+  const deleteWidget = (widgetId: string) => {
+    const updatedLayout = activeDashboard.layout.filter((widget: any) => widget.id !== widgetId);
+    
     setDashboards({
       ...dashboards,
-      [activeDashboardId]: newDashboard
+      [activeDashboardId]: {
+        ...activeDashboard,
+        layout: updatedLayout,
+        updatedAt: new Date().toISOString(),
+      }
     });
 
     toast({
       title: 'Widget Removed',
-      description: `Removed widget from your dashboard.`,
+      description: 'Widget has been removed from your dashboard.',
     });
   };
 
@@ -303,8 +250,10 @@ export default function DashboardPage() {
       return;
     }
 
-    // Check if dashboard with that name already exists
-    const dashboardExists = Object.values(dashboards).some(d => d.name === newDashboardName);
+    const dashboardExists = Object.values(dashboards).some(
+      (d: any) => d.name === newDashboardName
+    );
+    
     if (dashboardExists) {
       toast({
         title: 'Dashboard Already Exists',
@@ -318,12 +267,13 @@ export default function DashboardPage() {
     setDashboards({
       ...dashboards,
       [dashboardId]: {
-        ...DEFAULT_DASHBOARD_CONFIG,
         name: newDashboardName,
+        layout: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }
     });
+    
     setActiveDashboardId(dashboardId);
     setNewDashboardName('');
     setShowDashboardDialog(false);
@@ -348,11 +298,12 @@ export default function DashboardPage() {
     setDashboards({
       ...dashboards,
       [activeDashboardId]: {
-        ...dashboards[activeDashboardId],
+        ...activeDashboard,
         name: newDashboardName,
         updatedAt: new Date().toISOString(),
       }
     });
+    
     setNewDashboardName('');
     setShowDashboardDialog(false);
 
@@ -364,7 +315,6 @@ export default function DashboardPage() {
 
   // Delete the current dashboard
   const deleteDashboard = () => {
-    // Don't allow deleting the default dashboard
     if (activeDashboardId === 'default') {
       toast({
         title: 'Cannot Delete Default',
@@ -374,14 +324,14 @@ export default function DashboardPage() {
       return;
     }
 
-    const { [activeDashboardId]: deletedDashboard, ...remainingDashboards } = dashboards;
+    const { [activeDashboardId]: _, ...remainingDashboards } = dashboards;
     setDashboards(remainingDashboards);
     setActiveDashboardId('default');
     setShowDashboardDialog(false);
 
     toast({
       title: 'Dashboard Deleted',
-      description: `Deleted dashboard "${dashboards[activeDashboardId].name}".`,
+      description: `Deleted dashboard "${activeDashboard.name}".`,
     });
   };
 
@@ -400,76 +350,171 @@ export default function DashboardPage() {
     }
   };
 
-  // Reset dashboard to defaults
-  const resetDashboard = () => {
-    setDashboards({
-      ...dashboards,
-      [activeDashboardId]: {
-        ...DEFAULT_DASHBOARD_CONFIG,
-        name: dashboards[activeDashboardId].name,
-        createdAt: dashboards[activeDashboardId].createdAt,
-        updatedAt: new Date().toISOString(),
-      }
-    });
-
-    toast({
-      title: 'Dashboard Reset',
-      description: `Reset "${dashboards[activeDashboardId].name}" to default settings.`,
-    });
+  // Edit an existing widget
+  const editWidget = (widget: any) => {
+    setSelectedWidgetType(widget.type);
+    setWidgetConfig(widget.config);
+    setEditingWidgetId(widget.id);
+    setShowAddWidgetDialog(true);
   };
 
-  // Render the widget component based on its type and configuration
-  const renderWidget = (widgetId: string) => {
-    const widget = dashboards[activeDashboardId].widgets[widgetId];
-    if (!widget) return null;
-
+  // Render a widget based on its type and configuration
+  const renderWidget = (widget: any) => {
     const { type, config } = widget;
 
     switch (type) {
-      case WIDGET_TYPES.PLAYER_CARD:
+      case WIDGET_TYPES.PLAYER_CARD: {
         const player = players.find(p => p.id === config.playerId);
-        return player ? <PlayerCard player={player} /> : <div className="p-4">Player not found.</div>;
+        return player ? (
+          <PlayerCard player={player} />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full">
+            <p className="text-sm text-muted-foreground">No player selected</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => editWidget(widget)}
+            >
+              Select Player
+            </Button>
+          </div>
+        );
+      }
       
-      case WIDGET_TYPES.TEAM_COMPARISON:
+      case WIDGET_TYPES.TEAM_COMPARISON: {
         const team1 = teams.find(t => t.name === config.team1Id);
         const team2 = teams.find(t => t.name === config.team2Id);
-        return (team1 && team2) ? <TeamComparison team1={team1} team2={team2} /> : <div className="p-4">Team(s) not found.</div>;
+        return (team1 && team2) ? (
+          <TeamComparison team1={team1} team2={team2} />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full">
+            <p className="text-sm text-muted-foreground">Select teams to compare</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => editWidget(widget)}
+            >
+              Select Teams
+            </Button>
+          </div>
+        );
+      }
       
-      case WIDGET_TYPES.PIV_CHART:
+      case WIDGET_TYPES.PIV_CHART: {
         const selectedPlayers = (config.playerIds || [])
           .map((id: string) => players.find(p => p.id === id))
           .filter(Boolean) as PlayerWithPIV[];
-        return <PIVChart players={selectedPlayers} />;
+        
+        return selectedPlayers.length > 0 ? (
+          <PIVChart players={selectedPlayers} />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full">
+            <p className="text-sm text-muted-foreground">No players selected for comparison</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => editWidget(widget)}
+            >
+              Select Players
+            </Button>
+          </div>
+        );
+      }
       
-      case WIDGET_TYPES.MATCH_PREDICTION:
+      case WIDGET_TYPES.MATCH_PREDICTION: {
         const predTeam1 = teams.find(t => t.name === config.team1Id);
         const predTeam2 = teams.find(t => t.name === config.team2Id);
-        return (predTeam1 && predTeam2) ? <MatchPrediction team1={predTeam1} team2={predTeam2} /> : <div className="p-4">Team(s) not found.</div>;
+        return (predTeam1 && predTeam2) ? (
+          <MatchPrediction team1={predTeam1} team2={predTeam2} />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full">
+            <p className="text-sm text-muted-foreground">Select teams for match prediction</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => editWidget(widget)}
+            >
+              Select Teams
+            </Button>
+          </div>
+        );
+      }
       
-      case WIDGET_TYPES.ROLE_DISTRIBUTION:
+      case WIDGET_TYPES.ROLE_DISTRIBUTION: {
         const roleTeam = teams.find(t => t.name === config.teamId);
-        return roleTeam ? <RoleDistribution team={roleTeam} /> : <div className="p-4">Team not found.</div>;
+        return roleTeam ? (
+          <RoleDistribution team={roleTeam} />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full">
+            <p className="text-sm text-muted-foreground">No team selected</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => editWidget(widget)}
+            >
+              Select Team
+            </Button>
+          </div>
+        );
+      }
       
-      case WIDGET_TYPES.PLAYER_PERFORMANCE:
+      case WIDGET_TYPES.PLAYER_PERFORMANCE: {
         const perfPlayer = players.find(p => p.id === config.playerId);
-        return perfPlayer ? <PlayerPerformance player={perfPlayer} /> : <div className="p-4">Player not found.</div>;
+        return perfPlayer ? (
+          <PlayerPerformance player={perfPlayer} />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full">
+            <p className="text-sm text-muted-foreground">No player selected</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => editWidget(widget)}
+            >
+              Select Player
+            </Button>
+          </div>
+        );
+      }
       
-      case WIDGET_TYPES.TEAM_OVERVIEW:
+      case WIDGET_TYPES.TEAM_OVERVIEW: {
         const overviewTeam = teams.find(t => t.name === config.teamId);
-        return overviewTeam ? <TeamOverview team={overviewTeam} /> : <div className="p-4">Team not found.</div>;
+        return overviewTeam ? (
+          <TeamOverview team={overviewTeam} />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full">
+            <p className="text-sm text-muted-foreground">No team selected</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => editWidget(widget)}
+            >
+              Select Team
+            </Button>
+          </div>
+        );
+      }
       
-      case WIDGET_TYPES.UPCOMING_MATCHES:
+      case WIDGET_TYPES.UPCOMING_MATCHES: {
         return <UpcomingMatches limit={config.limit || 3} />;
+      }
       
       default:
-        return <div className="p-4">Unknown widget type.</div>;
+        return <div className="p-4">Unknown widget type</div>;
     }
   };
 
-  // Widget configuration form based on the selected widget type
+  // Widget configuration form
   const renderWidgetConfigForm = () => {
     switch (selectedWidgetType) {
       case WIDGET_TYPES.PLAYER_CARD:
+      case WIDGET_TYPES.PLAYER_PERFORMANCE:
         return (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -494,6 +539,7 @@ export default function DashboardPage() {
         );
       
       case WIDGET_TYPES.TEAM_COMPARISON:
+      case WIDGET_TYPES.MATCH_PREDICTION:
         return (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -543,71 +589,29 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 gap-2 mt-2 max-h-40 overflow-y-auto">
                 {players.map(player => (
                   <div key={player.id} className="flex items-center space-x-2">
-                    <Switch
-                      id={`player-switch-${player.id}`}
+                    <input
+                      type="checkbox"
+                      id={`player-${player.id}`}
                       checked={(widgetConfig.playerIds || []).includes(player.id)}
-                      onCheckedChange={(checked) => {
+                      onChange={(e) => {
                         let newPlayerIds = [...(widgetConfig.playerIds || [])];
-                        if (checked) {
-                          // Add if not already included
+                        if (e.target.checked) {
                           if (!newPlayerIds.includes(player.id)) {
                             newPlayerIds.push(player.id);
                           }
                         } else {
-                          // Remove if included
                           newPlayerIds = newPlayerIds.filter(id => id !== player.id);
                         }
                         setWidgetConfig({ ...widgetConfig, playerIds: newPlayerIds });
                       }}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <Label htmlFor={`player-switch-${player.id}`} className="text-sm">
+                    <Label htmlFor={`player-${player.id}`} className="text-sm">
                       {player.name} ({player.team})
                     </Label>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        );
-      
-      case WIDGET_TYPES.MATCH_PREDICTION:
-        return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="pred-team1-select">Team 1</Label>
-              <Select 
-                onValueChange={(value) => setWidgetConfig({ ...widgetConfig, team1Id: value })}
-                value={widgetConfig.team1Id || ""}
-              >
-                <SelectTrigger id="pred-team1-select">
-                  <SelectValue placeholder="Select first team" />
-                </SelectTrigger>
-                <SelectContent>
-                  {teams.map(team => (
-                    <SelectItem key={team.name} value={team.name}>
-                      {team.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pred-team2-select">Team 2</Label>
-              <Select 
-                onValueChange={(value) => setWidgetConfig({ ...widgetConfig, team2Id: value })}
-                value={widgetConfig.team2Id || ""}
-              >
-                <SelectTrigger id="pred-team2-select">
-                  <SelectValue placeholder="Select second team" />
-                </SelectTrigger>
-                <SelectContent>
-                  {teams.map(team => (
-                    <SelectItem key={team.name} value={team.name}>
-                      {team.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
           </div>
         );
@@ -629,30 +633,6 @@ export default function DashboardPage() {
                   {teams.map(team => (
                     <SelectItem key={team.name} value={team.name}>
                       {team.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        );
-      
-      case WIDGET_TYPES.PLAYER_PERFORMANCE:
-        return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="player-select">Select Player</Label>
-              <Select 
-                onValueChange={(value) => setWidgetConfig({ ...widgetConfig, playerId: value })}
-                value={widgetConfig.playerId || ""}
-              >
-                <SelectTrigger id="player-select">
-                  <SelectValue placeholder="Select a player" />
-                </SelectTrigger>
-                <SelectContent>
-                  {players.map(player => (
-                    <SelectItem key={player.id} value={player.id}>
-                      {player.name} ({player.team})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -683,7 +663,7 @@ export default function DashboardPage() {
     }
   };
 
-  // If loading data, show a loading spinner
+  // Show loading spinner while fetching data
   if (isLoadingPlayers || isLoadingTeams) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
@@ -700,7 +680,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-blue-50 flex items-center">
             <Grid className="mr-2 h-5 w-5 text-blue-400" />
             <span>
-              {dashboards[activeDashboardId]?.name || 'My Dashboard'}
+              {activeDashboard.name || 'My Dashboard'}
             </span>
           </h1>
           <p className="text-sm text-blue-300 mt-1">
@@ -789,7 +769,7 @@ export default function DashboardPage() {
             size="sm"
             onClick={() => {
               setDashboardAction('rename');
-              setNewDashboardName(dashboards[activeDashboardId]?.name || '');
+              setNewDashboardName(activeDashboard.name || '');
               setShowDashboardDialog(true);
             }}
           >
@@ -806,265 +786,131 @@ export default function DashboardPage() {
           >
             <Trash2 className="h-4 w-4" />
           </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={resetDashboard}
-          >
-            <RotateCcw className="mr-1 h-4 w-4" />
-            Reset
-          </Button>
           
-          <Button
-            variant={isEditMode ? "secondary" : "outline"}
-            size="sm"
-            onClick={() => setIsEditMode(!isEditMode)}
-          >
-            <Sliders className="mr-1 h-4 w-4" />
-            {isEditMode ? "Done Editing" : "Edit Layout"}
-          </Button>
-        </div>
-      </div>
-      
-      {/* Dashboard Grid */}
-      <div className={`
-        border border-blue-900/30 rounded-lg p-4 bg-blue-950/40
-        transition-all duration-200
-        ${isEditMode ? 'bg-blue-950/60 shadow-inner' : ''}
-      `}>
-        {/* Edit mode instructions */}
-        {isEditMode && (
-          <div className="mb-4 p-3 bg-blue-900/20 rounded-md flex items-center text-sm">
-            <MoveHorizontal className="h-4 w-4 mr-2 text-blue-400" />
-            <p className="text-blue-200">
-              Drag widgets to rearrange them or resize by pulling the bottom-right corner. Add new widgets using the button below.
-            </p>
-          </div>
-        )}
-        
-        {/* Add widget button (only in edit mode) */}
-        {isEditMode && (
           <Dialog open={showAddWidgetDialog} onOpenChange={setShowAddWidgetDialog}>
             <DialogTrigger asChild>
-              <Button className="mb-4" onClick={() => {
-                setSelectedWidgetType(WIDGET_TYPES.PLAYER_CARD);
-                setWidgetConfig({});
-                setShowAddWidgetDialog(true);
-              }}>
+              <Button 
+                onClick={() => {
+                  setSelectedWidgetType(WIDGET_TYPES.PLAYER_CARD);
+                  setWidgetConfig({});
+                  setEditingWidgetId(null);
+                  setShowAddWidgetDialog(true);
+                }}
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Widget
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add Widget</DialogTitle>
+                <DialogTitle>
+                  {editingWidgetId ? 'Edit Widget' : 'Add Widget'}
+                </DialogTitle>
                 <DialogDescription>
-                  Select the type of widget to add to your dashboard.
+                  {editingWidgetId 
+                    ? 'Configure the widget settings.' 
+                    : 'Select a widget type and configure its settings.'}
                 </DialogDescription>
               </DialogHeader>
               
-              <Tabs defaultValue={WIDGET_TYPES.PLAYER_CARD} onValueChange={(value) => {
-                setSelectedWidgetType(value);
-                setWidgetConfig({});
-              }}>
-                <TabsList className="grid grid-cols-4">
-                  <TabsTrigger value={WIDGET_TYPES.PLAYER_CARD}>Player</TabsTrigger>
-                  <TabsTrigger value={WIDGET_TYPES.TEAM_COMPARISON}>Team</TabsTrigger>
-                  <TabsTrigger value={WIDGET_TYPES.PIV_CHART}>Chart</TabsTrigger>
-                  <TabsTrigger value={WIDGET_TYPES.MATCH_PREDICTION}>Match</TabsTrigger>
-                </TabsList>
-                
-                {/* Player widgets */}
-                <TabsContent value={WIDGET_TYPES.PLAYER_CARD} className="space-y-4 mt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <Card className={`cursor-pointer border ${selectedWidgetType === WIDGET_TYPES.PLAYER_CARD ? 'border-blue-500 bg-blue-950/50' : 'border-gray-700'}`}
-                      onClick={() => setSelectedWidgetType(WIDGET_TYPES.PLAYER_CARD)}>
+              {!editingWidgetId && (
+                <div className="grid grid-cols-2 gap-2 py-4">
+                  {Object.entries(WIDGET_TYPES).map(([key, value]) => (
+                    <Card 
+                      key={key} 
+                      className={`cursor-pointer ${selectedWidgetType === value ? 'border-blue-500 bg-blue-950/30' : 'border-gray-700'}`}
+                      onClick={() => setSelectedWidgetType(value)}
+                    >
                       <CardHeader className="p-3">
-                        <CardTitle className="text-sm">Player Card</CardTitle>
+                        <CardTitle className="text-sm">{WIDGET_INFO[value].name}</CardTitle>
                       </CardHeader>
                       <CardContent className="px-3 pb-3 pt-0">
-                        <CardDescription className="text-xs">
-                          Shows a player's basic information and PIV rating
-                        </CardDescription>
+                        <p className="text-xs text-muted-foreground">
+                          {WIDGET_INFO[value].description}
+                        </p>
                       </CardContent>
                     </Card>
-                    
-                    <Card className={`cursor-pointer border ${selectedWidgetType === WIDGET_TYPES.PLAYER_PERFORMANCE ? 'border-blue-500 bg-blue-950/50' : 'border-gray-700'}`}
-                      onClick={() => setSelectedWidgetType(WIDGET_TYPES.PLAYER_PERFORMANCE)}>
-                      <CardHeader className="p-3">
-                        <CardTitle className="text-sm">Player Performance</CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-3 pb-3 pt-0">
-                        <CardDescription className="text-xs">
-                          Detailed performance metrics for a player
-                        </CardDescription>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
-                  {renderWidgetConfigForm()}
-                </TabsContent>
-                
-                {/* Team widgets */}
-                <TabsContent value={WIDGET_TYPES.TEAM_COMPARISON} className="space-y-4 mt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <Card className={`cursor-pointer border ${selectedWidgetType === WIDGET_TYPES.TEAM_COMPARISON ? 'border-blue-500 bg-blue-950/50' : 'border-gray-700'}`}
-                      onClick={() => setSelectedWidgetType(WIDGET_TYPES.TEAM_COMPARISON)}>
-                      <CardHeader className="p-3">
-                        <CardTitle className="text-sm">Team Comparison</CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-3 pb-3 pt-0">
-                        <CardDescription className="text-xs">
-                          Compare two teams across various metrics
-                        </CardDescription>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className={`cursor-pointer border ${selectedWidgetType === WIDGET_TYPES.TEAM_OVERVIEW ? 'border-blue-500 bg-blue-950/50' : 'border-gray-700'}`}
-                      onClick={() => setSelectedWidgetType(WIDGET_TYPES.TEAM_OVERVIEW)}>
-                      <CardHeader className="p-3">
-                        <CardTitle className="text-sm">Team Overview</CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-3 pb-3 pt-0">
-                        <CardDescription className="text-xs">
-                          Comprehensive overview of a team
-                        </CardDescription>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className={`cursor-pointer border ${selectedWidgetType === WIDGET_TYPES.ROLE_DISTRIBUTION ? 'border-blue-500 bg-blue-950/50' : 'border-gray-700'}`}
-                      onClick={() => setSelectedWidgetType(WIDGET_TYPES.ROLE_DISTRIBUTION)}>
-                      <CardHeader className="p-3">
-                        <CardTitle className="text-sm">Role Distribution</CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-3 pb-3 pt-0">
-                        <CardDescription className="text-xs">
-                          Shows the role distribution within a team
-                        </CardDescription>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
-                  {renderWidgetConfigForm()}
-                </TabsContent>
-                
-                {/* Chart widgets */}
-                <TabsContent value={WIDGET_TYPES.PIV_CHART} className="space-y-4 mt-4">
-                  <div className="grid grid-cols-1 gap-4">
-                    <Card className={`cursor-pointer border ${selectedWidgetType === WIDGET_TYPES.PIV_CHART ? 'border-blue-500 bg-blue-950/50' : 'border-gray-700'}`}
-                      onClick={() => setSelectedWidgetType(WIDGET_TYPES.PIV_CHART)}>
-                      <CardHeader className="p-3">
-                        <CardTitle className="text-sm">PIV Comparison Chart</CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-3 pb-3 pt-0">
-                        <CardDescription className="text-xs">
-                          Compare PIV ratings of multiple players
-                        </CardDescription>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
-                  {renderWidgetConfigForm()}
-                </TabsContent>
-                
-                {/* Match widgets */}
-                <TabsContent value={WIDGET_TYPES.MATCH_PREDICTION} className="space-y-4 mt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <Card className={`cursor-pointer border ${selectedWidgetType === WIDGET_TYPES.MATCH_PREDICTION ? 'border-blue-500 bg-blue-950/50' : 'border-gray-700'}`}
-                      onClick={() => setSelectedWidgetType(WIDGET_TYPES.MATCH_PREDICTION)}>
-                      <CardHeader className="p-3">
-                        <CardTitle className="text-sm">Match Prediction</CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-3 pb-3 pt-0">
-                        <CardDescription className="text-xs">
-                          Shows the prediction for a match between two teams
-                        </CardDescription>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className={`cursor-pointer border ${selectedWidgetType === WIDGET_TYPES.UPCOMING_MATCHES ? 'border-blue-500 bg-blue-950/50' : 'border-gray-700'}`}
-                      onClick={() => setSelectedWidgetType(WIDGET_TYPES.UPCOMING_MATCHES)}>
-                      <CardHeader className="p-3">
-                        <CardTitle className="text-sm">Upcoming Matches</CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-3 pb-3 pt-0">
-                        <CardDescription className="text-xs">
-                          List of upcoming matches
-                        </CardDescription>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
-                  {renderWidgetConfigForm()}
-                </TabsContent>
-              </Tabs>
+                  ))}
+                </div>
+              )}
+              
+              <div className="py-4">
+                {renderWidgetConfigForm()}
+              </div>
               
               <DialogFooter>
                 <Button variant="outline" onClick={() => setShowAddWidgetDialog(false)}>
                   Cancel
                 </Button>
                 <Button onClick={addWidget}>
-                  Add Widget
+                  <Save className="mr-2 h-4 w-4" />
+                  {editingWidgetId ? 'Update Widget' : 'Add Widget'}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        )}
-        
-        {/* Empty state when no widgets */}
-        {(!activeDashboard.layouts.lg || activeDashboard.layouts.lg.length === 0) && (
+        </div>
+      </div>
+      
+      {/* Dashboard Content */}
+      <div className="border border-blue-900/30 rounded-lg p-4 bg-blue-950/40">
+        {activeDashboard.layout.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <Grid className="h-12 w-12 mb-4 text-blue-500 opacity-50" />
             <h3 className="text-xl font-medium text-blue-200 mb-2">Your dashboard is empty</h3>
             <p className="text-blue-300 max-w-md mb-6">
               Add widgets to create your custom analytics view with player cards, team comparisons, and performance charts.
             </p>
-            {isEditMode ? (
-              <Button onClick={() => setShowAddWidgetDialog(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Your First Widget
-              </Button>
-            ) : (
-              <Button onClick={() => setIsEditMode(true)}>
-                <Sliders className="mr-2 h-4 w-4" />
-                Enter Edit Mode
-              </Button>
-            )}
+            <Button onClick={() => setShowAddWidgetDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Your First Widget
+            </Button>
           </div>
-        )}
-        
-        {/* Grid layout */}
-        {(activeDashboard.layouts.lg && activeDashboard.layouts.lg.length > 0) && (
-          <ResponsiveGridLayout
-            className="layout"
-            layouts={activeDashboard.layouts}
-            breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-            cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-            rowHeight={80}
-            onLayoutChange={(layout, layouts) => handleLayoutChange(layout, layouts)}
-            isDraggable={isEditMode}
-            isResizable={isEditMode}
-            useCSSTransforms={true}
-          >
-            {activeDashboard.layouts.lg.map((layout) => (
-              <div key={layout.i} className="rounded-lg overflow-hidden border border-blue-900/30 bg-blue-950/50 shadow-md">
-                {isEditMode && (
-                  <div className="absolute top-2 right-2 z-10">
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="h-6 w-6 rounded-full"
-                      onClick={() => removeWidget(layout.i)}
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {activeDashboard.layout.map((widget: any) => (
+              <Card 
+                key={widget.id}
+                className="h-80 overflow-hidden"
+                style={{ 
+                  gridColumn: `span ${widget.colSpan}`,
+                  gridRow: `span ${widget.rowSpan}`,
+                }}
+              >
+                <CardHeader className="pb-2 flex flex-row justify-between items-center">
+                  <CardTitle className="text-sm">
+                    {WIDGET_INFO[widget.type].name}
+                  </CardTitle>
+                  <div className="flex space-x-1">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7"
+                      onClick={() => editWidget(widget)}
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                      </svg>
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7"
+                      onClick={() => deleteWidget(widget.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                )}
-                {renderWidget(layout.i)}
-              </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="h-[calc(100%-2.5rem)] p-4">
+                    {renderWidget(widget)}
+                  </div>
+                </CardContent>
+              </Card>
             ))}
-          </ResponsiveGridLayout>
+          </div>
         )}
       </div>
     </div>

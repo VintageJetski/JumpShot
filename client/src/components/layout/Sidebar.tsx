@@ -190,6 +190,13 @@ export default function Sidebar() {
             isActive={isActive("/documentation")} 
           />
           
+          <MenuItem 
+            href="/dashboard" 
+            icon={<Grid />} 
+            label="Custom Dashboard" 
+            isActive={isActive("/dashboard")} 
+          />
+          
           {/* Analytics Section - Collapsible */}
           <motion.div 
             className="mt-6 mb-2 px-4"

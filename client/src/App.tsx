@@ -17,6 +17,7 @@ import SearchPlayersPage from "@/pages/SearchPlayersPage";
 import StatisticalAnalysisPage from "@/pages/StatisticalAnalysisPage";
 import DataVisualizationPage from "@/pages/DataVisualizationPage";
 import AdvancedAnalyticsPage from "@/pages/AdvancedAnalyticsPage";
+import DashboardPage from "@/pages/DashboardPage";
 import LoginPage from "@/pages/auth/login-page";
 import AdminPage from "@/pages/admin/admin-page";
 import Layout from "@/components/layout/Layout";
@@ -121,6 +122,13 @@ function Router() {
           {() => (
             <ProtectedRoute>
               <AdvancedAnalyticsPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/dashboard">
+          {() => (
+            <ProtectedRoute>
+              <DashboardPage />
             </ProtectedRoute>
           )}
         </Route>

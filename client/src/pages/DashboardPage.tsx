@@ -743,14 +743,14 @@ export default function DashboardPage() {
             {activeDashboard.layout.map((widget: any) => (
               <Card 
                 key={widget.id}
-                className="h-96 overflow-visible relative"
+                className="h-96 overflow-hidden relative"
                 style={{ 
                   gridColumn: `span ${widget.colSpan}`,
                   gridRow: `span ${widget.rowSpan}`,
                 }}
               >
-                <CardHeader className="pb-2 flex flex-row justify-between items-center">
-                  <CardTitle className="text-sm">
+                <CardHeader className="pb-1 pt-2 px-3 flex flex-row justify-between items-center">
+                  <CardTitle className="text-sm truncate max-w-[70%]">
                     {WIDGET_INFO[widget.type]?.name || "Widget"}
                   </CardTitle>
                   <div className="flex space-x-1">
@@ -775,8 +775,8 @@ export default function DashboardPage() {
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent className="p-0 h-[calc(100%-2.5rem)] overflow-y-auto custom-scrollbar">
-                  <div className="p-4 pb-12">
+                <CardContent className="p-0 h-[calc(100%-2.1rem)] overflow-y-auto custom-scrollbar">
+                  <div className="p-3 pb-12">
                     {renderWidget(widget)}
                     <div className="absolute right-3 bottom-3 text-blue-400 bg-blue-900/30 p-1 rounded-full shadow-md animate-pulse">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

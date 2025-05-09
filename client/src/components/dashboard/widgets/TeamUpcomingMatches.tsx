@@ -71,13 +71,13 @@ const TeamUpcomingMatches: React.FC<TeamUpcomingMatchesProps> = ({ teamId, limit
   };
 
   return (
-    <Card className="w-full h-full bg-card/60 backdrop-blur-sm">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-blue-500" />
-          <span>{team.name} - Upcoming Matches</span>
+    <Card className="w-full h-full bg-card/60 backdrop-blur-sm overflow-hidden">
+      <CardHeader className="pb-2 space-y-1">
+        <CardTitle className="text-md flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-blue-500 flex-shrink-0" />
+          <span className="truncate">{team.name} - Upcoming Matches</span>
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-xs">
           Upcoming matches with prediction percentages
         </CardDescription>
       </CardHeader>

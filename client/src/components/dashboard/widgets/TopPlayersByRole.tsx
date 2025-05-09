@@ -71,7 +71,7 @@ const TopPlayersByRole: React.FC<TopPlayersByRoleProps> = ({ role = 'AWP', limit
   };
 
   return (
-    <Card className="w-full h-full bg-card/60 backdrop-blur-sm">
+    <Card className="w-full h-full bg-card/60 backdrop-blur-sm overflow-hidden">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center gap-2">
           <span className={getRoleColor(role)}>{getRoleIcon(role)}</span>

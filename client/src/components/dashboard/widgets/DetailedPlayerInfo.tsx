@@ -49,7 +49,7 @@ const DetailedPlayerInfo: React.FC<DetailedPlayerInfoProps> = ({ playerId }) => 
   };
 
   return (
-    <Card className="w-full h-full bg-card/60 backdrop-blur-sm">
+    <Card className="w-full h-full bg-card/60 backdrop-blur-sm overflow-hidden">
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <CardTitle className="text-lg">{player.name}</CardTitle>
         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-sm">

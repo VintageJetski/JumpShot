@@ -81,7 +81,7 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
   };
 
   return (
-    <Card className="w-full h-full bg-card/60 backdrop-blur-sm">
+    <Card className="w-full h-full bg-card/60 backdrop-blur-sm overflow-hidden">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg">{team.name}</CardTitle>

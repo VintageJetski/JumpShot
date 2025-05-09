@@ -34,7 +34,7 @@ const TopPlayersByPIVIncrease: React.FC<TopPlayersByPIVIncreaseProps> = ({ limit
     .slice(0, limit);
 
   return (
-    <Card className="w-full h-full bg-card/60 backdrop-blur-sm">
+    <Card className="w-full h-full bg-card/60 backdrop-blur-sm overflow-hidden">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-blue-500" />

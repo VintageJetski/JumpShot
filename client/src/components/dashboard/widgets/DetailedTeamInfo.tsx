@@ -1,14 +1,27 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { TeamWithTIR, PlayerWithPIV } from '@shared/schema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Users, Trophy, Shield, Crosshair, Activity, Bomb, Star } from 'lucide-react';
+import { Loader2, Users, Trophy, Shield, Crosshair, Activity, Bomb, Star, HelpCircle } from 'lucide-react';
+import { TeamCombobox } from '@/components/ui/team-combobox';
 
 interface DetailedTeamInfoProps {
   teamId?: string;
 }
 
 const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
+  // Add logging for props
+  console.log('DetailedTeamInfo rendered with teamId:', teamId);
+  
+  // Add state for internal team selection
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(teamId || null);
+  
+  // Update internal state when prop changes
+  useEffect(() => {
+    console.log('teamId prop changed to:', teamId);
+    setSelectedTeamId(teamId || null);
+  }, [teamId]);
+  
   const { data: teams = [], isLoading: isLoadingTeams } = useQuery<TeamWithTIR[]>({
     queryKey: ['/api/teams'],
   });
@@ -19,6 +32,13 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
 
   const isLoading = isLoadingTeams || isLoadingPlayers;
 
+  // Log teams when they're loaded
+  useEffect(() => {
+    if (teams.length > 0) {
+      console.log('Teams loaded:', teams.map(t => ({ id: t.id, name: t.name })));
+    }
+  }, [teams]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center p-6">
@@ -27,15 +47,31 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
     );
   }
 
-  const team = teamId ? teams.find(t => t.id === teamId || t.name === teamId) : null;
+  // Try to find team by ID first, then by name
+  const team = selectedTeamId 
+    ? teams.find(t => t.id === selectedTeamId || t.name === selectedTeamId) 
+    : null;
+  
+  console.log('Found team:', team);
 
+  // Render internal team selector
   if (!team) {
     return (
-      <Card className="w-full h-full flex items-center justify-center">
-        <CardContent className="text-center p-6">
-          <Users className="h-12 w-12 text-blue-500/30 mx-auto mb-4" />
-          <p className="text-muted-foreground">Select a team to view detailed information</p>
-        </CardContent>
+      <Card className="w-full h-full flex flex-col items-center justify-center p-6">
+        <Users className="h-12 w-12 text-blue-500/30 mx-auto mb-4" />
+        <p className="text-muted-foreground mb-6">Select a team to view detailed information</p>
+        
+        <div className="w-full max-w-xs">
+          <TeamCombobox
+            teams={teams}
+            selectedTeamId={null}
+            onSelect={(value) => {
+              console.log("Team selected directly in widget:", value);
+              setSelectedTeamId(value);
+            }}
+            placeholder="Search for a team..."
+          />
+        </div>
       </Card>
     );
   }
@@ -88,6 +124,19 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
           <div className="px-2 py-0.5 rounded-full bg-blue-500/10">
             <span className="text-xs text-blue-500 font-medium">{team.tir.toFixed(2)} TIR</span>
           </div>
+        </div>
+        
+        {/* Add direct team selector inside the widget */}
+        <div className="mt-2 w-full">
+          <TeamCombobox
+            teams={teams}
+            selectedTeamId={selectedTeamId}
+            onSelect={(value) => {
+              console.log("Switching to team:", value);
+              setSelectedTeamId(value);
+            }}
+            placeholder="Switch team..."
+          />
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

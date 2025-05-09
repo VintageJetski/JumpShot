@@ -178,20 +178,6 @@ export default function Sidebar() {
           />
           
           <MenuItem 
-            href="/role-weightings" 
-            icon={<LineChart />} 
-            label="Role Weightings" 
-            isActive={isActive("/role-weightings")} 
-          />
-          
-          <MenuItem 
-            href="/documentation" 
-            icon={<FileText />} 
-            label="Documentation" 
-            isActive={isActive("/documentation")} 
-          />
-          
-          <MenuItem 
             href="/dashboard" 
             icon={<Grid />} 
             label="Custom Dashboard" 
@@ -309,6 +295,26 @@ export default function Sidebar() {
               </div>
             </>
           )}
+
+          <div className="flex items-center px-4 mb-2 mt-6">
+            <FileText className="h-4 w-4 text-blue-400 mr-2" />
+            <h3 className="text-xs font-semibold text-blue-300 uppercase tracking-wider">Documentation</h3>
+          </div>
+          <div className="space-y-1 mb-4">
+            <MenuItem 
+              href="/role-weightings" 
+              icon={<LineChart />} 
+              label="Role Weightings" 
+              isActive={isActive("/role-weightings")} 
+            />
+            
+            <MenuItem 
+              href="/documentation" 
+              icon={<FileText />} 
+              label="Documentation" 
+              isActive={isActive("/documentation")} 
+            />
+          </div>
           
           <div className="flex items-center px-4 mb-2">
             <Trophy className="h-4 w-4 text-blue-400 mr-2" />

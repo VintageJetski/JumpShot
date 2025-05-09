@@ -352,8 +352,9 @@ export default function DashboardPage() {
 
   // Edit an existing widget
   const editWidget = (widget: any) => {
+    console.log('Editing widget:', widget);
     setSelectedWidgetType(widget.type);
-    setWidgetConfig(widget.config);
+    setWidgetConfig(widget.config || {});
     setEditingWidgetId(widget.id);
     setShowAddWidgetDialog(true);
   };

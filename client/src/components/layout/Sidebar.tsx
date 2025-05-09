@@ -128,7 +128,7 @@ export default function Sidebar() {
   };
 
   // Group paths for checking active status
-  const analyticsRoutes = ['/player-comparisons', '/advanced-analytics'];
+  const analyticsRoutes = ['/players', '/teams', '/player-comparisons', '/advanced-analytics'];
   const visualizationRoutes = ['/statistical-analysis', '/data-visualization', '/match-infographic'];
 
   return (
@@ -148,20 +148,6 @@ export default function Sidebar() {
               <div className="ml-2 h-px flex-grow bg-gradient-to-r from-blue-500/50 to-transparent"></div>
             </div>
           </motion.div>
-          
-          <MenuItem 
-            href="/players" 
-            icon={<Users />} 
-            label="Players" 
-            isActive={isActive("/") || isActive("/players")} 
-          />
-          
-          <MenuItem 
-            href="/teams" 
-            icon={<UsersRound />} 
-            label="Teams" 
-            isActive={isActive("/teams")} 
-          />
           
           <MenuItem 
             href="/scout" 
@@ -210,6 +196,22 @@ export default function Sidebar() {
               isAnyChildActive={isAnySectionActive(analyticsRoutes)}
             />
             <CollapsibleContent className="mt-1 space-y-1">
+              <MenuItem 
+                href="/players" 
+                icon={<Users />} 
+                label="Players" 
+                isActive={isActive("/") || isActive("/players")}
+                indent
+              />
+              
+              <MenuItem 
+                href="/teams" 
+                icon={<UsersRound />} 
+                label="Teams" 
+                isActive={isActive("/teams")}
+                indent
+              />
+              
               <MenuItem 
                 href="/player-comparisons" 
                 icon={<ArrowRightLeft />} 

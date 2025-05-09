@@ -22,11 +22,20 @@ const TopPlayersByPIVIncrease: React.FC<TopPlayersByPIVIncreaseProps> = ({ limit
   }
 
   // In a real app, we'd have historical data to calculate PIV increase
-  // For this mockup, we'll simulate increases by using a derived value based on the PIV
-  const playersWithIncrease = players.map(player => ({
-    ...player,
-    pivIncrease: parseFloat((Math.random() * 0.5).toFixed(2)), // Simulated increase value
-  }));
+  // For this mockup, we'll simulate increases using a deterministic calculation based on player ID and PIV
+  const playersWithIncrease = players.map(player => {
+    // Create a stable value based on player.id that gives a number between 0-1
+    const idSum = player.id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    const stableRandom = (idSum % 100) / 100; // Between 0-1
+    
+    // Calculate increase based on PIV and the stable value (0.1-0.5 range)
+    const pivIncrease = parseFloat(((player.piv * 0.2 * stableRandom) + 0.1).toFixed(2));
+    
+    return {
+      ...player,
+      pivIncrease,
+    };
+  });
 
   // Sort by PIV increase (descending)
   const sortedPlayers = [...playersWithIncrease]

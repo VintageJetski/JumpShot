@@ -51,10 +51,10 @@ const DetailedPlayerInfo: React.FC<DetailedPlayerInfoProps> = ({ playerId }) => 
   return (
     <Card className="w-full h-full bg-card/60 backdrop-blur-sm overflow-hidden">
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-lg">{player.name}</CardTitle>
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-sm">
+        <CardTitle className="text-md truncate max-w-[60%]">{player.name}</CardTitle>
+        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 text-xs">
           {getRoleIcon(player.role)}
-          <span>{player.role}</span>
+          <span className="truncate max-w-[70px]">{player.role}</span>
         </div>
       </CardHeader>
       <CardContent>

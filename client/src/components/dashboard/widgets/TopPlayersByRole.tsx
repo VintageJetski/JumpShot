@@ -72,12 +72,12 @@ const TopPlayersByRole: React.FC<TopPlayersByRoleProps> = ({ role = 'AWP', limit
 
   return (
     <Card className="w-full h-full bg-card/60 backdrop-blur-sm overflow-hidden">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg flex items-center gap-2">
+      <CardHeader className="pb-2 space-y-1">
+        <CardTitle className="text-md flex items-center gap-2">
           <span className={getRoleColor(role)}>{getRoleIcon(role)}</span>
-          <span>Top {role} Players</span>
+          <span className="truncate">Top {role} Players</span>
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-xs">
           Top {limit} players in the {role} role by PIV rating
         </CardDescription>
       </CardHeader>

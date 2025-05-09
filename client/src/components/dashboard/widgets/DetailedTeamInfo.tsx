@@ -84,9 +84,9 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
     <Card className="w-full h-full bg-card/60 backdrop-blur-sm overflow-hidden">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-center">
-          <CardTitle className="text-lg">{team.name}</CardTitle>
-          <div className="px-2 py-1 rounded-full bg-blue-500/10">
-            <span className="text-sm text-blue-500 font-medium">{team.tir.toFixed(2)} TIR</span>
+          <CardTitle className="text-md truncate max-w-[65%]">{team.name}</CardTitle>
+          <div className="px-2 py-0.5 rounded-full bg-blue-500/10">
+            <span className="text-xs text-blue-500 font-medium">{team.tir.toFixed(2)} TIR</span>
           </div>
         </div>
       </CardHeader>
@@ -100,13 +100,13 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
           <div className="grid grid-cols-2 gap-2 mb-3">
             <div className="bg-card/50 rounded-md p-2">
               <div className="text-xs text-muted-foreground">Team Synergy</div>
-              <div className="text-lg font-medium mt-1">
+              <div className="text-base font-medium mt-0.5">
                 {(team.synergy * 100).toFixed(0)}%
               </div>
             </div>
             <div className="bg-card/50 rounded-md p-2">
               <div className="text-xs text-muted-foreground">Average PIV</div>
-              <div className="text-lg font-medium mt-1">
+              <div className="text-base font-medium mt-0.5">
                 {(teamPlayers.reduce((sum, p) => sum + p.piv, 0) / teamPlayers.length).toFixed(2)}
               </div>
             </div>
@@ -115,13 +115,13 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-card/50 rounded-md p-2">
               <div className="text-xs text-muted-foreground">T Side Rating</div>
-              <div className="text-lg font-medium mt-1">
+              <div className="text-base font-medium mt-0.5">
                 {(team as any).tSideRating?.toFixed(2) || "N/A"}
               </div>
             </div>
             <div className="bg-card/50 rounded-md p-2">
               <div className="text-xs text-muted-foreground">CT Side Rating</div>
-              <div className="text-lg font-medium mt-1">
+              <div className="text-base font-medium mt-0.5">
                 {(team as any).ctSideRating?.toFixed(2) || "N/A"}
               </div>
             </div>
@@ -149,15 +149,15 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
                   )}
                 </div>
                 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
                     <span className={getRoleColor(player.role)}>
                       {getRoleIcon(player.role)}
                     </span>
-                    <span className="text-xs whitespace-nowrap">{player.role}</span>
+                    <span className="text-xs truncate max-w-[60px]">{player.role}</span>
                   </div>
                   
-                  <div className="text-sm font-medium text-blue-500 whitespace-nowrap">
+                  <div className="text-xs font-medium text-blue-500 whitespace-nowrap">
                     {player.piv.toFixed(2)}
                   </div>
                 </div>
@@ -173,11 +173,12 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
               <span>Team Strengths</span>
             </h3>
             
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1">
               {(team as any).strengths.map((strength: string, index: number) => (
                 <div 
                   key={index} 
-                  className="px-2 py-1 rounded-full bg-green-500/10 text-green-500 text-xs truncate max-w-full"
+                  className="px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-500 text-xs truncate max-w-[120px]"
+                  title={strength}
                 >
                   {strength}
                 </div>

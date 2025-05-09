@@ -35,12 +35,12 @@ const TopPlayersByPIVIncrease: React.FC<TopPlayersByPIVIncreaseProps> = ({ limit
 
   return (
     <Card className="w-full h-full bg-card/60 backdrop-blur-sm overflow-hidden">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-blue-500" />
-          <span>Top Players by PIV Increase</span>
+      <CardHeader className="pb-2 space-y-1">
+        <CardTitle className="text-md flex items-center gap-2">
+          <TrendingUp className="h-4 w-4 text-blue-500 flex-shrink-0" />
+          <span className="truncate">Top Players by PIV Increase</span>
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-xs">
           Top {limit} players with the highest PIV increase
         </CardDescription>
       </CardHeader>

@@ -80,18 +80,18 @@ const DetailedPlayerInfo: React.FC<DetailedPlayerInfoProps> = ({ playerId }) => 
               <div className="bg-card/50 rounded-md p-2">
                 <div className="text-xs text-muted-foreground">T Side</div>
                 <div className="flex items-center gap-1.5 mt-1">
-                  {getRoleIcon(player.tRole)}
-                  <span className="font-medium">{player.tRole}</span>
+                  {getRoleIcon(player.tRole || "")}
+                  <span className="font-medium truncate">{player.tRole || "N/A"}</span>
                 </div>
-                <div className="text-sm mt-1">{player.tPIV.toFixed(2)} PIV</div>
+                <div className="text-sm mt-1">{player.tPIV?.toFixed(2) || "N/A"} PIV</div>
               </div>
               <div className="bg-card/50 rounded-md p-2">
                 <div className="text-xs text-muted-foreground">CT Side</div>
                 <div className="flex items-center gap-1.5 mt-1">
-                  {getRoleIcon(player.ctRole)}
-                  <span className="font-medium">{player.ctRole}</span>
+                  {getRoleIcon(player.ctRole || "")}
+                  <span className="font-medium truncate">{player.ctRole || "N/A"}</span>
                 </div>
-                <div className="text-sm mt-1">{player.ctPIV.toFixed(2)} PIV</div>
+                <div className="text-sm mt-1">{player.ctPIV?.toFixed(2) || "N/A"} PIV</div>
               </div>
             </div>
           </div>
@@ -101,7 +101,9 @@ const DetailedPlayerInfo: React.FC<DetailedPlayerInfoProps> = ({ playerId }) => 
             <div className="space-y-2">
               {player.metrics?.topMetrics?.[player.role]?.map((metric, index) => (
                 <div key={index} className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">{metric.metricName}</span>
+                  <span className="text-xs text-muted-foreground max-w-[65%] truncate" title={metric.metricName}>
+                    {metric.metricName}
+                  </span>
                   <span className="text-sm font-medium">
                     {typeof metric.value === 'number' && !isNaN(metric.value) 
                       ? metric.value.toFixed(2)

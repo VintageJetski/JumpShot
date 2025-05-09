@@ -116,13 +116,13 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
             <div className="bg-card/50 rounded-md p-2">
               <div className="text-xs text-muted-foreground">T Side Rating</div>
               <div className="text-lg font-medium mt-1">
-                {team.tSideRating?.toFixed(2) || "N/A"}
+                {(team as any).tSideRating?.toFixed(2) || "N/A"}
               </div>
             </div>
             <div className="bg-card/50 rounded-md p-2">
               <div className="text-xs text-muted-foreground">CT Side Rating</div>
               <div className="text-lg font-medium mt-1">
-                {team.ctSideRating?.toFixed(2) || "N/A"}
+                {(team as any).ctSideRating?.toFixed(2) || "N/A"}
               </div>
             </div>
           </div>

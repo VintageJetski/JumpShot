@@ -59,8 +59,9 @@ export function TeamCombobox({
                   <div
                     key={team.id}
                     onClick={() => {
-                      onSelect(team.id)
-                      setSearch("")
+                      console.log('Team selected in dropdown:', team);
+                      onSelect(team.id);
+                      setSearch("");
                     }}
                     className="flex items-center justify-between px-3 py-2 text-sm rounded-sm hover:bg-accent cursor-pointer"
                   >

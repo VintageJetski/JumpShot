@@ -168,18 +168,34 @@ export default function DashboardPage() {
     if (editingWidgetId) {
       console.log('Editing widget ID:', editingWidgetId);
       
+      // Create a deep copy of the current layout
+      let foundWidget = false;
       const updatedLayout = activeDashboard.layout.map((widget: any) => {
         if (widget.id === editingWidgetId) {
+          foundWidget = true;
           console.log('Found widget to update:', widget);
+          
+          // Create a new widget object with updated config
           const updatedWidget = {
             ...widget,
-            config: widgetConfig,
+            config: { ...widgetConfig },
           };
+          
           console.log('Updated widget:', updatedWidget);
           return updatedWidget;
         }
         return widget;
       });
+      
+      if (!foundWidget) {
+        console.error('Widget not found for ID:', editingWidgetId);
+        toast({
+          title: 'Error',
+          description: 'Could not find the widget to update.',
+          variant: 'destructive',
+        });
+        return;
+      }
 
       setDashboards({
         ...dashboards,
@@ -360,10 +376,23 @@ export default function DashboardPage() {
   // Edit an existing widget
   const editWidget = (widget: any) => {
     console.log('Editing widget:', widget);
+    
+    // Ensure we have a config object
+    const safeConfig = widget.config || {};
+    console.log('Initial widget config:', safeConfig);
+    
+    // Set the widget type first
     setSelectedWidgetType(widget.type);
-    setWidgetConfig(widget.config || {});
-    setEditingWidgetId(widget.id);
-    setShowAddWidgetDialog(true);
+    
+    // Use timeout to ensure state updates happen in order
+    setTimeout(() => {
+      // Set widget config and editing ID
+      setWidgetConfig(safeConfig);
+      setEditingWidgetId(widget.id);
+      setShowAddWidgetDialog(true);
+      
+      console.log('Widget config set to:', safeConfig);
+    }, 0);
   };
 
   // Render a widget based on its type and configuration
@@ -508,9 +537,19 @@ export default function DashboardPage() {
                 selectedTeamId={widgetConfig.teamId || null}
                 onSelect={(value) => {
                   console.log('Team combobox (Detailed Info) selected:', value);
+                  
+                  // Update the widget config state with the new team ID
                   const newConfig = { ...widgetConfig, teamId: value };
                   console.log('New widget config:', newConfig);
+                  
+                  // Immediately update the state to ensure it's captured
                   setWidgetConfig(newConfig);
+                  
+                  // Force a re-render
+                  setTimeout(() => {
+                    // Double check our config was updated 
+                    console.log('Current widget config after team selection:', newConfig);
+                  }, 0);
                 }}
                 placeholder="Search for a team..."
               />

@@ -30,11 +30,22 @@ export function TeamCombobox({
   placeholder = "Select a team"
 }: TeamComboboxProps) {
   const [open, setOpen] = React.useState(false)
+  const [search, setSearch] = React.useState("")
   
   // Get the selected team's name
   const selectedTeam = React.useMemo(() => {
     return teams.find(team => team.id === selectedTeamId)
   }, [teams, selectedTeamId])
+
+  // Filter teams based on search
+  const filteredTeams = React.useMemo(() => {
+    if (!search) return teams
+    
+    return teams.filter((team) => {
+      const searchTerms = search.toLowerCase()
+      return team.name.toLowerCase().includes(searchTerms)
+    })
+  }, [teams, search])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -51,10 +62,15 @@ export function TeamCombobox({
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
         <Command>
-          <CommandInput placeholder="Search team..." className="h-9" />
+          <CommandInput 
+            placeholder="Search team..." 
+            className="h-9" 
+            value={search}
+            onValueChange={setSearch}
+          />
           <CommandEmpty>No team found.</CommandEmpty>
           <CommandGroup className="max-h-[300px] overflow-y-auto">
-            {teams.map((team) => (
+            {filteredTeams.map((team) => (
               <CommandItem
                 key={team.id}
                 value={team.name}

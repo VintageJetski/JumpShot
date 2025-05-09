@@ -30,11 +30,26 @@ export function PlayerCombobox({
   placeholder = "Select a player"
 }: PlayerComboboxProps) {
   const [open, setOpen] = React.useState(false)
+  const [search, setSearch] = React.useState("")
   
   // Get the selected player's name
   const selectedPlayer = React.useMemo(() => {
     return players.find(player => player.id === selectedPlayerId)
   }, [players, selectedPlayerId])
+
+  // Filter players based on search
+  const filteredPlayers = React.useMemo(() => {
+    if (!search) return players
+    
+    return players.filter((player) => {
+      const searchTerms = search.toLowerCase()
+      return (
+        player.name.toLowerCase().includes(searchTerms) || 
+        player.team.toLowerCase().includes(searchTerms) ||
+        player.role.toLowerCase().includes(searchTerms)
+      )
+    })
+  }, [players, search])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -53,13 +68,18 @@ export function PlayerCombobox({
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
         <Command>
-          <CommandInput placeholder="Search player..." className="h-9" />
+          <CommandInput 
+            placeholder="Search player..." 
+            className="h-9" 
+            value={search}
+            onValueChange={setSearch}
+          />
           <CommandEmpty>No player found.</CommandEmpty>
           <CommandGroup className="max-h-[300px] overflow-y-auto">
-            {players.map((player) => (
+            {filteredPlayers.map((player) => (
               <CommandItem
                 key={player.id}
-                value={`${player.name} ${player.team}`}
+                value={player.name}
                 onSelect={() => {
                   onSelect(player.id)
                   setOpen(false)

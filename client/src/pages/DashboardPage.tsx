@@ -32,60 +32,42 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2, Grid, Plus, Save, Trash2 } from 'lucide-react';
 
 // Import widget components
-import PlayerCard from '@/components/dashboard/widgets/PlayerCard';
-import TeamComparison from '@/components/dashboard/widgets/TeamComparison';
-import PIVChart from '@/components/dashboard/widgets/PIVChart';
-import MatchPrediction from '@/components/dashboard/widgets/MatchPrediction';
-import RoleDistribution from '@/components/dashboard/widgets/RoleDistribution';
-import PlayerPerformance from '@/components/dashboard/widgets/PlayerPerformance';
-import TeamOverview from '@/components/dashboard/widgets/TeamOverview';
-import UpcomingMatches from '@/components/dashboard/widgets/UpcomingMatches';
+import TopPlayersByPIVIncrease from '@/components/dashboard/widgets/TopPlayersByPIVIncrease';
+import DetailedPlayerInfo from '@/components/dashboard/widgets/DetailedPlayerInfo';
+import TopPlayersByRole from '@/components/dashboard/widgets/TopPlayersByRole';
+import TeamUpcomingMatches from '@/components/dashboard/widgets/TeamUpcomingMatches';
+import DetailedTeamInfo from '@/components/dashboard/widgets/DetailedTeamInfo';
 
 // Widget types
 const WIDGET_TYPES = {
-  PLAYER_CARD: 'player_card',
-  TEAM_COMPARISON: 'team_comparison',
-  PIV_CHART: 'piv_chart',
-  MATCH_PREDICTION: 'match_prediction',
-  ROLE_DISTRIBUTION: 'role_distribution',
-  PLAYER_PERFORMANCE: 'player_performance',
-  TEAM_OVERVIEW: 'team_overview',
-  UPCOMING_MATCHES: 'upcoming_matches',
+  TOP_PLAYERS_PIV_INCREASE: 'top_players_piv_increase',
+  DETAILED_PLAYER_INFO: 'detailed_player_info',
+  TOP_PLAYERS_BY_ROLE: 'top_players_by_role',
+  TEAM_UPCOMING_MATCHES: 'team_upcoming_matches',
+  DETAILED_TEAM_INFO: 'detailed_team_info',
 };
 
 // Widget info for the UI
 const WIDGET_INFO = {
-  [WIDGET_TYPES.PLAYER_CARD]: {
-    name: 'Player Card',
-    description: 'Shows a player\'s basic information and PIV rating',
+  [WIDGET_TYPES.TOP_PLAYERS_PIV_INCREASE]: {
+    name: 'Top Players by PIV Increase',
+    description: 'Shows the top 10 players with the best increase in PIV',
   },
-  [WIDGET_TYPES.TEAM_COMPARISON]: {
-    name: 'Team Comparison',
-    description: 'Compare two teams across various metrics',
+  [WIDGET_TYPES.DETAILED_PLAYER_INFO]: {
+    name: 'Detailed Player Information',
+    description: 'Shows detailed information about a selected player',
   },
-  [WIDGET_TYPES.PIV_CHART]: {
-    name: 'PIV Comparison Chart',
-    description: 'Compare PIV ratings of multiple players',
+  [WIDGET_TYPES.TOP_PLAYERS_BY_ROLE]: {
+    name: 'Top Players by Role',
+    description: 'Shows the top 10 players in a selected role',
   },
-  [WIDGET_TYPES.MATCH_PREDICTION]: {
-    name: 'Match Prediction',
-    description: 'Shows the prediction for a match between two teams',
+  [WIDGET_TYPES.TEAM_UPCOMING_MATCHES]: {
+    name: 'Team Upcoming Matches',
+    description: 'Shows upcoming matches for a team with predictions',
   },
-  [WIDGET_TYPES.ROLE_DISTRIBUTION]: {
-    name: 'Role Distribution',
-    description: 'Shows the role distribution within a team',
-  },
-  [WIDGET_TYPES.PLAYER_PERFORMANCE]: {
-    name: 'Player Performance',
-    description: 'Detailed performance metrics for a player',
-  },
-  [WIDGET_TYPES.TEAM_OVERVIEW]: {
-    name: 'Team Overview',
-    description: 'Comprehensive overview of a team',
-  },
-  [WIDGET_TYPES.UPCOMING_MATCHES]: {
-    name: 'Upcoming Matches',
-    description: 'List of upcoming matches',
+  [WIDGET_TYPES.DETAILED_TEAM_INFO]: {
+    name: 'Detailed Team Information',
+    description: 'Shows detailed information about a selected team',
   },
 };
 

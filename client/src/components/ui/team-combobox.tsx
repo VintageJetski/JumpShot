@@ -21,32 +21,67 @@ export function TeamCombobox({
   
   // Get the selected team's name
   const selectedTeam = React.useMemo(() => {
-    return teams.find(team => team.id === selectedTeamId || team.name === selectedTeamId)
-  }, [teams, selectedTeamId])
+    if (!selectedTeamId) return null;
+    return teams.find(team => team.id === selectedTeamId || team.name === selectedTeamId);
+  }, [teams, selectedTeamId]);
 
   // Filter teams based on search
   const filteredTeams = React.useMemo(() => {
-    if (!search) return teams
+    if (!search) return teams;
     
-    const searchTerms = search.toLowerCase()
+    const searchTerms = search.toLowerCase();
     return teams.filter((team) => 
       team.name.toLowerCase().includes(searchTerms)
-    )
-  }, [teams, search])
+    );
+  }, [teams, search]);
+
+  // Handle input change separately from state
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+    // When user starts typing, clear the selection
+    if (selectedTeam && e.target.value !== selectedTeam.name) {
+      // We don't call onSelect here to prevent changing the actual selection
+      // This just opens the dropdown with search results
+    }
+  };
+
+  // Track if dropdown should be open
+  const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // When input receives focus, open dropdown
+  const handleFocus = () => {
+    setIsDropdownOpen(true);
+  };
+  
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" ref={containerRef}>
       <div className="relative">
         <Input
           placeholder={placeholder}
-          value={selectedTeam ? selectedTeam.name : search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={selectedTeam && !isDropdownOpen ? selectedTeam.name : search}
+          onChange={handleInputChange}
+          onFocus={handleFocus}
+          onClick={() => setIsDropdownOpen(true)}
           className="pl-9"
         />
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
       </div>
       
-      {search && !selectedTeam && (
+      {(isDropdownOpen || search) && (
         <div className="rounded-md border border-border mt-1">
           <ScrollArea className="h-[220px]">
             <div className="p-1">
@@ -62,6 +97,7 @@ export function TeamCombobox({
                       console.log('Team selected in dropdown:', team);
                       onSelect(team.id);
                       setSearch("");
+                      setIsDropdownOpen(false);
                     }}
                     className="flex items-center justify-between px-3 py-2 text-sm rounded-sm hover:bg-accent cursor-pointer"
                   >

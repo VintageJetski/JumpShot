@@ -21,7 +21,7 @@ export function TeamCombobox({
   
   // Get the selected team's name
   const selectedTeam = React.useMemo(() => {
-    return teams.find(team => team.id === selectedTeamId)
+    return teams.find(team => team.id === selectedTeamId || team.name === selectedTeamId)
   }, [teams, selectedTeamId])
 
   // Filter teams based on search

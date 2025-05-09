@@ -162,14 +162,21 @@ export default function DashboardPage() {
 
   // Add a widget to the dashboard
   const addWidget = () => {
+    console.log('Current widget config before saving:', widgetConfig);
+    
     // If editing, update existing widget
     if (editingWidgetId) {
+      console.log('Editing widget ID:', editingWidgetId);
+      
       const updatedLayout = activeDashboard.layout.map((widget: any) => {
         if (widget.id === editingWidgetId) {
-          return {
+          console.log('Found widget to update:', widget);
+          const updatedWidget = {
             ...widget,
             config: widgetConfig,
           };
+          console.log('Updated widget:', updatedWidget);
+          return updatedWidget;
         }
         return widget;
       });
@@ -499,7 +506,12 @@ export default function DashboardPage() {
               <TeamCombobox
                 teams={teams}
                 selectedTeamId={widgetConfig.teamId || null}
-                onSelect={(value) => setWidgetConfig({ ...widgetConfig, teamId: value })}
+                onSelect={(value) => {
+                  console.log('Team combobox (Detailed Info) selected:', value);
+                  const newConfig = { ...widgetConfig, teamId: value };
+                  console.log('New widget config:', newConfig);
+                  setWidgetConfig(newConfig);
+                }}
                 placeholder="Search for a team..."
               />
             </div>

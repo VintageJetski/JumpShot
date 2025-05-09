@@ -469,21 +469,12 @@ export default function DashboardPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="team-select">Select Team</Label>
-              <Select 
-                onValueChange={(value) => setWidgetConfig({ ...widgetConfig, teamId: value })}
-                value={widgetConfig.teamId || ""}
-              >
-                <SelectTrigger id="team-select">
-                  <SelectValue placeholder="Select a team" />
-                </SelectTrigger>
-                <SelectContent>
-                  {teams.map(team => (
-                    <SelectItem key={team.name} value={team.name}>
-                      {team.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <TeamCombobox
+                teams={teams}
+                selectedTeamId={widgetConfig.teamId || null}
+                onSelect={(value) => setWidgetConfig({ ...widgetConfig, teamId: value })}
+                placeholder="Search for a team..."
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="matches-limit">Number of Matches</Label>
@@ -504,21 +495,12 @@ export default function DashboardPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="team-select">Select Team</Label>
-              <Select 
-                onValueChange={(value) => setWidgetConfig({ ...widgetConfig, teamId: value })}
-                value={widgetConfig.teamId || ""}
-              >
-                <SelectTrigger id="team-select">
-                  <SelectValue placeholder="Select a team" />
-                </SelectTrigger>
-                <SelectContent>
-                  {teams.map(team => (
-                    <SelectItem key={team.name} value={team.name}>
-                      {team.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <TeamCombobox
+                teams={teams}
+                selectedTeamId={widgetConfig.teamId || null}
+                onSelect={(value) => setWidgetConfig({ ...widgetConfig, teamId: value })}
+                placeholder="Search for a team..."
+              />
             </div>
           </div>
         );

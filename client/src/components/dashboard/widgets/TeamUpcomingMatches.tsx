@@ -22,7 +22,7 @@ const TeamUpcomingMatches: React.FC<TeamUpcomingMatchesProps> = ({ teamId, limit
     );
   }
 
-  const team = teamId ? teams.find(t => t.name === teamId) : null;
+  const team = teamId ? teams.find(t => t.id === teamId || t.name === teamId) : null;
 
   if (!team) {
     return (

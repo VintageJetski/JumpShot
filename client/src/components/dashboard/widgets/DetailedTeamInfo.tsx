@@ -27,7 +27,7 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
     );
   }
 
-  const team = teamId ? teams.find(t => t.name === teamId) : null;
+  const team = teamId ? teams.find(t => t.id === teamId || t.name === teamId) : null;
 
   if (!team) {
     return (

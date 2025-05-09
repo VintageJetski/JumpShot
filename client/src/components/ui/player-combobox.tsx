@@ -1,19 +1,8 @@
 import * as React from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { Search } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { PlayerWithPIV } from "@shared/schema"
 
 interface PlayerComboboxProps {
@@ -29,7 +18,6 @@ export function PlayerCombobox({
   onSelect,
   placeholder = "Select a player"
 }: PlayerComboboxProps) {
-  const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
   
   // Get the selected player's name
@@ -41,74 +29,63 @@ export function PlayerCombobox({
   const filteredPlayers = React.useMemo(() => {
     if (!search) return players
     
-    return players.filter((player) => {
-      const searchTerms = search.toLowerCase()
-      return (
-        player.name.toLowerCase().includes(searchTerms) || 
-        player.team.toLowerCase().includes(searchTerms) ||
-        player.role.toLowerCase().includes(searchTerms)
-      )
-    })
+    const searchTerms = search.toLowerCase()
+    return players.filter((player) => 
+      player.name.toLowerCase().includes(searchTerms) || 
+      player.team.toLowerCase().includes(searchTerms) ||
+      player.role.toLowerCase().includes(searchTerms)
+    )
   }, [players, search])
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between"
-        >
-          {selectedPlayer ? 
-            `${selectedPlayer.name} (${selectedPlayer.team})` : 
-            placeholder}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
-        <Command>
-          <CommandInput 
-            placeholder="Search player..." 
-            className="h-9" 
-            value={search}
-            onValueChange={setSearch}
-          />
-          <CommandEmpty>No player found.</CommandEmpty>
-          <CommandGroup className="max-h-[300px] overflow-y-auto">
-            {filteredPlayers.map((player) => (
-              <CommandItem
-                key={player.id}
-                value={player.name}
-                onSelect={() => {
-                  onSelect(player.id)
-                  setOpen(false)
-                }}
-                className="flex items-center"
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    selectedPlayerId === player.id ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                <div className="flex-1 text-sm">
-                  <span className="font-medium">{player.name}</span>
-                  <span className="ml-2 text-muted-foreground">({player.team})</span>
+    <div className="space-y-2">
+      <div className="relative">
+        <Input
+          placeholder={placeholder}
+          value={selectedPlayer ? `${selectedPlayer.name} (${selectedPlayer.team})` : search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      </div>
+      
+      {search && !selectedPlayer && (
+        <div className="rounded-md border border-border mt-1">
+          <ScrollArea className="h-[220px]">
+            <div className="p-1">
+              {filteredPlayers.length === 0 ? (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  No players found
                 </div>
-                <div className="ml-auto flex items-center gap-1">
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500">
-                    {player.role}
-                  </span>
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-slate-200/10 text-slate-300">
-                    {player.piv.toFixed(2)}
-                  </span>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </Command>
-      </PopoverContent>
-    </Popover>
+              ) : (
+                filteredPlayers.map((player) => (
+                  <div
+                    key={player.id}
+                    onClick={() => {
+                      onSelect(player.id)
+                      setSearch("")
+                    }}
+                    className="flex items-center justify-between px-3 py-2 text-sm rounded-sm hover:bg-accent cursor-pointer"
+                  >
+                    <div>
+                      <span className="font-medium">{player.name}</span>
+                      <span className="ml-2 text-muted-foreground">({player.team})</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500">
+                        {player.role}
+                      </span>
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-slate-200/10 text-slate-300">
+                        {player.piv.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+      )}
+    </div>
   )
 }

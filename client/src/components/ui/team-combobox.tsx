@@ -1,19 +1,7 @@
 import * as React from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { Search } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { TeamWithTIR } from "@shared/schema"
 
 interface TeamComboboxProps {
@@ -29,7 +17,6 @@ export function TeamCombobox({
   onSelect,
   placeholder = "Select a team"
 }: TeamComboboxProps) {
-  const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
   
   // Get the selected team's name
@@ -41,61 +28,55 @@ export function TeamCombobox({
   const filteredTeams = React.useMemo(() => {
     if (!search) return teams
     
-    return teams.filter((team) => {
-      const searchTerms = search.toLowerCase()
-      return team.name.toLowerCase().includes(searchTerms)
-    })
+    const searchTerms = search.toLowerCase()
+    return teams.filter((team) => 
+      team.name.toLowerCase().includes(searchTerms)
+    )
   }, [teams, search])
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between"
-        >
-          {selectedTeam ? selectedTeam.name : placeholder}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
-        <Command>
-          <CommandInput 
-            placeholder="Search team..." 
-            className="h-9" 
-            value={search}
-            onValueChange={setSearch}
-          />
-          <CommandEmpty>No team found.</CommandEmpty>
-          <CommandGroup className="max-h-[300px] overflow-y-auto">
-            {filteredTeams.map((team) => (
-              <CommandItem
-                key={team.id}
-                value={team.name}
-                onSelect={() => {
-                  onSelect(team.id)
-                  setOpen(false)
-                }}
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    selectedTeamId === team.id ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                <div className="flex-1 text-sm">
-                  <span className="font-medium">{team.name}</span>
+    <div className="space-y-2">
+      <div className="relative">
+        <Input
+          placeholder={placeholder}
+          value={selectedTeam ? selectedTeam.name : search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      </div>
+      
+      {search && !selectedTeam && (
+        <div className="rounded-md border border-border mt-1">
+          <ScrollArea className="h-[220px]">
+            <div className="p-1">
+              {filteredTeams.length === 0 ? (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  No teams found
                 </div>
-                <div className="ml-auto text-xs px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500">
-                  {team.tir.toFixed(2)} TIR
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </Command>
-      </PopoverContent>
-    </Popover>
+              ) : (
+                filteredTeams.map((team) => (
+                  <div
+                    key={team.id}
+                    onClick={() => {
+                      onSelect(team.id)
+                      setSearch("")
+                    }}
+                    className="flex items-center justify-between px-3 py-2 text-sm rounded-sm hover:bg-accent cursor-pointer"
+                  >
+                    <div>
+                      <span className="font-medium">{team.name}</span>
+                    </div>
+                    <div className="text-xs px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500">
+                      {team.tir.toFixed(2)} TIR
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+      )}
+    </div>
   )
 }

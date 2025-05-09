@@ -30,6 +30,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Grid, Plus, Save, Trash2 } from 'lucide-react';
+import { PlayerCombobox } from '@/components/ui/player-combobox';
+import { TeamCombobox } from '@/components/ui/team-combobox';
 
 // Import widget components
 import TopPlayersByPIVIncrease from '@/components/dashboard/widgets/TopPlayersByPIVIncrease';
@@ -398,21 +400,12 @@ export default function DashboardPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="player-select">Select Player</Label>
-              <Select 
-                onValueChange={(value) => setWidgetConfig({ ...widgetConfig, playerId: value })}
-                value={widgetConfig.playerId || ""}
-              >
-                <SelectTrigger id="player-select">
-                  <SelectValue placeholder="Select a player" />
-                </SelectTrigger>
-                <SelectContent>
-                  {players.map(player => (
-                    <SelectItem key={player.id} value={player.id}>
-                      {player.name} ({player.team})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <PlayerCombobox
+                players={players}
+                selectedPlayerId={widgetConfig.playerId || null}
+                onSelect={(value) => setWidgetConfig({ ...widgetConfig, playerId: value })}
+                placeholder="Search for a player..."
+              />
             </div>
           </div>
         );

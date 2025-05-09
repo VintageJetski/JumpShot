@@ -19,7 +19,8 @@ import {
   ChevronRight,
   AreaChart,
   Network,
-  FolderOpen
+  FolderOpen,
+  Grid
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { motion } from "framer-motion";

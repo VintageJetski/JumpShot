@@ -194,11 +194,12 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
               <span>Areas for Improvement</span>
             </h3>
             
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1">
               {(team as any).weaknesses.map((weakness: string, index: number) => (
                 <div 
                   key={index} 
-                  className="px-2 py-1 rounded-full bg-red-500/10 text-red-500 text-xs truncate max-w-full"
+                  className="px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-500 text-xs truncate max-w-[120px]"
+                  title={weakness}
                 >
                   {weakness}
                 </div>

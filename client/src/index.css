@@ -39,8 +39,8 @@
 @layer components {
   /* Custom scrollbar for widgets */
   .custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
   
   .custom-scrollbar::-webkit-scrollbar-track {
@@ -48,11 +48,17 @@
   }
   
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-blue-500/50 rounded-full transition-colors;
+    @apply bg-blue-500/70 rounded-full transition-colors hover:bg-blue-500;
   }
   
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-blue-500/80;
+  .custom-scrollbar::-webkit-scrollbar-corner {
+    @apply bg-transparent;
+  }
+  
+  /* Right-side scrollbar with fixed position */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.blue.500 / 70%') theme('colors.gray.900 / 30%');
   }
   
   /* Scroll indicator */
@@ -62,10 +68,11 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 15px;
-    background: linear-gradient(to top, rgba(0,0,0,0.3), transparent);
+    height: 20px;
+    background: linear-gradient(to top, rgba(0,0,0,0.4), transparent);
     pointer-events: none;
-    opacity: 0.8;
+    opacity: 0.9;
+    z-index: 10;
   }
   
   /* Gradient text effect */

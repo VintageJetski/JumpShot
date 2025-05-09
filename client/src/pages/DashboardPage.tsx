@@ -152,8 +152,8 @@ export default function DashboardPage() {
   const [widgetConfig, setWidgetConfig] = useState<Record<string, any>>({});
   const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null);
 
-  // Active dashboard
-  const activeDashboard = dashboards[activeDashboardId] || dashboards['default'];
+  // Active dashboard with fallback to default
+  const activeDashboard = dashboards[activeDashboardId] || dashboards['default'] || DEFAULT_DASHBOARD;
 
   // Generate a unique ID for widgets
   const generateWidgetId = () => `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -208,7 +208,7 @@ export default function DashboardPage() {
 
       toast({
         title: 'Widget Added',
-        description: `Added new ${WIDGET_INFO[selectedWidgetType].name} widget to your dashboard.`,
+        description: `Added new ${WIDGET_INFO[selectedWidgetType]?.name || 'Widget'} widget to your dashboard.`,
       });
     }
 
@@ -751,7 +751,7 @@ export default function DashboardPage() {
               >
                 <CardHeader className="pb-2 flex flex-row justify-between items-center">
                   <CardTitle className="text-sm">
-                    {WIDGET_INFO[widget.type].name}
+                    {WIDGET_INFO[widget.type]?.name || "Widget"}
                   </CardTitle>
                   <div className="flex space-x-1">
                     <Button 

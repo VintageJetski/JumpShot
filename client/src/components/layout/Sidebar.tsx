@@ -13,6 +13,7 @@ import {
   Sigma,
   Sparkles,
   Trophy,
+  Layers,
   Lock,
   ShieldCheck,
   ChevronDown,
@@ -315,6 +316,13 @@ export default function Sidebar() {
               icon={<FileText />} 
               label="Documentation" 
               isActive={isActive("/documentation")} 
+            />
+            
+            <MenuItem 
+              href="/vention-mockup" 
+              icon={<Layers />} 
+              label="Vention UI Style" 
+              isActive={isActive("/vention-mockup")} 
             />
           </div>
           

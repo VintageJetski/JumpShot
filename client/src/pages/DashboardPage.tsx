@@ -743,7 +743,7 @@ export default function DashboardPage() {
             {activeDashboard.layout.map((widget: any) => (
               <Card 
                 key={widget.id}
-                className="h-80 overflow-hidden relative"
+                className="h-96 overflow-visible relative"
                 style={{ 
                   gridColumn: `span ${widget.colSpan}`,
                   gridRow: `span ${widget.rowSpan}`,
@@ -775,11 +775,11 @@ export default function DashboardPage() {
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent className="p-0">
-                  <div className="h-[calc(100%-2.5rem)] p-4 overflow-y-auto custom-scrollbar">
+                <CardContent className="p-0 h-[calc(100%-2.5rem)] overflow-y-auto custom-scrollbar">
+                  <div className="p-4 pb-12">
                     {renderWidget(widget)}
-                    <div className="absolute right-2 bottom-2 text-blue-400/50 animate-pulse">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <div className="absolute right-3 bottom-3 text-blue-400 bg-blue-900/30 p-1 rounded-full shadow-md animate-pulse">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
                       </svg>
                     </div>

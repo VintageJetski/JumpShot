@@ -76,30 +76,48 @@ const DEFAULT_DASHBOARD = {
   name: 'Default Dashboard',
   layout: [
     {
-      id: 'player-card-1',
-      type: WIDGET_TYPES.PLAYER_CARD,
-      config: { playerId: null },
+      id: 'top-players-piv-increase-1',
+      type: WIDGET_TYPES.TOP_PLAYERS_PIV_INCREASE,
+      config: { limit: 10 },
       col: 1,
+      row: 1,
+      colSpan: 1,
+      rowSpan: 2,
+    },
+    {
+      id: 'detailed-player-info-1',
+      type: WIDGET_TYPES.DETAILED_PLAYER_INFO,
+      config: { playerId: null },
+      col: 2,
       row: 1,
       colSpan: 1,
       rowSpan: 1,
     },
     {
-      id: 'team-comparison-1',
-      type: WIDGET_TYPES.TEAM_COMPARISON,
-      config: { team1Id: null, team2Id: null },
-      col: 2,
+      id: 'top-players-by-role-1',
+      type: WIDGET_TYPES.TOP_PLAYERS_BY_ROLE,
+      config: { role: 'AWP', limit: 10 },
+      col: 3,
       row: 1,
-      colSpan: 2,
+      colSpan: 1,
       rowSpan: 1,
     },
     {
-      id: 'piv-chart-1',
-      type: WIDGET_TYPES.PIV_CHART,
-      config: { playerIds: [] },
-      col: 1,
+      id: 'team-upcoming-matches-1',
+      type: WIDGET_TYPES.TEAM_UPCOMING_MATCHES,
+      config: { teamId: null, limit: 5 },
+      col: 2,
       row: 2,
-      colSpan: 3,
+      colSpan: 1,
+      rowSpan: 1,
+    },
+    {
+      id: 'detailed-team-info-1',
+      type: WIDGET_TYPES.DETAILED_TEAM_INFO,
+      config: { teamId: null },
+      col: 3,
+      row: 2,
+      colSpan: 1,
       rowSpan: 1,
     },
   ],
@@ -130,7 +148,7 @@ export default function DashboardPage() {
   const [showDashboardDialog, setShowDashboardDialog] = useState(false);
   const [newDashboardName, setNewDashboardName] = useState('');
   const [dashboardAction, setDashboardAction] = useState<'new' | 'rename' | 'delete'>('new');
-  const [selectedWidgetType, setSelectedWidgetType] = useState(WIDGET_TYPES.PLAYER_CARD);
+  const [selectedWidgetType, setSelectedWidgetType] = useState(WIDGET_TYPES.TOP_PLAYERS_PIV_INCREASE);
   const [widgetConfig, setWidgetConfig] = useState<Record<string, any>>({});
   const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null);
 
@@ -175,9 +193,7 @@ export default function DashboardPage() {
         config: widgetConfig,
         col: 1,
         row: activeDashboard.layout.length + 1,
-        colSpan: selectedWidgetType === WIDGET_TYPES.PIV_CHART ? 3 : (
-          selectedWidgetType === WIDGET_TYPES.TEAM_COMPARISON ? 2 : 1
-        ),
+        colSpan: 1,
         rowSpan: 1,
       };
 
@@ -345,158 +361,39 @@ export default function DashboardPage() {
     const { type, config } = widget;
 
     switch (type) {
-      case WIDGET_TYPES.PLAYER_CARD: {
-        const player = players.find(p => p.id === config.playerId);
-        return player ? (
-          <PlayerCard player={player} />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full">
-            <p className="text-sm text-muted-foreground">No player selected</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="mt-2"
-              onClick={() => editWidget(widget)}
-            >
-              Select Player
-            </Button>
-          </div>
-        );
+      case WIDGET_TYPES.TOP_PLAYERS_PIV_INCREASE: {
+        return <TopPlayersByPIVIncrease limit={config.limit || 10} />;
       }
       
-      case WIDGET_TYPES.TEAM_COMPARISON: {
-        const team1 = teams.find(t => t.name === config.team1Id);
-        const team2 = teams.find(t => t.name === config.team2Id);
-        return (team1 && team2) ? (
-          <TeamComparison team1={team1} team2={team2} />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full">
-            <p className="text-sm text-muted-foreground">Select teams to compare</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="mt-2"
-              onClick={() => editWidget(widget)}
-            >
-              Select Teams
-            </Button>
-          </div>
-        );
+      case WIDGET_TYPES.DETAILED_PLAYER_INFO: {
+        return <DetailedPlayerInfo playerId={config.playerId} />;
       }
       
-      case WIDGET_TYPES.PIV_CHART: {
-        const selectedPlayers = (config.playerIds || [])
-          .map((id: string) => players.find(p => p.id === id))
-          .filter(Boolean) as PlayerWithPIV[];
-        
-        return selectedPlayers.length > 0 ? (
-          <PIVChart players={selectedPlayers} />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full">
-            <p className="text-sm text-muted-foreground">No players selected for comparison</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="mt-2"
-              onClick={() => editWidget(widget)}
-            >
-              Select Players
-            </Button>
-          </div>
-        );
+      case WIDGET_TYPES.TOP_PLAYERS_BY_ROLE: {
+        return <TopPlayersByRole role={config.role || 'AWP'} limit={config.limit || 10} />;
       }
       
-      case WIDGET_TYPES.MATCH_PREDICTION: {
-        const predTeam1 = teams.find(t => t.name === config.team1Id);
-        const predTeam2 = teams.find(t => t.name === config.team2Id);
-        return (predTeam1 && predTeam2) ? (
-          <MatchPrediction team1={predTeam1} team2={predTeam2} />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full">
-            <p className="text-sm text-muted-foreground">Select teams for match prediction</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="mt-2"
-              onClick={() => editWidget(widget)}
-            >
-              Select Teams
-            </Button>
-          </div>
-        );
+      case WIDGET_TYPES.TEAM_UPCOMING_MATCHES: {
+        return <TeamUpcomingMatches teamId={config.teamId} limit={config.limit || 5} />;
       }
       
-      case WIDGET_TYPES.ROLE_DISTRIBUTION: {
-        const roleTeam = teams.find(t => t.name === config.teamId);
-        return roleTeam ? (
-          <RoleDistribution team={roleTeam} />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full">
-            <p className="text-sm text-muted-foreground">No team selected</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="mt-2"
-              onClick={() => editWidget(widget)}
-            >
-              Select Team
-            </Button>
-          </div>
-        );
-      }
-      
-      case WIDGET_TYPES.PLAYER_PERFORMANCE: {
-        const perfPlayer = players.find(p => p.id === config.playerId);
-        return perfPlayer ? (
-          <PlayerPerformance player={perfPlayer} />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full">
-            <p className="text-sm text-muted-foreground">No player selected</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="mt-2"
-              onClick={() => editWidget(widget)}
-            >
-              Select Player
-            </Button>
-          </div>
-        );
-      }
-      
-      case WIDGET_TYPES.TEAM_OVERVIEW: {
-        const overviewTeam = teams.find(t => t.name === config.teamId);
-        return overviewTeam ? (
-          <TeamOverview team={overviewTeam} />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full">
-            <p className="text-sm text-muted-foreground">No team selected</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="mt-2"
-              onClick={() => editWidget(widget)}
-            >
-              Select Team
-            </Button>
-          </div>
-        );
-      }
-      
-      case WIDGET_TYPES.UPCOMING_MATCHES: {
-        return <UpcomingMatches limit={config.limit || 3} />;
+      case WIDGET_TYPES.DETAILED_TEAM_INFO: {
+        return <DetailedTeamInfo teamId={config.teamId} />;
       }
       
       default:
-        return <div className="p-4">Unknown widget type</div>;
+        return (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-sm text-muted-foreground">Unknown widget type</p>
+          </div>
+        );
     }
   };
 
   // Widget configuration form
   const renderWidgetConfigForm = () => {
     switch (selectedWidgetType) {
-      case WIDGET_TYPES.PLAYER_CARD:
-      case WIDGET_TYPES.PLAYER_PERFORMANCE:
+      case WIDGET_TYPES.DETAILED_PLAYER_INFO:
         return (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -520,86 +417,61 @@ export default function DashboardPage() {
           </div>
         );
       
-      case WIDGET_TYPES.TEAM_COMPARISON:
-      case WIDGET_TYPES.MATCH_PREDICTION:
+      case WIDGET_TYPES.TOP_PLAYERS_PIV_INCREASE:
         return (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="team1-select">Team 1</Label>
-              <Select 
-                onValueChange={(value) => setWidgetConfig({ ...widgetConfig, team1Id: value })}
-                value={widgetConfig.team1Id || ""}
-              >
-                <SelectTrigger id="team1-select">
-                  <SelectValue placeholder="Select first team" />
-                </SelectTrigger>
-                <SelectContent>
-                  {teams.map(team => (
-                    <SelectItem key={team.name} value={team.name}>
-                      {team.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="team2-select">Team 2</Label>
-              <Select 
-                onValueChange={(value) => setWidgetConfig({ ...widgetConfig, team2Id: value })}
-                value={widgetConfig.team2Id || ""}
-              >
-                <SelectTrigger id="team2-select">
-                  <SelectValue placeholder="Select second team" />
-                </SelectTrigger>
-                <SelectContent>
-                  {teams.map(team => (
-                    <SelectItem key={team.name} value={team.name}>
-                      {team.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="limit-select">Limit</Label>
+              <Input
+                id="limit-select"
+                type="number"
+                value={widgetConfig.limit || 10}
+                min={1}
+                max={20}
+                onChange={(e) => setWidgetConfig({ ...widgetConfig, limit: parseInt(e.target.value) || 10 })}
+              />
             </div>
           </div>
         );
       
-      case WIDGET_TYPES.PIV_CHART:
+      case WIDGET_TYPES.TOP_PLAYERS_BY_ROLE:
         return (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Select Players (up to 5)</Label>
-              <div className="grid grid-cols-1 gap-2 mt-2 max-h-40 overflow-y-auto">
-                {players.map(player => (
-                  <div key={player.id} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id={`player-${player.id}`}
-                      checked={(widgetConfig.playerIds || []).includes(player.id)}
-                      onChange={(e) => {
-                        let newPlayerIds = [...(widgetConfig.playerIds || [])];
-                        if (e.target.checked) {
-                          if (!newPlayerIds.includes(player.id)) {
-                            newPlayerIds.push(player.id);
-                          }
-                        } else {
-                          newPlayerIds = newPlayerIds.filter(id => id !== player.id);
-                        }
-                        setWidgetConfig({ ...widgetConfig, playerIds: newPlayerIds });
-                      }}
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <Label htmlFor={`player-${player.id}`} className="text-sm">
-                      {player.name} ({player.team})
-                    </Label>
-                  </div>
-                ))}
-              </div>
+              <Label htmlFor="role-select">Select Role</Label>
+              <Select 
+                onValueChange={(value) => setWidgetConfig({ ...widgetConfig, role: value })}
+                value={widgetConfig.role || "AWP"}
+              >
+                <SelectTrigger id="role-select">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AWP">AWP</SelectItem>
+                  <SelectItem value="IGL">IGL</SelectItem>
+                  <SelectItem value="Support">Support</SelectItem>
+                  <SelectItem value="Lurker">Lurker</SelectItem>
+                  <SelectItem value="Spacetaker">Spacetaker</SelectItem>
+                  <SelectItem value="Anchor">Anchor</SelectItem>
+                  <SelectItem value="Rotator">Rotator</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="players-limit">Number of Players</Label>
+              <Input
+                id="players-limit"
+                type="number"
+                value={widgetConfig.limit || 10}
+                min={1}
+                max={20}
+                onChange={(e) => setWidgetConfig({ ...widgetConfig, limit: parseInt(e.target.value) || 10 })}
+              />
             </div>
           </div>
         );
       
-      case WIDGET_TYPES.ROLE_DISTRIBUTION:
-      case WIDGET_TYPES.TEAM_OVERVIEW:
+      case WIDGET_TYPES.TEAM_UPCOMING_MATCHES:
         return (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -620,22 +492,40 @@ export default function DashboardPage() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-        );
-      
-      case WIDGET_TYPES.UPCOMING_MATCHES:
-        return (
-          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="matches-limit">Number of Matches</Label>
               <Input
                 id="matches-limit"
                 type="number"
-                value={widgetConfig.limit || 3}
+                value={widgetConfig.limit || 5}
                 min={1}
                 max={10}
-                onChange={(e) => setWidgetConfig({ ...widgetConfig, limit: parseInt(e.target.value) || 3 })}
+                onChange={(e) => setWidgetConfig({ ...widgetConfig, limit: parseInt(e.target.value) || 5 })}
               />
+            </div>
+          </div>
+        );
+      
+      case WIDGET_TYPES.DETAILED_TEAM_INFO:
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="team-select">Select Team</Label>
+              <Select 
+                onValueChange={(value) => setWidgetConfig({ ...widgetConfig, teamId: value })}
+                value={widgetConfig.teamId || ""}
+              >
+                <SelectTrigger id="team-select">
+                  <SelectValue placeholder="Select a team" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.map(team => (
+                    <SelectItem key={team.name} value={team.name}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         );
@@ -773,7 +663,7 @@ export default function DashboardPage() {
             <DialogTrigger asChild>
               <Button 
                 onClick={() => {
-                  setSelectedWidgetType(WIDGET_TYPES.PLAYER_CARD);
+                  setSelectedWidgetType(WIDGET_TYPES.TOP_PLAYERS_PIV_INCREASE);
                   setWidgetConfig({});
                   setEditingWidgetId(null);
                   setShowAddWidgetDialog(true);

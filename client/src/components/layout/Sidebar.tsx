@@ -127,7 +127,7 @@ export default function Sidebar() {
   };
 
   // Group paths for checking active status
-  const analyticsRoutes = ['/match-predictor', '/player-comparisons', '/scout', '/advanced-analytics'];
+  const analyticsRoutes = ['/player-comparisons', '/advanced-analytics'];
   const visualizationRoutes = ['/statistical-analysis', '/data-visualization', '/match-infographic'];
 
   return (
@@ -160,6 +160,20 @@ export default function Sidebar() {
             icon={<UsersRound />} 
             label="Teams" 
             isActive={isActive("/teams")} 
+          />
+          
+          <MenuItem 
+            href="/scout" 
+            icon={<Search />} 
+            label="Scout" 
+            isActive={isActive("/scout")}
+          />
+          
+          <MenuItem 
+            href="/match-predictor" 
+            icon={<Percent />} 
+            label="Match Predictor" 
+            isActive={isActive("/match-predictor")}
           />
           
           <MenuItem 
@@ -203,26 +217,10 @@ export default function Sidebar() {
             />
             <CollapsibleContent className="mt-1 space-y-1">
               <MenuItem 
-                href="/match-predictor" 
-                icon={<Percent />} 
-                label="Match Predictor" 
-                isActive={isActive("/match-predictor")}
-                indent
-              />
-              
-              <MenuItem 
                 href="/player-comparisons" 
                 icon={<ArrowRightLeft />} 
                 label="Player Comparisons" 
                 isActive={isActive("/player-comparisons")}
-                indent
-              />
-              
-              <MenuItem 
-                href="/scout" 
-                icon={<Search />} 
-                label="Scout" 
-                isActive={isActive("/scout")}
                 indent
               />
               

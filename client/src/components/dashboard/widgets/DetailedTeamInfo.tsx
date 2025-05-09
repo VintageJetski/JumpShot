@@ -140,10 +140,10 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
                 key={player.id} 
                 className="flex justify-between items-center p-2 rounded-md border border-border/40 bg-card/20"
               >
-                <div className="flex items-center gap-2">
-                  <div className="text-sm font-medium">{player.name}</div>
+                <div className="flex items-center gap-2 max-w-[50%]">
+                  <div className="text-sm font-medium truncate">{player.name}</div>
                   {player.isIGL && (
-                    <div className="px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-xs">
+                    <div className="px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-xs flex-shrink-0">
                       IGL
                     </div>
                   )}
@@ -154,10 +154,10 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
                     <span className={getRoleColor(player.role)}>
                       {getRoleIcon(player.role)}
                     </span>
-                    <span className="text-xs">{player.role}</span>
+                    <span className="text-xs whitespace-nowrap">{player.role}</span>
                   </div>
                   
-                  <div className="text-sm font-medium text-blue-500">
+                  <div className="text-sm font-medium text-blue-500 whitespace-nowrap">
                     {player.piv.toFixed(2)}
                   </div>
                 </div>
@@ -166,7 +166,7 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
           </div>
         </div>
         
-        {team.strengths && team.strengths.length > 0 && (
+        {(team as any).strengths && (team as any).strengths.length > 0 && (
           <div>
             <h3 className="text-sm font-medium flex items-center gap-1.5 mb-2">
               <Star className="h-4 w-4 text-blue-500" />
@@ -174,10 +174,10 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
             </h3>
             
             <div className="flex flex-wrap gap-1.5">
-              {team.strengths.map((strength, index) => (
+              {(team as any).strengths.map((strength: string, index: number) => (
                 <div 
                   key={index} 
-                  className="px-2 py-1 rounded-full bg-green-500/10 text-green-500 text-xs"
+                  className="px-2 py-1 rounded-full bg-green-500/10 text-green-500 text-xs truncate max-w-full"
                 >
                   {strength}
                 </div>
@@ -186,7 +186,7 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
           </div>
         )}
         
-        {team.weaknesses && team.weaknesses.length > 0 && (
+        {(team as any).weaknesses && (team as any).weaknesses.length > 0 && (
           <div>
             <h3 className="text-sm font-medium flex items-center gap-1.5 mb-2">
               <Shield className="h-4 w-4 text-blue-500" />
@@ -194,10 +194,10 @@ const DetailedTeamInfo: React.FC<DetailedTeamInfoProps> = ({ teamId }) => {
             </h3>
             
             <div className="flex flex-wrap gap-1.5">
-              {team.weaknesses.map((weakness, index) => (
+              {(team as any).weaknesses.map((weakness: string, index: number) => (
                 <div 
                   key={index} 
-                  className="px-2 py-1 rounded-full bg-red-500/10 text-red-500 text-xs"
+                  className="px-2 py-1 rounded-full bg-red-500/10 text-red-500 text-xs truncate max-w-full"
                 >
                   {weakness}
                 </div>

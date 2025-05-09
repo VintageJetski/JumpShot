@@ -90,17 +90,17 @@ const TopPlayersByRole: React.FC<TopPlayersByRoleProps> = ({ role = 'AWP', limit
                 className="flex justify-between items-center py-2 border-b border-border/40 last:border-0"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500 text-xs font-medium">
+                  <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500 text-xs font-medium flex-shrink-0">
                     {index + 1}
                   </div>
-                  <div>
-                    <div className="font-medium">{player.name}</div>
-                    <div className="text-xs text-muted-foreground">{player.team}</div>
+                  <div className="max-w-[60%]">
+                    <div className="font-medium truncate">{player.name}</div>
+                    <div className="text-xs text-muted-foreground truncate">{player.team}</div>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-0.5">
-                  <div className="font-medium">{player.piv.toFixed(2)}</div>
-                  <div className="text-xs text-muted-foreground">K/D: {player.kd.toFixed(2)}</div>
+                  <div className="font-medium whitespace-nowrap">{player.piv.toFixed(2)}</div>
+                  <div className="text-xs text-muted-foreground whitespace-nowrap">K/D: {player.kd.toFixed(2)}</div>
                 </div>
               </div>
             ))

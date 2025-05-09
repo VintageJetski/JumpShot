@@ -89,11 +89,11 @@ const TeamUpcomingMatches: React.FC<TeamUpcomingMatchesProps> = ({ teamId, limit
               className="flex flex-col space-y-1 p-3 rounded-md border border-border/40 bg-card/40"
             >
               <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{match.opponent.name}</span>
-                  <span className="text-xs text-muted-foreground">({match.opponent.tir.toFixed(2)} TIR)</span>
+                <div className="flex items-center gap-2 max-w-[60%]">
+                  <span className="text-sm font-medium truncate">{match.opponent.name}</span>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">({match.opponent.tir.toFixed(2)} TIR)</span>
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground whitespace-nowrap">
                   {formatDate(match.date)}
                 </div>
               </div>
@@ -118,11 +118,11 @@ const TeamUpcomingMatches: React.FC<TeamUpcomingMatchesProps> = ({ teamId, limit
               </div>
               
               <div className="flex justify-between items-center text-xs mt-1">
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <BarChart2 className="h-3.5 w-3.5" />
-                  <span>Team vs team prediction</span>
+                <div className="flex items-center gap-1 text-muted-foreground max-w-[60%]">
+                  <BarChart2 className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="truncate">Team vs team prediction</span>
                 </div>
-                <div className={match.winProbability > 0.5 ? 'text-green-500' : 'text-red-500'}>
+                <div className={`${match.winProbability > 0.5 ? 'text-green-500' : 'text-red-500'} whitespace-nowrap`}>
                   {match.winProbability > 0.5 ? 'Likely win' : 'Challenging'}
                 </div>
               </div>

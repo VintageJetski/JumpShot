@@ -9,6 +9,7 @@ import {
   BadgePercent,
   BookmarkCheck,
   ChevronRight,
+  CircleDot,
   CircleDotDashed,
   Compass,
   Crosshair,
@@ -700,39 +701,52 @@ function MapVisualization({
   ];
 
   return (
-    <div className="relative h-[500px] w-full rounded-md overflow-hidden border border-blue-900/30">
-      {/* Map Background */}
-      <div className="absolute inset-0 z-0">
+    <div className="relative h-[600px] w-full rounded-md overflow-hidden border border-blue-900/50 shadow-lg">
+      {/* Map Background with enhanced styling */}
+      <div className="absolute inset-0 z-0 bg-blue-950/70">
         <img 
           src={infernoOverlayImg} 
           alt="Inferno Map" 
-          className="w-full h-full object-cover opacity-10"
+          className="w-full h-full object-cover opacity-15 mix-blend-overlay"
         />
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-950/10 to-blue-950/80"></div>
       </div>
       
       <div className="absolute inset-0 z-10">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart
-            margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+            margin={{ top: 30, right: 30, bottom: 30, left: 30 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e3a8a" opacity={0.3} />
+            <CartesianGrid 
+              strokeDasharray="4 4" 
+              stroke="#3b82f6" 
+              opacity={0.15} 
+              horizontal={true}
+              vertical={true}
+            />
             <XAxis 
               type="number" 
               dataKey="x" 
               name="X Position" 
               domain={[-2500, 2500]}
-              tick={{ fill: '#93c5fd' }}
-              stroke="#93c5fd" 
-              opacity={0.7}
+              tick={{ fill: '#93c5fd', fontSize: 10 }}
+              stroke="#3b82f6" 
+              opacity={0.4}
+              tickCount={7}
+              axisLine={{ strokeWidth: 1 }}
+              tickLine={{ stroke: '#3b82f6', opacity: 0.3 }}
             />
             <YAxis 
               type="number" 
               dataKey="y" 
               name="Y Position" 
               domain={[-2500, 2500]}
-              tick={{ fill: '#93c5fd' }}
-              stroke="#93c5fd" 
-              opacity={0.7}
+              tick={{ fill: '#93c5fd', fontSize: 10 }}
+              stroke="#3b82f6"
+              opacity={0.4}
+              tickCount={7}
+              axisLine={{ strokeWidth: 1 }}
+              tickLine={{ stroke: '#3b82f6', opacity: 0.3 }}
             />
             <ZAxis 
               type="number" 
@@ -741,9 +755,15 @@ function MapVisualization({
               name="Size" 
             />
             <Tooltip 
-              cursor={{ strokeDasharray: '3 3' }}
-              contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e40af' }}
-              labelStyle={{ color: '#93c5fd' }}
+              cursor={{ strokeDasharray: '3 3', stroke: '#3b82f6', strokeWidth: 1 }}
+              contentStyle={{ 
+                backgroundColor: '#0f1729', 
+                borderColor: '#3b82f6', 
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                borderRadius: '0.375rem',
+                padding: '8px 12px'
+              }}
+              labelStyle={{ color: '#93c5fd', fontWeight: 500 }}
               formatter={(value: any, name: string, props: any) => {
                 const { payload } = props;
                 if (name === 'X Position' || name === 'Y Position') {
@@ -776,32 +796,45 @@ function MapVisualization({
             />
             <Legend />
             
-            {/* Site boundaries */}
+            {/* Site boundaries moved to improved styling below */}
+            
+            {/* Site boundaries with improved styling */}
             <Scatter 
               name="A Site" 
               data={siteBoundaries.filter(b => b.label === 'A Site')} 
-              fill="#d97706"
-              line={{ stroke: '#d97706', strokeWidth: 1.5, strokeDasharray: '5 5' }}
+              fill="transparent"
+              line={{ stroke: '#d97706', strokeWidth: 1.5, strokeDasharray: '6 4' }}
+              shape={(props: any) => {
+                return <path d="M0,0 L0,0" stroke="none" />;
+              }}
             />
             <Scatter 
               name="B Site" 
               data={siteBoundaries.filter(b => b.label === 'B Site')} 
-              fill="#059669"
-              line={{ stroke: '#059669', strokeWidth: 1.5, strokeDasharray: '5 5' }}
+              fill="transparent"
+              line={{ stroke: '#059669', strokeWidth: 1.5, strokeDasharray: '6 4' }}
+              shape={(props: any) => {
+                return <path d="M0,0 L0,0" stroke="none" />;
+              }}
             />
             <Scatter 
               name="Mid" 
               data={siteBoundaries.filter(b => b.label === 'Mid')} 
-              fill="#7c3aed"
-              line={{ stroke: '#7c3aed', strokeWidth: 1.5, strokeDasharray: '5 5' }}
+              fill="transparent"
+              line={{ stroke: '#7c3aed', strokeWidth: 1.5, strokeDasharray: '6 4' }}
+              shape={(props: any) => {
+                return <path d="M0,0 L0,0" stroke="none" />;
+              }}
             />
             
-            {/* T side player positions */}
+            {/* T side player positions with enhanced styling */}
             <Scatter 
               name="T Side Players"
               data={getHeatmapData().filter(point => point.side === 'T')} 
               fill="#f59e0b"
-              stroke={activePlayer ? "#f59e0b70" : "#f59e0b"}
+              stroke="#92400e"
+              strokeWidth={1}
+              shape="circle"
               onClick={(data: any) => {
                 if (data && data.payload && data.payload.steamId) {
                   onSelectPlayer(data.payload.steamId);
@@ -809,12 +842,14 @@ function MapVisualization({
               }}
             />
             
-            {/* CT side player positions */}
+            {/* CT side player positions with enhanced styling */}
             <Scatter 
               name="CT Side Players"
               data={getHeatmapData().filter(point => point.side === 'CT')} 
               fill="#3b82f6"
-              stroke={activePlayer ? "#3b82f670" : "#3b82f6"}
+              stroke="#1e40af"
+              strokeWidth={1}
+              shape="circle"
               onClick={(data: any) => {
                 if (data && data.payload && data.payload.steamId) {
                   onSelectPlayer(data.payload.steamId);
@@ -822,51 +857,71 @@ function MapVisualization({
               }}
             />
             
-            {/* Player with profile highlight */}
+            {/* Player with profile highlight with enhanced styling */}
             <Scatter 
               name="Players with profiles"
               data={getHeatmapData().filter(point => point.hasProfile)} 
               fill="#22c55e"
               stroke="#0d9488"
               strokeWidth={2}
+              shape="circle"
               onClick={(data: any) => {
                 if (data && data.payload && data.payload.steamId) {
                   onSelectPlayer(data.payload.steamId);
                 }
               }}
             />
+            
+            {/* Active player highlight - show prominently */}
+            {activePlayer && (
+              <Scatter
+                name="Selected Player"
+                data={getHeatmapData().filter(point => point.steamId === activePlayer)}
+                fill={getHeatmapData().find(p => p.steamId === activePlayer)?.side === 'T' ? '#f59e0b' : '#3b82f6'}
+                stroke="#ffffff"
+                strokeWidth={3}
+                shape="circle"
+                onClick={() => onSelectPlayer(activePlayer)}
+              />
+            )}
           </ScatterChart>
         </ResponsiveContainer>
       </div>
       
-      {/* Map Labels */}
-      <div className="absolute top-2 left-2 z-20 bg-blue-950/80 text-xs text-blue-100 px-2 py-1 rounded">
+      {/* Map Area Labels with improved styling */}
+      <div className="absolute top-4 left-4 z-20 bg-gradient-to-r from-orange-600/90 to-amber-600/90 text-xs text-white px-3 py-1.5 rounded-md shadow-md flex items-center gap-1.5 font-medium">
+        <CircleDot className="h-3.5 w-3.5" />
         A Site
       </div>
       
-      {/* Map Location Labels */}
-      <div className="absolute bottom-10 right-8 z-20 bg-blue-950/80 text-xs text-blue-100 px-2 py-1 rounded">
+      <div className="absolute bottom-12 right-12 z-20 bg-gradient-to-r from-green-600/90 to-emerald-600/90 text-xs text-white px-3 py-1.5 rounded-md shadow-md flex items-center gap-1.5 font-medium">
+        <CircleDot className="h-3.5 w-3.5" />
         B Site
       </div>
-      <div className="absolute top-[40%] left-[40%] z-20 bg-blue-950/80 text-xs text-blue-100 px-2 py-1 rounded">
+      
+      <div className="absolute top-[40%] left-[40%] z-20 bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-xs text-white px-3 py-1.5 rounded-md shadow-md flex items-center gap-1.5 font-medium">
+        <CircleDot className="h-3.5 w-3.5" />
         Mid
       </div>
       
-      {/* Legend for player colors */}
-      <div className="absolute top-3 right-3 z-20 bg-blue-950/90 text-xs text-blue-100 p-2 rounded border border-blue-800/50">
-        <div className="font-medium mb-1">Map Key</div>
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-            <span>T Players</span>
+      {/* Enhanced legend for player markers */}
+      <div className="absolute top-4 right-4 z-20 bg-blue-950/95 text-xs text-blue-100 p-3 rounded-md shadow-lg border border-blue-600/30">
+        <div className="font-medium mb-1.5 text-sm text-white flex items-center gap-1">
+          <Map className="h-3.5 w-3.5 text-blue-400" />
+          Map Key
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-amber-500 shadow-sm"></div>
+            <span>T Side Players</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-            <span>CT Players</span>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-blue-500 shadow-sm"></div>
+            <span>CT Side Players</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-green-500 border border-teal-600"></div>
-            <span>With Player Profile</span>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-green-500 border border-teal-600 shadow-sm"></div>
+            <span>Player with Profile</span>
           </div>
         </div>
       </div>

@@ -391,42 +391,55 @@ function MapVisualization({
       // Create demo data for visualization - this helps show what the visualization would look like
       console.log("Using demo data for visualization since positionHeatmap is empty");
       
-      // Create some T side demo positions (bottom left to top right)
+      // Create T side demo positions that will be visible on screen
+      // Using much more constrained coordinates that will be visible in the chart
       const tSidePositions = [
-        { x: -1800, y: -1500, intensity: 0.9 },
-        { x: -1600, y: -1300, intensity: 0.8 },
-        { x: -1400, y: -1100, intensity: 0.7 },
-        { x: -1200, y: -900, intensity: 0.6 },
-        { x: -1000, y: -700, intensity: 0.5 }
+        { x: -800, y: -600, intensity: 0.9 },
+        { x: -600, y: -400, intensity: 0.8 },
+        { x: -400, y: -200, intensity: 0.7 },
+        { x: -200, y: -100, intensity: 0.6 },
+        { x: -100, y: -50, intensity: 0.5 },
+        // Add more clustered positions for visibility
+        { x: -300, y: -300, intensity: 0.95 },
+        { x: -250, y: -350, intensity: 0.85 },
+        { x: -400, y: -250, intensity: 0.75 },
+        { x: -350, y: -200, intensity: 0.65 },
+        { x: -150, y: -100, intensity: 0.55 }
       ];
       
-      // Create some CT side demo positions (top right to bottom left)
+      // Create CT side demo positions
       const ctSidePositions = [
-        { x: 1800, y: 1500, intensity: 0.9 },
-        { x: 1600, y: 1300, intensity: 0.8 },
-        { x: 1400, y: 1100, intensity: 0.7 },
-        { x: 1200, y: 900, intensity: 0.6 },
-        { x: 1000, y: 700, intensity: 0.5 }
+        { x: 800, y: 600, intensity: 0.9 },
+        { x: 600, y: 400, intensity: 0.8 },
+        { x: 400, y: 200, intensity: 0.7 },
+        { x: 200, y: 100, intensity: 0.6 },
+        { x: 100, y: 50, intensity: 0.5 },
+        // Add more clustered positions for visibility
+        { x: 300, y: 300, intensity: 0.95 },
+        { x: 250, y: 350, intensity: 0.85 },
+        { x: 400, y: 250, intensity: 0.75 },
+        { x: 350, y: 200, intensity: 0.65 },
+        { x: 150, y: 100, intensity: 0.55 }
       ];
       
-      // Create a T side player with positions
+      // Create T side players with positions and larger dots
       tSidePositions.forEach(pos => {
         allPlayerPoints.push({
           x: pos.x,
           y: pos.y,
-          z: pos.intensity * 60, // Make them larger
+          z: pos.intensity * 200, // Make them significantly larger
           player: "T Player",
           steamId: "t_side_demo",
           side: "T"
         });
       });
       
-      // Create a CT side player with positions  
+      // Create CT side players with positions and larger dots
       ctSidePositions.forEach(pos => {
         allPlayerPoints.push({
           x: pos.x,
           y: pos.y,
-          z: pos.intensity * 60, // Make them larger 
+          z: pos.intensity * 200, // Make them significantly larger
           player: "CT Player",
           steamId: "ct_side_demo",
           side: "CT"
@@ -533,7 +546,7 @@ function MapVisualization({
                 type="number" 
                 dataKey="x" 
                 name="X Position" 
-                domain={[-2500, 2500]}
+                domain={[-1000, 1000]} /* Adjusted domains to better fit demo data */
                 tick={{ fill: '#93c5fd', fontSize: 10 }}
                 stroke="#3b82f6" 
                 opacity={0.2}
@@ -546,7 +559,7 @@ function MapVisualization({
                 type="number" 
                 dataKey="y" 
                 name="Y Position" 
-                domain={[-2500, 2500]}
+                domain={[-800, 800]} /* Adjusted domains to better fit demo data */
                 tick={{ fill: '#93c5fd', fontSize: 10 }}
                 stroke="#3b82f6"
                 opacity={0.2}
@@ -558,7 +571,7 @@ function MapVisualization({
               <ZAxis 
                 type="number" 
                 dataKey="z" 
-                range={[40, 120]} 
+                range={[80, 300]} /* Adjusted for much larger dots */
                 name="Size" 
               />
               <Tooltip 

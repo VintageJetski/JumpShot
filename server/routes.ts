@@ -142,7 +142,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Process the data asynchronously
       const roundNumber = 4; // Analyzing specific round data
-      const filePath = path.join(__dirname, '../attached_assets/round_4_mapping.csv');
+      const filePath = './attached_assets/round_4_mapping.csv'; // Using relative path from project root
+      
+      // Check if file exists
+      const fs = require('fs');
+      if (!fs.existsSync(filePath)) {
+        console.error(`File not found: ${filePath}`);
+        return res.status(404).json({
+          message: 'XYZ data file not found',
+          error: `File does not exist at path: ${filePath}`
+        });
+      }
+      
+      console.log(`Found XYZ data file at ${filePath}, processing...`);
       const xyzAnalysis = await processXYZDataFromFile(filePath, roundNumber);
       
       // Send a more compact response for better performance

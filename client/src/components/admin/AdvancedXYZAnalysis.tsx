@@ -27,6 +27,7 @@ import {
   Target,
   Timer,
   TrendingUp,
+  User,
   Users,
   Award,
   FileBarChart,
@@ -857,7 +858,7 @@ export function AdvancedXYZAnalysis() {
   
   // Find matching player in CS2 player database
   const findMatchingPlayer = (xyzPlayer: PlayerMovementAnalysis) => {
-    if (!playerDatabase || !xyzPlayer) return null;
+    if (!playerDatabase || !Array.isArray(playerDatabase) || !xyzPlayer) return null;
     
     // Try to find by steamID (may not match in sample data)
     const bySteamId = playerDatabase.find((player: any) => player.id === xyzPlayer.user_steamid);
@@ -955,9 +956,40 @@ export function AdvancedXYZAnalysis() {
                   
                   {activePlayer && (
                     <div className="bg-blue-950/40 rounded-md p-4 border border-blue-900/30">
-                      <h3 className="text-base font-medium mb-2">
-                        {data.analysis.playerMetrics[activePlayer].name} - Movement Analysis
-                      </h3>
+                      {/* Get player profile data if available */}
+                      {(() => {
+                        const xyzPlayer = data.analysis.playerMetrics[activePlayer];
+                        const playerProfile = findMatchingPlayer(xyzPlayer);
+                        
+                        return (
+                          <div className="mb-3 flex items-center gap-3">
+                            <div className={`p-2 rounded-full ${getPlayerColor(xyzPlayer.side)}`}>
+                              <User className="h-6 w-6" />
+                            </div>
+                            <div>
+                              <h3 className="text-base font-medium">
+                                {xyzPlayer.name} {playerProfile && `(${playerProfile.name})`}
+                              </h3>
+                              <div className="text-xs text-blue-300/70 flex items-center gap-2">
+                                <span className={`inline-block w-2 h-2 rounded-full ${xyzPlayer.side === 'T' ? 'bg-amber-400' : 'bg-blue-400'}`}></span>
+                                <span>{xyzPlayer.side === 'T' ? 'Terrorist' : 'Counter-Terrorist'}</span>
+                                {playerProfile && (
+                                  <>
+                                    <span className="mx-1">•</span>
+                                    <span>{playerProfile.team}</span>
+                                    {playerProfile.metrics?.role && (
+                                      <>
+                                        <span className="mx-1">•</span>
+                                        <span>{playerProfile.metrics.role}</span>
+                                      </>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                       
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-blue-950/60 p-3 rounded-md">

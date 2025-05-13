@@ -48,17 +48,42 @@ function formatPercent(value: number): string {
 }
 
 // Detect player role based on movement and position data
+// Map player names to known roles
+const knownPlayerRoles: Record<string, string> = {
+  // FaZe players
+  'karrigan': 'IGL',
+  'ropz': 'Lurker',
+  'rain': 'Entry',
+  'broky': 'AWP',
+  'frozen': 'Support',
+  
+  // MOUZ players
+  'Aleksib': 'IGL',
+  'w0nderful': 'AWP',
+  'b1t': 'Support',
+  'jL': 'Entry',
+  'iM': 'Lurker',
+  
+  // Other known players and roles can be added here
+};
+
 function detectPlayerRole(player: PlayerMovementAnalysis | undefined): string {
   if (!player) return "Unknown";
   
+  // Check if we have a predefined role for this player
+  if (player.name && knownPlayerRoles[player.name]) {
+    return knownPlayerRoles[player.name];
+  }
+  
+  // Fall back to dynamic role detection based on movement patterns
   const side = player.side.toLowerCase();
   
   if (side === 't') {
     // T side roles
     const isFast = player.avgSpeed > 240;
     const isRotating = player.rotations >= 3;
-    const hasHighASite = player.sitePresence.ASite > 0.6;
-    const hasHighBSite = player.sitePresence.BSite > 0.6;
+    const hasHighASite = player.sitePresence?.ASite > 0.6;
+    const hasHighBSite = player.sitePresence?.BSite > 0.6;
     
     if (isFast && (hasHighASite || hasHighBSite)) {
       return 'Entry/Spacetaker';
@@ -69,9 +94,9 @@ function detectPlayerRole(player: PlayerMovementAnalysis | undefined): string {
     }
   } else {
     // CT side roles
-    const hasHighASite = player.sitePresence.ASite > 0.6;
-    const hasHighBSite = player.sitePresence.BSite > 0.6;
-    const hasHighMid = player.sitePresence.Mid > 0.5;
+    const hasHighASite = player.sitePresence?.ASite > 0.6;
+    const hasHighBSite = player.sitePresence?.BSite > 0.6;
+    const hasHighMid = player.sitePresence?.Mid > 0.5;
     const isRotating = player.rotations >= 2;
     
     if (hasHighASite && !isRotating) {
@@ -113,52 +138,144 @@ export function MapVisualizer({
   const processPlayerPositions = () => {
     const processedData: any[] = [];
     
+    // Log player data to debug
+    console.log("Player data:", playerData);
+    
     // Fallback demo data in case we don't have real data
     if (!playerData || playerData.length === 0) {
       console.log("Using demo data for visualization");
       
-      // T side players (5)
-      for (let i = 0; i < 5; i++) {
-        processedData.push({
-          name: `T Player ${i+1}`,
-          steamId: `t_demo_${i}`,
-          side: 'T',
-          x: -500 + (i * 100),
-          y: 400 + (i * 50),
-          role: ['Entry', 'Support', 'Lurker', 'AWP', 'IGL'][i]
-        });
-      }
+      // Create T side players with realistic positions on Inferno
+      processedData.push({
+        name: "T Player 1",
+        steamId: "t_demo_1",
+        side: "T",
+        x: -1675, // T spawn position
+        y: 351,
+        role: "Entry"
+      });
       
-      // CT side players (5)
-      for (let i = 0; i < 5; i++) {
-        processedData.push({
-          name: `CT Player ${i+1}`,
-          steamId: `ct_demo_${i}`,
-          side: 'CT',
-          x: 500 + (i * 100),
-          y: 400 + (i * 50),
-          role: ['Anchor A', 'Anchor B', 'Rotator', 'AWP', 'IGL'][i]
-        });
-      }
+      processedData.push({
+        name: "T Player 2",
+        steamId: "t_demo_2",
+        side: "T",
+        x: -1662,
+        y: 288,
+        role: "Support"
+      });
+      
+      processedData.push({
+        name: "T Player 3",
+        steamId: "t_demo_3",
+        side: "T",
+        x: -1520,
+        y: 430,
+        role: "Lurker"
+      });
+      
+      processedData.push({
+        name: "T Player 4",
+        steamId: "t_demo_4",
+        side: "T",
+        x: -1657,
+        y: 419,
+        role: "AWP"
+      });
+      
+      processedData.push({
+        name: "T Player 5",
+        steamId: "t_demo_5",
+        side: "T",
+        x: -1586,
+        y: 440,
+        role: "IGL"
+      });
+      
+      // Create CT side players with realistic positions on Inferno
+      processedData.push({
+        name: "CT Player 1",
+        steamId: "ct_demo_1",
+        side: "CT",
+        x: 2493, // CT spawn position
+        y: 2090,
+        role: "Anchor A"
+      });
+      
+      processedData.push({
+        name: "CT Player 2",
+        steamId: "ct_demo_2",
+        side: "CT",
+        x: 2456,
+        y: 2153,
+        role: "Anchor B"
+      });
+      
+      processedData.push({
+        name: "CT Player 3",
+        steamId: "ct_demo_3",
+        side: "CT",
+        x: 2472,
+        y: 2005,
+        role: "Rotator"
+      });
+      
+      processedData.push({
+        name: "CT Player 4",
+        steamId: "ct_demo_4",
+        side: "CT",
+        x: 2397,
+        y: 2079,
+        role: "AWP"
+      });
+      
+      processedData.push({
+        name: "CT Player 5",
+        steamId: "ct_demo_5",
+        side: "CT",
+        x: 2292,
+        y: 2027,
+        role: "IGL"
+      });
       
       return processedData;
     }
     
     // Process real player data
     playerData.forEach(player => {
-      // Skip if no position data
-      if (!player.positionHeatmap || player.positionHeatmap.length === 0) return;
-      
-      // Get position at current frame or closest
-      let positionData;
-      if (player.positionHeatmap.length <= currentFrame) {
-        positionData = player.positionHeatmap[player.positionHeatmap.length - 1];
-      } else {
-        positionData = player.positionHeatmap[currentFrame];
+      // Get position data from the CSV data based on current frame
+      // First, check if player has heatmap data
+      if (!player.positionHeatmap || !Array.isArray(player.positionHeatmap) || player.positionHeatmap.length === 0) {
+        console.log(`No heatmap data for player ${player.name}`, player);
+        
+        // Fallback to using player's basic position information if available
+        // This is useful if the API returns player data without detailed heatmap
+        if (player.side) {
+          const basePosition = player.side.toLowerCase() === 't' 
+            ? { x: -1600 + (Math.random() * 100), y: 400 + (Math.random() * 50) } 
+            : { x: 2400 + (Math.random() * 100), y: 2050 + (Math.random() * 100) };
+            
+          processedData.push({
+            name: player.name,
+            steamId: player.user_steamid,
+            side: player.side,
+            x: basePosition.x,
+            y: basePosition.y,
+            role: detectPlayerRole(player)
+          });
+        }
+        return;
       }
       
-      if (!positionData) return;
+      // Calculate appropriate frame index
+      const frameIndex = Math.min(currentFrame, player.positionHeatmap.length - 1);
+      const positionData = player.positionHeatmap[frameIndex];
       
+      if (!positionData) {
+        console.log(`No position data at frame ${frameIndex} for player ${player.name}`);
+        return;
+      }
+      
+      // Use X and Y directly from the position data
       processedData.push({
         name: player.name,
         steamId: player.user_steamid,
@@ -231,15 +348,20 @@ export function MapVisualizer({
       const playerPositions = processPlayerPositions();
       
       // Map coordinates from game to canvas
-      // Inferno map coordinates range approximately from -2000 to 2000 on both axes
+      // Inferno map coordinates for X axis approximately: -2500 to 3500
+      // Inferno map coordinates for Y axis approximately: -500 to 3500
       const mapToCanvasX = (x: number) => {
         // Convert from game coordinate to canvas coordinate (flip X axis for correct orientation)
-        return playerCanvas.width - ((x + 2000) / 4000 * playerCanvas.width);
+        // Scale and offset calculations to fit inferno map
+        const normalizedX = (x + 2500) / 6000; // Normalize to 0-1 range
+        return playerCanvas.width * (1 - normalizedX); // Flip for correct orientation
       };
       
       const mapToCanvasY = (y: number) => {
         // Convert from game coordinate to canvas coordinate
-        return (y + 2000) / 4000 * playerCanvas.height;
+        // Scale and offset calculations to fit inferno map
+        const normalizedY = (y + 500) / 4000; // Normalize to 0-1 range
+        return playerCanvas.height * normalizedY;
       };
       
       // Draw each player
@@ -345,81 +467,130 @@ export function MapVisualizer({
     }
   }, [playerData, currentFrame, activePlayer, isPlaying, playbackSpeed]);
   
-  // Generate insights based on current frame
+  // Generate insights based on current frame and player positions
   const generateInsights = () => {
     if (!playerData || playerData.length === 0) return null;
+    
+    // Get processed player positions for analysis
+    const playerPositions = processPlayerPositions();
     
     // Basic scenario analysis based on current frame
     const insights: string[] = [];
     
-    // Example insights (these would be more sophisticated in a real implementation)
-    if (currentFrame < 30) {
-      insights.push("Round starting: Players are in spawn positions");
+    // Identify frame-based insights
+    if (currentFrame < 10) {
+      insights.push("Freeze time: Teams in spawn positions");
+    } else if (currentFrame < 30) {
+      insights.push("Round starts: Teams moving out of spawn");
     } else if (currentFrame < 60) {
-      insights.push("Early round positioning: Teams establishing initial map control");
-    } else if (currentFrame < 100) {
-      insights.push("Mid-round: Teams gathering information and establishing map control");
-    } else if (currentFrame < 150) {
-      insights.push("Late round: Teams preparing for site executes or retakes");
+      insights.push("Early round: Teams establishing map control");
+    } else if (currentFrame < 120) {
+      insights.push("Mid-round: Information gathering phase");
+    } else if (currentFrame < 180) {
+      insights.push("Late round: Site execution or retake phase");
     } else {
-      insights.push("End of round: Final confrontations and post-plant scenarios");
+      insights.push("End of round: Post-plant or cleanup phase");
     }
     
-    // Team-specific insights
-    const tPlayers = playerData.filter(p => p.side === 'T');
-    const ctPlayers = playerData.filter(p => p.side === 'CT');
+    // Analyze T side positions
+    const tPlayers = playerPositions.filter(p => p.side === 'T');
+    const ctPlayers = playerPositions.filter(p => p.side === 'CT');
     
-    // Team formations
     if (tPlayers.length > 0) {
-      let tSites = {
-        A: 0,
-        B: 0,
-        Mid: 0
-      };
+      // Analyze T side positioning
+      const tPositionsX = tPlayers.map(p => p.x);
+      const tPositionsY = tPlayers.map(p => p.y);
       
-      tPlayers.forEach(player => {
-        if (player.sitePresence.ASite > 0.5) tSites.A++;
-        else if (player.sitePresence.BSite > 0.5) tSites.B++;
-        else tSites.Mid++;
-      });
+      // Calculate spread (distance between furthest players)
+      const tSpreadX = Math.max(...tPositionsX) - Math.min(...tPositionsX);
+      const tSpreadY = Math.max(...tPositionsY) - Math.min(...tPositionsY);
+      const tSpread = Math.sqrt(tSpreadX * tSpreadX + tSpreadY * tSpreadY);
       
-      if (tSites.A >= 3) {
-        insights.push("T side is showing A site presence");
-      } else if (tSites.B >= 3) {
-        insights.push("T side is showing B site presence");
-      } else if (tSites.Mid >= 3) {
-        insights.push("T side is focusing on mid control");
-      } else {
-        insights.push("T side is spread across the map gathering information");
+      // Analyze team spread
+      if (tSpread < 500 && currentFrame > 30) {
+        insights.push("T side is grouped tightly - possible execute incoming");
+      } else if (tSpread > 1500 && currentFrame > 60) {
+        insights.push("T side is spread out - likely default setup");
+      }
+      
+      // Analyze map areas
+      // A simplified version - in a real implementation, we'd use actual map area definitions
+      // For Inferno, we can use these approximate values:
+      const isNearASite = (x: number, y: number) => x > 1000 && y < 1000;
+      const isNearBSite = (x: number, y: number) => x < -1000 && y < 300;
+      const isNearMid = (x: number, y: number) => Math.abs(x) < 1000 && y < 1000;
+      
+      const tNearA = tPlayers.filter(p => isNearASite(p.x, p.y)).length;
+      const tNearB = tPlayers.filter(p => isNearBSite(p.x, p.y)).length;
+      const tNearMid = tPlayers.filter(p => isNearMid(p.x, p.y)).length;
+      
+      // Provide site-specific insights
+      if (tNearA >= 3 && currentFrame > 60) {
+        insights.push("T side presence at A site - potential A execute");
+      }
+      
+      if (tNearB >= 3 && currentFrame > 60) {
+        insights.push("T side presence at B site - potential B execute");
+      }
+      
+      if (tNearMid >= 3 && currentFrame > 40) {
+        insights.push("T side controlling mid - setting up for site split");
       }
     }
     
-    // CT defense setup
+    // Analyze CT side positions
     if (ctPlayers.length > 0) {
-      let ctSites = {
-        A: 0,
-        B: 0,
-        Mid: 0
-      };
+      // Analyze CT positioning
+      const isNearASite = (x: number, y: number) => x > 1000 && y < 1000;
+      const isNearBSite = (x: number, y: number) => x < -1000 && y < 300;
       
-      ctPlayers.forEach(player => {
-        if (player.sitePresence.ASite > 0.5) ctSites.A++;
-        else if (player.sitePresence.BSite > 0.5) ctSites.B++;
-        else ctSites.Mid++;
-      });
+      const ctNearA = ctPlayers.filter(p => isNearASite(p.x, p.y)).length;
+      const ctNearB = ctPlayers.filter(p => isNearBSite(p.x, p.y)).length;
       
+      // Provide site defense insights
       if (currentFrame > 30) {
-        if (ctSites.A <= 1 && currentFrame > 60) {
-          insights.push("CT A site is potentially vulnerable");
+        if (ctNearA <= 1 && currentFrame > 40) {
+          insights.push("A site lightly defended - vulnerable to execute");
         }
         
-        if (ctSites.B <= 1 && currentFrame > 60) {
-          insights.push("CT B site is potentially vulnerable");
+        if (ctNearB <= 1 && currentFrame > 40) {
+          insights.push("B site lightly defended - vulnerable to execute");
         }
         
-        if (ctSites.Mid === 0 && currentFrame > 40) {
-          insights.push("CT is conceding mid control");
+        // Analyze CT spread
+        const ctPositionsX = ctPlayers.map(p => p.x);
+        const ctPositionsY = ctPlayers.map(p => p.y);
+        
+        const ctSpreadX = Math.max(...ctPositionsX) - Math.min(...ctPositionsX);
+        const ctSpreadY = Math.max(...ctPositionsY) - Math.min(...ctPositionsY);
+        const ctSpread = Math.sqrt(ctSpreadX * ctSpreadX + ctSpreadY * ctSpreadY);
+        
+        if (ctSpread < 500 && currentFrame > 90) {
+          insights.push("CT side is stacked - possible read on T intentions");
         }
+      }
+    }
+    
+    // Add encounter insights
+    if (tPlayers.length > 0 && ctPlayers.length > 0) {
+      // Look for close proximity between T and CT players (potential engagements)
+      let closeEncounters = 0;
+      
+      for (const tPlayer of tPlayers) {
+        for (const ctPlayer of ctPlayers) {
+          const distance = Math.sqrt(
+            Math.pow(tPlayer.x - ctPlayer.x, 2) + 
+            Math.pow(tPlayer.y - ctPlayer.y, 2)
+          );
+          
+          if (distance < 300) {
+            closeEncounters++;
+          }
+        }
+      }
+      
+      if (closeEncounters > 0) {
+        insights.push(`${closeEncounters} potential engagement${closeEncounters > 1 ? 's' : ''} detected`);
       }
     }
     
@@ -650,8 +821,8 @@ export function MapVisualizer({
                   <div className="mt-2">
                     <div className="text-xs text-blue-400 mb-1">Primary Position</div>
                     <div className="font-medium">
-                      {playerData.find(p => p.user_steamid === activePlayer)?.sitePresence.ASite > 0.5 ? "A Site" : 
-                      playerData.find(p => p.user_steamid === activePlayer)?.sitePresence.BSite > 0.5 ? "B Site" : "Mid Control"}
+                      {playerData.find(p => p.user_steamid === activePlayer)?.sitePresence?.ASite > 0.5 ? "A Site" : 
+                      playerData.find(p => p.user_steamid === activePlayer)?.sitePresence?.BSite > 0.5 ? "B Site" : "Mid Control"}
                     </div>
                   </div>
                 </div>

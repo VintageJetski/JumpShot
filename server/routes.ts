@@ -7,6 +7,7 @@ import { calculateTeamImpactRatings } from "./teamAnalytics";
 import { loadPlayerRoles } from "./roleParser";
 import { initializeRoundData } from "./roundDataLoader";
 import { setupAuth, ensureAuthenticated } from "./auth";
+import { processSampleXYZData, RoundPositionalMetrics } from "./xyz-data-parser";
 import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -128,6 +129,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       teamCount: 16,
       lastUpdated: new Date().toISOString()
     });
+  });
+  
+  // XYZ Positional data analysis endpoints
+  app.get('/api/admin/xyz-analysis', ensureAuthenticated, async (req: Request, res: Response) => {
+    try {
+      console.log('Processing sample XYZ data...');
+      const xyzAnalysis = await processSampleXYZData();
+      res.json({
+        message: 'XYZ data analysis completed successfully',
+        roundNum: xyzAnalysis.round_num,
+        analysis: xyzAnalysis
+      });
+    } catch (error) {
+      console.error('Error processing XYZ data:', error);
+      res.status(500).json({ 
+        message: 'Failed to process XYZ data',
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
   });
   
   const httpServer = createServer(app);

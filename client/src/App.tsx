@@ -21,6 +21,7 @@ import DashboardPage from "@/pages/DashboardPage";
 import VentionStyleMockup from "@/pages/VentionStyleMockup";
 import LoginPage from "@/pages/auth/login-page";
 import AdminPage from "@/pages/admin/admin-page";
+import TestingEnvironmentPage from "@/pages/admin/testing-environment-page";
 import Layout from "@/components/layout/Layout";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/auth/protected-route";
@@ -158,6 +159,13 @@ function Router() {
           {() => (
             <ProtectedRoute adminOnly={true}>
               <AdminPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/admin/testing-environment">
+          {() => (
+            <ProtectedRoute adminOnly={true}>
+              <TestingEnvironmentPage />
             </ProtectedRoute>
           )}
         </Route>

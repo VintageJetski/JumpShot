@@ -88,7 +88,7 @@ export default function TestingEnvironmentPage() {
                     {/* XYZ Data Analysis Component takes full width now */}
                     
                     {/* XYZ Data Analysis Component */}
-                    <div className="md:w-2/3">
+                    <div className="w-full">
                       <AdvancedXYZAnalysis />
                     </div>
                   </div>

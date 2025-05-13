@@ -391,35 +391,34 @@ function MapVisualization({
       // Create demo data for visualization - this helps show what the visualization would look like
       console.log("Using demo data for visualization since positionHeatmap is empty");
       
-      // Create T side demo positions that will be visible on screen
-      // Using much more constrained coordinates that will be visible in the chart
+      // Create T side demo positions centered in view, smaller coordinates to ensure visibility
       const tSidePositions = [
-        { x: -800, y: -600, intensity: 0.9 },
-        { x: -600, y: -400, intensity: 0.8 },
-        { x: -400, y: -200, intensity: 0.7 },
-        { x: -200, y: -100, intensity: 0.6 },
-        { x: -100, y: -50, intensity: 0.5 },
-        // Add more clustered positions for visibility
-        { x: -300, y: -300, intensity: 0.95 },
-        { x: -250, y: -350, intensity: 0.85 },
-        { x: -400, y: -250, intensity: 0.75 },
-        { x: -350, y: -200, intensity: 0.65 },
-        { x: -150, y: -100, intensity: 0.55 }
+        { x: -250, y: -200, intensity: 1.0 },
+        { x: -200, y: -150, intensity: 1.0 },
+        { x: -150, y: -100, intensity: 1.0 },
+        { x: -100, y: -50, intensity: 1.0 },
+        { x: -50, y: -25, intensity: 1.0 },
+        // Add more central positions for visibility
+        { x: -120, y: -120, intensity: 1.0 },
+        { x: -80, y: -140, intensity: 1.0 },
+        { x: -160, y: -80, intensity: 1.0 },
+        { x: -140, y: -60, intensity: 1.0 },
+        { x: -60, y: -40, intensity: 1.0 }
       ];
       
-      // Create CT side demo positions
+      // Create CT side demo positions centered in view 
       const ctSidePositions = [
-        { x: 800, y: 600, intensity: 0.9 },
-        { x: 600, y: 400, intensity: 0.8 },
-        { x: 400, y: 200, intensity: 0.7 },
-        { x: 200, y: 100, intensity: 0.6 },
-        { x: 100, y: 50, intensity: 0.5 },
-        // Add more clustered positions for visibility
-        { x: 300, y: 300, intensity: 0.95 },
-        { x: 250, y: 350, intensity: 0.85 },
-        { x: 400, y: 250, intensity: 0.75 },
-        { x: 350, y: 200, intensity: 0.65 },
-        { x: 150, y: 100, intensity: 0.55 }
+        { x: 250, y: 200, intensity: 1.0 },
+        { x: 200, y: 150, intensity: 1.0 },
+        { x: 150, y: 100, intensity: 1.0 },
+        { x: 100, y: 50, intensity: 1.0 },
+        { x: 50, y: 25, intensity: 1.0 },
+        // Add more central positions for visibility
+        { x: 120, y: 120, intensity: 1.0 },
+        { x: 80, y: 140, intensity: 1.0 },
+        { x: 160, y: 80, intensity: 1.0 },
+        { x: 140, y: 60, intensity: 1.0 },
+        { x: 60, y: 40, intensity: 1.0 }
       ];
       
       // Create T side players with positions and larger dots
@@ -546,10 +545,10 @@ function MapVisualization({
                 type="number" 
                 dataKey="x" 
                 name="X Position" 
-                domain={[-1000, 1000]} /* Adjusted domains to better fit demo data */
+                domain={[-300, 300]} /* Smaller domain focused on our data points */
                 tick={{ fill: '#93c5fd', fontSize: 10 }}
                 stroke="#3b82f6" 
-                opacity={0.2}
+                opacity={0}
                 tickCount={0}
                 axisLine={{ strokeWidth: 0 }}
                 tickLine={{ stroke: '#3b82f6', opacity: 0 }}
@@ -559,10 +558,10 @@ function MapVisualization({
                 type="number" 
                 dataKey="y" 
                 name="Y Position" 
-                domain={[-800, 800]} /* Adjusted domains to better fit demo data */
+                domain={[-250, 250]} /* Smaller domain focused on our data points */
                 tick={{ fill: '#93c5fd', fontSize: 10 }}
                 stroke="#3b82f6"
-                opacity={0.2}
+                opacity={0}
                 tickCount={0}
                 axisLine={{ strokeWidth: 0 }}
                 tickLine={{ stroke: '#3b82f6', opacity: 0 }}
@@ -594,23 +593,23 @@ function MapVisualization({
               />
               <Legend />
               
-              {/* T side player positions with enhanced styling - made much more visible */}
+              {/* T side player positions with enhanced styling - very prominent and visible */}
               <Scatter 
                 name="T Side Players"
                 data={getHeatmapData().filter(point => point.side === 'T')} 
-                fill="#ef4444"  /* Brighter red */
-                stroke="#fbbf24" /* Gold outline */
-                strokeWidth={3}
-                shape={(props) => {
-                  const { cx, cy, r } = props;
+                fill="#ff0000"  /* Pure red */
+                stroke="#ffd700" /* Gold outline */
+                strokeWidth={5}
+                shape={(props: { cx?: number; cy?: number; r?: number }) => {
+                  const { cx = 0, cy = 0, r = 5 } = props;
                   return (
                     <circle 
                       cx={cx} 
                       cy={cy} 
-                      r={r} 
-                      strokeWidth={3}
+                      r={r * 1.5} /* Make them 50% larger than normal */
+                      strokeWidth={5}
                       style={{
-                        filter: 'drop-shadow(0 0 3px rgba(255, 255, 255, 0.7))'
+                        filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.9))'
                       }}
                     />
                   );
@@ -622,23 +621,23 @@ function MapVisualization({
                 }}
               />
               
-              {/* CT side player positions with enhanced styling - made much more visible */}
+              {/* CT side player positions with enhanced styling - very prominent and visible */}
               <Scatter 
                 name="CT Side Players"
                 data={getHeatmapData().filter(point => point.side === 'CT')} 
-                fill="#3b82f6"  /* Brighter blue */
-                stroke="#a5f3fc" /* Cyan outline */
-                strokeWidth={3}
-                shape={(props) => {
-                  const { cx, cy, r } = props;
+                fill="#0000ff"  /* Pure blue */
+                stroke="#00ffff" /* Cyan outline */
+                strokeWidth={5}
+                shape={(props: { cx?: number; cy?: number; r?: number }) => {
+                  const { cx = 0, cy = 0, r = 5 } = props;
                   return (
                     <circle 
                       cx={cx} 
                       cy={cy} 
-                      r={r} 
-                      strokeWidth={3}
+                      r={r * 1.5} /* Make them 50% larger than normal */
+                      strokeWidth={5}
                       style={{
-                        filter: 'drop-shadow(0 0 3px rgba(255, 255, 255, 0.7))'
+                        filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.9))'
                       }}
                     />
                   );
@@ -650,24 +649,24 @@ function MapVisualization({
                 }}
               />
               
-              {/* Active player highlight - show prominently with glow effect */}
+              {/* Active player highlight - with extremely prominent effect */}
               {activePlayer && (
                 <Scatter
                   name="Selected Player"
                   data={getHeatmapData().filter(point => point.steamId === activePlayer)}
-                  fill={getHeatmapData().find(p => p.steamId === activePlayer)?.side === 'T' ? '#fef08a' : '#bae6fd'}
+                  fill={getHeatmapData().find(p => p.steamId === activePlayer)?.side === 'T' ? '#ffff00' : '#00ffff'}
                   stroke="#ffffff"
-                  strokeWidth={4}
-                  shape={(props) => {
-                    const { cx, cy, r } = props;
+                  strokeWidth={6}
+                  shape={(props: { cx?: number; cy?: number; r?: number }) => {
+                    const { cx = 0, cy = 0, r = 5 } = props;
                     return (
                       <circle 
                         cx={cx} 
                         cy={cy} 
-                        r={r} 
-                        strokeWidth={4}
+                        r={r * 2} /* Double size for selected player */
+                        strokeWidth={6}
                         style={{
-                          filter: 'drop-shadow(0 0 5px white)'
+                          filter: 'drop-shadow(0 0 10px white)'
                         }}
                       />
                     );

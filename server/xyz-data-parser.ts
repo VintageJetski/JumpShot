@@ -101,7 +101,9 @@ export async function parseXYZData(filePath: string): Promise<PositionalDataPoin
       skip_empty_lines: true,
       cast: (value, context) => {
         // Convert numeric fields to numbers
-        const columnName = context.column as string;
+        const columnName = String(context.column); // Ensure column name is always a string
+        
+        // Check if the field should be numeric
         if (columnName === 'health' || columnName === 'armor' || 
             columnName === 'pitch' || columnName === 'X' || 
             columnName === 'yaw' || columnName === 'Y' || 
@@ -109,9 +111,11 @@ export async function parseXYZData(filePath: string): Promise<PositionalDataPoin
             columnName === 'velocity_Y' || columnName === 'velocity_Z' || 
             columnName === 'tick' || columnName === 'round_num' || 
             columnName === 'flash_duration' ||
-            columnName.startsWith('x_') || 
-            columnName.startsWith('y_') || 
-            columnName.startsWith('z_')) {
+            (typeof columnName === 'string' && (
+              columnName.startsWith('x_') || 
+              columnName.startsWith('y_') || 
+              columnName.startsWith('z_')
+            ))) {
           return value !== '' ? Number(value) : null;
         }
         return value;
@@ -387,7 +391,26 @@ export function analyzeRoundPositionalData(
 export async function processSampleXYZData(): Promise<RoundPositionalMetrics> {
   try {
     const filePath = path.join(process.cwd(), 'attached_assets', 'round_4_mapping.csv');
+    console.log(`Reading XYZ data from: ${filePath}`);
+    
+    if (!fs.existsSync(filePath)) {
+      console.error(`XYZ data file not found at ${filePath}`);
+      throw new Error(`XYZ data file not found at ${filePath}`);
+    }
+    
     const xyzData = await parseXYZData(filePath);
+    
+    if (!xyzData || xyzData.length === 0) {
+      console.error('No valid XYZ data was parsed from the file');
+      throw new Error('No valid XYZ data was parsed from the file');
+    }
+    
+    console.log(`Successfully parsed ${xyzData.length} data points for analysis`);
+    
+    // Create a sample data point if data is missing
+    if (xyzData.length === 0) {
+      throw new Error('No data points found in the CSV file');
+    }
     
     // For testing, we're just using all data from one round
     return analyzeRoundPositionalData(xyzData);

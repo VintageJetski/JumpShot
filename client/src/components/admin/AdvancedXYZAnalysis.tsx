@@ -396,7 +396,7 @@ function MapVisualization({
         allPlayerPoints.push({
           x: point.x,
           y: point.y,
-          z: 10,
+          z: point.intensity * 20 || 30, // Scale up the intensity for better visibility
           player: player.name,
           steamId: player.user_steamid,
           side: player.side
@@ -410,10 +410,10 @@ function MapVisualization({
   return (
     <div className="space-y-3">
       <div className="relative h-[700px] w-full rounded-md overflow-hidden border border-blue-900/30 shadow-lg">
-        {/* Map Background - without blue overlay */}
+        {/* Map Background - full map shown without overlay */}
         <div className="absolute inset-0 z-0">
           <img 
-            src={infernoOverlayImg} 
+            src={infernoMapImg} 
             alt="Inferno Map" 
             className="w-full h-full object-contain"
           />
@@ -453,13 +453,7 @@ function MapVisualization({
             <ScatterChart
               margin={{ top: 30, right: 30, bottom: 30, left: 30 }}
             >
-              <CartesianGrid 
-                strokeDasharray="4 4" 
-                stroke="#3b82f6" 
-                opacity={0.15} 
-                horizontal={true}
-                vertical={true}
-              />
+              {/* Removed CartesianGrid (dotted lines) for cleaner visualization */}
               <XAxis 
                 type="number" 
                 dataKey="x" 
@@ -467,10 +461,11 @@ function MapVisualization({
                 domain={[-2500, 2500]}
                 tick={{ fill: '#93c5fd', fontSize: 10 }}
                 stroke="#3b82f6" 
-                opacity={0.4}
-                tickCount={7}
-                axisLine={{ strokeWidth: 1 }}
-                tickLine={{ stroke: '#3b82f6', opacity: 0.3 }}
+                opacity={0.2}
+                tickCount={0}
+                axisLine={{ strokeWidth: 0 }}
+                tickLine={{ stroke: '#3b82f6', opacity: 0 }}
+                hide={true}
               />
               <YAxis 
                 type="number" 
@@ -479,15 +474,16 @@ function MapVisualization({
                 domain={[-2500, 2500]}
                 tick={{ fill: '#93c5fd', fontSize: 10 }}
                 stroke="#3b82f6"
-                opacity={0.4}
-                tickCount={7}
-                axisLine={{ strokeWidth: 1 }}
-                tickLine={{ stroke: '#3b82f6', opacity: 0.3 }}
+                opacity={0.2}
+                tickCount={0}
+                axisLine={{ strokeWidth: 0 }}
+                tickLine={{ stroke: '#3b82f6', opacity: 0 }}
+                hide={true}
               />
               <ZAxis 
                 type="number" 
                 dataKey="z" 
-                range={[20, 80]} 
+                range={[40, 120]} 
                 name="Size" 
               />
               <Tooltip 
@@ -503,15 +499,7 @@ function MapVisualization({
                 formatter={(value: any, name: string, props: any) => {
                   const { payload } = props;
                   if (name === 'X Position' || name === 'Y Position') {
-                    let location = "";
-                    if (payload.x > 1000 && payload.y > 0) {
-                      location = "A Site";
-                    } else if (payload.x < 0 && payload.y < 0) {
-                      location = "B Site";
-                    } else if (Math.abs(payload.x) < 1000 && Math.abs(payload.y) < 1000) {
-                      location = "Mid";
-                    }
-                    return [`${value} (${location})`, name];
+                    return [value, name];
                   }
                   return [value, name];
                 }}
@@ -522,9 +510,9 @@ function MapVisualization({
               <Scatter 
                 name="T Side Players"
                 data={getHeatmapData().filter(point => point.side === 'T')} 
-                fill="#f59e0b"
-                stroke="#92400e"
-                strokeWidth={1}
+                fill="#f97316"
+                stroke="#f59e0b"
+                strokeWidth={2}
                 shape="circle"
                 onClick={(data: any) => {
                   if (data && data.payload && data.payload.steamId) {
@@ -537,9 +525,9 @@ function MapVisualization({
               <Scatter 
                 name="CT Side Players"
                 data={getHeatmapData().filter(point => point.side === 'CT')} 
-                fill="#3b82f6"
-                stroke="#1e40af"
-                strokeWidth={1}
+                fill="#2563eb"
+                stroke="#60a5fa"
+                strokeWidth={2}
                 shape="circle"
                 onClick={(data: any) => {
                   if (data && data.payload && data.payload.steamId) {
@@ -553,7 +541,7 @@ function MapVisualization({
                 <Scatter
                   name="Selected Player"
                   data={getHeatmapData().filter(point => point.steamId === activePlayer)}
-                  fill={getHeatmapData().find(p => p.steamId === activePlayer)?.side === 'T' ? '#f59e0b' : '#3b82f6'}
+                  fill={getHeatmapData().find(p => p.steamId === activePlayer)?.side === 'T' ? '#fb923c' : '#93c5fd'}
                   stroke="#ffffff"
                   strokeWidth={3}
                   shape="circle"
@@ -573,6 +561,7 @@ export function AdvancedXYZAnalysis() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("map-view");
   const [activePlayer, setActivePlayer] = useState<string | null>(null);
+  const [introHidden, setIntroHidden] = useState(false);
   
   // Playback state for map visualization
   const [isPlaying, setIsPlaying] = useState(false);
@@ -593,6 +582,10 @@ export function AdvancedXYZAnalysis() {
   const handleRunAnalysis = async () => {
     try {
       await refetch();
+      
+      // Hide introductory text after successful analysis
+      setIntroHidden(true);
+      
       toast({
         title: "Analysis Completed",
         description: "XYZ positional data analysis has been processed successfully.",
@@ -662,7 +655,7 @@ export function AdvancedXYZAnalysis() {
         </p>
       </div>
       
-      {!data ? (
+      {!data || !introHidden ? (
         // Show the explainer UI only when data is not yet processed
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-6 md:col-span-1">
@@ -826,10 +819,9 @@ export function AdvancedXYZAnalysis() {
                 
                 {activePlayer && (
                   <div className="bg-blue-950/40 rounded-md p-4 border border-blue-900/30">
-                    {/* Get player profile data if available */}
+                    {/* Player data */}
                     {(() => {
                       const xyzPlayer = data.analysis.playerMetrics[activePlayer];
-                      const playerProfile = findMatchingPlayer(xyzPlayer);
                       
                       return (
                         <div className="mb-3 flex items-center gap-3">
@@ -838,23 +830,11 @@ export function AdvancedXYZAnalysis() {
                           </div>
                           <div>
                             <h3 className="text-base font-medium">
-                              {xyzPlayer.name} {playerProfile && `(${playerProfile.name})`}
+                              {xyzPlayer.name}
                             </h3>
                             <div className="text-xs text-blue-300/70 flex items-center gap-2">
                               <span className={`inline-block w-2 h-2 rounded-full ${xyzPlayer.side === 'T' ? 'bg-amber-400' : 'bg-blue-400'}`}></span>
                               <span>{xyzPlayer.side === 'T' ? 'Terrorist' : 'Counter-Terrorist'}</span>
-                              {playerProfile && (
-                                <>
-                                  <span className="mx-1">•</span>
-                                  <span>{playerProfile.team}</span>
-                                  {playerProfile.metrics?.role && (
-                                    <>
-                                      <span className="mx-1">•</span>
-                                      <span>{playerProfile.metrics.role}</span>
-                                    </>
-                                  )}
-                                </>
-                              )}
                             </div>
                           </div>
                         </div>
@@ -1327,8 +1307,8 @@ export function AdvancedXYZAnalysis() {
                               <Bar 
                                 dataKey="value" 
                                 fill="#ef4444" 
-                                radius={[4, 4, 0, 0]}
-                                background={{ fill: '#27272a', radius: [4, 4, 0, 0] }}
+                                radius={4}
+                                background={{ fill: '#27272a', radius: 4 }}
                               />
                             </BarChart>
                           </ResponsiveContainer>
@@ -1462,8 +1442,8 @@ export function AdvancedXYZAnalysis() {
                               <Bar 
                                 dataKey="value" 
                                 fill="#3b82f6" 
-                                radius={[4, 4, 0, 0]}
-                                background={{ fill: '#27272a', radius: [4, 4, 0, 0] }}
+                                radius={4}
+                                background={{ fill: '#27272a', radius: 4 }}
                               />
                             </BarChart>
                           </ResponsiveContainer>

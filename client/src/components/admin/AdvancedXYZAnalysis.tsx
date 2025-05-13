@@ -660,7 +660,7 @@ function MapVisualization({
     
     playerData.forEach(player => {
       // Find player profile in database if available
-      const playerProfile = findMatchingPlayer(player);
+      const playerProfile = findMatchingPlayer ? findMatchingPlayer(player) : null;
       
       // Sample points to avoid overloading the chart
       const samplingInterval = Math.max(1, Math.floor(player.positionHeatmap.length / 50));
@@ -764,7 +764,14 @@ function MapVisualization({
                   
                   return [`${value}${location}`, name];
                 }
-                return [payload.player, payload.side];
+                // Show player information with profile data if available
+                if (payload.hasProfile) {
+                  return [
+                    `${payload.player} (${payload.csPlayerName})`,
+                    `${payload.side === 'T' ? 'Terrorist' : 'CT'} | ${payload.csPlayerTeam}${payload.csPlayerRole ? ` | ${payload.csPlayerRole}` : ''}`
+                  ];
+                }
+                return [payload.player, payload.side === 'T' ? 'Terrorist' : 'Counter-Terrorist'];
               }}
             />
             <Legend />
@@ -789,11 +796,39 @@ function MapVisualization({
               line={{ stroke: '#7c3aed', strokeWidth: 1.5, strokeDasharray: '5 5' }}
             />
             
-            {/* Player positions */}
+            {/* T side player positions */}
             <Scatter 
-              name="Player Positions"
-              data={getHeatmapData()} 
-              fill="#2563eb"
+              name="T Side Players"
+              data={getHeatmapData().filter(point => point.side === 'T')} 
+              fill="#f59e0b"
+              stroke={activePlayer ? "#f59e0b70" : "#f59e0b"}
+              onClick={(data: any) => {
+                if (data && data.payload && data.payload.steamId) {
+                  onSelectPlayer(data.payload.steamId);
+                }
+              }}
+            />
+            
+            {/* CT side player positions */}
+            <Scatter 
+              name="CT Side Players"
+              data={getHeatmapData().filter(point => point.side === 'CT')} 
+              fill="#3b82f6"
+              stroke={activePlayer ? "#3b82f670" : "#3b82f6"}
+              onClick={(data: any) => {
+                if (data && data.payload && data.payload.steamId) {
+                  onSelectPlayer(data.payload.steamId);
+                }
+              }}
+            />
+            
+            {/* Player with profile highlight */}
+            <Scatter 
+              name="Players with profiles"
+              data={getHeatmapData().filter(point => point.hasProfile)} 
+              fill="#22c55e"
+              stroke="#0d9488"
+              strokeWidth={2}
               onClick={(data: any) => {
                 if (data && data.payload && data.payload.steamId) {
                   onSelectPlayer(data.payload.steamId);
@@ -808,11 +843,32 @@ function MapVisualization({
       <div className="absolute top-2 left-2 z-20 bg-blue-950/80 text-xs text-blue-100 px-2 py-1 rounded">
         A Site
       </div>
+      
+      {/* Map Location Labels */}
       <div className="absolute bottom-10 right-8 z-20 bg-blue-950/80 text-xs text-blue-100 px-2 py-1 rounded">
         B Site
       </div>
       <div className="absolute top-[40%] left-[40%] z-20 bg-blue-950/80 text-xs text-blue-100 px-2 py-1 rounded">
         Mid
+      </div>
+      
+      {/* Legend for player colors */}
+      <div className="absolute top-3 right-3 z-20 bg-blue-950/90 text-xs text-blue-100 p-2 rounded border border-blue-800/50">
+        <div className="font-medium mb-1">Map Key</div>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+            <span>T Players</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+            <span>CT Players</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-green-500 border border-teal-600"></div>
+            <span>With Player Profile</span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -961,6 +1017,7 @@ export function AdvancedXYZAnalysis() {
                     playerData={getPlayers()} 
                     activePlayer={activePlayer || undefined}
                     onSelectPlayer={(steamId) => setActivePlayer(steamId === activePlayer ? null : steamId)}
+                    findMatchingPlayer={findMatchingPlayer}
                   />
                   
                   {activePlayer && (

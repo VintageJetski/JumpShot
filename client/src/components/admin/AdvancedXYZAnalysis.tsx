@@ -814,6 +814,11 @@ export function AdvancedXYZAnalysis() {
   const [activeTab, setActiveTab] = useState("map-view");
   const [activePlayer, setActivePlayer] = useState<string | null>(null);
   
+  // Fetch player database from API
+  const { data: playerDatabase } = useQuery({
+    queryKey: ['/api/players'],
+  });
+  
   // Fetch XYZ analysis data
   const { data, isLoading, error, refetch } = useQuery<XYZAnalysisResponse>({
     queryKey: ['/api/admin/xyz-analysis'],
@@ -848,6 +853,22 @@ export function AdvancedXYZAnalysis() {
         if (sideCompare !== 0) return sideCompare;
         return (a.name || '').localeCompare(b.name || '');
       });
+  };
+  
+  // Find matching player in CS2 player database
+  const findMatchingPlayer = (xyzPlayer: PlayerMovementAnalysis) => {
+    if (!playerDatabase || !xyzPlayer) return null;
+    
+    // Try to find by steamID (may not match in sample data)
+    const bySteamId = playerDatabase.find((player: any) => player.id === xyzPlayer.user_steamid);
+    if (bySteamId) return bySteamId;
+    
+    // Try to find by name (fuzzy match)
+    return playerDatabase.find((player: any) => {
+      if (!player.name || !xyzPlayer.name) return false;
+      return player.name.toLowerCase().includes(xyzPlayer.name.toLowerCase()) || 
+             xyzPlayer.name.toLowerCase().includes(player.name.toLowerCase());
+    });
   };
   
   return (
@@ -1047,80 +1068,151 @@ export function AdvancedXYZAnalysis() {
               <TabsContent value="role-analysis" className="space-y-4">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                   <div className="lg:col-span-3">
-                    <div className="bg-blue-950/40 p-4 rounded-md border border-blue-900/30">
-                      <h3 className="text-base font-medium mb-3">Role-Based Performance Analysis</h3>
-                      <p className="text-sm text-blue-300/80 mb-4">
-                        Player movements are analyzed to determine effective role execution, measuring how well each player performs their tactical function.
-                      </p>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                        <div className="bg-gradient-to-br from-red-950/20 to-red-900/5 p-3 rounded-md border border-red-900/30">
-                          <div className="flex items-center mb-3">
-                            <div className="bg-red-600/30 h-6 w-6 rounded-md flex items-center justify-center mr-2">
-                              <span className="text-red-400 font-bold">T</span>
-                            </div>
-                            <h4 className="text-sm font-medium">Terrorist Roles</h4>
-                          </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      {/* Role Performance Summary - Moved to top */}
+                      <div className="lg:col-span-1">
+                        <div className="bg-blue-950/40 p-4 rounded-md border border-blue-900/30 h-full">
+                          <h3 className="text-base font-medium mb-3">Role Performance Summary</h3>
                           
-                          <div className="space-y-2 text-xs">
-                            <div className="flex items-start">
-                              <RouteOff className="h-4 w-4 text-red-400 mt-0.5 mr-1.5 shrink-0" />
-                              <div>
-                                <span className="font-medium">Entry/Spacetaker</span>: Creates initial map control and space for the team. Measured by entry path efficiency and successful site presence.
-                              </div>
-                            </div>
-                            <div className="flex items-start">
-                              <CircleDotDashed className="h-4 w-4 text-red-400 mt-0.5 mr-1.5 shrink-0" />
-                              <div>
-                                <span className="font-medium">Lurker</span>: Controls flanks and creates distractions. Measured by isolation index and strategic positioning away from team.
-                              </div>
-                            </div>
-                            <div className="flex items-start">
-                              <Users className="h-4 w-4 text-red-400 mt-0.5 mr-1.5 shrink-0" />
-                              <div>
-                                <span className="font-medium">Support</span>: Assists entries and sets up trades. Measured by proximity to teammates and utility positioning.
-                              </div>
-                            </div>
-                            <div className="flex items-start">
-                              <Crosshair className="h-4 w-4 text-red-400 mt-0.5 mr-1.5 shrink-0" />
-                              <div>
-                                <span className="font-medium">AWPer (T)</span>: Secures key picks and holds critical angles. Measured by sniper lane control and pick potential.
+                          <div className="space-y-5">
+                            <div>
+                              <h4 className="text-sm font-medium mb-2">Role Effectiveness Distribution</h4>
+                              <div className="h-[200px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <BarChart
+                                    data={[
+                                      { name: 'Entry', t: 0.74, ct: 0 },
+                                      { name: 'Lurker', t: 0.68, ct: 0 },
+                                      { name: 'Support', t: 0.56, ct: 0.63 },
+                                      { name: 'AWPer', t: 0.81, ct: 0.78 },
+                                      { name: 'Anchor', t: 0, ct: 0.85 },
+                                      { name: 'Rotator', t: 0, ct: 0.71 },
+                                    ]}
+                                    margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                                  >
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#1e3a8a" opacity={0.3} />
+                                    <XAxis dataKey="name" stroke="#93c5fd" fontSize={10} />
+                                    <YAxis stroke="#93c5fd" fontSize={10} tickFormatter={(value) => `${Math.round(value * 100)}%`} />
+                                    <Tooltip 
+                                      formatter={(value: number) => [`${(value * 100).toFixed(0)}%`, 'Effectiveness']}
+                                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e40af' }}
+                                    />
+                                    <Bar dataKey="t" fill="#ef4444" name="T Side" />
+                                    <Bar dataKey="ct" fill="#3b82f6" name="CT Side" />
+                                  </BarChart>
+                                </ResponsiveContainer>
                               </div>
                             </div>
                           </div>
                         </div>
-                        
-                        <div className="bg-gradient-to-br from-blue-950/20 to-blue-900/5 p-3 rounded-md border border-blue-900/30">
-                          <div className="flex items-center mb-3">
-                            <div className="bg-blue-600/30 h-6 w-6 rounded-md flex items-center justify-center mr-2">
-                              <span className="text-blue-400 font-bold">CT</span>
+                      </div>
+                      
+                      {/* Top Performing Roles */}
+                      <div className="lg:col-span-1">
+                        <div className="bg-blue-950/40 p-4 rounded-md border border-blue-900/30 h-full">
+                          <h3 className="text-base font-medium mb-3">Top Performing Roles</h3>
+                          
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-gradient-to-br from-red-950/30 to-red-900/10 p-3 rounded-md border border-red-900/30">
+                              <div className="flex justify-between mb-1">
+                                <div className="text-xs text-red-300">T Side</div>
+                                <Badge variant="outline" className="text-xs border-red-900/30 text-red-300">
+                                  92%
+                                </Badge>
+                              </div>
+                              <div className="font-medium">AWPer</div>
+                              <div className="text-xs text-red-300/80 mt-1">Excellent B control</div>
                             </div>
-                            <h4 className="text-sm font-medium">Counter-Terrorist Roles</h4>
+                            
+                            <div className="bg-gradient-to-br from-blue-950/30 to-blue-900/10 p-3 rounded-md border border-blue-900/30">
+                              <div className="flex justify-between mb-1">
+                                <div className="text-xs text-blue-300">CT Side</div>
+                                <Badge variant="outline" className="text-xs border-blue-900/30 text-blue-300">
+                                  85%
+                                </Badge>
+                              </div>
+                              <div className="font-medium">A Site Anchor</div>
+                              <div className="text-xs text-blue-300/80 mt-1">Strong site control</div>
+                            </div>
                           </div>
                           
-                          <div className="space-y-2 text-xs">
-                            <div className="flex items-start">
-                              <BookmarkCheck className="h-4 w-4 text-blue-400 mt-0.5 mr-1.5 shrink-0" />
-                              <div>
-                                <span className="font-medium">Site Anchor</span>: Holds specific bombsites consistently. Measured by position consistency and site control.
+                          <div className="mt-3">
+                            <h4 className="text-sm font-medium mb-2">Role Synergy</h4>
+                            <div className="space-y-2 text-xs text-blue-300/90">
+                              <p>
+                                T side roles show strong complementary positioning with Entry players creating space effectively for Support players. The Lurker is providing good map control but could improve coordination timing.
+                              </p>
+                              <p>
+                                CT defensive setup demonstrates balanced coverage with effective site anchoring. Rotator is efficiently responding to information, maintaining strong mid control throughout the round.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Role Definitions */}
+                      <div className="lg:col-span-1">
+                        <div className="bg-blue-950/40 p-4 rounded-md border border-blue-900/30 h-full">
+                          <h3 className="text-base font-medium mb-3">Role Definitions</h3>
+                          
+                          <div className="space-y-3">
+                            <div className="bg-gradient-to-br from-red-950/20 to-red-900/5 p-2 rounded-md border border-red-900/30">
+                              <div className="flex items-center mb-1">
+                                <div className="bg-red-600/30 h-5 w-5 rounded-md flex items-center justify-center mr-2">
+                                  <span className="text-red-400 font-bold text-xs">T</span>
+                                </div>
+                                <h4 className="text-xs font-medium">Terrorist Roles</h4>
+                              </div>
+                              
+                              <div className="space-y-1 text-xs">
+                                <div className="flex items-start">
+                                  <RouteOff className="h-3.5 w-3.5 text-red-400 mt-0.5 mr-1 shrink-0" />
+                                  <div>
+                                    <span className="font-medium">Entry/Spacetaker</span>: Creates initial map control
+                                  </div>
+                                </div>
+                                <div className="flex items-start">
+                                  <CircleDotDashed className="h-3.5 w-3.5 text-red-400 mt-0.5 mr-1 shrink-0" />
+                                  <div>
+                                    <span className="font-medium">Lurker</span>: Controls flanks and distractions
+                                  </div>
+                                </div>
+                                <div className="flex items-start">
+                                  <Crosshair className="h-3.5 w-3.5 text-red-400 mt-0.5 mr-1 shrink-0" />
+                                  <div>
+                                    <span className="font-medium">AWPer</span>: Secures key picks
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                            <div className="flex items-start">
-                              <RotateCw className="h-4 w-4 text-blue-400 mt-0.5 mr-1.5 shrink-0" />
-                              <div>
-                                <span className="font-medium">Rotator</span>: Flexibly moves between sites as needed. Measured by rotation efficiency and map coverage.
+                            
+                            <div className="bg-gradient-to-br from-blue-950/20 to-blue-900/5 p-2 rounded-md border border-blue-900/30">
+                              <div className="flex items-center mb-1">
+                                <div className="bg-blue-600/30 h-5 w-5 rounded-md flex items-center justify-center mr-2">
+                                  <span className="text-blue-400 font-bold text-xs">CT</span>
+                                </div>
+                                <h4 className="text-xs font-medium">Counter-Terrorist Roles</h4>
                               </div>
-                            </div>
-                            <div className="flex items-start">
-                              <Users className="h-4 w-4 text-blue-400 mt-0.5 mr-1.5 shrink-0" />
-                              <div>
-                                <span className="font-medium">Support (CT)</span>: Provides utility and trade opportunities. Measured by support proximity and utility positioning.
-                              </div>
-                            </div>
-                            <div className="flex items-start">
-                              <Crosshair className="h-4 w-4 text-blue-400 mt-0.5 mr-1.5 shrink-0" />
-                              <div>
-                                <span className="font-medium">AWPer (CT)</span>: Controls key lines of sight. Measured by angle control and site lockdown potential.
+                              
+                              <div className="space-y-1 text-xs">
+                                <div className="flex items-start">
+                                  <BookmarkCheck className="h-3.5 w-3.5 text-blue-400 mt-0.5 mr-1 shrink-0" />
+                                  <div>
+                                    <span className="font-medium">Anchor</span>: Holds bombsites consistently
+                                  </div>
+                                </div>
+                                <div className="flex items-start">
+                                  <RotateCw className="h-3.5 w-3.5 text-blue-400 mt-0.5 mr-1 shrink-0" />
+                                  <div>
+                                    <span className="font-medium">Rotator</span>: Flexibly moves between sites
+                                  </div>
+                                </div>
+                                <div className="flex items-start">
+                                  <Crosshair className="h-3.5 w-3.5 text-blue-400 mt-0.5 mr-1 shrink-0" />
+                                  <div>
+                                    <span className="font-medium">AWPer</span>: Controls key lines of sight
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1177,80 +1269,14 @@ export function AdvancedXYZAnalysis() {
                     </div>
                   </div>
                   
-                  {/* Role Performance Summary */}
-                  <div className="lg:col-span-1">
-                    <div className="bg-blue-950/40 p-4 rounded-md border border-blue-900/30 h-full">
-                      <h3 className="text-base font-medium mb-3">Role Performance Summary</h3>
-                      
-                      <div className="space-y-5">
-                        <div>
-                          <h4 className="text-sm font-medium mb-2">Role Effectiveness Distribution</h4>
-                          <div className="h-[200px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart
-                                data={[
-                                  { name: 'Entry', t: 0.74, ct: 0 },
-                                  { name: 'Lurker', t: 0.68, ct: 0 },
-                                  { name: 'Support', t: 0.56, ct: 0.63 },
-                                  { name: 'AWPer', t: 0.81, ct: 0.78 },
-                                  { name: 'Anchor', t: 0, ct: 0.85 },
-                                  { name: 'Rotator', t: 0, ct: 0.71 },
-                                ]}
-                                margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                              >
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1e3a8a" opacity={0.3} />
-                                <XAxis dataKey="name" stroke="#93c5fd" fontSize={10} />
-                                <YAxis stroke="#93c5fd" fontSize={10} tickFormatter={(value) => `${Math.round(value * 100)}%`} />
-                                <Tooltip 
-                                  formatter={(value: number) => [`${(value * 100).toFixed(0)}%`, 'Effectiveness']}
-                                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e40af' }}
-                                />
-                                <Bar dataKey="t" fill="#ef4444" name="T Side" />
-                                <Bar dataKey="ct" fill="#3b82f6" name="CT Side" />
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h4 className="text-sm font-medium mb-2">Top Performing Role</h4>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-gradient-to-br from-red-950/30 to-red-900/10 p-3 rounded-md border border-red-900/30">
-                              <div className="flex justify-between mb-1">
-                                <div className="text-xs text-red-300">T Side</div>
-                                <Badge variant="outline" className="text-xs border-red-900/30 text-red-300">
-                                  92%
-                                </Badge>
-                              </div>
-                              <div className="font-medium">AWPer</div>
-                              <div className="text-xs text-red-300/80 mt-1">Excellent B control</div>
-                            </div>
-                            
-                            <div className="bg-gradient-to-br from-blue-950/30 to-blue-900/10 p-3 rounded-md border border-blue-900/30">
-                              <div className="flex justify-between mb-1">
-                                <div className="text-xs text-blue-300">CT Side</div>
-                                <Badge variant="outline" className="text-xs border-blue-900/30 text-blue-300">
-                                  85%
-                                </Badge>
-                              </div>
-                              <div className="font-medium">A Site Anchor</div>
-                              <div className="text-xs text-blue-300/80 mt-1">Strong site control</div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h4 className="text-sm font-medium mb-2">Role Synergy</h4>
-                          <div className="space-y-2 text-xs text-blue-300/90">
-                            <p>
-                              T side roles show strong complementary positioning with Entry players creating space effectively for Support players. The Lurker is providing good map control but could improve coordination timing.
-                            </p>
-                            <p>
-                              CT defensive setup demonstrates balanced coverage with effective site anchoring. Rotator is efficiently responding to information, maintaining strong mid control throughout the round.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                  {/* Additional Explanation */}
+                  <div className="lg:col-span-3">
+                    <div className="bg-blue-950/40 p-4 rounded-md border border-blue-900/30">
+                      <h3 className="text-base font-medium mb-3">Role-Based Performance Analysis</h3>
+                      <p className="text-sm text-blue-300/80 mb-4">
+                        Player movements are analyzed to determine effective role execution, measuring how well each player performs their tactical function. 
+                        This data helps understand which players are most effective in their assigned roles and can identify potential role mismatches.
+                      </p>
                     </div>
                   </div>
                 </div>

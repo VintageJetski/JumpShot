@@ -763,38 +763,27 @@ function MapVisualization({
             <Scatter 
               name="A Site" 
               data={siteBoundaries.filter(b => b.label === 'A Site')} 
-              fill="transparent"
+              fill="#d97706"
               line={{ stroke: '#d97706', strokeWidth: 1.5, strokeDasharray: '5 5' }}
-              shape={(props) => null}
             />
             <Scatter 
               name="B Site" 
               data={siteBoundaries.filter(b => b.label === 'B Site')} 
-              fill="transparent"
+              fill="#059669"
               line={{ stroke: '#059669', strokeWidth: 1.5, strokeDasharray: '5 5' }}
-              shape={(props) => null}
             />
             <Scatter 
               name="Mid" 
               data={siteBoundaries.filter(b => b.label === 'Mid')} 
-              fill="transparent"
+              fill="#7c3aed"
               line={{ stroke: '#7c3aed', strokeWidth: 1.5, strokeDasharray: '5 5' }}
-              shape={(props) => null}
             />
             
             {/* Player positions */}
             <Scatter 
               name="Player Positions"
               data={getHeatmapData()} 
-              fill={(entry) => {
-                const { steamId, side } = entry.payload;
-                
-                if (activePlayer && steamId === activePlayer) {
-                  return side.toLowerCase() === 't' ? '#fca5a5' : '#93c5fd';
-                }
-                
-                return side.toLowerCase() === 't' ? '#b91c1c' : '#2563eb';
-              }}
+              fill="#2563eb"
               onClick={(data) => {
                 if (data && data.payload) {
                   onSelectPlayer(data.payload.steamId);

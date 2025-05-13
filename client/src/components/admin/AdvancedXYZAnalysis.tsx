@@ -646,17 +646,22 @@ function TeamAnalysisCard({
 function MapVisualization({ 
   playerData,
   activePlayer,
-  onSelectPlayer
+  onSelectPlayer,
+  findMatchingPlayer
 }: { 
   playerData: PlayerMovementAnalysis[];
   activePlayer?: string;
   onSelectPlayer: (steamId: string) => void;
+  findMatchingPlayer?: (player: PlayerMovementAnalysis) => any;
 }) {
-  // Generate data for heatmap visualization
+  // Generate data for heatmap visualization with player profile links
   const getHeatmapData = () => {
     const allPlayerPoints: any[] = [];
     
     playerData.forEach(player => {
+      // Find player profile in database if available
+      const playerProfile = findMatchingPlayer(player);
+      
       // Sample points to avoid overloading the chart
       const samplingInterval = Math.max(1, Math.floor(player.positionHeatmap.length / 50));
       
@@ -669,7 +674,11 @@ function MapVisualization({
           z: 10,
           player: player.name,
           steamId: player.user_steamid,
-          side: player.side
+          side: player.side,
+          csPlayerName: playerProfile ? playerProfile.name : undefined,
+          csPlayerTeam: playerProfile ? playerProfile.team : undefined,
+          csPlayerRole: playerProfile?.metrics?.role,
+          hasProfile: !!playerProfile
         });
       }
     });

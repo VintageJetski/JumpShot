@@ -7,7 +7,7 @@ import { calculateTeamImpactRatings } from "./teamAnalytics";
 import { loadPlayerRoles } from "./roleParser";
 import { initializeRoundData } from "./roundDataLoader";
 import { setupAuth, ensureAuthenticated } from "./auth";
-import { processSampleXYZData, RoundPositionalMetrics } from "./xyz-data-parser";
+import { processSampleXYZData, RoundPositionalMetrics, PlayerMovementAnalysis } from "./xyz-data-parser";
 import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -135,11 +135,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/xyz-analysis', ensureAuthenticated, async (req: Request, res: Response) => {
     try {
       console.log('Processing sample XYZ data...');
+      
+      // Set a higher timeout for this API endpoint
+      req.setTimeout(120000); // 2-minute timeout
+      res.setTimeout(120000);
+      
+      // Process the data asynchronously
       const xyzAnalysis = await processSampleXYZData();
+      
+      // Send a more compact response for better performance
+      // Simplify the position heatmap data to reduce response size
+      const compactAnalysis = {
+        ...xyzAnalysis,
+        playerMetrics: Object.entries(xyzAnalysis.playerMetrics).reduce((acc, [key, player]) => {
+          // Limit the number of heatmap points to reduce payload size
+          const sampledHeatmap = player.positionHeatmap.filter((_, i) => i % 3 === 0);
+          
+          acc[key] = {
+            ...player,
+            positionHeatmap: sampledHeatmap
+          };
+          return acc;
+        }, {} as Record<string, PlayerMovementAnalysis>)
+      };
+      
       res.json({
         message: 'XYZ data analysis completed successfully',
         roundNum: xyzAnalysis.round_num,
-        analysis: xyzAnalysis
+        analysis: compactAnalysis
       });
     } catch (error) {
       console.error('Error processing XYZ data:', error);

@@ -91,23 +91,38 @@ export function XYZDataAnalysis() {
     }
   };
   
-  // Format player data for charts
+  // Format player data for charts - optimized for performance
   const getPositionalData = () => {
     if (!data || !data.analysis) return [];
 
     const allPoints: { x: number, y: number, z: number, intensity: number, name: string, side: string }[] = [];
     
-    Object.values(data.analysis.playerMetrics).forEach(player => {
-      player.positionHeatmap.forEach(point => {
-        allPoints.push({
-          x: point.x,
-          y: point.y,
-          z: 10,
-          intensity: point.intensity,
-          name: player.name,
-          side: player.side
-        });
-      });
+    // Sample the data for better performance - limit to 500 total points
+    const maxPoints = 500;
+    const players = Object.values(data.analysis.playerMetrics);
+    const maxPointsPerPlayer = Math.floor(maxPoints / players.length);
+    
+    players.forEach(player => {
+      // Take a subset of points for each player
+      const pointsToSample = Math.min(maxPointsPerPlayer, player.positionHeatmap.length);
+      const samplingInterval = Math.max(1, Math.floor(player.positionHeatmap.length / pointsToSample));
+      
+      for (let i = 0; i < player.positionHeatmap.length; i += samplingInterval) {
+        const point = player.positionHeatmap[i];
+        if (point) {
+          allPoints.push({
+            x: point.x,
+            y: point.y,
+            z: 10,
+            intensity: point.intensity,
+            name: player.name,
+            side: player.side
+          });
+        }
+        
+        // Safety check to avoid adding too many points
+        if (allPoints.length >= maxPoints) break;
+      }
     });
     
     return allPoints;

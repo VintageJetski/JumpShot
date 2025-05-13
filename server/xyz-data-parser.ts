@@ -398,7 +398,51 @@ export async function processSampleXYZData(): Promise<RoundPositionalMetrics> {
       throw new Error(`XYZ data file not found at ${filePath}`);
     }
     
-    const xyzData = await parseXYZData(filePath);
+    const content = fs.readFileSync(filePath, { encoding: 'utf-8' });
+    
+    // Only process a subset of the data for better performance (every 10th line)
+    const lines = content.split('\n');
+    const header = lines[0];
+    const sampledLines = [header];
+    
+    for (let i = 1; i < lines.length; i += 10) {
+      if (lines[i].trim()) {
+        sampledLines.push(lines[i]);
+      }
+    }
+    
+    const sampledContent = sampledLines.join('\n');
+    
+    // Parse the sampled data
+    const records = parse(sampledContent, {
+      columns: true,
+      skip_empty_lines: true,
+      cast: (value, context) => {
+        // Convert numeric fields to numbers
+        const columnName = String(context.column); // Ensure column name is always a string
+        
+        // Check if the field should be numeric
+        if (columnName === 'health' || columnName === 'armor' || 
+            columnName === 'pitch' || columnName === 'X' || 
+            columnName === 'yaw' || columnName === 'Y' || 
+            columnName === 'velocity_X' || columnName === 'Z' || 
+            columnName === 'velocity_Y' || columnName === 'velocity_Z' || 
+            columnName === 'tick' || columnName === 'round_num' || 
+            columnName === 'flash_duration' ||
+            (typeof columnName === 'string' && (
+              columnName.startsWith('x_') || 
+              columnName.startsWith('y_') || 
+              columnName.startsWith('z_')
+            ))) {
+          return value !== '' ? Number(value) : null;
+        }
+        return value;
+      }
+    });
+    
+    const xyzData = records as PositionalDataPoint[];
+    
+    console.log(`Parsed ${xyzData.length} sampled positional data points from ${filePath}`);
     
     if (!xyzData || xyzData.length === 0) {
       console.error('No valid XYZ data was parsed from the file');
@@ -407,12 +451,7 @@ export async function processSampleXYZData(): Promise<RoundPositionalMetrics> {
     
     console.log(`Successfully parsed ${xyzData.length} data points for analysis`);
     
-    // Create a sample data point if data is missing
-    if (xyzData.length === 0) {
-      throw new Error('No data points found in the CSV file');
-    }
-    
-    // For testing, we're just using all data from one round
+    // For testing, we're just using the sampled data from one round
     return analyzeRoundPositionalData(xyzData);
   } catch (error) {
     console.error('Error processing sample XYZ data:', error);

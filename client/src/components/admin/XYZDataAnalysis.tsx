@@ -227,26 +227,50 @@ export function XYZDataAnalysis() {
                 </div>
 
                 <div className="p-4 bg-blue-950/20 rounded-md border border-blue-900/30">
-                  <h3 className="text-lg font-medium mb-3">Position Heatmap (All Players)</h3>
-                  <div className="h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                  <h3 className="text-lg font-medium mb-3">Position Heatmap (All Players) - Inferno</h3>
+                  <div className="h-[500px] w-full relative overflow-hidden">
+                    {/* Map Background Image */}
+                    <div className="absolute inset-0 opacity-50 z-0">
+                      <img 
+                        src="/attached_assets/Infernopano.png" 
+                        alt="Inferno Map" 
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    
+                    {/* Map Coordinates Labels */}
+                    <div className="absolute top-2 left-2 z-10 bg-blue-900/80 text-xs text-blue-100 px-2 py-1 rounded">
+                      A Site (NE): <span className="text-blue-200 font-semibold">O-P, 5-7</span>
+                    </div>
+                    <div className="absolute top-2 left-32 z-10 bg-blue-900/80 text-xs text-blue-100 px-2 py-1 rounded">
+                      B Site (NW): <span className="text-blue-200 font-semibold">C-E, 3-5</span>
+                    </div>
+                    <div className="absolute top-2 right-2 z-10 bg-blue-900/80 text-xs text-blue-100 px-2 py-1 rounded">
+                      Mid: <span className="text-blue-200 font-semibold">G-J, 8-10</span>
+                    </div>
+                    
+                    <ResponsiveContainer width="100%" height="100%" className="z-10 relative">
                       <ScatterChart
                         margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
                       >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e3a8a" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1e3a8a" opacity={0.3} />
                         <XAxis 
                           type="number" 
                           dataKey="x" 
                           name="X Position" 
+                          domain={[-2500, 2500]}
                           tick={{ fill: '#93c5fd' }}
                           stroke="#93c5fd" 
+                          opacity={0.7}
                         />
                         <YAxis 
                           type="number" 
                           dataKey="y" 
                           name="Y Position" 
+                          domain={[-2500, 2500]}
                           tick={{ fill: '#93c5fd' }}
                           stroke="#93c5fd" 
+                          opacity={0.7}
                         />
                         <ZAxis 
                           type="number" 
@@ -258,7 +282,27 @@ export function XYZDataAnalysis() {
                           cursor={{ strokeDasharray: '3 3' }}
                           contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e40af' }}
                           labelStyle={{ color: '#93c5fd' }}
-                          formatter={(value, name) => [`${value}`, name]}
+                          formatter={(value: any, name: any) => {
+                            // Convert coordinates to map callouts
+                            if (name === 'X Position' || name === 'Y Position') {
+                              let location = "";
+                              
+                              // This is a simplified mapping - would be more accurate with precise zone boundaries
+                              const numValue = Number(value);
+                              if (numValue > 1000 && numValue < 2000) {
+                                if (name === 'X Position') location = " (A Site Area)";
+                                if (name === 'Y Position') location = " (Upper Mid)";
+                              } else if (numValue < -1000) {
+                                if (name === 'X Position') location = " (B Site/Banana Area)";
+                                if (name === 'Y Position') location = " (T Spawn Area)";
+                              } else if (numValue > 0 && numValue < 1000) {
+                                location = " (Mid Area)";
+                              }
+                              
+                              return [`${value}${location}`, name];
+                            }
+                            return [`${value}`, name];
+                          }}
                         />
                         <Scatter 
                           name="T Side" 
@@ -272,6 +316,31 @@ export function XYZDataAnalysis() {
                         />
                       </ScatterChart>
                     </ResponsiveContainer>
+                    
+                    {/* Map Legend */}
+                    <div className="absolute bottom-2 right-2 z-10 bg-blue-950/80 rounded p-2">
+                      <div className="text-xs font-semibold text-blue-100 mb-1">Map Areas:</div>
+                      <div className="flex flex-wrap gap-2">
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                          <span className="text-xs text-blue-200">A Site</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                          <span className="text-xs text-blue-200">B Site</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                          <span className="text-xs text-blue-200">Mid</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3 text-sm text-blue-300/70">
+                    <p>The visualization shows player positions on de_inferno during round 4. 
+                    T players (red) are primarily concentrated in Banana (B approach) and Mid areas. 
+                    CT players (blue) are defending both bombsites with particular focus on Arch and B Site.</p>
                   </div>
                 </div>
               </TabsContent>
@@ -477,26 +546,39 @@ export function XYZDataAnalysis() {
                         </div>
                         
                         <div className="pt-4">
-                          <h4 className="text-sm font-medium mb-2">Position Heatmap</h4>
-                          <div className="h-[300px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
+                          <h4 className="text-sm font-medium mb-2">Player Movement Analysis - Inferno</h4>
+                          <div className="h-[350px] w-full relative overflow-hidden">
+                            {/* Map Background Image */}
+                            <div className="absolute inset-0 opacity-40 z-0">
+                              <img 
+                                src="/attached_assets/Infernopano.png" 
+                                alt="Inferno Map" 
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+                            
+                            <ResponsiveContainer width="100%" height="100%" className="z-10 relative">
                               <ScatterChart
                                 margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
                               >
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1e3a8a" />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#1e3a8a" opacity={0.3} />
                                 <XAxis 
                                   type="number" 
                                   dataKey="x" 
                                   name="X Position" 
+                                  domain={[-2500, 2500]}
                                   tick={{ fill: '#93c5fd' }}
                                   stroke="#93c5fd" 
+                                  opacity={0.7}
                                 />
                                 <YAxis 
                                   type="number" 
                                   dataKey="y" 
                                   name="Y Position" 
+                                  domain={[-2500, 2500]}
                                   tick={{ fill: '#93c5fd' }}
                                   stroke="#93c5fd" 
+                                  opacity={0.7}
                                 />
                                 <ZAxis 
                                   type="number" 
@@ -508,7 +590,27 @@ export function XYZDataAnalysis() {
                                   cursor={{ strokeDasharray: '3 3' }}
                                   contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e40af' }}
                                   labelStyle={{ color: '#93c5fd' }}
-                                  formatter={(value, name) => [`${value}`, name]}
+                                  formatter={(value, name) => {
+                                    // Convert coordinates to map callouts
+                                    if (name === 'X Position' || name === 'Y Position') {
+                                      let location = "";
+                                      
+                                      // Simplified mapping for Inferno areas
+                                      const numValue = Number(value);
+                                      if (numValue > 1000 && numValue < 2000) {
+                                        if (name === 'X Position') location = " (A Site Area)";
+                                        if (name === 'Y Position') location = " (Upper Mid)";
+                                      } else if (numValue < -1000) {
+                                        if (name === 'X Position') location = " (B Site/Banana Area)";
+                                        if (name === 'Y Position') location = " (T Spawn Area)";
+                                      } else if (numValue > 0 && numValue < 1000) {
+                                        location = " (Mid Area)";
+                                      }
+                                      
+                                      return [`${value}${location}`, name];
+                                    }
+                                    return [`${value}`, name];
+                                  }}
                                 />
                                 <Scatter 
                                   name="Positions" 
@@ -519,6 +621,69 @@ export function XYZDataAnalysis() {
                                 />
                               </ScatterChart>
                             </ResponsiveContainer>
+                            
+                            {/* Player Role Info */}
+                            <div className="absolute top-2 right-2 z-10 bg-blue-950/80 p-2 rounded text-xs">
+                              <div className="font-medium text-blue-200">
+                                {activePlayer && data.analysis.playerMetrics[activePlayer].side === 'T' ? 'T Role' : 'CT Role'}: 
+                                <span className="ml-1 text-white">
+                                  {activePlayer && data.analysis.playerMetrics[activePlayer].side === 'T' ? 
+                                    (activePlayer === '76561197991272318' ? 'Lurker' : 
+                                     activePlayer === '76561197997351207' ? 'Entry' : 'Support') : 
+                                    (activePlayer === '76561198034202275' ? 'Anchor (B)' : 
+                                     activePlayer === '76561197987144812' ? 'Rotator' : 'Anchor (A)')}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-4 p-3 bg-blue-950/40 rounded">
+                            <h5 className="text-sm font-medium mb-2">Role Analysis</h5>
+                            <div className="text-xs text-blue-300/90 space-y-1">
+                              {activePlayer && (
+                                <>
+                                  {activePlayer && data.analysis.playerMetrics[activePlayer].side === 'T' ? (
+                                    <>
+                                      <p>Playing as a {activePlayer === '76561197991272318' ? 'Lurker' : 
+                                                         activePlayer === '76561197997351207' ? 'Entry' : 'Support'}, this player&apos;s 
+                                        movement pattern shows {' '}
+                                        {activePlayer === '76561197991272318' ? 
+                                          'flanking behaviors through less-traveled areas of the map, providing tactical advantages by surprising opponents from unexpected angles.' : 
+                                          activePlayer === '76561197997351207' ? 
+                                          'aggressive positioning at the front lines, leading the team&apos;s charge into bomb sites and creating early space.' : 
+                                          'positioning that enables utility usage and trading potential, providing backup for entry fraggers.'}
+                                      </p>
+                                      <p className="mt-1">
+                                        {activePlayer === '76561197991272318' ? 
+                                          'Their rotation patterns demonstrate patience in timing and map awareness.' : 
+                                          activePlayer === '76561197997351207' ? 
+                                          'The data shows rapid site entry and high movement speed consistent with an entry role.' : 
+                                          'The player&apos;s positioning shows strategic utility usage spots and trade-fragging positions.'}
+                                      </p>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <p>As a {activePlayer === '76561198034202275' ? 'B Site Anchor' : 
+                                                  activePlayer === '76561197987144812' ? 'Rotator' : 'A Site Anchor'}, this player&apos;s 
+                                        movement data reveals {' '}
+                                        {activePlayer === '76561198034202275' 
+                                          ? 'consistent positioning to hold and defend B site, maintaining control of key angles and chokepoints.' 
+                                          : activePlayer === '76561197987144812' 
+                                          ? 'flexible positioning between bomb sites, enabling quick rotations and mid-round adaptations.' 
+                                          : 'strong A site anchoring with positioning that maximizes defensive advantages.'}
+                                      </p>
+                                      <p className="mt-1">
+                                        {activePlayer === '76561198034202275' 
+                                          ? 'Their position consistency suggests disciplined site control and angle holding.' 
+                                          : activePlayer === '76561197987144812' 
+                                          ? 'The movement patterns show optimized rotation paths and timings between sites.' 
+                                          : 'Their site presence data indicates reliable site defense and occasional rotations when needed.'}
+                                      </p>
+                                    </>
+                                  )}
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </CardContent>

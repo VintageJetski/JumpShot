@@ -8,6 +8,7 @@ import { Beaker, ArrowLeft, Map, Activity, Users, Share2, Crosshair } from "luci
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { XYZDataAnalysis } from "@/components/admin/XYZDataAnalysis";
 
 export default function TestingEnvironmentPage() {
   return (
@@ -85,7 +86,7 @@ export default function TestingEnvironmentPage() {
                 <div className="space-y-4">
                   <div className="flex flex-col md:flex-row gap-6">
                     {/* Feature Description */}
-                    <div className="md:w-1/2 space-y-4">
+                    <div className="md:w-1/3 space-y-4">
                       <h3 className="text-lg font-semibold">About This Feature</h3>
                       <p className="text-sm text-blue-300/80">
                         This experimental feature uses tick-by-tick positional (XYZ) data to generate deep insights
@@ -117,18 +118,9 @@ export default function TestingEnvironmentPage() {
                       </ul>
                     </div>
                     
-                    {/* Visualization Placeholder */}
-                    <div className="md:w-1/2 rounded-md overflow-hidden">
-                      <div className="bg-blue-950/30 border border-blue-900/50 rounded-md p-6 h-[300px] flex flex-col items-center justify-center">
-                        <Beaker className="h-12 w-12 text-blue-400/30 mb-4" />
-                        <p className="text-center text-blue-300/70">
-                          Visualization will display positional heatmaps and movement patterns from XYZ data
-                        </p>
-                        <div className="grid grid-cols-2 gap-4 mt-6 w-full max-w-xs mx-auto">
-                          <Skeleton className="h-8 w-full bg-blue-900/20 rounded" />
-                          <Skeleton className="h-8 w-full bg-blue-900/20 rounded" />
-                        </div>
-                      </div>
+                    {/* XYZ Data Analysis Component */}
+                    <div className="md:w-2/3">
+                      <XYZDataAnalysis />
                     </div>
                   </div>
                   
@@ -137,7 +129,7 @@ export default function TestingEnvironmentPage() {
                   {/* Implementation Details */}
                   <div>
                     <h3 className="text-lg font-semibold mb-4">Implementation Plan</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <Card className="bg-blue-950/30 border border-blue-900/50">
                         <CardHeader className="pb-2">
                           <CardTitle className="text-base flex items-center gap-2">
@@ -148,7 +140,7 @@ export default function TestingEnvironmentPage() {
                         <CardContent className="pt-2 text-sm text-blue-300/80">
                           <p>Parse XYZ positional data from round logs and process into structured analytics</p>
                           <div className="mt-2 flex justify-between text-xs">
-                            <Badge variant="outline" className="bg-amber-950/30 text-amber-400 border-amber-900/50">In Progress</Badge>
+                            <Badge variant="outline" className="bg-green-950/30 text-green-400 border-green-900/50">Completed</Badge>
                             <span className="text-blue-300/60">Phase 1/3</span>
                           </div>
                         </CardContent>
@@ -164,7 +156,7 @@ export default function TestingEnvironmentPage() {
                         <CardContent className="pt-2 text-sm text-blue-300/80">
                           <p>Create interactive 2D/3D visualizations of player movements and positions</p>
                           <div className="mt-2 flex justify-between text-xs">
-                            <Badge variant="outline" className="bg-blue-950/30 text-blue-300 border-blue-900/50">Planned</Badge>
+                            <Badge variant="outline" className="bg-green-950/30 text-green-400 border-green-900/50">Completed</Badge>
                             <span className="text-blue-300/60">Phase 2/3</span>
                           </div>
                         </CardContent>
@@ -180,18 +172,12 @@ export default function TestingEnvironmentPage() {
                         <CardContent className="pt-2 text-sm text-blue-300/80">
                           <p>Integrate positional metrics into existing PIV and TIR calculations</p>
                           <div className="mt-2 flex justify-between text-xs">
-                            <Badge variant="outline" className="bg-blue-950/30 text-blue-300 border-blue-900/50">Planned</Badge>
+                            <Badge variant="outline" className="bg-amber-950/30 text-amber-400 border-amber-900/50">In Progress</Badge>
                             <span className="text-blue-300/60">Phase 3/3</span>
                           </div>
                         </CardContent>
                       </Card>
                     </div>
-                  </div>
-                  
-                  <div className="flex justify-end pt-4">
-                    <Button className="bg-gradient-to-r from-blue-700 to-purple-600 hover:from-blue-800 hover:to-purple-700">
-                      Test Data Processing
-                    </Button>
                   </div>
                 </div>
               </CardContent>

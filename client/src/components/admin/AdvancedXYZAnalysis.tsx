@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { MapVisualizer } from "@/components/admin/MapVisualizer";
 import {
   Activity,
   Award,
@@ -814,15 +815,7 @@ export function AdvancedXYZAnalysis() {
   
   return (
     <div className="space-y-6">
-      <div className="flex flex-col space-y-1">
-        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <RouteOff className="h-6 w-6 text-blue-500" />
-          XYZ Positional Data Analysis
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Process and visualize XYZ positional data from CS2 matches to analyze player movements and patterns
-        </p>
-      </div>
+      {/* Header removed to prevent duplication with page title */}
       
       {!data ? (
         // Show the explainer UI only when data is not yet processed
@@ -952,17 +945,10 @@ export function AdvancedXYZAnalysis() {
                   </Card>
                 </div>
                 
-                <MapVisualization 
+                <MapVisualizer 
                   playerData={getPlayers()} 
                   activePlayer={activePlayer || undefined}
                   onSelectPlayer={(steamId) => setActivePlayer(steamId === activePlayer ? null : steamId)}
-                  findMatchingPlayer={findMatchingPlayer}
-                  isPlaying={isPlaying}
-                  currentFrame={currentFrame}
-                  playbackSpeed={playbackSpeed}
-                  onPlayPause={togglePlayback}
-                  onReset={resetPlayback}
-                  onFrameChange={setCurrentFrame}
                 />
                 
                 {activePlayer && (

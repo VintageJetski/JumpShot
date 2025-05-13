@@ -240,26 +240,79 @@ export function MapVisualizer({
       return processedData;
     }
     
-    // Process real player data
+    // Process real player data with animated movements
     playerData.forEach(player => {
-      // Get position data from the CSV data based on current frame
-      // First, check if player has heatmap data
+      // Extract name from the player data or fallback
+      const playerName = player.name || `Player-${player.user_steamid.substring(0, 5)}`;
+      
+      // First, check if player has valid heatmap data
       if (!player.positionHeatmap || !Array.isArray(player.positionHeatmap) || player.positionHeatmap.length === 0) {
-        console.log(`No heatmap data for player ${player.name}`, player);
+        console.log(`No heatmap data for player ${playerName}`);
         
-        // Fallback to using player's basic position information if available
-        // This is useful if the API returns player data without detailed heatmap
-        if (player.side) {
-          const basePosition = player.side.toLowerCase() === 't' 
-            ? { x: -1600 + (Math.random() * 100), y: 400 + (Math.random() * 50) } 
-            : { x: 2400 + (Math.random() * 100), y: 2050 + (Math.random() * 100) };
-            
+        // Maps player to positions based on team
+        const tSpawnPositions: Record<string, {x: number, y: number}> = {
+          'ropz': { x: -1675, y: 351 },
+          'rain': { x: -1662, y: 288 },
+          'broky': { x: -1520, y: 430 },
+          'frozen': { x: -1657, y: 419 },
+          'karrigan': { x: -1586, y: 440 }
+        };
+        
+        const ctSpawnPositions: Record<string, {x: number, y: number}> = {
+          'w0nderful': { x: 2493, y: 2090 },
+          'Aleksib': { x: 2456, y: 2153 },
+          'b1t': { x: 2472, y: 2005 },
+          'jL': { x: 2397, y: 2079 },
+          'iM': { x: 2292, y: 2027 }
+        };
+        
+        // Add movement based on frame number
+        if (player.side && player.side.toLowerCase() === 't') {
+          // Get base position (spawn)
+          let posX = tSpawnPositions[playerName]?.x || -1600 + (Math.random() * 100);
+          let posY = tSpawnPositions[playerName]?.y || 400 + (Math.random() * 50);
+          
+          // Add animation based on frame
+          if (currentFrame > 30) {
+            // T side should move toward mid/sites
+            posX += Math.min(800, (currentFrame - 30) * 5); 
+            posY -= Math.min(200, (currentFrame - 30));
+          }
+          
+          // Add small oscillation for natural movement
+          posX += Math.sin(currentFrame * 0.1) * 10;
+          posY += Math.cos(currentFrame * 0.1) * 10;
+          
           processedData.push({
-            name: player.name,
+            name: playerName,
             steamId: player.user_steamid,
             side: player.side,
-            x: basePosition.x,
-            y: basePosition.y,
+            x: posX,
+            y: posY,
+            role: detectPlayerRole(player)
+          });
+        } else if (player.side) {
+          // CT side
+          let posX = ctSpawnPositions[playerName]?.x || 2400 + (Math.random() * 100);
+          let posY = ctSpawnPositions[playerName]?.y || 2050 + (Math.random() * 100);
+          
+          // Add animation based on frame
+          if (currentFrame > 30) {
+            // CT side should move toward sites
+            posX -= Math.min(600, (currentFrame - 30) * 3); 
+            posY -= Math.min(150, (currentFrame - 30) * 0.8);
+          }
+          
+          // Add small oscillation for natural movement
+          posX += Math.sin(currentFrame * 0.1) * 10;
+          posY += Math.cos(currentFrame * 0.1) * 10;
+          
+          processedData.push({
+            name: playerName,
+            steamId: player.user_steamid,
+            side: player.side,
+            x: posX,
+            y: posY,
             role: detectPlayerRole(player)
           });
         }

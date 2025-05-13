@@ -945,8 +945,9 @@ export function AdvancedXYZAnalysis() {
                   </Card>
                 </div>
                 
+                {/* Using the real data */}
                 <MapVisualizer 
-                  playerData={getPlayers()} 
+                  playerData={data ? Object.values(data.analysis.playerMetrics) : []} 
                   activePlayer={activePlayer || undefined}
                   onSelectPlayer={(steamId) => setActivePlayer(steamId === activePlayer ? null : steamId)}
                 />

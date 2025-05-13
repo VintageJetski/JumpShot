@@ -1,0 +1,242 @@
+import { ProtectedRoute } from "@/components/auth/protected-route";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { motion } from "framer-motion";
+import { Beaker, ArrowLeft, Map, Activity, Users, Share2, Crosshair } from "lucide-react";
+import { Link } from "wouter";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+
+export default function TestingEnvironmentPage() {
+  return (
+    <ProtectedRoute adminOnly>
+      <motion.div 
+        className="container mx-auto py-8 px-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="flex justify-between items-center mb-6">
+          <motion.div
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="flex items-center gap-3"
+          >
+            <Link href="/admin">
+              <Button variant="ghost" size="icon" className="mr-2">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-gradient">Testing Environment</h1>
+              <p className="text-blue-300/70">Prototype and test new analytical features</p>
+            </div>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Badge variant="outline" className="bg-blue-900/30 text-blue-300 border-blue-700">
+              Alpha Testing
+            </Badge>
+          </motion.div>
+        </div>
+
+        <Tabs defaultValue="xyz-analysis" className="space-y-6">
+          <TabsList className="grid grid-cols-3 w-full max-w-2xl mx-auto bg-blue-950/40 border border-blue-900/50">
+            <TabsTrigger value="xyz-analysis" className="data-[state=active]:bg-blue-800/30">
+              <div className="flex items-center gap-2">
+                <Map className="h-4 w-4" />
+                <span>XYZ Positional Analysis</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="role-effectiveness" className="data-[state=active]:bg-blue-800/30">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span>Role Effectiveness</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="utility-analysis" className="data-[state=active]:bg-blue-800/30">
+              <div className="flex items-center gap-2">
+                <Crosshair className="h-4 w-4" />
+                <span>Utility Analysis</span>
+              </div>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* XYZ Positional Analysis */}
+          <TabsContent value="xyz-analysis" className="space-y-6">
+            <Card className="glassmorphism border-glow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Map className="h-5 w-5 text-blue-400" />
+                  XYZ Positional Data Analysis
+                </CardTitle>
+                <CardDescription>
+                  Analyze player movement, positioning, and map control using precise XYZ positional data
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex flex-col md:flex-row gap-6">
+                    {/* Feature Description */}
+                    <div className="md:w-1/2 space-y-4">
+                      <h3 className="text-lg font-semibold">About This Feature</h3>
+                      <p className="text-sm text-blue-300/80">
+                        This experimental feature uses tick-by-tick positional (XYZ) data to generate deep insights
+                        into player movements, rotations, trading patterns, map positioning, and role effectiveness.
+                      </p>
+                      
+                      <h3 className="text-lg font-semibold mt-6">What We Can Analyze</h3>
+                      <ul className="space-y-2 text-sm text-blue-300/80">
+                        <li className="flex items-start gap-2">
+                          <div className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                          <span>Player movement patterns and heatmaps</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <div className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                          <span>Rotation timing and efficiency</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <div className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                          <span>Trading effectiveness and positioning</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <div className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                          <span>Site control and map presence</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <div className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                          <span>Role effectiveness based on positioning</span>
+                        </li>
+                      </ul>
+                    </div>
+                    
+                    {/* Visualization Placeholder */}
+                    <div className="md:w-1/2 rounded-md overflow-hidden">
+                      <div className="bg-blue-950/30 border border-blue-900/50 rounded-md p-6 h-[300px] flex flex-col items-center justify-center">
+                        <Beaker className="h-12 w-12 text-blue-400/30 mb-4" />
+                        <p className="text-center text-blue-300/70">
+                          Visualization will display positional heatmaps and movement patterns from XYZ data
+                        </p>
+                        <div className="grid grid-cols-2 gap-4 mt-6 w-full max-w-xs mx-auto">
+                          <Skeleton className="h-8 w-full bg-blue-900/20 rounded" />
+                          <Skeleton className="h-8 w-full bg-blue-900/20 rounded" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Separator className="my-6 bg-blue-900/30" />
+                  
+                  {/* Implementation Details */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Implementation Plan</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <Card className="bg-blue-950/30 border border-blue-900/50">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Share2 className="h-4 w-4 text-blue-400" />
+                            Data Processing Pipeline
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-2 text-sm text-blue-300/80">
+                          <p>Parse XYZ positional data from round logs and process into structured analytics</p>
+                          <div className="mt-2 flex justify-between text-xs">
+                            <Badge variant="outline" className="bg-amber-950/30 text-amber-400 border-amber-900/50">In Progress</Badge>
+                            <span className="text-blue-300/60">Phase 1/3</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="bg-blue-950/30 border border-blue-900/50">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Activity className="h-4 w-4 text-blue-400" />
+                            Visualization Engine
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-2 text-sm text-blue-300/80">
+                          <p>Create interactive 2D/3D visualizations of player movements and positions</p>
+                          <div className="mt-2 flex justify-between text-xs">
+                            <Badge variant="outline" className="bg-blue-950/30 text-blue-300 border-blue-900/50">Planned</Badge>
+                            <span className="text-blue-300/60">Phase 2/3</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="bg-blue-950/30 border border-blue-900/50">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Crosshair className="h-4 w-4 text-blue-400" />
+                            Metric Integration
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-2 text-sm text-blue-300/80">
+                          <p>Integrate positional metrics into existing PIV and TIR calculations</p>
+                          <div className="mt-2 flex justify-between text-xs">
+                            <Badge variant="outline" className="bg-blue-950/30 text-blue-300 border-blue-900/50">Planned</Badge>
+                            <span className="text-blue-300/60">Phase 3/3</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end pt-4">
+                    <Button className="bg-gradient-to-r from-blue-700 to-purple-600 hover:from-blue-800 hover:to-purple-700">
+                      Test Data Processing
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Role Effectiveness Tab */}
+          <TabsContent value="role-effectiveness">
+            <Card className="glassmorphism border-glow p-6">
+              <div className="flex items-center justify-center h-[400px]">
+                <div className="text-center space-y-4">
+                  <Beaker className="h-12 w-12 text-blue-400/30 mx-auto" />
+                  <h3 className="text-xl font-medium">Role Effectiveness Analysis</h3>
+                  <p className="text-blue-300/70 max-w-lg">
+                    This feature will analyze how effectively players fulfill their assigned roles
+                    based on positional data and decision making.
+                  </p>
+                  <Badge variant="outline" className="bg-blue-950/30 text-blue-300 border-blue-900/50 mx-auto">
+                    Coming Soon
+                  </Badge>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+          
+          {/* Utility Analysis Tab */}
+          <TabsContent value="utility-analysis">
+            <Card className="glassmorphism border-glow p-6">
+              <div className="flex items-center justify-center h-[400px]">
+                <div className="text-center space-y-4">
+                  <Beaker className="h-12 w-12 text-blue-400/30 mx-auto" />
+                  <h3 className="text-xl font-medium">Utility Usage Analysis</h3>
+                  <p className="text-blue-300/70 max-w-lg">
+                    This feature will analyze grenade usage effectiveness, flash assists,
+                    smoke coverage, and utility damage based on positional data.
+                  </p>
+                  <Badge variant="outline" className="bg-blue-950/30 text-blue-300 border-blue-900/50 mx-auto">
+                    Coming Soon
+                  </Badge>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </motion.div>
+    </ProtectedRoute>
+  );
+}

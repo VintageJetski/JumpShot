@@ -3,8 +3,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { Shield, Database, Users, BarChart2, LogOut } from "lucide-react";
+import { Shield, Database, Users, BarChart2, LogOut, Beaker, Map } from "lucide-react";
 import { motion } from "framer-motion";
+import { Link } from "wouter";
 
 interface AdminStats {
   message: string;
@@ -130,6 +131,12 @@ export default function AdminPage() {
             <Button className="bg-gradient-to-r from-blue-600 to-blue-500">
               System Settings
             </Button>
+            <Link href="/admin/testing-environment">
+              <Button className="bg-gradient-to-r from-blue-700 to-purple-600 hover:from-blue-800 hover:to-purple-700 w-full flex items-center gap-2">
+                <Beaker className="h-4 w-4" />
+                Testing Environment
+              </Button>
+            </Link>
           </div>
         </motion.div>
       </motion.div>

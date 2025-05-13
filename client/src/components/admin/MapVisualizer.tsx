@@ -126,6 +126,7 @@ export function MapVisualizer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [playbackSpeed] = useState(1);
+  const [animationTimestamp, setAnimationTimestamp] = useState(0);
   
   // References for canvas elements
   const mapCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -494,24 +495,39 @@ export function MapVisualizer({
     drawPlayers();
     
     // Animation loop for continuous playback
-    const animate = () => {
+    const animate = (timestamp: number) => {
+      if (!animationTimestamp) {
+        setAnimationTimestamp(timestamp);
+      }
+      
+      // Calculate time difference
+      const elapsed = timestamp - animationTimestamp;
+      
+      // Update frame every 100ms (or faster based on playback speed)
+      if (elapsed > (100 / playbackSpeed)) {
+        setCurrentFrame(prev => (prev + 1) % 200);
+        setAnimationTimestamp(timestamp);
+      }
+      
+      // Always draw players regardless of frame update
       drawPlayers();
-      animationRef.current = requestAnimationFrame(animate);
+      
+      // Continue animation loop
+      if (isPlaying) {
+        animationRef.current = requestAnimationFrame(animate);
+      }
     };
     
     // Start animation if playing
     if (isPlaying) {
-      animationRef.current = requestAnimationFrame(animate);
-      
-      // Move to next frame periodically based on playback speed
-      const intervalId = setInterval(() => {
-        setCurrentFrame(prev => (prev + 1) % 200);
-      }, 100 / playbackSpeed);
+      if (!animationRef.current) {
+        animationRef.current = requestAnimationFrame(animate);
+      }
       
       return () => {
-        clearInterval(intervalId);
         if (animationRef.current) {
           cancelAnimationFrame(animationRef.current);
+          animationRef.current = undefined;
         }
       };
     } else {
@@ -654,7 +670,24 @@ export function MapVisualizer({
   
   // Toggle playback
   const togglePlayback = () => {
-    setIsPlaying(!isPlaying);
+    // If currently playing, stop animation
+    if (isPlaying) {
+      setIsPlaying(false);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = undefined;
+      }
+    } else {
+      // If not playing, start animation and reset timestamp
+      setIsPlaying(true);
+      setAnimationTimestamp(0);
+      if (!animationRef.current) {
+        animationRef.current = requestAnimationFrame((timestamp) => {
+          setAnimationTimestamp(timestamp);
+          setCurrentFrame(prev => (prev + 1) % 200);
+        });
+      }
+    }
   };
   
   // Reset to start

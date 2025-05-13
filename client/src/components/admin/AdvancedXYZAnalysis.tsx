@@ -784,8 +784,8 @@ function MapVisualization({
               name="Player Positions"
               data={getHeatmapData()} 
               fill="#2563eb"
-              onClick={(data) => {
-                if (data && data.payload) {
+              onClick={(data: any) => {
+                if (data && data.payload && data.payload.steamId) {
                   onSelectPlayer(data.payload.steamId);
                 }
               }}
@@ -841,7 +841,13 @@ export function AdvancedXYZAnalysis() {
     if (!data || !data.analysis || !data.analysis.playerMetrics) return [];
     
     return Object.values(data.analysis.playerMetrics)
-      .sort((a, b) => a.side.localeCompare(b.side) || a.name.localeCompare(b.name));
+      .filter(player => player && player.side && player.name) // Ensure player objects have required properties
+      .sort((a, b) => {
+        // Safe string comparison
+        const sideCompare = (a.side || '').localeCompare(b.side || '');
+        if (sideCompare !== 0) return sideCompare;
+        return (a.name || '').localeCompare(b.name || '');
+      });
   };
   
   return (

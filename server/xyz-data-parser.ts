@@ -1,47 +1,16 @@
 /**
- * Parser and analyzer for CS2 positional (XYZ) data
- * This module processes tick-by-tick positional data from matches
- * to generate insights about player movement, rotations, and positioning
+ * XYZ Data Parser for CS2 Positional Data
+ * 
+ * This module parses XYZ positional data from CS2 matches and generates
+ * advanced metrics for player and team analysis.
  */
 
-import fs from 'fs';
-import path from 'path';
-import { parse } from 'csv-parse/sync';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as csv from 'csv-parse/sync';
+import { calculatePlayerRoleMetrics, calculateTeamPositionalMetrics, calculateXYZMetricsForPIV, classifyInfernoPosition } from './positionalMetrics';
 
-// Type definitions for positional data
-export interface PositionalDataPoint {
-  health: number;
-  flash_duration: number;
-  place: string;
-  armor: number;
-  side: string;
-  pitch: number;
-  X: number;
-  yaw: number;
-  Y: number;
-  velocity_X: number;
-  Z: number;
-  velocity_Y: number;
-  velocity_Z: number;
-  tick: number;
-  user_steamid: string;
-  name: string;
-  round_num: number;
-  x_smoke?: number;
-  y_smoke?: number;
-  z_smoke?: number;
-  x_infernos?: number;
-  y_infernos?: number;
-  z_infernos?: number;
-  x_he?: number;
-  y_he?: number;
-  z_he?: number;
-  x_flashes?: number;
-  y_flashes?: number;
-  z_flashes?: number;
-}
-
-// Interface for player movement analysis
+// Types for XYZ data analysis
 export interface PlayerMovementAnalysis {
   name: string;
   user_steamid: string;
@@ -62,399 +31,430 @@ export interface PlayerMovementAnalysis {
   }[];
 }
 
-// Interface for round positional metrics
+export interface TeamMetrics {
+  avgTeamDistance: number;
+  teamSpread: number;
+  tradeEfficiency: number;
+  siteControl: {
+    ASite: number;
+    BSite: number;
+    Mid: number;
+  };
+}
+
 export interface RoundPositionalMetrics {
   round_num: number;
   teamMetrics: {
-    t: {
-      avgTeamDistance: number;
-      teamSpread: number;
-      tradeEfficiency: number;
-      siteControl: {
-        ASite: number;
-        BSite: number;
-        Mid: number;
-      };
-    };
-    ct: {
-      avgTeamDistance: number;
-      teamSpread: number;
-      tradeEfficiency: number;
-      siteControl: {
-        ASite: number;
-        BSite: number;
-        Mid: number;
-      };
-    };
+    t: TeamMetrics;
+    ct: TeamMetrics;
   };
   playerMetrics: Record<string, PlayerMovementAnalysis>;
+  roleMetrics?: Record<string, any>;
+  pivMetrics?: Record<string, any>;
+  teamStrategyInsights?: Record<string, any>;
+  roundPrediction?: {
+    winProbability: number;
+    tProbability: number;
+    ctProbability: number;
+    factors: string[];
+  };
+}
+
+interface XYZDataPoint {
+  round_num: number;
+  player_name: string;
+  user_steamid: string;
+  team_name: string;
+  side: string;
+  x: number;
+  y: number;
+  z: number;
+  timestamp: number;
 }
 
 /**
- * Parse XYZ positional data from CSV
+ * Parse XYZ data from a CSV file
  */
-export async function parseXYZData(filePath: string): Promise<PositionalDataPoint[]> {
+export async function parseXYZDataFile(filePath: string): Promise<XYZDataPoint[]> {
   try {
-    const content = fs.readFileSync(filePath, { encoding: 'utf-8' });
-    const records = parse(content, {
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    const records = csv.parse(fileContent, {
       columns: true,
-      skip_empty_lines: true,
-      cast: (value, context) => {
-        // Convert numeric fields to numbers
-        const columnName = String(context.column); // Ensure column name is always a string
-        
-        // Check if the field should be numeric
-        if (columnName === 'health' || columnName === 'armor' || 
-            columnName === 'pitch' || columnName === 'X' || 
-            columnName === 'yaw' || columnName === 'Y' || 
-            columnName === 'velocity_X' || columnName === 'Z' || 
-            columnName === 'velocity_Y' || columnName === 'velocity_Z' || 
-            columnName === 'tick' || columnName === 'round_num' || 
-            columnName === 'flash_duration' ||
-            (typeof columnName === 'string' && (
-              columnName.startsWith('x_') || 
-              columnName.startsWith('y_') || 
-              columnName.startsWith('z_')
-            ))) {
-          return value !== '' ? Number(value) : null;
-        }
-        return value;
-      }
+      skip_empty_lines: true
     });
     
-    console.log(`Parsed ${records.length} positional data points from ${filePath}`);
-    return records as PositionalDataPoint[];
+    return records.map((record: any) => ({
+      round_num: parseInt(record.round_num),
+      player_name: record.player_name,
+      user_steamid: record.user_steamid,
+      team_name: record.team_name,
+      side: record.side,
+      x: parseFloat(record.x),
+      y: parseFloat(record.y),
+      z: parseFloat(record.z),
+      timestamp: parseFloat(record.timestamp)
+    }));
   } catch (error) {
-    console.error('Error parsing XYZ data:', error);
-    throw new Error(`Failed to parse XYZ data: ${error}`);
+    console.error('Error parsing XYZ data file:', error);
+    throw new Error('Failed to parse XYZ data file');
   }
 }
 
 /**
- * Group positional data by round and player
+ * Sample data to make it more manageable
+ * This can be important for large datasets with tens of thousands of points
  */
-export function groupDataByRound(data: PositionalDataPoint[]): Map<number, PositionalDataPoint[]> {
-  const roundMap = new Map<number, PositionalDataPoint[]>();
+function sampleData(data: XYZDataPoint[], roundNumber: number, sampleSize: number = 10000): XYZDataPoint[] {
+  // Filter to just the requested round
+  const roundData = data.filter(point => point.round_num === roundNumber);
   
-  for (const point of data) {
-    if (!roundMap.has(point.round_num)) {
-      roundMap.set(point.round_num, []);
-    }
-    
-    roundMap.get(point.round_num)!.push(point);
+  if (roundData.length <= sampleSize) {
+    return roundData;
   }
   
-  return roundMap;
+  // If we have more data than our sample size, take every nth point
+  const samplingInterval = Math.floor(roundData.length / sampleSize);
+  
+  return roundData.filter((_, index) => index % samplingInterval === 0);
 }
 
 /**
- * Calculate distance between two 3D points
+ * Calculate movement metrics for a player
  */
-function calculate3DDistance(x1: number, y1: number, z1: number, x2: number, y2: number, z2: number): number {
-  return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2) + Math.pow(z2 - z1, 2));
-}
-
-/**
- * Analyze player movement for a single player in a round
- */
-function analyzePlayerMovement(
-  playerData: PositionalDataPoint[],
-  roundNum: number
-): PlayerMovementAnalysis {
-  if (playerData.length === 0) {
-    throw new Error('No player data provided for movement analysis');
+function calculatePlayerMovementMetrics(playerData: XYZDataPoint[]): PlayerMovementAnalysis {
+  if (!playerData.length) {
+    throw new Error('No data provided for player movement calculation');
   }
   
+  // Basic player info
   const player = playerData[0];
+  const name = player.player_name;
+  const user_steamid = player.user_steamid;
+  const side = player.side;
+  const round_num = player.round_num;
+  
+  // Calculate total distance traveled
   let totalDistance = 0;
   let rotations = 0;
-  let prevYaw = player.yaw;
-  const areaPresence = {
-    ASite: 0,
-    BSite: 0,
-    Mid: 0,
-  };
+  let lastLocation = '';
   
-  // Simple position heatmap - divide map into 10x10 grid cells
-  const heatmapGrid: Record<string, number> = {};
-  const MAP_SIZE = 4000; // Approximate size of maps in CS2 units
-  const GRID_SIZE = 400; // 10x10 grid cells
-  
-  // For position heatmap analysis
-  const gridCellsX = Math.ceil(MAP_SIZE / GRID_SIZE);
-  const gridCellsY = Math.ceil(MAP_SIZE / GRID_SIZE);
-  
-  // Process each data point
   for (let i = 1; i < playerData.length; i++) {
     const prev = playerData[i - 1];
-    const current = playerData[i];
+    const curr = playerData[i];
     
-    // Calculate distance traveled
-    const distance = calculate3DDistance(
-      prev.X, prev.Y, prev.Z,
-      current.X, current.Y, current.Z
+    // Calculate distance between consecutive points
+    const distance = Math.sqrt(
+      Math.pow(curr.x - prev.x, 2) + 
+      Math.pow(curr.y - prev.y, 2) + 
+      Math.pow(curr.z - prev.z, 2)
     );
     
+    // Add to total distance
     totalDistance += distance;
     
-    // Check for significant rotations (more than 45 degrees)
-    const yawDiff = Math.abs(current.yaw - prevYaw);
-    if (yawDiff > 45 && yawDiff < 315) { // Avoid counting full 360 rotations
+    // Detect rotations (changes between map areas)
+    const currLocation = classifyInfernoPosition({ x: curr.x, y: curr.y });
+    if (lastLocation && currLocation !== lastLocation) {
       rotations++;
     }
-    prevYaw = current.yaw;
-    
-    // Update site presence 
-    // Note: These are simplified placeholders for actual map coordinates
-    // In a real implementation, we would use actual map-specific site boundaries
-    if (current.place === 'ASite' || 
-        (Math.abs(current.X - 500) < 300 && Math.abs(current.Y - 500) < 300)) {
-      areaPresence.ASite++;
-    } else if (current.place === 'BSite' || 
-               (Math.abs(current.X - 2000) < 300 && Math.abs(current.Y - 2000) < 300)) {
-      areaPresence.BSite++;
-    } else if (current.place === 'Mid' || 
-               (Math.abs(current.X - 1000) < 300 && Math.abs(current.Y - 1000) < 300)) {
-      areaPresence.Mid++;
-    }
-    
-    // Update heatmap
-    const gridX = Math.floor((current.X + MAP_SIZE/2) / GRID_SIZE);
-    const gridY = Math.floor((current.Y + MAP_SIZE/2) / GRID_SIZE);
-    const cellKey = `${gridX},${gridY}`;
-    
-    if (!heatmapGrid[cellKey]) {
-      heatmapGrid[cellKey] = 0;
-    }
-    heatmapGrid[cellKey]++;
+    lastLocation = currLocation;
   }
   
-  // Convert heatmap grid to array of points
-  const positionHeatmap = Object.entries(heatmapGrid).map(([key, intensity]) => {
-    const [x, y] = key.split(',').map(Number);
-    return {
-      x: x * GRID_SIZE - MAP_SIZE/2 + GRID_SIZE/2, // Get center of grid cell
-      y: y * GRID_SIZE - MAP_SIZE/2 + GRID_SIZE/2,
-      intensity
-    };
+  // Calculate average speed (units per second)
+  let avgSpeed = 0;
+  if (playerData.length > 1) {
+    const firstPoint = playerData[0];
+    const lastPoint = playerData[playerData.length - 1];
+    const timeDiff = lastPoint.timestamp - firstPoint.timestamp;
+    
+    avgSpeed = timeDiff > 0 ? (totalDistance / timeDiff) : 0;
+  }
+  
+  // Calculate site presence
+  const sitePresence = {
+    ASite: 0,
+    BSite: 0,
+    Mid: 0
+  };
+  
+  playerData.forEach(point => {
+    const location = classifyInfernoPosition({ x: point.x, y: point.y });
+    if (location === 'A Site') {
+      sitePresence.ASite++;
+    } else if (location === 'B Site') {
+      sitePresence.BSite++;
+    } else if (location === 'Mid') {
+      sitePresence.Mid++;
+    }
   });
   
-  // Create player movement analysis
+  // Normalize site presence to percentages
+  const totalPoints = playerData.length;
+  sitePresence.ASite /= totalPoints;
+  sitePresence.BSite /= totalPoints;
+  sitePresence.Mid /= totalPoints;
+  
+  // Generate position heatmap
+  const positionHeatmap = playerData.map(point => ({
+    x: point.x,
+    y: point.y,
+    intensity: 1 // Simple intensity value for now
+  }));
+  
   return {
-    name: player.name,
-    user_steamid: player.user_steamid,
-    side: player.side,
-    round_num: roundNum,
+    name,
+    user_steamid,
+    side,
+    round_num,
     totalDistance,
-    avgSpeed: totalDistance / playerData.length, // Simplistic - could be refined
+    avgSpeed,
     rotations,
-    sitePresence: {
-      ASite: areaPresence.ASite / playerData.length,
-      BSite: areaPresence.BSite / playerData.length,
-      Mid: areaPresence.Mid / playerData.length,
-    },
+    sitePresence,
     positionHeatmap
   };
 }
 
 /**
- * Calculate team spread - average distance between team members
+ * Calculate team-level metrics for a group of players
  */
-function calculateTeamSpread(playerDataPoints: PositionalDataPoint[]): number {
-  if (playerDataPoints.length <= 1) return 0;
+function calculateTeamMetrics(playerAnalyses: PlayerMovementAnalysis[]): TeamMetrics {
+  if (!playerAnalyses.length) {
+    throw new Error('No player analyses provided for team metrics calculation');
+  }
   
-  let totalDistance = 0;
-  let comparisons = 0;
+  // Calculate average distance traveled by team
+  const avgTeamDistance = playerAnalyses.reduce(
+    (sum, player) => sum + player.totalDistance, 0
+  ) / playerAnalyses.length;
   
-  for (let i = 0; i < playerDataPoints.length; i++) {
-    for (let j = i + 1; j < playerDataPoints.length; j++) {
-      const p1 = playerDataPoints[i];
-      const p2 = playerDataPoints[j];
-      
-      if (p1.side !== p2.side) continue; // Only compare players on same team
-      
-      totalDistance += calculate3DDistance(
-        p1.X, p1.Y, p1.Z,
-        p2.X, p2.Y, p2.Z
-      );
-      comparisons++;
+  // Calculate team spread (average distance between players)
+  // This is a simplification - ideally we'd calculate this for each position snapshot
+  let teamSpread = 0;
+  if (playerAnalyses.length > 1) {
+    let pairCount = 0;
+    let totalDistance = 0;
+    
+    // Take median position from each player's heatmap for a rough estimate
+    const playerPositions = playerAnalyses.map(player => {
+      const positions = player.positionHeatmap;
+      const midpoint = positions[Math.floor(positions.length / 2)];
+      return { x: midpoint.x, y: midpoint.y };
+    });
+    
+    // Calculate pairwise distances
+    for (let i = 0; i < playerPositions.length; i++) {
+      for (let j = i + 1; j < playerPositions.length; j++) {
+        const distance = Math.sqrt(
+          Math.pow(playerPositions[i].x - playerPositions[j].x, 2) +
+          Math.pow(playerPositions[i].y - playerPositions[j].y, 2)
+        );
+        totalDistance += distance;
+        pairCount++;
+      }
+    }
+    
+    if (pairCount > 0) {
+      teamSpread = totalDistance / pairCount;
     }
   }
   
-  return comparisons > 0 ? totalDistance / comparisons : 0;
-}
-
-/**
- * Analyze a full round of positional data
- */
-export function analyzeRoundPositionalData(
-  roundData: PositionalDataPoint[]
-): RoundPositionalMetrics {
-  const roundNum = roundData[0]?.round_num || 0;
-  console.log(`Analyzing ${roundData.length} positional data points for round ${roundNum}`);
-  
-  // Group data by player
-  const playerGroupedData = new Map<string, PositionalDataPoint[]>();
-  for (const point of roundData) {
-    if (!playerGroupedData.has(point.user_steamid)) {
-      playerGroupedData.set(point.user_steamid, []);
+  // Calculate trade efficiency (percentage of players within trade distance of another player)
+  // Again, this is a simplification for this example
+  let tradeEfficiency = 0;
+  if (playerAnalyses.length > 1) {
+    // Take 5 snapshots from the round
+    const snapshotPoints = [0.2, 0.4, 0.6, 0.8, 1.0];
+    let totalTradeScore = 0;
+    
+    for (const fraction of snapshotPoints) {
+      const tradeablePlayerCount = calculateTradeablePlayersAtSnapshot(playerAnalyses, fraction);
+      totalTradeScore += tradeablePlayerCount / playerAnalyses.length;
     }
-    playerGroupedData.get(point.user_steamid)!.push(point);
+    
+    tradeEfficiency = totalTradeScore / snapshotPoints.length;
   }
   
-  // Analyze each player's movement
-  const playerMetrics: Record<string, PlayerMovementAnalysis> = {};
-  playerGroupedData.forEach((playerData, steamId) => {
-    if (playerData.length > 0) {
-      playerMetrics[steamId] = analyzePlayerMovement(playerData, roundNum);
-    }
-  });
-  
-  // Group players by team
-  const tPlayers: string[] = [];
-  const ctPlayers: string[] = [];
-  
-  for (const [steamId, analysis] of Object.entries(playerMetrics)) {
-    if (analysis.side.toLowerCase() === 't') {
-      tPlayers.push(steamId);
-    } else if (analysis.side.toLowerCase() === 'ct') {
-      ctPlayers.push(steamId);
-    }
-  }
-  
-  // Calculate team-wide metrics
-  const tTeamSpread = calculateTeamSpread(
-    roundData.filter(p => p.side.toLowerCase() === 't')
-  );
-  
-  const ctTeamSpread = calculateTeamSpread(
-    roundData.filter(p => p.side.toLowerCase() === 'ct')
-  );
-  
-  // Calculate team averages
-  const tAvgDistance = tPlayers.reduce(
-    (sum, id) => sum + playerMetrics[id].totalDistance, 0
-  ) / (tPlayers.length || 1);
-  
-  const ctAvgDistance = ctPlayers.reduce(
-    (sum, id) => sum + playerMetrics[id].totalDistance, 0
-  ) / (ctPlayers.length || 1);
-  
-  // Calculate site control - which team has more presence in each area
-  const tSitePresence = {
-    ASite: tPlayers.reduce(
-      (sum, id) => sum + playerMetrics[id].sitePresence.ASite, 0
-    ) / (tPlayers.length || 1),
-    BSite: tPlayers.reduce(
-      (sum, id) => sum + playerMetrics[id].sitePresence.BSite, 0
-    ) / (tPlayers.length || 1),
-    Mid: tPlayers.reduce(
-      (sum, id) => sum + playerMetrics[id].sitePresence.Mid, 0
-    ) / (tPlayers.length || 1),
-  };
-  
-  const ctSitePresence = {
-    ASite: ctPlayers.reduce(
-      (sum, id) => sum + playerMetrics[id].sitePresence.ASite, 0
-    ) / (ctPlayers.length || 1),
-    BSite: ctPlayers.reduce(
-      (sum, id) => sum + playerMetrics[id].sitePresence.BSite, 0
-    ) / (ctPlayers.length || 1),
-    Mid: ctPlayers.reduce(
-      (sum, id) => sum + playerMetrics[id].sitePresence.Mid, 0
-    ) / (ctPlayers.length || 1),
+  // Calculate site control (average presence across team)
+  const siteControl = {
+    ASite: playerAnalyses.reduce((sum, player) => sum + player.sitePresence.ASite, 0) / playerAnalyses.length,
+    BSite: playerAnalyses.reduce((sum, player) => sum + player.sitePresence.BSite, 0) / playerAnalyses.length,
+    Mid: playerAnalyses.reduce((sum, player) => sum + player.sitePresence.Mid, 0) / playerAnalyses.length
   };
   
   return {
-    round_num: roundNum,
-    teamMetrics: {
-      t: {
-        avgTeamDistance: tAvgDistance,
-        teamSpread: tTeamSpread,
-        tradeEfficiency: 0, // Would require kill data to calculate properly
-        siteControl: tSitePresence,
-      },
-      ct: {
-        avgTeamDistance: ctAvgDistance,
-        teamSpread: ctTeamSpread,
-        tradeEfficiency: 0, // Would require kill data to calculate properly
-        siteControl: ctSitePresence,
-      },
-    },
-    playerMetrics
+    avgTeamDistance,
+    teamSpread,
+    tradeEfficiency,
+    siteControl
   };
 }
 
 /**
- * Process sample XYZ data file
+ * Helper function to calculate tradeable players at a specific snapshot
  */
-export async function processSampleXYZData(): Promise<RoundPositionalMetrics> {
+function calculateTradeablePlayersAtSnapshot(
+  playerAnalyses: PlayerMovementAnalysis[],
+  fractionComplete: number
+): number {
+  const playerPositions = playerAnalyses.map(player => {
+    const positions = player.positionHeatmap;
+    const index = Math.min(positions.length - 1, Math.floor(positions.length * fractionComplete));
+    return { x: positions[index].x, y: positions[index].y };
+  });
+  
+  let tradeablePlayerCount = 0;
+  
+  for (let i = 0; i < playerPositions.length; i++) {
+    let isTradeable = false;
+    
+    for (let j = 0; j < playerPositions.length; j++) {
+      if (i === j) continue;
+      
+      const distance = Math.sqrt(
+        Math.pow(playerPositions[i].x - playerPositions[j].x, 2) +
+        Math.pow(playerPositions[i].y - playerPositions[j].y, 2)
+      );
+      
+      // Typical trade distance in CS2
+      if (distance >= 200 && distance <= 600) {
+        isTradeable = true;
+        break;
+      }
+    }
+    
+    if (isTradeable) {
+      tradeablePlayerCount++;
+    }
+  }
+  
+  return tradeablePlayerCount;
+}
+
+/**
+ * Analyze XYZ data for a specific round
+ */
+export function analyzeRoundXYZData(data: XYZDataPoint[], roundNumber: number): RoundPositionalMetrics {
+  // Sample data if needed to keep processing efficient
+  const sampledData = sampleData(data, roundNumber);
+  
+  // Group data by player
+  const playerData: Record<string, XYZDataPoint[]> = {};
+  sampledData.forEach(point => {
+    if (!playerData[point.user_steamid]) {
+      playerData[point.user_steamid] = [];
+    }
+    playerData[point.user_steamid].push(point);
+  });
+  
+  // Calculate movement metrics for each player
+  const playerMetrics: Record<string, PlayerMovementAnalysis> = {};
+  Object.entries(playerData).forEach(([steamId, points]) => {
+    playerMetrics[steamId] = calculatePlayerMovementMetrics(points);
+  });
+  
+  // Group players by team side
+  const tPlayers: PlayerMovementAnalysis[] = [];
+  const ctPlayers: PlayerMovementAnalysis[] = [];
+  
+  Object.values(playerMetrics).forEach(player => {
+    if (player.side.toLowerCase() === 't') {
+      tPlayers.push(player);
+    } else if (player.side.toLowerCase() === 'ct') {
+      ctPlayers.push(player);
+    }
+  });
+  
+  // Calculate team metrics
+  const tTeamMetrics = tPlayers.length ? calculateTeamMetrics(tPlayers) : {
+    avgTeamDistance: 0,
+    teamSpread: 0,
+    tradeEfficiency: 0,
+    siteControl: { ASite: 0, BSite: 0, Mid: 0 }
+  };
+  
+  const ctTeamMetrics = ctPlayers.length ? calculateTeamMetrics(ctPlayers) : {
+    avgTeamDistance: 0,
+    teamSpread: 0,
+    tradeEfficiency: 0,
+    siteControl: { ASite: 0, BSite: 0, Mid: 0 }
+  };
+  
+  // Calculate role-based metrics for each player
+  const allPlayers = [...tPlayers, ...ctPlayers];
+  const roleMetrics: Record<string, any> = {};
+  
+  Object.entries(playerMetrics).forEach(([steamId, player]) => {
+    roleMetrics[steamId] = calculatePlayerRoleMetrics(player, allPlayers);
+  });
+  
+  // Calculate PIV integration metrics
+  const pivMetrics: Record<string, any> = {};
+  
+  Object.entries(playerMetrics).forEach(([steamId, player]) => {
+    pivMetrics[steamId] = calculateXYZMetricsForPIV(player, allPlayers);
+  });
+  
+  // Calculate team strategy insights
+  const tStrategyInsights = calculateTeamPositionalMetrics(tPlayers, ctPlayers);
+  const ctStrategyInsights = calculateTeamPositionalMetrics(ctPlayers, tPlayers);
+  
+  // Calculate round win probability
+  const tWinProb = tStrategyInsights.roundWinProbability ? 
+                   (tStrategyInsights.roundWinProbability as any).probability : 0.5;
+  
+  const ctWinProb = ctStrategyInsights.roundWinProbability ? 
+                    (ctStrategyInsights.roundWinProbability as any).probability : 0.5;
+  
+  // Normalize probabilities to add up to 1
+  const totalProb = tWinProb + ctWinProb;
+  const normalizedTProb = totalProb > 0 ? tWinProb / totalProb : 0.5;
+  const normalizedCTProb = totalProb > 0 ? ctWinProb / totalProb : 0.5;
+  
+  // Combine T and CT factors
+  const tFactors = tStrategyInsights.roundWinProbability ? 
+                   (tStrategyInsights.roundWinProbability as any).factors : [];
+  
+  const ctFactors = ctStrategyInsights.roundWinProbability ? 
+                    (ctStrategyInsights.roundWinProbability as any).factors : [];
+  
+  // Combine results
+  return {
+    round_num: roundNumber,
+    teamMetrics: {
+      t: tTeamMetrics,
+      ct: ctTeamMetrics
+    },
+    playerMetrics,
+    roleMetrics,
+    pivMetrics,
+    teamStrategyInsights: {
+      t: tStrategyInsights,
+      ct: ctStrategyInsights
+    },
+    roundPrediction: {
+      winProbability: Math.max(normalizedTProb, normalizedCTProb),
+      tProbability: normalizedTProb,
+      ctProbability: normalizedCTProb,
+      factors: [...tFactors, ...ctFactors]
+    }
+  };
+}
+
+/**
+ * Main function to process XYZ data from file
+ */
+export async function processXYZDataFromFile(filePath: string, roundNumber: number): Promise<RoundPositionalMetrics> {
   try {
-    const filePath = path.join(process.cwd(), 'attached_assets', 'round_4_mapping.csv');
     console.log(`Reading XYZ data from: ${filePath}`);
-    
-    if (!fs.existsSync(filePath)) {
-      console.error(`XYZ data file not found at ${filePath}`);
-      throw new Error(`XYZ data file not found at ${filePath}`);
-    }
-    
-    const content = fs.readFileSync(filePath, { encoding: 'utf-8' });
-    
-    // Only process a subset of the data for better performance (every 10th line)
-    const lines = content.split('\n');
-    const header = lines[0];
-    const sampledLines = [header];
-    
-    for (let i = 1; i < lines.length; i += 10) {
-      if (lines[i].trim()) {
-        sampledLines.push(lines[i]);
-      }
-    }
-    
-    const sampledContent = sampledLines.join('\n');
-    
-    // Parse the sampled data
-    const records = parse(sampledContent, {
-      columns: true,
-      skip_empty_lines: true,
-      cast: (value, context) => {
-        // Convert numeric fields to numbers
-        const columnName = String(context.column); // Ensure column name is always a string
-        
-        // Check if the field should be numeric
-        if (columnName === 'health' || columnName === 'armor' || 
-            columnName === 'pitch' || columnName === 'X' || 
-            columnName === 'yaw' || columnName === 'Y' || 
-            columnName === 'velocity_X' || columnName === 'Z' || 
-            columnName === 'velocity_Y' || columnName === 'velocity_Z' || 
-            columnName === 'tick' || columnName === 'round_num' || 
-            columnName === 'flash_duration' ||
-            (typeof columnName === 'string' && (
-              columnName.startsWith('x_') || 
-              columnName.startsWith('y_') || 
-              columnName.startsWith('z_')
-            ))) {
-          return value !== '' ? Number(value) : null;
-        }
-        return value;
-      }
-    });
-    
-    const xyzData = records as PositionalDataPoint[];
-    
+    const xyzData = await parseXYZDataFile(filePath);
     console.log(`Parsed ${xyzData.length} sampled positional data points from ${filePath}`);
     
-    if (!xyzData || xyzData.length === 0) {
-      console.error('No valid XYZ data was parsed from the file');
-      throw new Error('No valid XYZ data was parsed from the file');
-    }
-    
     console.log(`Successfully parsed ${xyzData.length} data points for analysis`);
+    console.log(`Analyzing ${xyzData.length} positional data points for round ${roundNumber}`);
     
-    // For testing, we're just using the sampled data from one round
-    return analyzeRoundPositionalData(xyzData);
+    return analyzeRoundXYZData(xyzData, roundNumber);
   } catch (error) {
-    console.error('Error processing sample XYZ data:', error);
-    throw new Error(`Failed to process sample XYZ data: ${error}`);
+    console.error('Error processing XYZ data:', error);
+    throw new Error('Failed to process XYZ data');
   }
 }

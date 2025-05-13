@@ -7,7 +7,7 @@ import { calculateTeamImpactRatings } from "./teamAnalytics";
 import { loadPlayerRoles } from "./roleParser";
 import { initializeRoundData } from "./roundDataLoader";
 import { setupAuth, ensureAuthenticated } from "./auth";
-import { processSampleXYZData, RoundPositionalMetrics, PlayerMovementAnalysis } from "./xyz-data-parser";
+import { processXYZDataFromFile, RoundPositionalMetrics, PlayerMovementAnalysis } from "./xyz-data-parser";
 import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -141,22 +141,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setTimeout(120000);
       
       // Process the data asynchronously
-      const xyzAnalysis = await processSampleXYZData();
+      const roundNumber = 4; // Analyzing specific round data
+      const filePath = path.join(__dirname, '../attached_assets/round_4_mapping.csv');
+      const xyzAnalysis = await processXYZDataFromFile(filePath, roundNumber);
       
       // Send a more compact response for better performance
       // Simplify the position heatmap data to reduce response size
       const compactAnalysis = {
         ...xyzAnalysis,
-        playerMetrics: Object.entries(xyzAnalysis.playerMetrics).reduce((acc, [key, player]) => {
+        playerMetrics: Object.entries(xyzAnalysis.playerMetrics).reduce<Record<string, PlayerMovementAnalysis>>((acc, [key, player]) => {
           // Limit the number of heatmap points to reduce payload size
-          const sampledHeatmap = player.positionHeatmap.filter((_, i) => i % 3 === 0);
+          const typedPlayer = player as PlayerMovementAnalysis;
+          const sampledHeatmap = typedPlayer.positionHeatmap.filter((_: any, i: number) => i % 3 === 0);
           
           acc[key] = {
-            ...player,
+            ...typedPlayer,
             positionHeatmap: sampledHeatmap
           };
           return acc;
-        }, {} as Record<string, PlayerMovementAnalysis>)
+        }, {})
       };
       
       res.json({

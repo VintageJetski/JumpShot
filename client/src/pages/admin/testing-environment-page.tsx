@@ -8,7 +8,7 @@ import { Beaker, ArrowLeft, Map, Activity, Users, Share2, Crosshair } from "luci
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { XYZDataAnalysis } from "@/components/admin/XYZDataAnalysis";
+import { AdvancedXYZAnalysis } from "@/components/admin/AdvancedXYZAnalysis";
 
 export default function TestingEnvironmentPage() {
   return (
@@ -120,7 +120,7 @@ export default function TestingEnvironmentPage() {
                     
                     {/* XYZ Data Analysis Component */}
                     <div className="md:w-2/3">
-                      <XYZDataAnalysis />
+                      <AdvancedXYZAnalysis />
                     </div>
                   </div>
                   

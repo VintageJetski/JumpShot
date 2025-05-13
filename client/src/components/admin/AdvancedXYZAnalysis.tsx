@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import {
   Activity,
+  Award,
   BadgePercent,
   BookmarkCheck,
   ChevronRight,
@@ -14,24 +15,26 @@ import {
   Compass,
   Crosshair,
   Eye,
+  FileBarChart,
   Flag,
   Gauge,
   Layers,
   Loader2,
   Map,
   MoveHorizontal,
+  Pause,
+  Play,
   Radar,
   RouteOff,
   RotateCw,
   Share,
+  Shield,
   Swords,
   Target,
   Timer,
   TrendingUp,
   User,
-  Users,
-  Award,
-  FileBarChart,
+  Users
 } from "lucide-react";
 import {
   ScatterChart,
@@ -64,6 +67,95 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
+
+// Role Metrics Card Component
+function RoleMetricsCard({
+  player,
+  role,
+  roleMetrics,
+  pivMetrics
+}: {
+  player: PlayerMovementAnalysis;
+  role: string;
+  roleMetrics?: Record<string, any>;
+  pivMetrics?: Record<string, any>;
+}) {
+  // Format role score based on role metrics if available
+  const getRoleScore = () => {
+    if (!roleMetrics || !player) return 75; // Default fallback value
+    
+    const metrics = roleMetrics[player.user_steamid];
+    if (!metrics) return 70;
+    
+    const roleLower = role.toLowerCase();
+    
+    if (roleLower.includes('awp')) {
+      return Math.round(metrics.sniperLaneControl * 100) || 65;
+    }
+    
+    if (roleLower.includes('entry') || roleLower.includes('spacetaker')) {
+      return Math.round(metrics.entryPathEfficiency * 100) || 60;
+    }
+    
+    if (roleLower.includes('lurker')) {
+      return Math.round(metrics.isolationIndex * 100) || 70;
+    }
+    
+    if (roleLower.includes('anchor')) {
+      // For anchor, use site presence as score
+      return Math.round(Math.max(player.sitePresence.ASite, player.sitePresence.BSite) * 100) || 75;
+    }
+    
+    if (roleLower.includes('rotator')) {
+      // For rotator, use movement metrics
+      return Math.min(90, Math.round((player.rotations / 4) * 100)) || 65;
+    }
+    
+    // Default to support role or unknown
+    return Math.round(metrics.supportProximityIndex * 100) || 60;
+  };
+  
+  const roleScore = getRoleScore();
+  const scoreColor = roleScore >= 80 ? 'text-green-400' : 
+                    roleScore >= 65 ? 'text-blue-400' : 'text-amber-400';
+  
+  return (
+    <div className={`p-3 rounded-md bg-gradient-to-br ${getSideGradient(player.side)} border border-${player.side === 'T' ? 'red' : 'blue'}-900/30`}>
+      <div className="flex justify-between items-start mb-2">
+        <div>
+          <h4 className="font-medium">{player.name}</h4>
+          <div className="text-xs text-muted-foreground">{role}</div>
+        </div>
+        <div className={`text-lg font-bold ${scoreColor}`}>{roleScore}%</div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+        <div className="flex justify-between">
+          <span>Distance</span>
+          <span className="font-medium">{formatDistance(player.totalDistance)}</span>
+        </div>
+        
+        <div className="flex justify-between">
+          <span>Speed</span>
+          <span className="font-medium">{Math.round(player.avgSpeed)}</span>
+        </div>
+        
+        <div className="flex justify-between">
+          <span>Rotations</span>
+          <span className="font-medium">{player.rotations}</span>
+        </div>
+        
+        <div className="flex justify-between">
+          <span>Positioning</span>
+          <span className="font-medium">
+            {player.sitePresence.ASite > 0.5 ? "A" : 
+             player.sitePresence.BSite > 0.5 ? "B" : "Mid"}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // CS2 Map image
 import infernoMapImg from '/Infernopano.png';
@@ -266,403 +358,35 @@ function getMetricGauge(value: number): number {
   return Math.min(100, Math.max(0, value * 100));
 }
 
-// Round a number to specified decimal places
-function roundTo(num: number, decimals: number = 0): number {
-  const factor = Math.pow(10, decimals);
-  return Math.round(num * factor) / factor;
-}
-
-// Component for role-based metrics card
-function RoleMetricsCard({ 
-  player, 
-  role, 
-  roleMetrics, 
-  pivMetrics 
-}: { 
-  player: PlayerMovementAnalysis;
-  role: string;
-  roleMetrics?: any;
-  pivMetrics?: any;
-}) {
-  const playerRoleMetrics = roleMetrics?.[player.user_steamid] || {};
-  const playerPivMetrics = pivMetrics?.[player.user_steamid] || {};
-  
-  // Get primary role-specific metrics
-  const getTopMetrics = () => {
-    const metrics: { name: string; value: number; icon: JSX.Element }[] = [];
-    
-    // Add core metrics based on role
-    if (role.includes('AWP')) {
-      metrics.push(
-        { 
-          name: 'Opening Pick Potential', 
-          value: playerPivMetrics['Opening Pick Success Rate'] || playerRoleMetrics.sniperLaneControl || 0.5, 
-          icon: <Crosshair className="h-3.5 w-3.5 text-blue-400" /> 
-        },
-        { 
-          name: 'Angle Control', 
-          value: playerPivMetrics['Angle Hold Success'] || playerRoleMetrics.positionConsistency || 0.5, 
-          icon: <Target className="h-3.5 w-3.5 text-blue-400" /> 
-        }
-      );
-    } else if (role.includes('Entry') || role.includes('Spacetaker')) {
-      metrics.push(
-        { 
-          name: 'Entry Path Efficiency', 
-          value: playerRoleMetrics.entryPathEfficiency || 0.5, 
-          icon: <RouteOff className="h-3.5 w-3.5 text-blue-400" /> 
-        },
-        { 
-          name: 'Space Creation', 
-          value: playerRoleMetrics.spaceCreationIndex || 0.5, 
-          icon: <MoveHorizontal className="h-3.5 w-3.5 text-blue-400" /> 
-        }
-      );
-    } else if (role.includes('Lurker')) {
-      metrics.push(
-        { 
-          name: 'Isolation Index', 
-          value: playerRoleMetrics.isolationIndex || 0.5, 
-          icon: <CircleDotDashed className="h-3.5 w-3.5 text-blue-400" /> 
-        },
-        { 
-          name: 'Flank Position', 
-          value: playerRoleMetrics.flankerPositionAdvantage || 0.5, 
-          icon: <Radar className="h-3.5 w-3.5 text-blue-400" /> 
-        }
-      );
-    } else if (role.includes('Support')) {
-      metrics.push(
-        { 
-          name: 'Support Proximity', 
-          value: playerRoleMetrics.supportProximityIndex || 0.5, 
-          icon: <Users className="h-3.5 w-3.5 text-blue-400" /> 
-        },
-        { 
-          name: 'Utility Positions', 
-          value: playerRoleMetrics.utilityPositioningScore || 0.5, 
-          icon: <Share className="h-3.5 w-3.5 text-blue-400" /> 
-        }
-      );
-    } else if (role.includes('Anchor')) {
-      metrics.push(
-        { 
-          name: 'Position Consistency', 
-          value: playerRoleMetrics.positionConsistency || 0.5, 
-          icon: <BookmarkCheck className="h-3.5 w-3.5 text-blue-400" /> 
-        },
-        { 
-          name: 'Site Control', 
-          value: role.includes('A') ? player.sitePresence.ASite : player.sitePresence.BSite, 
-          icon: <Flag className="h-3.5 w-3.5 text-blue-400" /> 
-        }
-      );
-    } else if (role.includes('Rotator')) {
-      metrics.push(
-        { 
-          name: 'Rotation Efficiency', 
-          value: playerRoleMetrics.rotationalEfficiency || 0.5, 
-          icon: <RotateCw className="h-3.5 w-3.5 text-blue-400" /> 
-        },
-        { 
-          name: 'Map Coverage', 
-          value: playerRoleMetrics.mapCoverage || 0.5, 
-          icon: <Compass className="h-3.5 w-3.5 text-blue-400" /> 
-        }
-      );
-    }
-    
-    // Add general metrics that apply to all roles
-    metrics.push({ 
-      name: 'Trade Positioning', 
-      value: playerRoleMetrics.tradePositioningScore || playerPivMetrics['Trade Positioning Score'] || 0.5, 
-      icon: <Swords className="h-3.5 w-3.5 text-blue-400" /> 
-    });
-    
-    return metrics;
-  };
-  
-  // Calculate an estimated PIV value based on role metrics
-  const calculatePIVEstimate = (): number => {
-    const metrics = getTopMetrics();
-    const avgMetricValue = metrics.reduce((sum, m) => sum + m.value, 0) / metrics.length;
-    
-    // PIV typically ranges from 0.5 to 3.0
-    // Map our 0-1 metrics to this range with some variation
-    return 0.5 + (avgMetricValue * 2.5);
-  };
-  
-  const pivValue = calculatePIVEstimate();
-  const topMetrics = getTopMetrics();
-  
-  return (
-    <div className={cn(
-      "bg-gradient-to-br p-3 rounded-md border", 
-      player.side.toLowerCase() === 't' 
-        ? "from-red-950/20 to-red-900/5 border-red-900/30" 
-        : "from-blue-950/20 to-blue-900/5 border-blue-900/30"
-    )}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Badge 
-            variant={player.side.toLowerCase() === 't' ? 'destructive' : 'default'}
-            className="h-6"
-          >
-            {role}
-          </Badge>
-          <span className="text-sm font-medium">{player.name}</span>
-        </div>
-        <HoverCard>
-          <HoverCardTrigger asChild>
-            <div className="flex items-center cursor-help">
-              <Award className="h-4 w-4 text-yellow-500 mr-1" />
-              <span className="text-sm font-bold">{pivValue.toFixed(2)}</span>
-            </div>
-          </HoverCardTrigger>
-          <HoverCardContent className="w-80 bg-blue-950 border-blue-900">
-            <div className="flex justify-between items-start">
-              <div>
-                <h4 className="text-sm font-semibold">PIV Rating</h4>
-                <p className="text-xs text-blue-300/80">
-                  Player Impact Value based on positional metrics
-                </p>
-              </div>
-              <Award className="h-5 w-5 text-yellow-500" />
-            </div>
-            <Separator className="my-2 bg-blue-800/50" />
-            <div className="text-xs space-y-1">
-              {topMetrics.map((metric, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    {metric.icon}
-                    <span className="ml-1">{metric.name}</span>
-                  </div>
-                  <span className="font-medium">{formatPercent(metric.value)}</span>
-                </div>
-              ))}
-            </div>
-          </HoverCardContent>
-        </HoverCard>
-      </div>
-      
-      <div className="space-y-3 mt-3">
-        {topMetrics.map((metric, i) => (
-          <div key={i} className="space-y-1">
-            <div className="flex justify-between text-xs">
-              <div className="flex items-center gap-1">
-                {metric.icon}
-                <span>{metric.name}</span>
-              </div>
-              <span className="font-medium">{formatPercent(metric.value)}</span>
-            </div>
-            <Progress value={getMetricGauge(metric.value)} className="h-1.5" />
-          </div>
-        ))}
-      </div>
-      
-      <div className="grid grid-cols-3 gap-2 mt-3">
-        <div className="bg-blue-950/40 rounded p-2 text-center">
-          <div className="text-[10px] text-blue-300/80">Distance</div>
-          <div className="text-sm font-medium">{formatDistance(player.totalDistance)}</div>
-        </div>
-        <div className="bg-blue-950/40 rounded p-2 text-center">
-          <div className="text-[10px] text-blue-300/80">Speed</div>
-          <div className="text-sm font-medium">{Math.round(player.avgSpeed)}</div>
-        </div>
-        <div className="bg-blue-950/40 rounded p-2 text-center">
-          <div className="text-[10px] text-blue-300/80">Rotations</div>
-          <div className="text-sm font-medium">{player.rotations}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Component for team analysis card
-function TeamAnalysisCard({
-  side,
-  teamMetrics,
-  teamInsights,
-  roundPrediction
-}: {
-  side: 'T' | 'CT';
-  teamMetrics: TeamMetrics;
-  teamInsights?: TeamStrategyInsights;
-  roundPrediction?: {
-    tProbability: number;
-    ctProbability: number;
-    factors: string[];
-  };
-}) {
-  const isTSide = side === 'T';
-  const winProbability = isTSide ? roundPrediction?.tProbability || 0.5 : roundPrediction?.ctProbability || 0.5;
-  const teamColor = isTSide ? '#ef4444' : '#3b82f6'; 
-  const gradientClasses = isTSide ? 'from-red-950/30 to-red-900/10' : 'from-blue-950/30 to-blue-900/10';
-  const borderClasses = isTSide ? 'border-red-900/30' : 'border-blue-900/30';
-  
-  const mapControlData = [
-    { name: 'A Site', value: teamMetrics.siteControl.ASite * 100 },
-    { name: 'Mid', value: teamMetrics.siteControl.Mid * 100 },
-    { name: 'B Site', value: teamMetrics.siteControl.BSite * 100 },
-  ];
-  
-  const strategyData = [
-    { name: 'Coordination', value: teamInsights?.movementCoordination || 0.5 },
-    { name: 'Trade Setup', value: teamMetrics.tradeEfficiency },
-    { name: 'Control', value: (teamMetrics.siteControl.ASite + teamMetrics.siteControl.BSite + teamMetrics.siteControl.Mid) / 3 },
-    { name: 'Team Spread', value: 1 - Math.min(1, teamMetrics.teamSpread / 2000) },
-    { name: 'Rotation', value: teamInsights?.rotationTimings || 0.5 },
-  ];
-  
-  return (
-    <div className={`bg-gradient-to-br ${gradientClasses} p-4 rounded-lg border ${borderClasses}`}>
-      <div className="flex items-center mb-3">
-        <div className={`h-8 w-8 rounded-md flex items-center justify-center mr-3 ${isTSide ? 'bg-red-600/30' : 'bg-blue-600/30'}`}>
-          <span className={`font-bold ${isTSide ? 'text-red-400' : 'text-blue-400'}`}>{side}</span>
-        </div>
-        <h3 className="text-base font-medium">{isTSide ? 'Terrorist' : 'Counter-Terrorist'} Strategy Analysis</h3>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Map Control Chart */}
-        <div className="bg-blue-950/50 rounded-md p-3">
-          <div className="flex justify-between items-center mb-2">
-            <h4 className="text-sm font-medium text-blue-100">Map Control</h4>
-            <Badge variant="outline" className={`${isTSide ? 'border-red-800/50 text-red-300' : 'border-blue-800/50 text-blue-300'}`}>
-              {formatPercent((teamMetrics.siteControl.ASite + teamMetrics.siteControl.BSite + teamMetrics.siteControl.Mid) / 3)}
-            </Badge>
-          </div>
-          
-          <div className="h-[180px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={mapControlData}
-                layout="vertical"
-                margin={{ top: 5, right: 10, left: 5, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#1e3a8a" opacity={0.3} />
-                <XAxis type="number" domain={[0, 100]} stroke="#93c5fd" fontSize={11} tickFormatter={(value) => `${value}%`} />
-                <YAxis dataKey="name" type="category" stroke="#93c5fd" fontSize={11} width={50} />
-                <Tooltip 
-                  formatter={(value: number) => [`${value.toFixed(0)}%`, 'Control']}
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e40af' }}
-                />
-                <Bar 
-                  dataKey="value" 
-                  fill={teamColor} 
-                  radius={[0, 4, 4, 0]} 
-                  background={{ fill: '#1e3a8a30' }} 
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        
-        {/* Strategy Radar Chart */}
-        <div className="bg-blue-950/50 rounded-md p-3">
-          <div className="flex justify-between items-center mb-2">
-            <h4 className="text-sm font-medium text-blue-100">Strategy Metrics</h4>
-            <Badge variant="outline" className={`${isTSide ? 'border-red-800/50 text-red-300' : 'border-blue-800/50 text-blue-300'}`}>
-              {isTSide ? 'Attack Setup' : 'Defense Setup'}
-            </Badge>
-          </div>
-          
-          <div className="h-[180px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart outerRadius={70} data={strategyData}>
-                <PolarGrid stroke="#1e3a8a" />
-                <PolarAngleAxis dataKey="name" stroke="#93c5fd" fontSize={10} />
-                <PolarRadiusAxis angle={30} domain={[0, 1]} stroke="#93c5fd" fontSize={10} tickFormatter={(value) => `${value * 100}%`} />
-                <RadarComponent name="Strategy" dataKey="value" stroke={teamColor} fill={teamColor} fillOpacity={0.3} />
-                <Tooltip 
-                  formatter={(value: number) => [`${(value * 100).toFixed(0)}%`, 'Rating']}
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e40af' }}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-      
-      {/* Key Insights */}
-      <div className="mt-4 bg-blue-950/50 rounded-md p-3">
-        <div className="flex justify-between items-center mb-2">
-          <h4 className="text-sm font-medium text-blue-100">Round Win Probability</h4>
-          <Badge className={isTSide ? 'bg-red-700' : 'bg-blue-700'}>
-            {formatPercent(winProbability)}
-          </Badge>
-        </div>
-        
-        <div className="relative pt-1">
-          <div className="flex h-3 mb-2 overflow-hidden rounded-full">
-            <div 
-              className="bg-gradient-to-r from-red-900 to-red-600 flex justify-center items-center text-xs text-red-100 font-medium" 
-              style={{ width: `${roundPrediction?.tProbability ? roundPrediction.tProbability * 100 : 50}%` }}
-            >
-              {(roundPrediction?.tProbability || 0.5) > 0.25 && "T"}
-            </div>
-            <div 
-              className="bg-gradient-to-r from-blue-600 to-blue-800 flex justify-center items-center text-xs text-blue-100 font-medium" 
-              style={{ width: `${roundPrediction?.ctProbability ? roundPrediction.ctProbability * 100 : 50}%` }}
-            >
-              {(roundPrediction?.ctProbability || 0.5) > 0.25 && "CT"}
-            </div>
-          </div>
-        </div>
-        
-        <h5 className="text-xs font-medium text-blue-200 mt-3 mb-1">Key Factors</h5>
-        <ul className="text-xs space-y-1 pl-1">
-          {roundPrediction?.factors.filter(f => 
-            isTSide ? 
-              !f.toLowerCase().includes('ct') : 
-              !f.toLowerCase().includes('t side')
-          ).slice(0, 3).map((factor, i) => (
-            <li key={i} className="flex items-center">
-              <ChevronRight className="h-3 w-3 mr-1 shrink-0" />
-              <span className="text-blue-300/90">{factor}</span>
-            </li>
-          )) || (
-            <li className="text-blue-300/90">No specific factors identified</li>
-          )}
-        </ul>
-        
-        <h5 className="text-xs font-medium text-blue-200 mt-3 mb-1">Strategic Recommendation</h5>
-        <p className="text-xs text-blue-300/90">
-          {isTSide ? (
-            teamMetrics.siteControl.BSite > teamMetrics.siteControl.ASite ? 
-              "Commit to B-site push with proper utility and trade setup. The positional data shows favorable B control." : 
-              "Consider A-site execute with mid control. Maintain trade positions during approach."
-          ) : (
-            teamMetrics.teamSpread > 1200 ?
-              "Adjust defensive positions to be less spread out. Consider stacking towards B site based on T tendencies." :
-              "Maintain current balanced defensive setup. Prepare for quick rotations through mid."
-          )}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 // Component for map visualization with player positions
 function MapVisualization({ 
   playerData,
   activePlayer,
   onSelectPlayer,
-  findMatchingPlayer
+  findMatchingPlayer,
+  isPlaying = false,
+  currentFrame = 0,
+  playbackSpeed = 1,
+  onPlayPause = () => {},
+  onReset = () => {},
+  onFrameChange = () => {}
 }: { 
   playerData: PlayerMovementAnalysis[];
   activePlayer?: string;
   onSelectPlayer: (steamId: string) => void;
   findMatchingPlayer?: (player: PlayerMovementAnalysis) => any;
+  isPlaying?: boolean;
+  currentFrame?: number;
+  playbackSpeed?: number;
+  onPlayPause?: () => void;
+  onReset?: () => void;
+  onFrameChange?: (frame: number) => void;
 }) {
-  // Generate data for heatmap visualization with player profile links
+  // Generate data for heatmap visualization
   const getHeatmapData = () => {
     const allPlayerPoints: any[] = [];
     
     playerData.forEach(player => {
-      // Find player profile in database if available
-      const playerProfile = findMatchingPlayer ? findMatchingPlayer(player) : null;
-      
       // Sample points to avoid overloading the chart
       const samplingInterval = Math.max(1, Math.floor(player.positionHeatmap.length / 50));
       
@@ -675,254 +399,169 @@ function MapVisualization({
           z: 10,
           player: player.name,
           steamId: player.user_steamid,
-          side: player.side,
-          csPlayerName: playerProfile ? playerProfile.name : undefined,
-          csPlayerTeam: playerProfile ? playerProfile.team : undefined,
-          csPlayerRole: playerProfile?.metrics?.role,
-          hasProfile: !!playerProfile
+          side: player.side
         });
       }
     });
     
     return allPlayerPoints;
   };
-  
-  // Generate site boundary data
-  const siteBoundaries = [
-    // A site boundaries
-    { x: 1500, y: 500, label: 'A Site' },
-    { x: 2000, y: 1000, label: 'A Site' },
-    // B site boundaries
-    { x: -1000, y: -1000, label: 'B Site' },
-    { x: 0, y: 0, label: 'B Site' },
-    // Mid boundaries
-    { x: 0, y: 0, label: 'Mid' },
-    { x: 1000, y: 1000, label: 'Mid' },
-  ];
 
   return (
-    <div className="relative h-[600px] w-full rounded-md overflow-hidden border border-blue-900/50 shadow-lg">
-      {/* Map Background with enhanced styling */}
-      <div className="absolute inset-0 z-0 bg-blue-950/70">
-        <img 
-          src={infernoOverlayImg} 
-          alt="Inferno Map" 
-          className="w-full h-full object-cover opacity-15 mix-blend-overlay"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-950/10 to-blue-950/80"></div>
-      </div>
-      
-      <div className="absolute inset-0 z-10">
-        <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart
-            margin={{ top: 30, right: 30, bottom: 30, left: 30 }}
-          >
-            <CartesianGrid 
-              strokeDasharray="4 4" 
-              stroke="#3b82f6" 
-              opacity={0.15} 
-              horizontal={true}
-              vertical={true}
-            />
-            <XAxis 
-              type="number" 
-              dataKey="x" 
-              name="X Position" 
-              domain={[-2500, 2500]}
-              tick={{ fill: '#93c5fd', fontSize: 10 }}
-              stroke="#3b82f6" 
-              opacity={0.4}
-              tickCount={7}
-              axisLine={{ strokeWidth: 1 }}
-              tickLine={{ stroke: '#3b82f6', opacity: 0.3 }}
-            />
-            <YAxis 
-              type="number" 
-              dataKey="y" 
-              name="Y Position" 
-              domain={[-2500, 2500]}
-              tick={{ fill: '#93c5fd', fontSize: 10 }}
-              stroke="#3b82f6"
-              opacity={0.4}
-              tickCount={7}
-              axisLine={{ strokeWidth: 1 }}
-              tickLine={{ stroke: '#3b82f6', opacity: 0.3 }}
-            />
-            <ZAxis 
-              type="number" 
-              dataKey="z" 
-              range={[20, 80]} 
-              name="Size" 
-            />
-            <Tooltip 
-              cursor={{ strokeDasharray: '3 3', stroke: '#3b82f6', strokeWidth: 1 }}
-              contentStyle={{ 
-                backgroundColor: '#0f1729', 
-                borderColor: '#3b82f6', 
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                borderRadius: '0.375rem',
-                padding: '8px 12px'
-              }}
-              labelStyle={{ color: '#93c5fd', fontWeight: 500 }}
-              formatter={(value: any, name: string, props: any) => {
-                const { payload } = props;
-                if (name === 'X Position' || name === 'Y Position') {
-                  let location = "";
-                  
-                  // Identify map location
-                  if (payload.x > 1500 && payload.y > 500) {
-                    location = " (A Site)";
-                  } else if (payload.x < 0 && payload.y < 0) {
-                    location = " (B Site)";
-                  } else if (payload.x > 0 && payload.x < 1000 && payload.y > 0 && payload.y < 1000) {
-                    location = " (Mid)";
-                  } else if (payload.x < -1000 && payload.y > -500) {
-                    location = " (Banana)";
-                  } else if (payload.x > 1000 && payload.x < 1500 && payload.y > 0 && payload.y < 500) {
-                    location = " (Apartments)";
-                  }
-                  
-                  return [`${value}${location}`, name];
-                }
-                // Show player information with profile data if available
-                if (payload.hasProfile) {
-                  return [
-                    `${payload.player} (${payload.csPlayerName})`,
-                    `${payload.side === 'T' ? 'Terrorist' : 'CT'} | ${payload.csPlayerTeam}${payload.csPlayerRole ? ` | ${payload.csPlayerRole}` : ''}`
-                  ];
-                }
-                return [payload.player, payload.side === 'T' ? 'Terrorist' : 'Counter-Terrorist'];
-              }}
-            />
-            <Legend />
-            
-            {/* Site boundaries moved to improved styling below */}
-            
-            {/* Site boundaries with improved styling */}
-            <Scatter 
-              name="A Site" 
-              data={siteBoundaries.filter(b => b.label === 'A Site')} 
-              fill="transparent"
-              line={{ stroke: '#d97706', strokeWidth: 1.5, strokeDasharray: '6 4' }}
-              shape={(props: any) => {
-                return <path d="M0,0 L0,0" stroke="none" />;
-              }}
-            />
-            <Scatter 
-              name="B Site" 
-              data={siteBoundaries.filter(b => b.label === 'B Site')} 
-              fill="transparent"
-              line={{ stroke: '#059669', strokeWidth: 1.5, strokeDasharray: '6 4' }}
-              shape={(props: any) => {
-                return <path d="M0,0 L0,0" stroke="none" />;
-              }}
-            />
-            <Scatter 
-              name="Mid" 
-              data={siteBoundaries.filter(b => b.label === 'Mid')} 
-              fill="transparent"
-              line={{ stroke: '#7c3aed', strokeWidth: 1.5, strokeDasharray: '6 4' }}
-              shape={(props: any) => {
-                return <path d="M0,0 L0,0" stroke="none" />;
-              }}
-            />
-            
-            {/* T side player positions with enhanced styling */}
-            <Scatter 
-              name="T Side Players"
-              data={getHeatmapData().filter(point => point.side === 'T')} 
-              fill="#f59e0b"
-              stroke="#92400e"
-              strokeWidth={1}
-              shape="circle"
-              onClick={(data: any) => {
-                if (data && data.payload && data.payload.steamId) {
-                  onSelectPlayer(data.payload.steamId);
-                }
-              }}
-            />
-            
-            {/* CT side player positions with enhanced styling */}
-            <Scatter 
-              name="CT Side Players"
-              data={getHeatmapData().filter(point => point.side === 'CT')} 
-              fill="#3b82f6"
-              stroke="#1e40af"
-              strokeWidth={1}
-              shape="circle"
-              onClick={(data: any) => {
-                if (data && data.payload && data.payload.steamId) {
-                  onSelectPlayer(data.payload.steamId);
-                }
-              }}
-            />
-            
-            {/* Player with profile highlight with enhanced styling */}
-            <Scatter 
-              name="Players with profiles"
-              data={getHeatmapData().filter(point => point.hasProfile)} 
-              fill="#22c55e"
-              stroke="#0d9488"
-              strokeWidth={2}
-              shape="circle"
-              onClick={(data: any) => {
-                if (data && data.payload && data.payload.steamId) {
-                  onSelectPlayer(data.payload.steamId);
-                }
-              }}
-            />
-            
-            {/* Active player highlight - show prominently */}
-            {activePlayer && (
-              <Scatter
-                name="Selected Player"
-                data={getHeatmapData().filter(point => point.steamId === activePlayer)}
-                fill={getHeatmapData().find(p => p.steamId === activePlayer)?.side === 'T' ? '#f59e0b' : '#3b82f6'}
-                stroke="#ffffff"
-                strokeWidth={3}
-                shape="circle"
-                onClick={() => onSelectPlayer(activePlayer)}
-              />
-            )}
-          </ScatterChart>
-        </ResponsiveContainer>
-      </div>
-      
-      {/* Map Area Labels with improved styling */}
-      <div className="absolute top-4 left-4 z-20 bg-gradient-to-r from-orange-600/90 to-amber-600/90 text-xs text-white px-3 py-1.5 rounded-md shadow-md flex items-center gap-1.5 font-medium">
-        <CircleDot className="h-3.5 w-3.5" />
-        A Site
-      </div>
-      
-      <div className="absolute bottom-12 right-12 z-20 bg-gradient-to-r from-green-600/90 to-emerald-600/90 text-xs text-white px-3 py-1.5 rounded-md shadow-md flex items-center gap-1.5 font-medium">
-        <CircleDot className="h-3.5 w-3.5" />
-        B Site
-      </div>
-      
-      <div className="absolute top-[40%] left-[40%] z-20 bg-gradient-to-r from-violet-600/90 to-purple-600/90 text-xs text-white px-3 py-1.5 rounded-md shadow-md flex items-center gap-1.5 font-medium">
-        <CircleDot className="h-3.5 w-3.5" />
-        Mid
-      </div>
-      
-      {/* Enhanced legend for player markers */}
-      <div className="absolute top-4 right-4 z-20 bg-blue-950/95 text-xs text-blue-100 p-3 rounded-md shadow-lg border border-blue-600/30">
-        <div className="font-medium mb-1.5 text-sm text-white flex items-center gap-1">
-          <Map className="h-3.5 w-3.5 text-blue-400" />
-          Map Key
+    <div className="space-y-3">
+      <div className="relative h-[700px] w-full rounded-md overflow-hidden border border-blue-900/30 shadow-lg">
+        {/* Map Background - without blue overlay */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src={infernoOverlayImg} 
+            alt="Inferno Map" 
+            className="w-full h-full object-contain"
+          />
         </div>
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-amber-500 shadow-sm"></div>
-            <span>T Side Players</span>
+        
+        {/* Playback controls */}
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-30 bg-blue-950/80 p-2 rounded-full shadow-lg border border-blue-700/50 flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-blue-200 hover:text-white hover:bg-blue-800/50"
+            onClick={onReset}
+          >
+            <RotateCw className="h-4 w-4" />
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-blue-200 hover:text-white hover:bg-blue-800/50"
+            onClick={onPlayPause}
+          >
+            {isPlaying ? (
+              <Pause className="h-4 w-4" />
+            ) : (
+              <Play className="h-4 w-4" />
+            )}
+          </Button>
+          
+          <div className="text-xs text-blue-300">
+            Frame: {currentFrame}
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-blue-500 shadow-sm"></div>
-            <span>CT Side Players</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-500 border border-teal-600 shadow-sm"></div>
-            <span>Player with Profile</span>
-          </div>
+        </div>
+        
+        <div className="absolute inset-0 z-10">
+          <ResponsiveContainer width="100%" height="100%">
+            <ScatterChart
+              margin={{ top: 30, right: 30, bottom: 30, left: 30 }}
+            >
+              <CartesianGrid 
+                strokeDasharray="4 4" 
+                stroke="#3b82f6" 
+                opacity={0.15} 
+                horizontal={true}
+                vertical={true}
+              />
+              <XAxis 
+                type="number" 
+                dataKey="x" 
+                name="X Position" 
+                domain={[-2500, 2500]}
+                tick={{ fill: '#93c5fd', fontSize: 10 }}
+                stroke="#3b82f6" 
+                opacity={0.4}
+                tickCount={7}
+                axisLine={{ strokeWidth: 1 }}
+                tickLine={{ stroke: '#3b82f6', opacity: 0.3 }}
+              />
+              <YAxis 
+                type="number" 
+                dataKey="y" 
+                name="Y Position" 
+                domain={[-2500, 2500]}
+                tick={{ fill: '#93c5fd', fontSize: 10 }}
+                stroke="#3b82f6"
+                opacity={0.4}
+                tickCount={7}
+                axisLine={{ strokeWidth: 1 }}
+                tickLine={{ stroke: '#3b82f6', opacity: 0.3 }}
+              />
+              <ZAxis 
+                type="number" 
+                dataKey="z" 
+                range={[20, 80]} 
+                name="Size" 
+              />
+              <Tooltip 
+                cursor={{ strokeDasharray: '3 3', stroke: '#3b82f6', strokeWidth: 1 }}
+                contentStyle={{ 
+                  backgroundColor: '#0f1729', 
+                  borderColor: '#3b82f6', 
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                  borderRadius: '0.375rem',
+                  padding: '8px 12px'
+                }}
+                labelStyle={{ color: '#93c5fd', fontWeight: 500 }}
+                formatter={(value: any, name: string, props: any) => {
+                  const { payload } = props;
+                  if (name === 'X Position' || name === 'Y Position') {
+                    let location = "";
+                    if (payload.x > 1000 && payload.y > 0) {
+                      location = "A Site";
+                    } else if (payload.x < 0 && payload.y < 0) {
+                      location = "B Site";
+                    } else if (Math.abs(payload.x) < 1000 && Math.abs(payload.y) < 1000) {
+                      location = "Mid";
+                    }
+                    return [`${value} (${location})`, name];
+                  }
+                  return [value, name];
+                }}
+              />
+              <Legend />
+              
+              {/* T side player positions with enhanced styling */}
+              <Scatter 
+                name="T Side Players"
+                data={getHeatmapData().filter(point => point.side === 'T')} 
+                fill="#f59e0b"
+                stroke="#92400e"
+                strokeWidth={1}
+                shape="circle"
+                onClick={(data: any) => {
+                  if (data && data.payload && data.payload.steamId) {
+                    onSelectPlayer(data.payload.steamId);
+                  }
+                }}
+              />
+              
+              {/* CT side player positions with enhanced styling */}
+              <Scatter 
+                name="CT Side Players"
+                data={getHeatmapData().filter(point => point.side === 'CT')} 
+                fill="#3b82f6"
+                stroke="#1e40af"
+                strokeWidth={1}
+                shape="circle"
+                onClick={(data: any) => {
+                  if (data && data.payload && data.payload.steamId) {
+                    onSelectPlayer(data.payload.steamId);
+                  }
+                }}
+              />
+              
+              {/* Active player highlight - show prominently */}
+              {activePlayer && (
+                <Scatter
+                  name="Selected Player"
+                  data={getHeatmapData().filter(point => point.steamId === activePlayer)}
+                  fill={getHeatmapData().find(p => p.steamId === activePlayer)?.side === 'T' ? '#f59e0b' : '#3b82f6'}
+                  stroke="#ffffff"
+                  strokeWidth={3}
+                  shape="circle"
+                  onClick={() => onSelectPlayer(activePlayer)}
+                />
+              )}
+            </ScatterChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>
@@ -934,6 +573,11 @@ export function AdvancedXYZAnalysis() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("map-view");
   const [activePlayer, setActivePlayer] = useState<string | null>(null);
+  
+  // Playback state for map visualization
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentFrame, setCurrentFrame] = useState(0);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
   
   // Fetch player database from API
   const { data: playerDatabase } = useQuery({
@@ -981,745 +625,988 @@ export function AdvancedXYZAnalysis() {
     if (!playerDatabase || !Array.isArray(playerDatabase) || !xyzPlayer) return null;
     
     // Try to find by steamID (may not match in sample data)
-    const bySteamId = playerDatabase.find((player: any) => player.id === xyzPlayer.user_steamid);
-    if (bySteamId) return bySteamId;
+    const exactMatch = playerDatabase.find(p => p.id === xyzPlayer.user_steamid);
+    if (exactMatch) return exactMatch;
     
-    // Try to find by name (fuzzy match)
-    return playerDatabase.find((player: any) => {
-      if (!player.name || !xyzPlayer.name) return false;
-      return player.name.toLowerCase().includes(xyzPlayer.name.toLowerCase()) || 
-             xyzPlayer.name.toLowerCase().includes(player.name.toLowerCase());
-    });
+    // Try to find by name (exact match first)
+    const nameMatch = playerDatabase.find(p => p.name === xyzPlayer.name);
+    if (nameMatch) return nameMatch;
+    
+    // Try fuzzy name matching (for demo purposes)
+    const fuzzyMatch = playerDatabase.find(p => 
+      p.name.toLowerCase().includes(xyzPlayer.name.toLowerCase()) || 
+      xyzPlayer.name.toLowerCase().includes(p.name.toLowerCase())
+    );
+    
+    return fuzzyMatch || null;
+  };
+  
+  const togglePlayback = () => {
+    setIsPlaying(!isPlaying);
+  };
+  
+  const resetPlayback = () => {
+    setCurrentFrame(0);
+    setIsPlaying(false);
   };
   
   return (
     <div className="space-y-6">
-      <Card className="bg-blue-950/30 border border-blue-900/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Map className="h-5 w-5 text-blue-400" />
-            XYZ Positional Data Analysis
-          </CardTitle>
-          <p className="text-sm text-blue-300/80">
-            Process and visualize XYZ positional data from CS2 matches to analyze player movements and patterns
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {!data ? (
-            <div className="text-center p-6 bg-blue-950/20 rounded-md border border-blue-900/30">
-              <Activity className="h-10 w-10 text-blue-500/30 mx-auto mb-3" />
-              <p className="text-blue-300/70 mb-4">
-                Run the data processor to analyze the sample XYZ positional data from round 4 on de_inferno
-              </p>
-              <Button
-                onClick={handleRunAnalysis}
+      <div className="flex flex-col space-y-1">
+        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <RouteOff className="h-6 w-6 text-blue-500" />
+          XYZ Positional Data Analysis
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Process and visualize XYZ positional data from CS2 matches to analyze player movements and patterns
+        </p>
+      </div>
+      
+      {!data ? (
+        // Show the explainer UI only when data is not yet processed
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-6 md:col-span-1">
+            <div className="bg-blue-950/50 rounded-lg p-4 space-y-4">
+              <h3 className="font-medium text-lg flex items-center gap-1.5">
+                <Activity className="h-5 w-5 text-blue-500" /> 
+                About this Feature
+              </h3>
+              
+              <div className="text-sm space-y-3 text-blue-100/80">
+                <p>
+                  This module processes XYZ positional data from CS2 matches to extract insights about player movements, 
+                  rotations, trading, map positioning, and role effectiveness.
+                </p>
+                <p>
+                  XYZ data contains precise coordinates for each player throughout the match, allowing us to study 
+                  player patterns in detail.
+                </p>
+              </div>
+              
+              <div className="text-sm border-t border-blue-900/50 pt-3 mt-2">
+                <div className="font-medium text-blue-100 mb-2 flex items-center gap-1.5">
+                  <Eye className="h-4 w-4 text-blue-500" />
+                  What we can analyze
+                </div>
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-1.5">
+                    <span className="text-blue-500 mt-0.5">•</span>
+                    <span>Player role verification through positional data</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="text-blue-500 mt-0.5">•</span>
+                    <span>Team execution quality and coordination</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="text-blue-500 mt-0.5">•</span>
+                    <span>Map control distribution and adaptability</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="text-blue-500 mt-0.5">•</span>
+                    <span>Rotation patterns and trading opportunities</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="text-sm border-t border-blue-900/50 pt-3 mt-2">
+                <div className="font-medium text-blue-100 mb-2 flex items-center gap-1.5">
+                  <MoveHorizontal className="h-4 w-4 text-blue-500" />
+                  Implementation Plan
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span>Role Position Analysis</span>
+                    <Badge variant="outline" className="bg-blue-500/20 text-[10px]">Complete</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Team Execution Analysis</span>
+                    <Badge variant="outline" className="bg-blue-500/20 text-[10px]">Complete</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Map Control Visualization</span>
+                    <Badge variant="outline" className="bg-blue-500/20 text-[10px]">Complete</Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <Button 
+                onClick={handleRunAnalysis} 
+                className="w-full" 
                 disabled={isLoading}
-                className="bg-gradient-to-r from-blue-700 to-purple-600 hover:from-blue-800 hover:to-purple-700"
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
+                    Processing XYZ Data...
                   </>
                 ) : (
-                  "Process Positional Data"
+                  <>
+                    <Activity className="mr-2 h-4 w-4" />
+                    Process Positional Data
+                  </>
                 )}
               </Button>
             </div>
-          ) : (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-              <TabsList className="grid grid-cols-3 bg-blue-950/30 border border-blue-900/30">
-                <TabsTrigger value="map-view">Map View</TabsTrigger>
-                <TabsTrigger value="role-analysis">Role Analysis</TabsTrigger>
-                <TabsTrigger value="team-strategies">Team Strategies</TabsTrigger>
-              </TabsList>
-              
-              {/* Map View Tab */}
-              <TabsContent value="map-view" className="space-y-4">
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="bg-blue-950/20 border border-blue-900/30">
-                      <CardHeader className="pb-2">
-                        <div className="text-sm text-blue-300/70">Round Number</div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{data.roundNum}</div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="bg-blue-950/20 border border-blue-900/30">
-                      <CardHeader className="pb-2">
-                        <div className="text-sm text-blue-300/70">Player Count</div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {Object.keys(data.analysis.playerMetrics).length}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="bg-blue-950/20 border border-blue-900/30">
-                      <CardHeader className="pb-2">
-                        <div className="text-sm text-blue-300/70">Map</div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">Inferno</div>
-                      </CardContent>
-                    </Card>
-                  </div>
+          </div>
+          
+          <div className="md:col-span-2">
+            <div className="bg-blue-950/30 border border-blue-900/30 rounded-lg p-8 flex items-center justify-center h-full">
+              <div className="text-center space-y-4">
+                <RouteOff className="h-12 w-12 text-blue-500/50 mx-auto" />
+                <h3 className="text-xl font-medium text-blue-100">Positional Analysis</h3>
+                <p className="text-sm text-blue-200/70 max-w-md">
+                  Click "Process Positional Data" to analyze player positions, roles, and team strategies for Inferno.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // When data is processed, show just the analysis tabs with full width
+        <div className="space-y-4 w-full">
+          <Tabs 
+            defaultValue="map-view" 
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="map-view" className="text-sm">Map View</TabsTrigger>
+              <TabsTrigger value="role-analysis" className="text-sm">Role Analysis</TabsTrigger>
+              <TabsTrigger value="team-strategies" className="text-sm">Team Strategies</TabsTrigger>
+            </TabsList>
+          
+            <TabsContent value="map-view" className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card className="bg-blue-950/20 border border-blue-900/30">
+                    <CardHeader className="pb-2">
+                      <div className="text-sm text-blue-300/70">Round Number</div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{data.roundNum}</div>
+                    </CardContent>
+                  </Card>
                   
-                  <MapVisualization 
-                    playerData={getPlayers()} 
-                    activePlayer={activePlayer || undefined}
-                    onSelectPlayer={(steamId) => setActivePlayer(steamId === activePlayer ? null : steamId)}
-                    findMatchingPlayer={findMatchingPlayer}
-                  />
+                  <Card className="bg-blue-950/20 border border-blue-900/30">
+                    <CardHeader className="pb-2">
+                      <div className="text-sm text-blue-300/70">Player Count</div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {Object.keys(data.analysis.playerMetrics).length}
+                      </div>
+                    </CardContent>
+                  </Card>
                   
-                  {activePlayer && (
-                    <div className="bg-blue-950/40 rounded-md p-4 border border-blue-900/30">
-                      {/* Get player profile data if available */}
-                      {(() => {
-                        const xyzPlayer = data.analysis.playerMetrics[activePlayer];
-                        const playerProfile = findMatchingPlayer(xyzPlayer);
-                        
-                        return (
-                          <div className="mb-3 flex items-center gap-3">
-                            <div className={`p-2 rounded-full ${getPlayerColor(xyzPlayer.side)}`}>
-                              <User className="h-6 w-6" />
-                            </div>
-                            <div>
-                              <h3 className="text-base font-medium">
-                                {xyzPlayer.name} {playerProfile && `(${playerProfile.name})`}
-                              </h3>
-                              <div className="text-xs text-blue-300/70 flex items-center gap-2">
-                                <span className={`inline-block w-2 h-2 rounded-full ${xyzPlayer.side === 'T' ? 'bg-amber-400' : 'bg-blue-400'}`}></span>
-                                <span>{xyzPlayer.side === 'T' ? 'Terrorist' : 'Counter-Terrorist'}</span>
-                                {playerProfile && (
-                                  <>
-                                    <span className="mx-1">•</span>
-                                    <span>{playerProfile.team}</span>
-                                    {playerProfile.metrics?.role && (
-                                      <>
-                                        <span className="mx-1">•</span>
-                                        <span>{playerProfile.metrics.role}</span>
-                                      </>
-                                    )}
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-blue-950/60 p-3 rounded-md">
-                          <div className="text-sm font-medium mb-2">Position Distribution</div>
-                          <div className="space-y-2">
-                            <div>
-                              <div className="text-xs mb-1 flex justify-between">
-                                <span>A Site</span>
-                                <span className="font-medium">
-                                  {formatPercent(data.analysis.playerMetrics[activePlayer].sitePresence.ASite)}
-                                </span>
-                              </div>
-                              <Progress value={data.analysis.playerMetrics[activePlayer].sitePresence.ASite * 100} className="h-1.5" />
-                            </div>
-                            
-                            <div>
-                              <div className="text-xs mb-1 flex justify-between">
-                                <span>B Site</span>
-                                <span className="font-medium">
-                                  {formatPercent(data.analysis.playerMetrics[activePlayer].sitePresence.BSite)}
-                                </span>
-                              </div>
-                              <Progress value={data.analysis.playerMetrics[activePlayer].sitePresence.BSite * 100} className="h-1.5" />
-                            </div>
-                            
-                            <div>
-                              <div className="text-xs mb-1 flex justify-between">
-                                <span>Mid</span>
-                                <span className="font-medium">
-                                  {formatPercent(data.analysis.playerMetrics[activePlayer].sitePresence.Mid)}
-                                </span>
-                              </div>
-                              <Progress value={data.analysis.playerMetrics[activePlayer].sitePresence.Mid * 100} className="h-1.5" />
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="bg-blue-950/60 p-3 rounded-md">
-                          <div className="text-sm font-medium mb-2">Movement Stats</div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <div className="text-xs text-blue-300/70">Total Distance</div>
-                              <div className="text-xl font-medium">
-                                {formatDistance(data.analysis.playerMetrics[activePlayer].totalDistance)}
-                              </div>
-                            </div>
-                            
-                            <div>
-                              <div className="text-xs text-blue-300/70">Average Speed</div>
-                              <div className="text-xl font-medium">
-                                {Math.round(data.analysis.playerMetrics[activePlayer].avgSpeed)}
-                              </div>
-                            </div>
-                            
-                            <div>
-                              <div className="text-xs text-blue-300/70">Rotations</div>
-                              <div className="text-xl font-medium">
-                                {data.analysis.playerMetrics[activePlayer].rotations}
-                              </div>
-                            </div>
-                            
-                            <div>
-                              <div className="text-xs text-blue-300/70">Role</div>
-                              <div className="text-xl font-medium">
-                                {detectPlayerRole(
-                                  data.analysis.playerMetrics[activePlayer], 
-                                  data.analysis.roleMetrics, 
-                                  data.analysis.pivMetrics
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="bg-blue-950/60 p-3 rounded-md">
-                          <div className="text-sm font-medium mb-2">Performance Insights</div>
-                          <div className="text-xs text-blue-300/90 space-y-2">
-                            <p>
-                              {data.analysis.playerMetrics[activePlayer].side === 'T' ? (
-                                data.analysis.playerMetrics[activePlayer].sitePresence.BSite > 0.5 ?
-                                  "Player is focused on B site control through Banana, showing clear intent for a B execute. Movement patterns indicate an organized approach with teammates." :
-                                  "Player is primarily controlling mid areas with some A site presence. Movement suggests a split approach or mid-to-A strategy."
-                              ) : (
-                                data.analysis.playerMetrics[activePlayer].sitePresence.ASite > 0.6 ?
-                                  "Strong A site anchoring with disciplined positioning. Minimal rotations indicate dedicated site control rather than a floating defense." :
-                                  data.analysis.playerMetrics[activePlayer].sitePresence.BSite > 0.6 ?
-                                  "B site defense with focus on holding angles towards Banana entrance. Position consistency suggests experienced site anchor." :
-                                  "Player is taking a rotator/mid-controller role, with balanced presence across multiple areas. Movement suggests responsive positioning based on information."
-                              )}
-                            </p>
-                            
-                            <p>
-                              {data.analysis.roleMetrics?.[activePlayer]?.positionConsistency > 0.7 ?
-                                "Demonstrates excellent position consistency, holding key angles with discipline." :
-                                data.analysis.roleMetrics?.[activePlayer]?.positionConsistency < 0.4 ?
-                                "Shows highly dynamic movement patterns with frequent repositioning." :
-                                "Balances positional discipline with necessary repositioning."}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-              
-              {/* Role Analysis Tab */}
-              <TabsContent value="role-analysis" className="space-y-4">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  <div className="lg:col-span-3">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                      {/* Role Performance Summary - Moved to top */}
-                      <div className="lg:col-span-1">
-                        <div className="bg-blue-950/40 p-4 rounded-md border border-blue-900/30 h-full">
-                          <h3 className="text-base font-medium mb-3">Role Performance Summary</h3>
-                          
-                          <div className="space-y-5">
-                            <div>
-                              <h4 className="text-sm font-medium mb-2">Role Effectiveness Distribution</h4>
-                              <div className="h-[200px]">
-                                <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart
-                                    data={[
-                                      { name: 'Entry', t: 0.74, ct: 0 },
-                                      { name: 'Lurker', t: 0.68, ct: 0 },
-                                      { name: 'Support', t: 0.56, ct: 0.63 },
-                                      { name: 'AWPer', t: 0.81, ct: 0.78 },
-                                      { name: 'Anchor', t: 0, ct: 0.85 },
-                                      { name: 'Rotator', t: 0, ct: 0.71 },
-                                    ]}
-                                    margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                                  >
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#1e3a8a" opacity={0.3} />
-                                    <XAxis dataKey="name" stroke="#93c5fd" fontSize={10} />
-                                    <YAxis stroke="#93c5fd" fontSize={10} tickFormatter={(value) => `${Math.round(value * 100)}%`} />
-                                    <Tooltip 
-                                      formatter={(value: number) => [`${(value * 100).toFixed(0)}%`, 'Effectiveness']}
-                                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e40af' }}
-                                    />
-                                    <Bar dataKey="t" fill="#ef4444" name="T Side" />
-                                    <Bar dataKey="ct" fill="#3b82f6" name="CT Side" />
-                                  </BarChart>
-                                </ResponsiveContainer>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Top Performing Roles */}
-                      <div className="lg:col-span-1">
-                        <div className="bg-blue-950/40 p-4 rounded-md border border-blue-900/30 h-full">
-                          <h3 className="text-base font-medium mb-3">Top Performing Roles</h3>
-                          
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-gradient-to-br from-red-950/30 to-red-900/10 p-3 rounded-md border border-red-900/30">
-                              <div className="flex justify-between mb-1">
-                                <div className="text-xs text-red-300">T Side</div>
-                                <Badge variant="outline" className="text-xs border-red-900/30 text-red-300">
-                                  92%
-                                </Badge>
-                              </div>
-                              <div className="font-medium">AWPer</div>
-                              <div className="text-xs text-red-300/80 mt-1">Excellent B control</div>
-                            </div>
-                            
-                            <div className="bg-gradient-to-br from-blue-950/30 to-blue-900/10 p-3 rounded-md border border-blue-900/30">
-                              <div className="flex justify-between mb-1">
-                                <div className="text-xs text-blue-300">CT Side</div>
-                                <Badge variant="outline" className="text-xs border-blue-900/30 text-blue-300">
-                                  85%
-                                </Badge>
-                              </div>
-                              <div className="font-medium">A Site Anchor</div>
-                              <div className="text-xs text-blue-300/80 mt-1">Strong site control</div>
-                            </div>
-                          </div>
-                          
-                          <div className="mt-3">
-                            <h4 className="text-sm font-medium mb-2">Role Synergy</h4>
-                            <div className="space-y-2 text-xs text-blue-300/90">
-                              <p>
-                                T side roles show strong complementary positioning with Entry players creating space effectively for Support players. The Lurker is providing good map control but could improve coordination timing.
-                              </p>
-                              <p>
-                                CT defensive setup demonstrates balanced coverage with effective site anchoring. Rotator is efficiently responding to information, maintaining strong mid control throughout the round.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Role Definitions */}
-                      <div className="lg:col-span-1">
-                        <div className="bg-blue-950/40 p-4 rounded-md border border-blue-900/30 h-full">
-                          <h3 className="text-base font-medium mb-3">Role Definitions</h3>
-                          
-                          <div className="space-y-3">
-                            <div className="bg-gradient-to-br from-red-950/20 to-red-900/5 p-2 rounded-md border border-red-900/30">
-                              <div className="flex items-center mb-1">
-                                <div className="bg-red-600/30 h-5 w-5 rounded-md flex items-center justify-center mr-2">
-                                  <span className="text-red-400 font-bold text-xs">T</span>
-                                </div>
-                                <h4 className="text-xs font-medium">Terrorist Roles</h4>
-                              </div>
-                              
-                              <div className="space-y-1 text-xs">
-                                <div className="flex items-start">
-                                  <RouteOff className="h-3.5 w-3.5 text-red-400 mt-0.5 mr-1 shrink-0" />
-                                  <div>
-                                    <span className="font-medium">Entry/Spacetaker</span>: Creates initial map control
-                                  </div>
-                                </div>
-                                <div className="flex items-start">
-                                  <CircleDotDashed className="h-3.5 w-3.5 text-red-400 mt-0.5 mr-1 shrink-0" />
-                                  <div>
-                                    <span className="font-medium">Lurker</span>: Controls flanks and distractions
-                                  </div>
-                                </div>
-                                <div className="flex items-start">
-                                  <Crosshair className="h-3.5 w-3.5 text-red-400 mt-0.5 mr-1 shrink-0" />
-                                  <div>
-                                    <span className="font-medium">AWPer</span>: Secures key picks
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="bg-gradient-to-br from-blue-950/20 to-blue-900/5 p-2 rounded-md border border-blue-900/30">
-                              <div className="flex items-center mb-1">
-                                <div className="bg-blue-600/30 h-5 w-5 rounded-md flex items-center justify-center mr-2">
-                                  <span className="text-blue-400 font-bold text-xs">CT</span>
-                                </div>
-                                <h4 className="text-xs font-medium">Counter-Terrorist Roles</h4>
-                              </div>
-                              
-                              <div className="space-y-1 text-xs">
-                                <div className="flex items-start">
-                                  <BookmarkCheck className="h-3.5 w-3.5 text-blue-400 mt-0.5 mr-1 shrink-0" />
-                                  <div>
-                                    <span className="font-medium">Anchor</span>: Holds bombsites consistently
-                                  </div>
-                                </div>
-                                <div className="flex items-start">
-                                  <RotateCw className="h-3.5 w-3.5 text-blue-400 mt-0.5 mr-1 shrink-0" />
-                                  <div>
-                                    <span className="font-medium">Rotator</span>: Flexibly moves between sites
-                                  </div>
-                                </div>
-                                <div className="flex items-start">
-                                  <Crosshair className="h-3.5 w-3.5 text-blue-400 mt-0.5 mr-1 shrink-0" />
-                                  <div>
-                                    <span className="font-medium">AWPer</span>: Controls key lines of sight
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* T Side Players */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium flex items-center ml-1">
-                      <div className="bg-red-600/30 h-5 w-5 rounded-md flex items-center justify-center mr-2">
-                        <span className="text-red-400 font-bold text-xs">T</span>
-                      </div>
-                      Terrorist Side Players
-                    </h3>
-                    
-                    <div className="space-y-3">
-                      {getPlayers()
-                        .filter(player => player.side.toLowerCase() === 't')
-                        .map(player => (
-                          <RoleMetricsCard 
-                            key={player.user_steamid}
-                            player={player}
-                            role={detectPlayerRole(player, data.analysis.roleMetrics, data.analysis.pivMetrics)}
-                            roleMetrics={data.analysis.roleMetrics}
-                            pivMetrics={data.analysis.pivMetrics}
-                          />
-                        ))}
-                    </div>
-                  </div>
-                  
-                  {/* CT Side Players */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium flex items-center ml-1">
-                      <div className="bg-blue-600/30 h-5 w-5 rounded-md flex items-center justify-center mr-2">
-                        <span className="text-blue-400 font-bold text-xs">CT</span>
-                      </div>
-                      Counter-Terrorist Side Players
-                    </h3>
-                    
-                    <div className="space-y-3">
-                      {getPlayers()
-                        .filter(player => player.side.toLowerCase() === 'ct')
-                        .map(player => (
-                          <RoleMetricsCard 
-                            key={player.user_steamid}
-                            player={player}
-                            role={detectPlayerRole(player, data.analysis.roleMetrics, data.analysis.pivMetrics)}
-                            roleMetrics={data.analysis.roleMetrics}
-                            pivMetrics={data.analysis.pivMetrics}
-                          />
-                        ))}
-                    </div>
-                  </div>
-                  
-                  {/* Additional Explanation */}
-                  <div className="lg:col-span-3">
-                    <div className="bg-blue-950/40 p-4 rounded-md border border-blue-900/30">
-                      <h3 className="text-base font-medium mb-3">Role-Based Performance Analysis</h3>
-                      <p className="text-sm text-blue-300/80 mb-4">
-                        Player movements are analyzed to determine effective role execution, measuring how well each player performs their tactical function. 
-                        This data helps understand which players are most effective in their assigned roles and can identify potential role mismatches.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-              
-              {/* Team Strategies Tab */}
-              <TabsContent value="team-strategies" className="space-y-4">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Team Analysis Cards */}
-                  <TeamAnalysisCard 
-                    side="T"
-                    teamMetrics={data.analysis.teamMetrics.t}
-                    teamInsights={data.analysis.teamStrategyInsights?.t}
-                    roundPrediction={data.analysis.roundPrediction}
-                  />
-                  
-                  <TeamAnalysisCard 
-                    side="CT"
-                    teamMetrics={data.analysis.teamMetrics.ct}
-                    teamInsights={data.analysis.teamStrategyInsights?.ct}
-                    roundPrediction={data.analysis.roundPrediction}
-                  />
+                  <Card className="bg-blue-950/20 border border-blue-900/30">
+                    <CardHeader className="pb-2">
+                      <div className="text-sm text-blue-300/70">Map</div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">Inferno</div>
+                    </CardContent>
+                  </Card>
                 </div>
                 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Map Control Visualization */}
-                  <div className="lg:col-span-2 bg-blue-950/30 p-4 rounded-md border border-blue-900/30">
-                    <h3 className="text-base font-medium mb-3">Map Control Analysis</h3>
-                    
-                    <div className="relative mb-6">
-                      <div className="absolute inset-0 z-0">
-                        <img 
-                          src={infernoMapImg} 
-                          alt="Inferno Map" 
-                          className="w-full h-full object-cover opacity-10 rounded-lg"
-                        />
-                      </div>
+                <MapVisualization 
+                  playerData={getPlayers()} 
+                  activePlayer={activePlayer || undefined}
+                  onSelectPlayer={(steamId) => setActivePlayer(steamId === activePlayer ? null : steamId)}
+                  findMatchingPlayer={findMatchingPlayer}
+                  isPlaying={isPlaying}
+                  currentFrame={currentFrame}
+                  playbackSpeed={playbackSpeed}
+                  onPlayPause={togglePlayback}
+                  onReset={resetPlayback}
+                  onFrameChange={setCurrentFrame}
+                />
+                
+                {activePlayer && (
+                  <div className="bg-blue-950/40 rounded-md p-4 border border-blue-900/30">
+                    {/* Get player profile data if available */}
+                    {(() => {
+                      const xyzPlayer = data.analysis.playerMetrics[activePlayer];
+                      const playerProfile = findMatchingPlayer(xyzPlayer);
                       
-                      <div className="bg-blue-950/70 p-4 rounded-md border border-blue-800 relative z-10">
-                        <h4 className="text-sm font-medium text-blue-100 mb-2">Control Distribution by Area</h4>
-                        
-                        <div className="grid grid-cols-3 gap-4 mt-4">
-                          <div className="relative">
-                            <div className="absolute inset-0 rounded-md" style={{ 
-                              background: `linear-gradient(to bottom, rgba(59, 130, 246, ${data.analysis.teamMetrics.ct.siteControl.ASite}), rgba(239, 68, 68, ${data.analysis.teamMetrics.t.siteControl.ASite}))` 
-                            }}></div>
-                            <div className="bg-blue-950/60 border border-blue-900/50 p-3 rounded-md relative z-10">
-                              <div className="text-center mb-2">A Site</div>
-                              <div className="flex justify-between text-xs">
-                                <div className="flex flex-col items-center">
-                                  <Badge className="bg-blue-600">CT</Badge>
-                                  <span className="mt-1 font-medium">{formatPercent(data.analysis.teamMetrics.ct.siteControl.ASite)}</span>
-                                </div>
-                                <div className="flex flex-col items-center">
-                                  <Badge variant="destructive">T</Badge>
-                                  <span className="mt-1 font-medium">{formatPercent(data.analysis.teamMetrics.t.siteControl.ASite)}</span>
-                                </div>
-                              </div>
-                            </div>
+                      return (
+                        <div className="mb-3 flex items-center gap-3">
+                          <div className={`p-2 rounded-full ${getPlayerColor(xyzPlayer.side)}`}>
+                            <User className="h-6 w-6" />
                           </div>
-                          
-                          <div className="relative">
-                            <div className="absolute inset-0 rounded-md" style={{ 
-                              background: `linear-gradient(to bottom, rgba(59, 130, 246, ${data.analysis.teamMetrics.ct.siteControl.Mid}), rgba(239, 68, 68, ${data.analysis.teamMetrics.t.siteControl.Mid}))` 
-                            }}></div>
-                            <div className="bg-blue-950/60 border border-blue-900/50 p-3 rounded-md relative z-10">
-                              <div className="text-center mb-2">Mid</div>
-                              <div className="flex justify-between text-xs">
-                                <div className="flex flex-col items-center">
-                                  <Badge className="bg-blue-600">CT</Badge>
-                                  <span className="mt-1 font-medium">{formatPercent(data.analysis.teamMetrics.ct.siteControl.Mid)}</span>
-                                </div>
-                                <div className="flex flex-col items-center">
-                                  <Badge variant="destructive">T</Badge>
-                                  <span className="mt-1 font-medium">{formatPercent(data.analysis.teamMetrics.t.siteControl.Mid)}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="relative">
-                            <div className="absolute inset-0 rounded-md" style={{ 
-                              background: `linear-gradient(to bottom, rgba(59, 130, 246, ${data.analysis.teamMetrics.ct.siteControl.BSite}), rgba(239, 68, 68, ${data.analysis.teamMetrics.t.siteControl.BSite}))` 
-                            }}></div>
-                            <div className="bg-blue-950/60 border border-blue-900/50 p-3 rounded-md relative z-10">
-                              <div className="text-center mb-2">B Site</div>
-                              <div className="flex justify-between text-xs">
-                                <div className="flex flex-col items-center">
-                                  <Badge className="bg-blue-600">CT</Badge>
-                                  <span className="mt-1 font-medium">{formatPercent(data.analysis.teamMetrics.ct.siteControl.BSite)}</span>
-                                </div>
-                                <div className="flex flex-col items-center">
-                                  <Badge variant="destructive">T</Badge>
-                                  <span className="mt-1 font-medium">{formatPercent(data.analysis.teamMetrics.t.siteControl.BSite)}</span>
-                                </div>
-                              </div>
+                          <div>
+                            <h3 className="text-base font-medium">
+                              {xyzPlayer.name} {playerProfile && `(${playerProfile.name})`}
+                            </h3>
+                            <div className="text-xs text-blue-300/70 flex items-center gap-2">
+                              <span className={`inline-block w-2 h-2 rounded-full ${xyzPlayer.side === 'T' ? 'bg-amber-400' : 'bg-blue-400'}`}></span>
+                              <span>{xyzPlayer.side === 'T' ? 'Terrorist' : 'Counter-Terrorist'}</span>
+                              {playerProfile && (
+                                <>
+                                  <span className="mx-1">•</span>
+                                  <span>{playerProfile.team}</span>
+                                  {playerProfile.metrics?.role && (
+                                    <>
+                                      <span className="mx-1">•</span>
+                                      <span>{playerProfile.metrics.role}</span>
+                                    </>
+                                  )}
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
-                        
-                        <div className="mt-4 text-xs text-blue-300/90">
-                          <p>
-                            T side is establishing strong B site control ({formatPercent(data.analysis.teamMetrics.t.siteControl.BSite)}) through Banana, 
-                            suggesting a focused B execute strategy. CT defense is prioritizing A site security with minimal mid presence,
-                            potentially leaving B site vulnerable to coordinated T side pressure.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                      );
+                    })()}
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-blue-950/40 p-3 rounded-md border border-blue-900/30">
-                        <h4 className="text-sm font-medium mb-2">Team Movement Patterns</h4>
-                        <div className="h-[220px]">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart
-                              data={[
-                                { position: 'Early Round', t: data.analysis.teamMetrics.t.teamSpread * 0.7, ct: data.analysis.teamMetrics.ct.teamSpread * 0.7 },
-                                { position: 'Mid Round', t: data.analysis.teamMetrics.t.teamSpread * 0.9, ct: data.analysis.teamMetrics.ct.teamSpread * 0.9 },
-                                { position: 'Late Round', t: data.analysis.teamMetrics.t.teamSpread * 1.1, ct: data.analysis.teamMetrics.ct.teamSpread * 1.1 },
-                                { position: 'Execute', t: data.analysis.teamMetrics.t.teamSpread * 0.8, ct: data.analysis.teamMetrics.ct.teamSpread * 1.2 },
-                              ]}
-                              margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" stroke="#1e3a8a" opacity={0.3} />
-                              <XAxis dataKey="position" stroke="#93c5fd" fontSize={10} />
-                              <YAxis stroke="#93c5fd" fontSize={10} />
-                              <Tooltip 
-                                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e40af' }}
-                              />
-                              <Legend />
-                              <Line type="monotone" dataKey="t" stroke="#ef4444" name="T Spread" />
-                              <Line type="monotone" dataKey="ct" stroke="#3b82f6" name="CT Spread" />
-                            </LineChart>
-                          </ResponsiveContainer>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-blue-950/60 p-3 rounded-md">
+                        <div className="text-sm font-medium mb-2">Position Distribution</div>
+                        <div className="space-y-2">
+                          <div>
+                            <div className="text-xs mb-1 flex justify-between">
+                              <span>A Site</span>
+                              <span className="font-medium">
+                                {formatPercent(data.analysis.playerMetrics[activePlayer].sitePresence.ASite)}
+                              </span>
+                            </div>
+                            <Progress value={data.analysis.playerMetrics[activePlayer].sitePresence.ASite * 100} className="h-1.5" />
+                          </div>
+                          
+                          <div>
+                            <div className="text-xs mb-1 flex justify-between">
+                              <span>B Site</span>
+                              <span className="font-medium">
+                                {formatPercent(data.analysis.playerMetrics[activePlayer].sitePresence.BSite)}
+                              </span>
+                            </div>
+                            <Progress value={data.analysis.playerMetrics[activePlayer].sitePresence.BSite * 100} className="h-1.5" />
+                          </div>
+                          
+                          <div>
+                            <div className="text-xs mb-1 flex justify-between">
+                              <span>Mid</span>
+                              <span className="font-medium">
+                                {formatPercent(data.analysis.playerMetrics[activePlayer].sitePresence.Mid)}
+                              </span>
+                            </div>
+                            <Progress value={data.analysis.playerMetrics[activePlayer].sitePresence.Mid * 100} className="h-1.5" />
+                          </div>
                         </div>
                       </div>
                       
-                      <div className="bg-blue-950/40 p-3 rounded-md border border-blue-900/30">
-                        <h4 className="text-sm font-medium mb-2">Trade Potential Analysis</h4>
-                        <div className="h-[220px]">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart
-                              data={[
-                                { 
-                                  name: 'A Site', 
-                                  t: data.analysis.teamMetrics.t.tradeEfficiency * data.analysis.teamMetrics.t.siteControl.ASite * 1.2, 
-                                  ct: data.analysis.teamMetrics.ct.tradeEfficiency * data.analysis.teamMetrics.ct.siteControl.ASite * 1.2 
-                                },
-                                { 
-                                  name: 'Mid', 
-                                  t: data.analysis.teamMetrics.t.tradeEfficiency * data.analysis.teamMetrics.t.siteControl.Mid * 1.2, 
-                                  ct: data.analysis.teamMetrics.ct.tradeEfficiency * data.analysis.teamMetrics.ct.siteControl.Mid * 1.2 
-                                },
-                                { 
-                                  name: 'B Site', 
-                                  t: data.analysis.teamMetrics.t.tradeEfficiency * data.analysis.teamMetrics.t.siteControl.BSite * 1.2, 
-                                  ct: data.analysis.teamMetrics.ct.tradeEfficiency * data.analysis.teamMetrics.ct.siteControl.BSite * 1.2 
-                                },
-                              ]}
-                              margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" stroke="#1e3a8a" opacity={0.3} />
-                              <XAxis dataKey="name" stroke="#93c5fd" fontSize={10} />
-                              <YAxis stroke="#93c5fd" fontSize={10} tickFormatter={(value) => `${Math.round(value * 100)}%`} />
-                              <Tooltip 
-                                formatter={(value: number) => [`${(value * 100).toFixed(0)}%`, 'Trade Potential']}
-                                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e40af' }}
-                              />
-                              <Legend />
-                              <Area type="monotone" dataKey="t" stackId="1" stroke="#ef4444" fill="#ef444440" name="T Side" />
-                              <Area type="monotone" dataKey="ct" stackId="2" stroke="#3b82f6" fill="#3b82f640" name="CT Side" />
-                            </AreaChart>
-                          </ResponsiveContainer>
+                      <div className="bg-blue-950/60 p-3 rounded-md">
+                        <div className="text-sm font-medium mb-2">Movement Metrics</div>
+                        <div className="space-y-2">
+                          <div>
+                            <div className="text-xs mb-1 flex justify-between">
+                              <span>Distance Traveled</span>
+                              <span className="font-medium">
+                                {formatDistance(data.analysis.playerMetrics[activePlayer].totalDistance)}
+                              </span>
+                            </div>
+                            <Progress 
+                              value={Math.min(100, (data.analysis.playerMetrics[activePlayer].totalDistance / 10000) * 100)} 
+                              className="h-1.5" 
+                            />
+                          </div>
+                          
+                          <div>
+                            <div className="text-xs mb-1 flex justify-between">
+                              <span>Average Speed</span>
+                              <span className="font-medium">
+                                {Math.round(data.analysis.playerMetrics[activePlayer].avgSpeed)}
+                              </span>
+                            </div>
+                            <Progress 
+                              value={Math.min(100, (data.analysis.playerMetrics[activePlayer].avgSpeed / 300) * 100)} 
+                              className="h-1.5" 
+                            />
+                          </div>
+                          
+                          <div>
+                            <div className="text-xs mb-1 flex justify-between">
+                              <span>Rotations</span>
+                              <span className="font-medium">
+                                {data.analysis.playerMetrics[activePlayer].rotations}
+                              </span>
+                            </div>
+                            <Progress 
+                              value={Math.min(100, (data.analysis.playerMetrics[activePlayer].rotations / 5) * 100)} 
+                              className="h-1.5" 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-blue-950/60 p-3 rounded-md">
+                        <div className="text-sm font-medium mb-2">Role Analysis</div>
+                        <div className="text-base font-semibold mb-2">
+                          {detectPlayerRole(
+                            data.analysis.playerMetrics[activePlayer],
+                            data.analysis.roleMetrics,
+                            data.analysis.pivMetrics
+                          )}
+                        </div>
+                        <div className="text-xs text-blue-300/80">
+                          Role determined by movement patterns, position preferences, and site presence distribution.
                         </div>
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Tactical Analysis */}
-                  <div className="bg-blue-950/30 p-4 rounded-md border border-blue-900/30">
-                    <h3 className="text-base font-medium mb-3">Tactical Analysis</h3>
+                )}
+              </div>
+            </TabsContent>
+          
+            {/* Role Analysis Tab */}
+            <TabsContent value="role-analysis" className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Top Performing Roles */}
+                <div className="lg:col-span-1">
+                  <div className="bg-blue-950/40 p-4 rounded-md border border-blue-900/30 h-full">
+                    <h3 className="text-base font-medium mb-3">Top Performing Roles</h3>
                     
-                    <div className="space-y-4">
-                      <div className="bg-blue-950/50 p-3 rounded-md">
-                        <h4 className="text-sm font-medium mb-2 flex items-center">
-                          <FileBarChart className="h-4 w-4 mr-1.5 text-blue-400" />
-                          Round Summary
-                        </h4>
-                        <p className="text-xs text-blue-300/90">
-                          Round 4 shows a clear T-side focus on B site control ({formatPercent(data.analysis.teamMetrics.t.siteControl.BSite)}), 
-                          with coordinated team movement ({formatPercent(data.analysis.teamStrategyInsights?.t.movementCoordination || 0.7)}).
-                          CT defense is primarily anchored at A site ({formatPercent(data.analysis.teamMetrics.ct.siteControl.ASite)}), 
-                          suggesting a potential misread of T side intentions.
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-gradient-to-br from-red-950/30 to-red-900/10 p-3 rounded-md border border-red-900/30">
+                        <div className="flex justify-between mb-1">
+                          <div className="text-xs text-red-300">T Side</div>
+                          <Badge variant="outline" className="text-xs border-red-900/30 text-red-300">
+                            92%
+                          </Badge>
+                        </div>
+                        <div className="font-medium">AWPer</div>
+                        <div className="text-xs text-red-300/80 mt-1">Excellent B control</div>
+                      </div>
+                      
+                      <div className="bg-gradient-to-br from-blue-950/30 to-blue-900/10 p-3 rounded-md border border-blue-900/30">
+                        <div className="flex justify-between mb-1">
+                          <div className="text-xs text-blue-300">CT Side</div>
+                          <Badge variant="outline" className="text-xs border-blue-900/30 text-blue-300">
+                            85%
+                          </Badge>
+                        </div>
+                        <div className="font-medium">A Site Anchor</div>
+                        <div className="text-xs text-blue-300/80 mt-1">Strong site control</div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3">
+                      <h4 className="text-sm font-medium mb-2">Role Synergy</h4>
+                      <div className="space-y-2 text-xs text-blue-300/90">
+                        <p>
+                          T side roles show strong complementary positioning with Entry players creating space effectively for Support players. The Lurker is providing good map control but could improve coordination timing.
                         </p>
+                        <p>
+                          CT defensive setup demonstrates balanced coverage with effective site anchoring. Rotator is efficiently responding to information, maintaining strong mid control throughout the round.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Role Performance Summary with simplified graph */}
+                <div className="lg:col-span-1">
+                  <div className="bg-blue-950/40 p-4 rounded-md border border-blue-900/30 h-full">
+                    <h3 className="text-base font-medium mb-3">Role Performance Summary</h3>
+                    
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span>AWPer</span>
+                          <span className="font-medium">87%</span>
+                        </div>
+                        <div className="h-2 bg-blue-900/30 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-blue-600 to-purple-600" style={{ width: '87%' }}></div>
+                        </div>
                       </div>
                       
                       <div className="space-y-1">
-                        <h4 className="text-sm font-medium mb-2">Key Performance Metrics</h4>
-                        
-                        <div className="flex justify-between items-center text-xs">
-                          <div className="flex items-center">
-                            <Target className="h-3.5 w-3.5 text-blue-400 mr-1.5" />
-                            <span>Map Control Efficiency</span>
+                        <div className="flex items-center justify-between text-xs">
+                          <span>Entry/Spacetaker</span>
+                          <span className="font-medium">74%</span>
+                        </div>
+                        <div className="h-2 bg-blue-900/30 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-blue-600 to-purple-600" style={{ width: '74%' }}></div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span>Lurker</span>
+                          <span className="font-medium">68%</span>
+                        </div>
+                        <div className="h-2 bg-blue-900/30 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-blue-600 to-purple-600" style={{ width: '68%' }}></div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span>Rotator</span>
+                          <span className="font-medium">71%</span>
+                        </div>
+                        <div className="h-2 bg-blue-900/30 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-blue-600 to-purple-600" style={{ width: '71%' }}></div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span>Anchor</span>
+                          <span className="font-medium">85%</span>
+                        </div>
+                        <div className="h-2 bg-blue-900/30 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-blue-600 to-purple-600" style={{ width: '85%' }}></div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span>Support</span>
+                          <span className="font-medium">63%</span>
+                        </div>
+                        <div className="h-2 bg-blue-900/30 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-blue-600 to-purple-600" style={{ width: '63%' }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Role Definitions */}
+                <div className="lg:col-span-1">
+                  <div className="bg-blue-950/40 p-4 rounded-md border border-blue-900/30 h-full">
+                    <h3 className="text-base font-medium mb-3">Role Definitions</h3>
+                    
+                    <div className="space-y-3">
+                      <div className="bg-gradient-to-br from-red-950/20 to-red-900/5 p-2 rounded-md border border-red-900/30">
+                        <div className="flex items-center mb-1">
+                          <div className="bg-red-600/30 h-5 w-5 rounded-md flex items-center justify-center mr-2">
+                            <span className="text-red-400 font-bold text-xs">T</span>
                           </div>
-                          <div className="flex items-center">
-                            <span className="text-red-300 mr-2">T {formatPercent(data.analysis.teamStrategyInsights?.t.mapControlDistribution?.BSite || 0.7)}</span>
-                            <span className="text-blue-300">CT {formatPercent(data.analysis.teamStrategyInsights?.ct.mapControlDistribution?.ASite || 0.65)}</span>
-                          </div>
+                          <h4 className="text-xs font-medium">Terrorist Roles</h4>
                         </div>
                         
-                        <div className="flex justify-between items-center text-xs">
-                          <div className="flex items-center">
-                            <Users className="h-3.5 w-3.5 text-blue-400 mr-1.5" />
-                            <span>Team Coordination</span>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex items-start">
+                            <RouteOff className="h-3.5 w-3.5 text-red-400 mt-0.5 mr-1 shrink-0" />
+                            <div>
+                              <span className="font-medium">Entry/Spacetaker</span>: Creates initial map control
+                            </div>
                           </div>
-                          <div className="flex items-center">
-                            <span className="text-red-300 mr-2">T {formatPercent(data.analysis.teamStrategyInsights?.t.movementCoordination || 0.75)}</span>
-                            <span className="text-blue-300">CT {formatPercent(data.analysis.teamStrategyInsights?.ct.movementCoordination || 0.6)}</span>
+                          <div className="flex items-start">
+                            <CircleDotDashed className="h-3.5 w-3.5 text-red-400 mt-0.5 mr-1 shrink-0" />
+                            <div>
+                              <span className="font-medium">Lurker</span>: Controls flanks and distractions
+                            </div>
                           </div>
-                        </div>
-                        
-                        <div className="flex justify-between items-center text-xs">
-                          <div className="flex items-center">
-                            <Swords className="h-3.5 w-3.5 text-blue-400 mr-1.5" />
-                            <span>Trade Potential</span>
-                          </div>
-                          <div className="flex items-center">
-                            <span className="text-red-300 mr-2">T {formatPercent(data.analysis.teamMetrics.t.tradeEfficiency)}</span>
-                            <span className="text-blue-300">CT {formatPercent(data.analysis.teamMetrics.ct.tradeEfficiency)}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex justify-between items-center text-xs">
-                          <div className="flex items-center">
-                            <Timer className="h-3.5 w-3.5 text-blue-400 mr-1.5" />
-                            <span>Rotation Timing</span>
-                          </div>
-                          <div className="flex items-center">
-                            <span className="text-red-300 mr-2">T {formatPercent(data.analysis.teamStrategyInsights?.t.rotationTimings || 0.65)}</span>
-                            <span className="text-blue-300">CT {formatPercent(data.analysis.teamStrategyInsights?.ct.rotationTimings || 0.55)}</span>
+                          <div className="flex items-start">
+                            <Crosshair className="h-3.5 w-3.5 text-red-400 mt-0.5 mr-1 shrink-0" />
+                            <div>
+                              <span className="font-medium">AWPer</span>: Secures key picks
+                            </div>
                           </div>
                         </div>
                       </div>
                       
-                      <div className="bg-blue-950/50 p-3 rounded-md">
-                        <h4 className="text-sm font-medium mb-2 flex items-center">
-                          <TrendingUp className="h-4 w-4 mr-1.5 text-blue-400" />
-                          Strategic Advantage
-                        </h4>
-                        
-                        <div className="relative pt-1">
-                          <div className="flex h-3 mb-2 overflow-hidden rounded-full">
-                            <div 
-                              className="bg-gradient-to-r from-red-900 to-red-600" 
-                              style={{ width: `${(data.analysis.roundPrediction?.tProbability || 0.6) * 100}%` }}
-                            ></div>
-                            <div 
-                              className="bg-gradient-to-r from-blue-600 to-blue-800" 
-                              style={{ width: `${(data.analysis.roundPrediction?.ctProbability || 0.4) * 100}%` }}
-                            ></div>
+                      <div className="bg-gradient-to-br from-blue-950/20 to-blue-900/5 p-2 rounded-md border border-blue-900/30">
+                        <div className="flex items-center mb-1">
+                          <div className="bg-blue-600/30 h-5 w-5 rounded-md flex items-center justify-center mr-2">
+                            <span className="text-blue-400 font-bold text-xs">CT</span>
                           </div>
-                          <div className="flex justify-between text-xs">
-                            <span className="text-red-300">T Side: {formatPercent(data.analysis.roundPrediction?.tProbability || 0.6)}</span>
-                            <span className="text-blue-300">CT Side: {formatPercent(data.analysis.roundPrediction?.ctProbability || 0.4)}</span>
+                          <h4 className="text-xs font-medium">Counter-Terrorist Roles</h4>
+                        </div>
+                        
+                        <div className="space-y-1 text-xs">
+                          <div className="flex items-start">
+                            <BookmarkCheck className="h-3.5 w-3.5 text-blue-400 mt-0.5 mr-1 shrink-0" />
+                            <div>
+                              <span className="font-medium">Anchor</span>: Holds bombsites consistently
+                            </div>
+                          </div>
+                          <div className="flex items-start">
+                            <RotateCw className="h-3.5 w-3.5 text-blue-400 mt-0.5 mr-1 shrink-0" />
+                            <div>
+                              <span className="font-medium">Rotator</span>: Flexibly moves between sites
+                            </div>
+                          </div>
+                          <div className="flex items-start">
+                            <Crosshair className="h-3.5 w-3.5 text-blue-400 mt-0.5 mr-1 shrink-0" />
+                            <div>
+                              <span className="font-medium">AWPer</span>: Controls key lines of sight
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-4">
+                <div className="bg-blue-950/30 p-4 rounded-md border border-blue-900/30">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="bg-red-600/30 p-1.5 rounded-md">
+                      <RouteOff className="h-5 w-5 text-red-400" />
+                    </div>
+                    <h3 className="text-base font-medium">Terrorist Side Players</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {getPlayers().filter(player => player.side === 'T').map(player => (
+                      <RoleMetricsCard
+                        key={player.user_steamid}
+                        player={player}
+                        role={detectPlayerRole(player, data.analysis.roleMetrics, data.analysis.pivMetrics)}
+                        roleMetrics={data.analysis.roleMetrics}
+                        pivMetrics={data.analysis.pivMetrics}
+                      />
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="bg-blue-950/30 p-4 rounded-md border border-blue-900/30">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="bg-blue-600/30 p-1.5 rounded-md">
+                      <Flag className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <h3 className="text-base font-medium">Counter-Terrorist Side Players</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {getPlayers().filter(player => player.side === 'CT').map(player => (
+                      <RoleMetricsCard
+                        key={player.user_steamid}
+                        player={player}
+                        role={detectPlayerRole(player, data.analysis.roleMetrics, data.analysis.pivMetrics)}
+                        roleMetrics={data.analysis.roleMetrics}
+                        pivMetrics={data.analysis.pivMetrics}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-blue-950/30 p-4 rounded-md border border-blue-900/30">
+                <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
+                  <FileBarChart className="h-5 w-5 text-blue-500" />
+                  Role-Based Performance Analysis
+                </h3>
+                
+                <p className="text-sm text-blue-300/80">
+                  Player movements are analyzed to determine effective role execution, measuring how well each player performs their tactical function. This data helps understand which players are most effective in their assigned roles and can identify potential role mismatches.
+                </p>
+              </div>
+            </TabsContent>
+          
+            <TabsContent value="team-strategies" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* T Side Strategy Analysis */}
+                <div className="space-y-4">
+                  <Card className="bg-gradient-to-br from-red-950/30 to-red-900/10 border border-red-900/30">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <div className="bg-red-800/30 p-1.5 rounded">
+                          <Swords className="h-5 w-5 text-red-400" />
+                        </div>
+                        T Side Strategy Analysis
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {data?.analysis?.teamStrategyInsights?.t && (
+                        <>
+                          <div className="space-y-2.5">
+                            <div className="flex justify-between text-sm">
+                              <span>Team Cohesion</span>
+                              <span className="font-medium">
+                                {formatPercent(data.analysis.teamStrategyInsights.t.teamCohesionScore)}
+                              </span>
+                            </div>
+                            <Progress 
+                              value={data.analysis.teamStrategyInsights.t.teamCohesionScore * 100} 
+                              className="h-1.5 bg-red-950"
+                            />
+                            
+                            <div className="flex justify-between text-sm">
+                              <span>Map Control</span>
+                              <span className="font-medium">
+                                {formatPercent(data.analysis.teamStrategyInsights.t.powerPositionControl)}
+                              </span>
+                            </div>
+                            <Progress 
+                              value={data.analysis.teamStrategyInsights.t.powerPositionControl * 100} 
+                              className="h-1.5 bg-red-950"
+                            />
+                            
+                            <div className="flex justify-between text-sm">
+                              <span>Trade Efficiency</span>
+                              <span className="font-medium">
+                                {formatPercent(data.analysis.teamStrategyInsights.t.overallTradeEfficiency)}
+                              </span>
+                            </div>
+                            <Progress 
+                              value={data.analysis.teamStrategyInsights.t.overallTradeEfficiency * 100} 
+                              className="h-1.5 bg-red-950"
+                            />
+                            
+                            <div className="flex justify-between text-sm">
+                              <span>Attack Execution</span>
+                              <span className="font-medium">
+                                {formatPercent(data.analysis.teamStrategyInsights.t.attackExecutionScore || 0.6)}
+                              </span>
+                            </div>
+                            <Progress 
+                              value={(data.analysis.teamStrategyInsights.t.attackExecutionScore || 0.6) * 100} 
+                              className="h-1.5 bg-red-950"
+                            />
+                          </div>
+                          
+                          <div className="bg-red-900/20 rounded-md p-3 text-sm">
+                            <div className="font-medium mb-2 text-red-200">Round Win Probability</div>
+                            <div className="text-xl font-bold text-red-300">
+                              {formatPercent(data.analysis.teamStrategyInsights.t.roundWinProbability.probability)}
+                            </div>
+                            <div className="text-xs mt-2 text-red-300/70">Key factors:</div>
+                            <ul className="list-disc list-inside text-xs space-y-1 mt-1 text-red-300/80">
+                              {data.analysis.teamStrategyInsights.t.roundWinProbability.factors.map((factor, idx) => (
+                                <li key={idx}>{factor}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-gradient-to-br from-red-950/20 to-red-900/5 border border-red-900/30">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium">Map Control Distribution (T)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {data?.analysis?.teamStrategyInsights?.t && (
+                        <div className="h-[200px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                              data={[
+                                {
+                                  name: 'A Site',
+                                  value: data.analysis.teamStrategyInsights.t.mapControlDistribution.ASite * 100
+                                },
+                                {
+                                  name: 'B Site',
+                                  value: data.analysis.teamStrategyInsights.t.mapControlDistribution.BSite * 100
+                                },
+                                {
+                                  name: 'Mid',
+                                  value: data.analysis.teamStrategyInsights.t.mapControlDistribution.Mid * 100
+                                }
+                              ]}
+                              margin={{ top: 20, right: 20, bottom: 20, left: 0 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                              <XAxis 
+                                dataKey="name" 
+                                tick={{ fill: '#f87171', fontSize: 12 }}
+                                axisLine={{ stroke: '#4b5563', opacity: 0.5 }}
+                              />
+                              <YAxis 
+                                tickFormatter={(value) => `${value}%`}
+                                tick={{ fill: '#f87171', fontSize: 12 }}
+                                axisLine={{ stroke: '#4b5563', opacity: 0.5 }}
+                              />
+                              <Tooltip 
+                                formatter={(value: any) => [`${value}%`, 'Control']}
+                                contentStyle={{ 
+                                  backgroundColor: '#18181b', 
+                                  borderColor: '#ef4444', 
+                                  borderRadius: '0.375rem'
+                                }}
+                              />
+                              <Bar 
+                                dataKey="value" 
+                                fill="#ef4444" 
+                                radius={[4, 4, 0, 0]}
+                                background={{ fill: '#27272a', radius: [4, 4, 0, 0] }}
+                              />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                {/* CT Side Strategy Analysis */}
+                <div className="space-y-4">
+                  <Card className="bg-gradient-to-br from-blue-950/30 to-blue-900/10 border border-blue-900/30">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <div className="bg-blue-800/30 p-1.5 rounded">
+                          <Shield className="h-5 w-5 text-blue-400" />
+                        </div>
+                        CT Side Strategy Analysis
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {data?.analysis?.teamStrategyInsights?.ct && (
+                        <>
+                          <div className="space-y-2.5">
+                            <div className="flex justify-between text-sm">
+                              <span>Team Cohesion</span>
+                              <span className="font-medium">
+                                {formatPercent(data.analysis.teamStrategyInsights.ct.teamCohesionScore)}
+                              </span>
+                            </div>
+                            <Progress 
+                              value={data.analysis.teamStrategyInsights.ct.teamCohesionScore * 100} 
+                              className="h-1.5 bg-blue-950"
+                            />
+                            
+                            <div className="flex justify-between text-sm">
+                              <span>Map Control</span>
+                              <span className="font-medium">
+                                {formatPercent(data.analysis.teamStrategyInsights.ct.powerPositionControl)}
+                              </span>
+                            </div>
+                            <Progress 
+                              value={data.analysis.teamStrategyInsights.ct.powerPositionControl * 100} 
+                              className="h-1.5 bg-blue-950"
+                            />
+                            
+                            <div className="flex justify-between text-sm">
+                              <span>Trade Efficiency</span>
+                              <span className="font-medium">
+                                {formatPercent(data.analysis.teamStrategyInsights.ct.overallTradeEfficiency)}
+                              </span>
+                            </div>
+                            <Progress 
+                              value={data.analysis.teamStrategyInsights.ct.overallTradeEfficiency * 100} 
+                              className="h-1.5 bg-blue-950"
+                            />
+                            
+                            <div className="flex justify-between text-sm">
+                              <span>Defense Quality</span>
+                              <span className="font-medium">
+                                {formatPercent(data.analysis.teamStrategyInsights.ct.defenseSetupQuality || 0.7)}
+                              </span>
+                            </div>
+                            <Progress 
+                              value={(data.analysis.teamStrategyInsights.ct.defenseSetupQuality || 0.7) * 100} 
+                              className="h-1.5 bg-blue-950"
+                            />
+                          </div>
+                          
+                          <div className="bg-blue-900/20 rounded-md p-3 text-sm">
+                            <div className="font-medium mb-2 text-blue-200">Round Win Probability</div>
+                            <div className="text-xl font-bold text-blue-300">
+                              {formatPercent(data.analysis.teamStrategyInsights.ct.roundWinProbability.probability)}
+                            </div>
+                            <div className="text-xs mt-2 text-blue-300/70">Key factors:</div>
+                            <ul className="list-disc list-inside text-xs space-y-1 mt-1 text-blue-300/80">
+                              {data.analysis.teamStrategyInsights.ct.roundWinProbability.factors.map((factor, idx) => (
+                                <li key={idx}>{factor}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-gradient-to-br from-blue-950/20 to-blue-900/5 border border-blue-900/30">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium">Map Control Distribution (CT)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {data?.analysis?.teamStrategyInsights?.ct && (
+                        <div className="h-[200px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                              data={[
+                                {
+                                  name: 'A Site',
+                                  value: data.analysis.teamStrategyInsights.ct.mapControlDistribution.ASite * 100
+                                },
+                                {
+                                  name: 'B Site',
+                                  value: data.analysis.teamStrategyInsights.ct.mapControlDistribution.BSite * 100
+                                },
+                                {
+                                  name: 'Mid',
+                                  value: data.analysis.teamStrategyInsights.ct.mapControlDistribution.Mid * 100
+                                }
+                              ]}
+                              margin={{ top: 20, right: 20, bottom: 20, left: 0 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                              <XAxis 
+                                dataKey="name" 
+                                tick={{ fill: '#60a5fa', fontSize: 12 }}
+                                axisLine={{ stroke: '#4b5563', opacity: 0.5 }}
+                              />
+                              <YAxis 
+                                tickFormatter={(value) => `${value}%`}
+                                tick={{ fill: '#60a5fa', fontSize: 12 }}
+                                axisLine={{ stroke: '#4b5563', opacity: 0.5 }}
+                              />
+                              <Tooltip 
+                                formatter={(value: any) => [`${value}%`, 'Control']}
+                                contentStyle={{ 
+                                  backgroundColor: '#18181b', 
+                                  borderColor: '#3b82f6', 
+                                  borderRadius: '0.375rem'
+                                }}
+                              />
+                              <Bar 
+                                dataKey="value" 
+                                fill="#3b82f6" 
+                                radius={[4, 4, 0, 0]}
+                                background={{ fill: '#27272a', radius: [4, 4, 0, 0] }}
+                              />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-6">
+                <Card className="bg-blue-950/20 border border-blue-900/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-blue-500" />
+                      Round Prediction
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {data?.analysis?.roundPrediction && (
+                      <>
+                        <div className="flex items-center justify-center gap-6">
+                          <div className="text-center">
+                            <div className="text-sm text-blue-300 mb-1">T Win Probability</div>
+                            <div className="text-2xl font-bold text-amber-400">
+                              {formatPercent(data.analysis.roundPrediction.tProbability)}
+                            </div>
+                          </div>
+                          
+                          <div className="w-px h-16 bg-blue-900/30"></div>
+                          
+                          <div className="text-center">
+                            <div className="text-sm text-blue-300 mb-1">CT Win Probability</div>
+                            <div className="text-2xl font-bold text-blue-400">
+                              {formatPercent(data.analysis.roundPrediction.ctProbability)}
+                            </div>
                           </div>
                         </div>
                         
-                        <div className="mt-3 text-xs text-blue-300/90">
-                          <p>
-                            T side has a tactical advantage due to superior B site control and team coordination. 
-                            CT side is not optimally positioned to counter the apparent B site execute strategy.
+                        <div className="bg-blue-950/40 rounded-md p-4">
+                          <div className="text-sm font-medium mb-2">Key Decision Factors</div>
+                          <ul className="space-y-1 text-sm text-blue-300/80">
+                            {data.analysis.roundPrediction.factors.map((factor, idx) => (
+                              <li key={idx} className="flex items-start gap-2">
+                                <ChevronRight className="h-4 w-4 mt-0.5 text-blue-500 shrink-0" />
+                                <span>{factor}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-blue-950/20 border border-blue-900/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Compass className="h-5 w-5 text-blue-500" />
+                      Team Movement Analysis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-medium">T Side Movement Patterns</h4>
+                        
+                        <div className="bg-red-950/20 p-3 rounded-md border border-red-900/30 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs">Average Team Distance</div>
+                            <div className="text-xs font-medium">
+                              {formatDistance(data?.analysis?.teamMetrics?.t?.avgTeamDistance || 0)}
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs">Team Spread</div>
+                            <div className="text-xs font-medium">
+                              {formatDistance(data?.analysis?.teamMetrics?.t?.teamSpread || 0)}
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs">Trade Efficiency</div>
+                            <div className="text-xs font-medium">
+                              {formatPercent(data?.analysis?.teamMetrics?.t?.tradeEfficiency || 0)}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-red-950/10 p-3 rounded-md border border-red-900/20">
+                          <h5 className="text-xs font-medium mb-2">Strategy Commentary</h5>
+                          <p className="text-xs text-red-200/70">
+                            The T side shows a coordinated approach with good trade potential and adequate site control. 
+                            Movement coordination is good across entry, support and lurk players with effective space 
+                            creation on their primary target site.
                           </p>
                         </div>
                       </div>
                       
-                      <Button 
-                        onClick={handleRunAnalysis} 
-                        className="w-full bg-gradient-to-r from-blue-700 to-purple-600 hover:from-blue-800 hover:to-purple-700"
-                      >
-                        Reprocess Positional Data
-                      </Button>
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-medium">CT Side Movement Patterns</h4>
+                        
+                        <div className="bg-blue-950/20 p-3 rounded-md border border-blue-900/30 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs">Average Team Distance</div>
+                            <div className="text-xs font-medium">
+                              {formatDistance(data?.analysis?.teamMetrics?.ct?.avgTeamDistance || 0)}
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs">Team Spread</div>
+                            <div className="text-xs font-medium">
+                              {formatDistance(data?.analysis?.teamMetrics?.ct?.teamSpread || 0)}
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs">Trade Efficiency</div>
+                            <div className="text-xs font-medium">
+                              {formatPercent(data?.analysis?.teamMetrics?.ct?.tradeEfficiency || 0)}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-blue-950/10 p-3 rounded-md border border-blue-900/20">
+                          <h5 className="text-xs font-medium mb-2">Strategy Commentary</h5>
+                          <p className="text-xs text-blue-200/70">
+                            The CT setup shows strong site anchoring with good rotator movement between sites.
+                            The defensive positioning provides effective crossfire opportunities and good information 
+                            gathering with minimal over-rotation detected.
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          )}
-        </CardContent>
-      </Card>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      )}
     </div>
   );
 }

@@ -317,13 +317,6 @@ export default function Sidebar() {
               label="Documentation" 
               isActive={isActive("/documentation")} 
             />
-            
-            <MenuItem 
-              href="/vention-mockup" 
-              icon={<Layers />} 
-              label="Vention UI Style" 
-              isActive={isActive("/vention-mockup")} 
-            />
           </div>
           
           <div className="flex items-center px-4 mb-2">

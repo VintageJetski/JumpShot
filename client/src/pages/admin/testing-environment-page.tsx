@@ -84,24 +84,9 @@ export default function TestingEnvironmentPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex flex-col md:flex-row gap-6">
-                    {/* Map Component Info */}
-                    <div className="md:w-1/3 space-y-4">
-                      <h3 className="text-lg font-semibold">Map Visualization</h3>
-                      <p className="text-sm text-blue-300/80">
-                        View player positioning data on map with enhanced visual elements.
-                      </p>
-                      
-                      <h3 className="text-lg font-semibold mt-6">Sample Data</h3>
-                      <p className="text-sm text-blue-300/80">
-                        Using sample data from Round 4 on de_inferno for visualization testing.
-                      </p>
-                    </div>
-                    
-                    {/* Map Visualization Component */}
-                    <div className="md:w-2/3">
-                      <AdvancedXYZAnalysis />
-                    </div>
+                  {/* Map Visualization Component - Full Width */}
+                  <div className="w-full">
+                    <AdvancedXYZAnalysis />
                   </div>
                   
                   <Separator className="my-6 bg-blue-900/30" />

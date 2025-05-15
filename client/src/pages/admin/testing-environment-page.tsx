@@ -53,7 +53,7 @@ export default function TestingEnvironmentPage() {
             <TabsTrigger value="xyz-analysis" className="data-[state=active]:bg-blue-800/30">
               <div className="flex items-center gap-2">
                 <Map className="h-4 w-4" />
-                <span>XYZ Positional Analysis</span>
+                <span>Positional Analysis</span>
               </div>
             </TabsTrigger>
             <TabsTrigger value="role-effectiveness" className="data-[state=active]:bg-blue-800/30">
@@ -70,55 +70,35 @@ export default function TestingEnvironmentPage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* XYZ Positional Analysis */}
+          {/* Positional Analysis */}
           <TabsContent value="xyz-analysis" className="space-y-6">
             <Card className="glassmorphism border-glow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Map className="h-5 w-5 text-blue-400" />
-                  XYZ Positional Data Analysis
+                  Positional Analysis Test
                 </CardTitle>
                 <CardDescription>
-                  Analyze player movement, positioning, and map control using precise XYZ positional data
+                  Testing environment for map-based data visualization
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex flex-col md:flex-row gap-6">
-                    {/* Feature Description */}
+                    {/* Map Component Info */}
                     <div className="md:w-1/3 space-y-4">
-                      <h3 className="text-lg font-semibold">About This Feature</h3>
+                      <h3 className="text-lg font-semibold">Map Visualization</h3>
                       <p className="text-sm text-blue-300/80">
-                        This experimental feature uses tick-by-tick positional (XYZ) data to generate deep insights
-                        into player movements, rotations, trading patterns, map positioning, and role effectiveness.
+                        View player positioning data on map with enhanced visual elements.
                       </p>
                       
-                      <h3 className="text-lg font-semibold mt-6">What We Can Analyze</h3>
-                      <ul className="space-y-2 text-sm text-blue-300/80">
-                        <li className="flex items-start gap-2">
-                          <div className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                          <span>Player movement patterns and heatmaps</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <div className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                          <span>Rotation timing and efficiency</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <div className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                          <span>Trading effectiveness and positioning</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <div className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                          <span>Site control and map presence</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <div className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                          <span>Role effectiveness based on positioning</span>
-                        </li>
-                      </ul>
+                      <h3 className="text-lg font-semibold mt-6">Sample Data</h3>
+                      <p className="text-sm text-blue-300/80">
+                        Using sample data from Round 4 on de_inferno for visualization testing.
+                      </p>
                     </div>
                     
-                    {/* XYZ Data Analysis Component */}
+                    {/* Map Visualization Component */}
                     <div className="md:w-2/3">
                       <AdvancedXYZAnalysis />
                     </div>

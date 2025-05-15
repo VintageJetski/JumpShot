@@ -134,13 +134,7 @@ function Router() {
             </ProtectedRoute>
           )}
         </Route>
-        <Route path="/vention-mockup">
-          {() => (
-            <ProtectedRoute>
-              <VentionStyleMockup />
-            </ProtectedRoute>
-          )}
-        </Route>
+
         <Route path="/players/:id">
           {() => (
             <ProtectedRoute>

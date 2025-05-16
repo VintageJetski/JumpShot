@@ -9,7 +9,8 @@ import { initializeRoundData } from "./roundDataLoader";
 import { setupAuth, ensureAuthenticated } from "./auth";
 import { processXYZDataFromFile, RoundPositionalMetrics, PlayerMovementAnalysis } from "./xyz-data-parser";
 import path from "path";
-import { getPlayers, getTeams, initializeDataController, DataSource, setDataSource, refreshData } from "./data-controller";
+import { getPlayers, getTeams, initializeDataController, DataSource, setDataSource, refreshData, CURRENT_DATA_SOURCE } from "./data-controller";
+import { supabaseDataService } from "./supabase-data-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes are now handled in admin-routes.ts and mounted in index.ts

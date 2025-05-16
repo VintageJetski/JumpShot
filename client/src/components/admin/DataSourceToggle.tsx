@@ -21,9 +21,18 @@ export function DataSourceToggle() {
     },
     onSuccess: (data, source) => {
       setDataSource(source);
+      
+      // Force refresh all cached data
+      window.localStorage.removeItem('queryCache');
+      
+      // Force reload the application to refresh all data
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+      
       toast({
         title: "Data Source Changed",
-        description: `Successfully switched to ${source.toUpperCase()} data source.`,
+        description: `Successfully switched to ${source.toUpperCase()} data source. Refreshing the application...`,
       });
     },
     onError: (error) => {

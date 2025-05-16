@@ -61,7 +61,7 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
   }
 
   // Format PIV score for display (0-100 scale)
-  const pivScore = Math.round(player.piv * 100);
+  const pivScore = player.piv !== undefined ? Math.round(player.piv * 100) : 0;
   
   // Determine color based on PIV score
   const getPivColor = (score: number) => {
@@ -287,8 +287,8 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
             <div className="text-xs text-blue-300 mb-1 flex items-center">
               <Gauge className="h-3 w-3 mr-1" /> K/D Ratio
             </div>
-            <div className={`text-base font-medium ${player.kd >= 1.0 ? 'text-green-400' : 'text-yellow-400'}`}>
-              {player.kd.toFixed(2)}
+            <div className={`text-base font-medium ${(player.kd || 0) >= 1.0 ? 'text-green-400' : 'text-yellow-400'}`}>
+              {player.kd !== undefined ? player.kd.toFixed(2) : '0.00'}
             </div>
           </motion.div>
           
@@ -298,12 +298,12 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
             transition={{ type: "spring", stiffness: 300, damping: 15 }}
           >
             <div className="text-xs text-blue-300 mb-1 truncate">
-              {player.primaryMetric.name}
+              {player.primaryMetric?.name || 'Key Stat'}
             </div>
             <div className="text-base font-medium text-blue-200">
-              {typeof player.primaryMetric.value === 'number' ? 
+              {player.primaryMetric && typeof player.primaryMetric.value === 'number' ? 
                 player.primaryMetric.value.toFixed(2) : 
-                player.primaryMetric.value}
+                (player.primaryMetric?.value || 'N/A')}
             </div>
           </motion.div>
         </motion.div>

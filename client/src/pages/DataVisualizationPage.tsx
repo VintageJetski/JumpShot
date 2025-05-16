@@ -224,9 +224,9 @@ export default function DataVisualizationPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all-teams">All Teams</SelectItem>
-                        {teams.map((team) => (
-                          <SelectItem key={team.id} value={team.name}>
-                            {team.name}
+                        {teams.filter(team => team.name && team.name.trim() !== '').map((team) => (
+                          <SelectItem key={team.id} value={team.name || `team-${team.id}`}>
+                            {team.name || `Team ${team.id}`}
                           </SelectItem>
                         ))}
                       </SelectContent>

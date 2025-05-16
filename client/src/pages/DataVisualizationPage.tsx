@@ -468,21 +468,26 @@ export default function DataVisualizationPage() {
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {selectedComparisonTeams.map((team) => (
-                          <div 
-                            key={team.id}
-                            className="flex items-center justify-between p-2 rounded-md border border-primary/50 bg-primary/10"
-                          >
-                            <span>{team.name}</span>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => toggleComparisonTeam(team.name)}
+                        {comparisonTeams.map((teamName) => {
+                          // Find the matching team data
+                          const teamData = teams.find(t => t.name === teamName);
+                          
+                          return (
+                            <div 
+                              key={teamName}
+                              className="flex items-center justify-between p-2 rounded-md border border-primary/50 bg-primary/10"
                             >
-                              Remove
-                            </Button>
-                          </div>
-                        ))}
+                              <span>{teamName}</span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => toggleComparisonTeam(teamName)}
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>

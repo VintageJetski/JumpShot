@@ -51,12 +51,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const role = req.query.role as string | undefined;
       
-      if (role && role !== 'All Roles') {
-        const players = await storage.getPlayersByRole(role);
+      if (CURRENT_DATA_SOURCE === DataSource.SUPABASE) {
+        // For Supabase data source, get players and filter by role if needed
+        const allPlayers = await supabaseDataService.getAllPlayers();
+        
+        let players = allPlayers;
+        if (role && role !== 'All Roles') {
+          players = allPlayers.filter(player => 
+            player.tRole === role || 
+            player.ctRole === role
+          );
+        }
+        
+        console.log(`GET /api/players: Returning ${players.length} players from Supabase`);
         res.json(players);
       } else {
-        const players = await storage.getAllPlayers();
-        res.json(players);
+        // For CSV source, use memory storage
+        if (role && role !== 'All Roles') {
+          const players = await storage.getPlayersByRole(role);
+          res.json(players);
+        } else {
+          const players = await storage.getAllPlayers();
+          res.json(players);
+        }
       }
     } catch (error) {
       console.error('Error fetching players:', error);
@@ -104,7 +121,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get('/api/teams/:name', async (req: Request, res: Response) => {
     try {
-      const team = await storage.getTeamByName(req.params.name);
+      let team;
+      
+      if (CURRENT_DATA_SOURCE === DataSource.SUPABASE) {
+        // Try to get team from Supabase first
+        const teams = await supabaseDataService.getAllTeams();
+        team = teams.find(t => 
+          t.name.toLowerCase() === req.params.name.toLowerCase() || 
+          t.id.toLowerCase() === req.params.name.toLowerCase()
+        );
+      } else {
+        team = await storage.getTeamByName(req.params.name);
+      }
       
       if (team) {
         res.json(team);

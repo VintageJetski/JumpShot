@@ -389,59 +389,45 @@ export class SupabaseDataService {
           return [];
         }
         
-        // For now, create synthetic player data based on each team's top player info
-        const players = [];
+        // Get real player data from the player_stats table
+        const { data: playerData, error: playerError } = await supabase
+          .from('player_stats')
+          .select('*');
+          
+        if (playerError) {
+          console.error('Error fetching player stats:', playerError);
+          return [];
+        }
         
-        // Process each team
-        teamsData.forEach(team => {
-          if (team.top_player_name) {
-            // Add top player
-            players.push({
-              id: `${team.id}-top`,
-              name: team.top_player_name,
-              team: team.name,
-              isIGL: false, // We don't know who is IGL
-              tRole: 'AWP(T)', // Assume top players are AWPers for now
-              ctRole: 'AWP(CT)',
-              matches: 10, // Placeholder value
-              kills: Math.round(250 * (team.top_player_piv || 1.0)),
-              deaths: Math.round(200 * (1 / (team.top_player_piv || 1.0))),
-              assists: Math.round(50 * (team.top_player_piv || 1.0)),
-              kd: Math.round((team.top_player_piv || 1.0) * 125) / 100,
-              hs: Math.round(45 + Math.random() * 25), // Random HS percentage between 45-70%
-              piv: team.top_player_piv || 1.0
-            });
-          }
+        console.log(`Retrieved ${playerData?.length || 0} players from Supabase`);
+        
+        // Convert player data to our application format
+        const players = playerData?.map(player => {
+          // Make sure we have the correct team reference
+          const teamName = player.team || '';
           
-          // Create 4 additional synthetic players for this team with PIV values derived from the team PIV
-          const roleAssignments = [
-            { tRole: 'IGL', ctRole: 'IGL', isIGL: true, pivFactor: 0.8 },
-            { tRole: 'Spacetaker', ctRole: 'Anchor', isIGL: false, pivFactor: 0.9 },
-            { tRole: 'Lurker', ctRole: 'Rotator', isIGL: false, pivFactor: 0.85 },
-            { tRole: 'Support', ctRole: 'Anchor', isIGL: false, pivFactor: 0.75 }
-          ];
+          // Find the team in our teamsData
+          const playerTeam = teamsData.find(t => 
+            t.name?.toLowerCase() === teamName.toLowerCase() || 
+            t.id?.toLowerCase() === teamName.toLowerCase().replace(/\s+/g, '-')
+          );
           
-          roleAssignments.forEach((role, index) => {
-            const playerPiv = (team.avg_piv || 1.0) * role.pivFactor;
-            const playerName = `${team.name} Player ${index + 1}`;
-            
-            players.push({
-              id: `${team.id}-player-${index}`,
-              name: playerName,
-              team: team.name,
-              isIGL: role.isIGL,
-              tRole: role.tRole,
-              ctRole: role.ctRole,
-              matches: 10, // Placeholder
-              kills: Math.round(200 * playerPiv),
-              deaths: Math.round(180 * (1 / playerPiv)),
-              assists: Math.round(40 * playerPiv),
-              kd: Math.round(playerPiv * 110) / 100,
-              hs: Math.round(40 + Math.random() * 20), // Random HS % between 40-60%
-              piv: Math.round(playerPiv * 1000) / 1000
-            });
-          });
-        });
+          return {
+            id: player.id || `${player.name}-${Date.now()}`,
+            name: player.name || '',
+            team: playerTeam?.name || teamName,
+            isIGL: player.isIGL || false,
+            tRole: player.tRole || 'Support',
+            ctRole: player.ctRole || 'Anchor',
+            matches: player.matches || 10,
+            kills: player.kills || 0,
+            deaths: player.deaths || 0,
+            assists: player.assists || 0,
+            kd: player.kd || 1.0,
+            hs: player.headshots || 0,
+            piv: player.piv || 1.0
+          };
+        }) || [];
         
         // If this is the tournament we're interested in, return the data
         // Otherwise filter based on tournament ID

@@ -40,14 +40,20 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
   // Collect all unique roles to display
   const rolesToDisplay = new Set<PlayerRole>();
   
+  // Check if player has all necessary properties
+  const defaultRole = PlayerRole.Support;
+  
   // If player is IGL, add it first
   if (player.isIGL) {
     rolesToDisplay.add(PlayerRole.IGL);
   }
   
-  // Add primary role if it's not IGL
-  if (player.role !== PlayerRole.IGL) {
+  // Add primary role if it's not IGL and exists
+  if (player.role && player.role !== PlayerRole.IGL) {
     rolesToDisplay.add(player.role);
+  } else if (!rolesToDisplay.size) {
+    // If no role added yet, add a default
+    rolesToDisplay.add(defaultRole);
   }
   
   // Add T role if it's different from primary role
@@ -56,7 +62,9 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
   }
   
   // Add CT role if it's different from primary and T role
-  if (player.ctRole && player.ctRole !== player.role && player.ctRole !== player.tRole && player.ctRole !== PlayerRole.IGL) {
+  if (player.ctRole && player.ctRole !== player.role && 
+      (player.tRole ? player.ctRole !== player.tRole : true) && 
+      player.ctRole !== PlayerRole.IGL) {
     rolesToDisplay.add(player.ctRole);
   }
 
@@ -319,7 +327,7 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
           >
             <span>CT PIV</span>
             <span className="font-medium text-blue-200">
-              {player.ctPIV ? Math.round(player.ctPIV * 100) : '-'}
+              {player.ctPIV !== undefined ? Math.round(player.ctPIV * 100) : '-'}
             </span>
           </motion.div>
           <motion.div 
@@ -328,7 +336,7 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
           >
             <span>T PIV</span>
             <span className="font-medium text-blue-200">
-              {player.tPIV ? Math.round(player.tPIV * 100) : '-'}
+              {player.tPIV !== undefined ? Math.round(player.tPIV * 100) : '-'}
             </span>
           </motion.div>
         </motion.div>

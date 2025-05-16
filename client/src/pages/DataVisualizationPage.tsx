@@ -258,7 +258,7 @@ export default function DataVisualizationPage() {
                   <div>
                     <label className="text-sm font-medium mb-1 block">Sort By</label>
                     <Select 
-                      value={filters.sortBy} 
+                      value={filters.sortBy || "piv"} 
                       onValueChange={(value) => setFilters({ ...filters, sortBy: value as 'piv' | 'kd' | 'name' })}
                     >
                       <SelectTrigger>

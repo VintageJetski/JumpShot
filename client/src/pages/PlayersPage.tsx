@@ -61,17 +61,25 @@ export default function PlayersPage() {
   // Apply search and role filters
   const filteredPlayers = players ? players
     .filter(player => {
-      // Text search filter
-      const matchesSearch = 
-        player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        player.team.toLowerCase().includes(searchQuery.toLowerCase());
+      // Text search filter - with safety checks for undefined properties
+      const playerName = player.name || '';
+      const playerTeam = player.team || '';
+      
+      const matchesSearch = searchQuery === '' || 
+        playerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        playerTeam.toLowerCase().includes(searchQuery.toLowerCase());
       
       // Role filter
       const matchesRole = hasRole(player, roleFilter);
       
       return matchesSearch && matchesRole;
     })
-    .sort((a, b) => b.piv - a.piv) : [];
+    .sort((a, b) => {
+      // Handle undefined PIV values
+      const pivA = a.piv || 0;
+      const pivB = b.piv || 0;
+      return pivB - pivA;
+    }) : [];
 
   // Extract top players by role with comprehensive role checking
   const findTopPlayerByRole = (role: PlayerRole) => {

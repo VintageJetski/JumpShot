@@ -49,17 +49,21 @@ const TeamSelect: React.FC<TeamSelectProps> = ({
           )}
         </SelectTrigger>
         <SelectContent>
-          {teams.map((team) => (
-            <SelectItem key={team.id} value={team.name}>
-              <div className="flex items-center">
-                <div className="h-6 w-6 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold mr-2">
-                  {team.name.charAt(0).toUpperCase()}
+          {teams.map((team) => {
+            // Skip teams with empty names or ensure they have valid value
+            const teamName = team.name || `Team ${team.id}`;
+            return (
+              <SelectItem key={team.id} value={teamName}>
+                <div className="flex items-center">
+                  <div className="h-6 w-6 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold mr-2">
+                    {teamName.charAt(0).toUpperCase()}
+                  </div>
+                  <span>{teamName}</span>
+                  <span className="ml-2 text-xs text-gray-400">TIR: {team.tir || 0}</span>
                 </div>
-                <span>{team.name}</span>
-                <span className="ml-2 text-xs text-gray-400">TIR: {team.tir}</span>
-              </div>
-            </SelectItem>
-          ))}
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
     </div>

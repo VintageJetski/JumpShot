@@ -38,7 +38,7 @@ export class SupabaseDataService {
   /**
    * Fetch all teams with caching
    */
-  async getAllTeams(forceRefresh = false): Promise<Team[]> {
+  async getAllTeams(forceRefresh = false): Promise<any[]> {
     const cacheKey = 'all_teams';
     const fetchFn = async () => {
       const { data, error } = await supabase
@@ -50,7 +50,31 @@ export class SupabaseDataService {
         throw new Error(`Failed to fetch teams: ${error.message}`);
       }
       
-      return data || [];
+      // Transform and format the teams data to match our application structure
+      const formattedTeams = (data || []).map(team => {
+        return {
+          id: team.id || '',
+          name: team.name || '',
+          tir: parseFloat(team.tir) || 0,
+          // Additional Supabase properties
+          sum_piv: parseFloat(team.sum_piv) || 0,
+          synergy: parseFloat(team.synergy) || 0,
+          avg_piv: parseFloat(team.avg_piv) || 0,
+          top_player_name: team.top_player_name || '',
+          top_player_piv: parseFloat(team.top_player_piv) || 0,
+          // Calculated properties
+          winRate: 0.5, // Default value
+          matchesPlayed: 10, // Default value
+          roundWinRate: 0.5, // Default value
+          tSideWinRate: 0.5, // Default value
+          ctSideWinRate: 0.5, // Default value
+          rankingPoints: Math.round((parseFloat(team.tir) || 0) * 100),
+          players: [] // Will be populated separately if needed
+        };
+      });
+      
+      console.log(`Processed ${formattedTeams.length} teams from Supabase`);
+      return formattedTeams;
     };
     
     return fetchWithCache(cacheKey, fetchFn, forceRefresh);

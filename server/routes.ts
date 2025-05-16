@@ -81,8 +81,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get('/api/teams', async (req: Request, res: Response) => {
     try {
-      const teams = await storage.getAllTeams();
-      console.log(`GET /api/teams: Returning ${teams.length} teams`);
+      let teams;
+      if (CURRENT_DATA_SOURCE === DataSource.SUPABASE) {
+        // Direct call to get formatted teams from Supabase
+        teams = await supabaseDataService.getAllTeams();
+        console.log(`GET /api/teams: Returning ${teams.length} Supabase teams`);
+      } else {
+        // Default CSV handling
+        teams = await storage.getAllTeams();
+        console.log(`GET /api/teams: Returning ${teams.length} CSV teams`);
+      }
+      
       if (teams.length > 0) {
         console.log(`Team sample: ${JSON.stringify(teams[0])}`);
       }

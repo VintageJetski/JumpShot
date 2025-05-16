@@ -33,10 +33,13 @@ export default function PlayersPage() {
       // Group players by team
       const teamGroups: {[key: string]: PlayerWithPIV[]} = {};
       players.forEach(player => {
-        if (!teamGroups[player.team]) {
-          teamGroups[player.team] = [];
+        // Handle case where team property might be undefined or null
+        const teamName = player.team || "Unassigned";
+        
+        if (!teamGroups[teamName]) {
+          teamGroups[teamName] = [];
         }
-        teamGroups[player.team].push(player);
+        teamGroups[teamName].push(player);
       });
       setTeams(teamGroups);
     }
@@ -46,10 +49,11 @@ export default function PlayersPage() {
   const hasRole = (player: PlayerWithPIV, role: string): boolean => {
     if (role === "All Roles") return true;
     
+    // Safe check in case properties are undefined from Supabase
     return (
-      player.role === role ||
-      player.ctRole === role ||
-      player.tRole === role ||
+      (player.role && player.role === role) ||
+      (player.ctRole && player.ctRole === role) ||
+      (player.tRole && player.tRole === role) ||
       (role === PlayerRole.IGL && player.isIGL === true)
     );
   };

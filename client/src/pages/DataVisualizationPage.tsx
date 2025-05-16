@@ -304,7 +304,7 @@ export default function DataVisualizationPage() {
                               </div>
                             </div>
                             <div className="flex flex-col items-end">
-                              <span className="font-bold">{player.piv.toFixed(2)}</span>
+                              <span className="font-bold">{player.piv ? player.piv.toFixed(2) : "N/A"}</span>
                               <span className="text-xs text-muted-foreground">PIV</span>
                             </div>
                           </div>

@@ -304,7 +304,7 @@ export default function DataVisualizationPage() {
                               </div>
                             </div>
                             <div className="flex flex-col items-end">
-                              <span className="font-bold">{player.piv ? player.piv.toFixed(2) : "N/A"}</span>
+                              <span className="font-bold">{player.piv !== undefined ? player.piv.toFixed(2) : "N/A"}</span>
                               <span className="text-xs text-muted-foreground">PIV</span>
                             </div>
                           </div>
@@ -447,7 +447,7 @@ export default function DataVisualizationPage() {
                                 </span>
                               </div>
                               <div className="flex flex-col items-end">
-                                <span className="font-bold">{team.tir.toFixed(2)}</span>
+                                <span className="font-bold">{team.tir !== undefined && team.tir !== null ? team.tir.toFixed(2) : 'N/A'}</span>
                                 <span className="text-xs text-muted-foreground">TIR</span>
                               </div>
                             </div>

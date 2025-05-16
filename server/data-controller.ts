@@ -9,8 +9,8 @@ export enum DataSource {
   SUPABASE = 'supabase'
 }
 
-// Current data source - default to CSV
-export let CURRENT_DATA_SOURCE = DataSource.CSV;
+// Current data source - default to Supabase
+export let CURRENT_DATA_SOURCE = DataSource.SUPABASE;
 
 /**
  * Set the current data source

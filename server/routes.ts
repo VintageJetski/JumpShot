@@ -123,6 +123,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to fetch round metrics' });
     }
   });
+  
+  // Tournament API routes
+  app.get('/api/tournaments', async (req: Request, res: Response) => {
+    try {
+      if (CURRENT_DATA_SOURCE === DataSource.SUPABASE) {
+        const tournaments = await supabaseDataService.getAllTournaments();
+        res.json(tournaments);
+      } else {
+        // Just return IEM Katowice 2025 as the only tournament for CSV source
+        res.json([{
+          id: 'iem-katowice-2025',
+          name: 'IEM Katowice 2025',
+          location: 'Katowice, Poland',
+          start_date: '2025-01-31',
+          end_date: '2025-02-12',
+          teams_count: 16,
+          matches_count: 45,
+          source: 'csv',
+          status: 'completed'
+        }]);
+      }
+    } catch (error) {
+      console.error('Error fetching tournaments:', error);
+      res.status(500).json({ message: 'Failed to fetch tournaments' });
+    }
+  });
+  
+  app.get('/api/tournaments/:id/players', async (req: Request, res: Response) => {
+    try {
+      const tournamentId = req.params.id;
+      
+      if (CURRENT_DATA_SOURCE === DataSource.SUPABASE) {
+        const players = await supabaseDataService.getTournamentPlayerStats(tournamentId);
+        res.json(players);
+      } else {
+        // For CSV, if it's IEM Katowice 2025, return all players
+        if (tournamentId === 'iem-katowice-2025') {
+          const players = await getPlayers();
+          res.json(players);
+        } else {
+          res.status(404).json({ message: 'Tournament not found' });
+        }
+      }
+    } catch (error) {
+      console.error(`Error fetching players for tournament ${req.params.id}:`, error);
+      res.status(500).json({ message: 'Failed to fetch tournament players' });
+    }
+  });
+  
+  // Specific tournament data routes
+  app.get('/api/tournaments/pgl-bucharest', async (req: Request, res: Response) => {
+    try {
+      if (CURRENT_DATA_SOURCE === DataSource.SUPABASE) {
+        const data = await supabaseDataService.getPGLBucharestData();
+        
+        if (!data) {
+          return res.status(404).json({ 
+            message: 'PGL Bucharest data not found in database',
+            available: false
+          });
+        }
+        
+        res.json({
+          available: true,
+          data: data
+        });
+      } else {
+        res.status(404).json({ 
+          message: 'PGL Bucharest data only available in Supabase data source',
+          available: false
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching PGL Bucharest data:', error);
+      res.status(500).json({ message: 'Failed to fetch PGL Bucharest data' });
+    }
+  });
 
   // Setup authentication
   setupAuth(app);

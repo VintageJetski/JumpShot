@@ -12,7 +12,7 @@ import { Database, DatabaseIcon, RefreshCw, Cloud, FileJson } from "lucide-react
 
 export function DataSourceToggle() {
   const { toast } = useToast();
-  const [dataSource, setDataSource] = useState<'csv' | 'supabase'>('csv');
+  const [dataSource, setDataSource] = useState<'csv' | 'supabase'>('supabase');
   
   const switchDataSourceMutation = useMutation({
     mutationFn: async (source: 'csv' | 'supabase') => {

@@ -2,7 +2,13 @@ import { supabase, fetchWithCache, refreshCache, clearCache } from './supabase';
 import { Player, Team, Match, Round, PlayerStats } from '../shared/database.types';
 import { PlayerRawStats, PlayerRoleInfo } from './types';
 import { PlayerRole } from '../shared/schema';
-import { validatePlayerStats, validateTeam, logDataIntegrityIssue } from './data-validator';
+import { 
+  verifyPlayerDataIntegrity, 
+  verifyTeamDataIntegrity, 
+  DataSource,
+  logIntegrityIssue,
+  ValidationLevel
+} from './data-integrity';
 
 /**
  * Data service for retrieving data from Supabase
@@ -144,95 +150,86 @@ export class SupabaseDataService {
   
   /**
    * Convert players data from Supabase to the format used by our application
-   * Applies validation and ensures data integrity
+   * Uses enhanced data integrity validation
    */
   convertPlayersToRawStats(players: Player[]): PlayerRawStats[] {
     if (!players || !Array.isArray(players)) {
-      console.warn('[DATA INTEGRITY] No valid players array received from Supabase');
+      logIntegrityIssue(DataSource.SUPABASE, 'Players', 'array', 'No valid players array received', 'error');
       return [];
     }
     
-    const validatedPlayers: PlayerRawStats[] = [];
+    // Map Supabase data to our internal format first
+    const mappedPlayers = players.map(player => ({
+      id: player.id,
+      name: player.name,
+      team: player.team || '',
+      ctRole: this.mapRoleStringToEnum(player.ctRole),
+      tRole: this.mapRoleStringToEnum(player.tRole),
+      isIGL: Boolean(player.isIGL),
+      hs: Number(player.averageHS || 0),
+      adr: 0, 
+      kpr: Number(player.averageKills || 0),
+      dpr: Number(player.averageDeaths || 0),
+      kd: Number(player.kdr || 0),
+      impact: 0,
+      kast: 0,
+      flashAssists: Number(player.flashAssists || 0),
+      utilityDamage: Number(player.utilityDamagePerRound || 0),
+      openingKills: Number(player.openingKillRate || 0),
+      openingDeaths: Number(player.firstDeathRate || 0),
+      clutchesWon: Number(player.clutchWinRate || 0),
+      tradingSuccess: Number(player.tradingSuccessRate || 0),
+      consistencyScore: Number(player.consistencyScore || 0),
+      pivValue: Number(player.piv || 0),
+      
+      // Include defaults for other required fields
+      steamId: player.id,
+      userName: player.name,
+      teamName: player.team || '',
+      damage: 0,
+      kills: 0, 
+      deaths: 0,
+      assists: 0,
+      killAssists: 0,
+      incendiaryDamage: 0,
+      molotovDamage: 0,
+      heDamage: 0,
+      entrySuccess: 0,
+      entryAttempts: 0,
+      multiKills: 0,
+      oneVXs: 0,
+      oneVXAttempts: 0,
+      HSPercent: Number(player.averageHS || 0),
+      flashesThrown: 0,
+      smkThrown: 0,
+      heThrown: 0,
+      molliesThrown: 0,
+      roundsPlayed: 0,
+      mapsPlayed: 0,
+      firstKills: 0,
+      firstDeaths: 0,
+      tradedDeaths: 0,
+      tradedKills: 0,
+      survivedRounds: 0,
+      rounds_ct: 0,
+      rounds_t: 0,
+      kills_t: 0,
+      deaths_t: 0,
+      adr_t: 0,
+      kast_t: 0,
+      kills_ct: 0,
+      deaths_ct: 0,
+      adr_ct: 0,
+      kast_ct: 0,
+      wallbangKills: 0,
+      assistedFlashes: Number(player.flashAssists || 0),
+      noScope: 0,
+      throughSmoke: 0
+    }));
     
-    for (const player of players) {
-      try {
-        // Use the validator to ensure data integrity with proper defaults
-        const validatedPlayer = validatePlayerStats({
-          id: player.id,
-          name: player.name,
-          team: player.team || '',
-          ctRole: player.ctRole,
-          tRole: player.tRole,
-          isIGL: player.isIGL || false,
-          hs: player.averageHS || 0,
-          adr: 0, // Using default since Supabase schema might differ
-          kpr: player.averageKills || 0,
-          dpr: player.averageDeaths || 0,
-          kd: player.kdr || 0,
-          impact: 0, // Using default since Supabase schema might differ
-          kast: 0, // Using default since Supabase schema might differ
-          flashAssists: player.flashAssists || 0,
-          utilityDamage: player.utilityDamagePerRound || 0,
-          openingKills: player.openingKillRate || 0,
-          openingDeaths: player.firstDeathRate || 0,
-          clutchesWon: player.clutchWinRate || 0,
-          tradingSuccess: player.tradingSuccessRate || 0,
-          consistencyScore: player.consistencyScore || 0,
-          pivValue: player.piv || 0,
-          
-          // Include defaults for other required fields
-          steamId: player.id,
-          userName: player.name,
-          teamName: player.team || '',
-          damage: 0,
-          kills: 0, 
-          deaths: 0,
-          assists: 0,
-          killAssists: 0,
-          incendiaryDamage: 0,
-          molotovDamage: 0,
-          heDamage: 0,
-          entrySuccess: 0,
-          entryAttempts: 0,
-          multiKills: 0,
-          oneVXs: 0,
-          oneVXAttempts: 0,
-          HSPercent: player.averageHS || 0,
-          flashesThrown: 0,
-          smkThrown: 0,
-          heThrown: 0,
-          molliesThrown: 0,
-          roundsPlayed: 0, // Using defaults for compatibility
-          mapsPlayed: 0,  // Using defaults for compatibility
-          firstKills: 0,  // Using defaults for compatibility
-          firstDeaths: 0, // Using defaults for compatibility
-          tradedDeaths: 0,
-          tradedKills: 0,
-          survivedRounds: 0,
-          rounds_ct: 0,
-          rounds_t: 0,
-          kills_t: 0,
-          deaths_t: 0,
-          adr_t: 0,
-          kast_t: 0,
-          kills_ct: 0,
-          deaths_ct: 0,
-          adr_ct: 0,
-          kast_ct: 0,
-          wallbangKills: 0,
-          assistedFlashes: player.flashAssists || 0,
-          noScope: 0,
-          throughSmoke: 0
-        });
-        
-        validatedPlayers.push(validatedPlayer);
-      } catch (err) {
-        const error = err as Error;
-        logDataIntegrityIssue('Supabase', 'Player', player.id, `Data validation failed: ${error.message}`);
-      }
-    }
-    
-    return validatedPlayers;
+    // Apply advanced data integrity verification
+    console.log(`Verifying integrity of ${mappedPlayers.length} players from Supabase`);
+    return verifyPlayerDataIntegrity(mappedPlayers, DataSource.SUPABASE);
   }
   
   /**

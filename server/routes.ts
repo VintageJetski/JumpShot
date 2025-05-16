@@ -13,7 +13,7 @@ import { getPlayers, getTeams, initializeDataController, DataSource, setDataSour
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Enable Supabase API route for switching data source
-  app.post('/api/admin/data-source', ensureAuthenticated, async (req: Request, res: Response) => {
+  app.post('/api/admin/data-source', async (req: Request, res: Response) => {
     try {
       const { source } = req.body;
       console.log(`Received request to switch data source to: ${source}`);

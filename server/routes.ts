@@ -9,6 +9,7 @@ import { initializeRoundData } from "./roundDataLoader";
 import { setupAuth, ensureAuthenticated } from "./auth";
 import { processXYZDataFromFile, RoundPositionalMetrics, PlayerMovementAnalysis } from "./xyz-data-parser";
 import path from "path";
+import { getPlayers, getTeams, initializeDataController, DataSource, setDataSource } from "./data-controller";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize data on server start

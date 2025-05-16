@@ -1,6 +1,6 @@
 import { supabase, fetchWithCache, refreshCache, clearCache } from './supabase';
 import { Player, Team, Match, Round, PlayerStats } from '../shared/database.types';
-import { PlayerRawStats } from './types';
+import { PlayerRawStats, PlayerRoleInfo } from './types';
 import { PlayerRole } from '../shared/schema';
 
 /**

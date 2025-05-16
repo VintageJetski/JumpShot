@@ -64,6 +64,24 @@ export function TournamentBrowser() {
 
   const renderTournamentList = () => {
     if (tournamentsError) {
+      // Check if the error is about the table not existing
+      const errorMessage = tournamentsError instanceof Error 
+        ? tournamentsError.message 
+        : "Unknown error";
+        
+      if (errorMessage.includes("not exist") || errorMessage.includes("42P01")) {
+        return (
+          <Alert className="bg-amber-950/30 border-amber-900/50 text-amber-100">
+            <Info className="h-4 w-4 text-amber-400" />
+            <AlertTitle>Database Setup Required</AlertTitle>
+            <AlertDescription>
+              The tournaments tables haven't been created in your Supabase database yet. 
+              You'll need to create the tournaments table and add tournament data.
+            </AlertDescription>
+          </Alert>
+        );
+      }
+      
       return (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />

@@ -31,6 +31,8 @@ const roleColors: Record<PlayerRole, string> = {
 };
 
 export default function PlayerCard({ player, index }: PlayerCardProps) {
+  // Generate a unique key for this player if it's missing an ID
+  const playerKey = player.id || `player-${player.name}-${index}`;
   const [, setLocation] = useLocation();
   
   // Determine primary role for styling

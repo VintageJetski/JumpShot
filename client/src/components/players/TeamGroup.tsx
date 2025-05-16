@@ -216,9 +216,11 @@ export default function TeamGroup({ teamName, players, expanded = true }: TeamGr
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 p-5 pt-0"
               variants={playersContainerVariants}
             >
-              {sortedPlayers.map((player, index) => (
-                <PlayerCard key={player.id} player={player} index={index} />
-              ))}
+              {sortedPlayers.map((player, index) => {
+                // Generate a stable key using player ID or fallback to a combined value
+                const key = player.id || `${teamName}-${player.name}-${index}`;
+                return <PlayerCard key={key} player={player} index={index} />;
+              })}
             </motion.div>
           </motion.div>
         )}

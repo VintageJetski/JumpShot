@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { Shield, Database, Users, BarChart2, LogOut, Beaker, Map, CloudLightning } from "lucide-react";
 import { DataSourceToggle } from "@/components/admin/DataSourceToggle";
+import { TournamentBrowser } from "@/components/admin/TournamentBrowser";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 
@@ -119,7 +120,10 @@ export default function AdminPage() {
           transition={{ delay: 1 }}
         >
           {/* Data Source Configuration */}
-          <DataSourceToggle />
+          <div className="space-y-6">
+            <DataSourceToggle />
+            <TournamentBrowser />
+          </div>
 
           {/* Administrator Actions Panel */}
           <div className="glassmorphism border-glow rounded-lg p-6">

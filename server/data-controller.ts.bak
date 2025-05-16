@@ -9,7 +9,7 @@ export enum DataSource {
   SUPABASE = 'supabase'
 }
 
-// Current data source - default to CSV
+// Current data source - change this to switch between CSV and Supabase
 export let CURRENT_DATA_SOURCE = DataSource.CSV;
 
 /**
@@ -55,15 +55,8 @@ export async function getPlayers(): Promise<PlayerRawStats[]> {
     }
   } else {
     // Fetch from Supabase
-    try {
-      const players = await supabaseDataService.getAllPlayers();
-      return supabaseDataService.convertPlayersToRawStats(players);
-    } catch (error) {
-      console.error('Error fetching players from Supabase:', error);
-      // Fall back to CSV if Supabase fails
-      console.log('Falling back to CSV data source due to Supabase error');
-      return await loadNewPlayerStats();
-    }
+    const players = await supabaseDataService.getAllPlayers();
+    return supabaseDataService.convertPlayersToRawStats(players);
   }
 }
 
@@ -72,21 +65,16 @@ export async function getPlayers(): Promise<PlayerRawStats[]> {
  */
 export async function getTeams() {
   if (CURRENT_DATA_SOURCE === DataSource.CSV) {
-    // For CSV, we'll need to implement the team loading logic
-    // For now, return an empty array to prevent errors
-    console.warn('CSV team loading not fully implemented yet');
-    return [];
+    // Use existing team data loading code
+    // This is a placeholder - you would need to implement your existing CSV team loading logic here
+    throw new Error('CSV team loading not implemented yet');
   } else {
     // Fetch from Supabase
-    try {
-      return await supabaseDataService.getAllTeams();
-    } catch (error) {
-      console.error('Error fetching teams from Supabase:', error);
-      // Return empty array as fallback
-      return [];
-    }
+    return await supabaseDataService.getAllTeams();
   }
 }
+
+// Function moved to consolidated implementation above
 
 /**
  * Schedule regular data refreshes
@@ -111,9 +99,7 @@ export function scheduleDataRefresh(intervalMinutes: number = 1440): NodeJS.Time
   return interval;
 }
 
-/**
- * Initialize the data controller
- */
+// Initialize the data controller
 export async function initializeDataController(): Promise<void> {
   console.log(`Initializing data controller with source: ${CURRENT_DATA_SOURCE}`);
   

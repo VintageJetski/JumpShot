@@ -23,6 +23,52 @@ export interface PlayerRawStats {
   tradingSuccess: number;
   consistencyScore: number;
   pivValue: number;  // Player Impact Value
+  
+  // CSV data model fields
+  steamId: string;
+  userName: string;
+  teamName: string;
+  damage: number;
+  kills: number;
+  deaths: number;
+  assists: number;
+  killAssists: number;
+  incendiaryDamage: number;
+  molotovDamage: number;
+  heDamage: number;
+  entrySuccess: number;
+  entryAttempts: number;
+  multiKills: number;
+  oneVXs: number;
+  oneVXAttempts: number;
+  HSPercent: number;
+  flashesThrown: number;
+  smkThrown: number;
+  heThrown: number;
+  molliesThrown: number;
+  roundsPlayed: number;
+  mapsPlayed: number;
+  firstKills: number;
+  firstDeaths: number;
+  tradedDeaths: number;
+  tradedKills: number;
+  survivedRounds: number;
+  rounds_ct: number;
+  rounds_t: number;
+  kills_t: number;
+  deaths_t: number;
+  adr_t: number;
+  kast_t: number;
+  kills_ct: number;
+  deaths_ct: number;
+  adr_ct: number;
+  kast_ct: number;
+  
+  // Additional fields for compatibility
+  wallbangKills: number;
+  assistedFlashes: number;
+  noScope: number;
+  throughSmoke: number;
 }
 
 // Player metrics calculated for PIV

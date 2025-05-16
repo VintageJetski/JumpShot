@@ -4,11 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { motion } from "framer-motion";
-import { Beaker, ArrowLeft, Map, Activity, Users, Share2, Crosshair } from "lucide-react";
+import { Beaker, ArrowLeft, Map, Activity, Users, Share2, Crosshair, Trophy } from "lucide-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { AdvancedXYZAnalysis } from "@/components/admin/AdvancedXYZAnalysis";
+import { TournamentOverview } from "@/components/admin/TournamentOverview";
 
 export default function TestingEnvironmentPage() {
   return (
@@ -49,7 +50,7 @@ export default function TestingEnvironmentPage() {
         </div>
 
         <Tabs defaultValue="xyz-analysis" className="space-y-6">
-          <TabsList className="grid grid-cols-3 w-full max-w-2xl mx-auto bg-blue-950/40 border border-blue-900/50">
+          <TabsList className="grid grid-cols-4 w-full max-w-3xl mx-auto bg-blue-950/40 border border-blue-900/50">
             <TabsTrigger value="xyz-analysis" className="data-[state=active]:bg-blue-800/30">
               <div className="flex items-center gap-2">
                 <Map className="h-4 w-4" />
@@ -66,6 +67,12 @@ export default function TestingEnvironmentPage() {
               <div className="flex items-center gap-2">
                 <Crosshair className="h-4 w-4" />
                 <span>Utility Analysis</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="tournament-data" className="data-[state=active]:bg-blue-800/30">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-4 w-4" />
+                <span>Tournament Data</span>
               </div>
             </TabsTrigger>
           </TabsList>
@@ -185,6 +192,11 @@ export default function TestingEnvironmentPage() {
                 </div>
               </div>
             </Card>
+          </TabsContent>
+          
+          {/* Tournament Data Tab */}
+          <TabsContent value="tournament-data">
+            <TournamentOverview />
           </TabsContent>
         </Tabs>
       </motion.div>

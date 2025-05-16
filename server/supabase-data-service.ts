@@ -146,6 +146,29 @@ export class SupabaseDataService {
   }
   
   /**
+   * Fetch all player stats from Supabase
+   * This provides access to the player_stats table directly
+   */
+  async getPlayerStats(forceRefresh = false): Promise<any[]> {
+    const cacheKey = 'all_player_stats';
+    const fetchFn = async () => {
+      const { data, error } = await supabase
+        .from('player_stats')
+        .select('*');
+      
+      if (error) {
+        console.error('Error fetching player stats:', error);
+        throw new Error(`Failed to fetch player stats: ${error.message}`);
+      }
+      
+      console.log(`Retrieved ${data?.length || 0} player stat records from Supabase`);
+      return data || [];
+    };
+    
+    return fetchWithCache(cacheKey, fetchFn, forceRefresh);
+  }
+  
+  /**
    * Fetch a player by ID
    */
   async getPlayerById(playerId: string): Promise<Player | null> {

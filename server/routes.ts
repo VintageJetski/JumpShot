@@ -83,7 +83,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get('/api/players/:id', async (req: Request, res: Response) => {
     try {
-      const player = await storage.getPlayerById(req.params.id);
+      let player;
+      
+      if (CURRENT_DATA_SOURCE === DataSource.SUPABASE) {
+        // Get player from Supabase
+        const allPlayers = await supabaseDataService.getAllPlayers();
+        player = allPlayers.find(p => p.id === req.params.id);
+        
+        // If player was found, supplement with player stats if available
+        if (player) {
+          const playerStats = await supabaseDataService.getPlayerStats();
+          const stats = playerStats.find(s => 
+            s.playerId === player.id || 
+            (player.name && s.playerName && player.name.toLowerCase() === s.playerName.toLowerCase())
+          );
+          
+          if (stats) {
+            // Merge player stats with player data
+            player = {
+              ...player,
+              kills: stats.kills || 0,
+              deaths: stats.deaths || 0,
+              assists: stats.assists || 0,
+              kd: stats.kd || 1.0,
+              headshots: stats.hs_percentage || 0
+            };
+          }
+        }
+      } else {
+        // Get player from memory storage (CSV)
+        player = await storage.getPlayerById(req.params.id);
+      }
       
       if (player) {
         res.json(player);

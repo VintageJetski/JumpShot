@@ -2,6 +2,7 @@ import { supabase, fetchWithCache, refreshCache, clearCache } from './supabase';
 import { Player, Team, Match, Round, PlayerStats } from '../shared/database.types';
 import { PlayerRawStats, PlayerRoleInfo } from './types';
 import { PlayerRole } from '../shared/schema';
+import { validatePlayerStats, validateTeam, logDataIntegrityIssue } from './data-validator';
 
 /**
  * Data service for retrieving data from Supabase

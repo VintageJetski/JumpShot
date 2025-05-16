@@ -1,0 +1,107 @@
+import { loadPlayerData } from './csvParser';
+import { loadNewPlayerStats } from './newDataParser';
+import { supabaseDataService } from './supabase-data-service';
+import { PlayerRawStats } from './types';
+
+// Data source enum
+export enum DataSource {
+  CSV = 'csv',
+  SUPABASE = 'supabase'
+}
+
+// Current data source - change this to switch between CSV and Supabase
+export let CURRENT_DATA_SOURCE = DataSource.SUPABASE;
+
+/**
+ * Set the current data source
+ */
+export function setDataSource(source: DataSource): void {
+  CURRENT_DATA_SOURCE = source;
+  console.log(`Data source set to: ${source}`);
+}
+
+/**
+ * Get players from the current data source
+ */
+export async function getPlayers(): Promise<PlayerRawStats[]> {
+  if (CURRENT_DATA_SOURCE === DataSource.CSV) {
+    try {
+      // Try to use the newer data parser first
+      return await loadNewPlayerStats();
+    } catch (error) {
+      console.log('Falling back to original CSV parser');
+      return await loadPlayerData();
+    }
+  } else {
+    // Fetch from Supabase
+    const players = await supabaseDataService.getAllPlayers();
+    return supabaseDataService.convertPlayersToRawStats(players);
+  }
+}
+
+/**
+ * Get teams from the current data source
+ */
+export async function getTeams() {
+  if (CURRENT_DATA_SOURCE === DataSource.CSV) {
+    // Use existing team data loading code
+    // This is a placeholder - you would need to implement your existing CSV team loading logic here
+    throw new Error('CSV team loading not implemented yet');
+  } else {
+    // Fetch from Supabase
+    return await supabaseDataService.getAllTeams();
+  }
+}
+
+/**
+ * Refresh data from the current source
+ */
+export async function refreshData(): Promise<void> {
+  if (CURRENT_DATA_SOURCE === DataSource.SUPABASE) {
+    await supabaseDataService.refreshAllData();
+  }
+  // For CSV, we would reload from files, but this is typically handled on startup
+}
+
+/**
+ * Schedule regular data refreshes
+ * @param intervalMinutes How often to refresh data in minutes
+ */
+export function scheduleDataRefresh(intervalMinutes: number = 1440): NodeJS.Timeout {
+  const intervalMs = intervalMinutes * 60 * 1000; // Convert minutes to milliseconds
+  
+  console.log(`Scheduling data refresh every ${intervalMinutes} minutes`);
+  
+  // Set up recurring refresh
+  const interval = setInterval(async () => {
+    console.log('Performing scheduled data refresh...');
+    try {
+      await refreshData();
+      console.log('Scheduled data refresh completed successfully');
+    } catch (error) {
+      console.error('Error during scheduled data refresh:', error);
+    }
+  }, intervalMs);
+  
+  return interval;
+}
+
+// Initialize the data controller
+export async function initializeDataController(): Promise<void> {
+  console.log(`Initializing data controller with source: ${CURRENT_DATA_SOURCE}`);
+  
+  // Perform initial data load
+  try {
+    if (CURRENT_DATA_SOURCE === DataSource.SUPABASE) {
+      await supabaseDataService.refreshAllData();
+    }
+    
+    // Set up daily refresh schedule (1440 minutes = 24 hours)
+    scheduleDataRefresh(1440);
+    
+    console.log('Data controller initialized successfully');
+  } catch (error) {
+    console.error('Error initializing data controller:', error);
+    throw error;
+  }
+}

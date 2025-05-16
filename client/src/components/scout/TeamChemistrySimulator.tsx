@@ -215,8 +215,15 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
   const handleTeamSelect = (teamName: string | number) => {
     // Check if we're looking for a team by ID or name
     const team = typeof teamName === 'number' 
-      ? teams?.find(t => t.id === teamName) 
-      : teams?.find(t => (t.name && t.name.trim()) ? t.name === teamName : t.id.toString() === teamName);
+      ? teams?.find(t => t.id === teamName.toString()) 
+      : teams?.find(t => {
+          // First try to match by name if it exists and isn't empty
+          if (t.name && t.name.trim() && t.name === teamName) {
+            return true;
+          }
+          // Otherwise match by ID converted to string
+          return t.id.toString() === teamName.toString();
+        });
 
     setSelectedTeam(team || null);
   };
@@ -551,15 +558,21 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
           {teams?.map((team) => {
+            // Make sure team has a valid ID
+            if (!team || !team.id) return null;
+            
             // Use team ID as a fallback when name is empty
             const displayName = team.name?.trim() ? team.name : `Team #${team.id}`;
-            const tirValue = team.tir || 0;
+            const tirValue = typeof team.tir === 'number' ? team.tir : 0;
             
             return (
               <Card 
-                key={team.id || Math.random().toString()} 
+                key={team.id.toString()} 
                 className="cursor-pointer hover:border-primary transition-colors"
-                onClick={() => handleTeamSelect(team.id)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleTeamSelect(team.id || '');
+                }}
               >
                 <CardHeader>
                   <CardTitle>{displayName}</CardTitle>
@@ -567,21 +580,34 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {(team.players || []).slice(0, 5).map((player) => (
-                      <Badge 
-                        key={player.id || `player-${Math.random().toString().substring(2, 10)}`} 
-                        variant="outline"
-                      >
-                        {player.name || 'Unknown Player'}
-                      </Badge>
-                    ))}
-                    {(!team.players || team.players.length === 0) && (
+                    {Array.isArray(team.players) && team.players.slice(0, 5).map((player) => {
+                      // Skip invalid player entries
+                      if (!player) return null;
+                      
+                      const playerId = player.id ? player.id.toString() : `player-${Math.random().toString().substring(2, 10)}`;
+                      return (
+                        <Badge 
+                          key={playerId} 
+                          variant="outline"
+                        >
+                          {player.name || 'Unknown Player'}
+                        </Badge>
+                      );
+                    })}
+                    {(!team.players || !Array.isArray(team.players) || team.players.length === 0) && (
                       <div className="text-sm text-muted-foreground">No players assigned</div>
                     )}
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button variant="outline" className="w-full" onClick={() => handleTeamSelect(team.id)}>
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent double-firing of the event
+                      handleTeamSelect(team.id || ''); // Ensure we provide a default value
+                    }}
+                  >
                     <Users className="h-4 w-4 mr-2" />
                     Select Team
                   </Button>

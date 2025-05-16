@@ -176,8 +176,15 @@ function getTeamStrength(team: TeamWithTIR): string {
     "mid-round adaptability"
   ];
   
-  // Use team ID to ensure consistent strength for the same team
-  const strengthIndex = team.id.charCodeAt(0) % strengths.length;
+  // Use team name or ID to ensure consistent strength for the same team
+  // Handle case where team.id might not be a string or is empty
+  const teamIdentifier = typeof team.id === 'string' && team.id.length > 0 
+    ? team.id 
+    : (team.name || '1');
+  
+  // Get the first character code point or use a fallback
+  const firstChar = teamIdentifier.charAt(0) || 'A';
+  const strengthIndex = firstChar.charCodeAt(0) % strengths.length;
   return strengths[strengthIndex];
 }
 

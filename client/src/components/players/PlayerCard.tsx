@@ -190,7 +190,7 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
           transition={{ delay: staggerDelay + 0.2, duration: 0.3 }}
           whileHover={{ scale: 1.1, backgroundColor: "rgba(0,0,0,0.4)" }}
         >
-          {player.team}
+          {player.team || 'Unknown Team'}
         </motion.div>
         
         {/* Player Avatar Circle */}
@@ -202,7 +202,7 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
             transition={{ delay: staggerDelay + 0.15, type: "spring", stiffness: 200 }}
             whileHover={{ scale: 1.1, borderColor: "rgba(255,255,255,0.5)" }}
           >
-            {player.name.charAt(0)}
+            {(player.name && player.name.length > 0) ? player.name.charAt(0) : '?'}
           </motion.div>
           <div className="ml-3">
             <motion.h3 

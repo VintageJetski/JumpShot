@@ -91,8 +91,11 @@ const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players }) =>
         return bRatio - aRatio;
       })[0];
     
-    if (openingKillPlayer) {
-      const openingRatio = (openingKillPlayer.rawStats.firstKills / Math.max(openingKillPlayer.rawStats.firstKills + openingKillPlayer.rawStats.firstDeaths, 1)) * 100;
+    if (openingKillPlayer && openingKillPlayer.rawStats) {
+      const firstKills = openingKillPlayer.rawStats.firstKills || 0;
+      const firstDeaths = openingKillPlayer.rawStats.firstDeaths || 0;
+      const openingRatio = (firstKills / Math.max(firstKills + firstDeaths, 1)) * 100;
+      
       outliers.push({
         title: "Opening Kill Specialist",
         player: openingKillPlayer,
@@ -103,30 +106,39 @@ const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players }) =>
       });
     }
     
-    // Find smoke specialist
-    const smokePlayer = [...players].sort((a, b) => 
-      b.rawStats.smokesThrown - a.rawStats.smokesThrown
-    )[0];
+    // Find smoke specialist with safety checks
+    const smokePlayer = [...players]
+      .filter(p => p.rawStats && typeof p.rawStats.smokesThrown === 'number')
+      .sort((a, b) => (b.rawStats?.smokesThrown || 0) - (a.rawStats?.smokesThrown || 0))[0];
     
-    if (smokePlayer) {
+    if (smokePlayer && smokePlayer.rawStats) {
+      const smokesThrown = smokePlayer.rawStats.smokesThrown || 0;
       outliers.push({
         title: "Smoke Specialist",
         player: smokePlayer,
-        statValue: smokePlayer.rawStats.smokesThrown,
+        statValue: smokesThrown,
         bgGradient: "from-indigo-700 to-indigo-500",
         icon: <CircleDot className="h-5 w-5 text-indigo-300" />,
-        description: `${smokePlayer.rawStats.smokesThrown} smokes thrown`
+        description: `${smokesThrown} smokes thrown`
       });
     }
     
-    // Find through smoke killer
-    const throughSmokePlayer = [...players].sort((a, b) => 
-      b.rawStats.throughSmoke / Math.max(b.rawStats.kills, 1) - 
-      a.rawStats.throughSmoke / Math.max(a.rawStats.kills, 1)
-    )[0];
+    // Find through smoke killer with safety checks
+    const throughSmokePlayer = [...players]
+      .filter(p => p.rawStats && 
+        typeof p.rawStats.throughSmoke === 'number' && 
+        typeof p.rawStats.kills === 'number')
+      .sort((a, b) => {
+        const bRatio = (b.rawStats?.throughSmoke || 0) / Math.max(b.rawStats?.kills || 1, 1);
+        const aRatio = (a.rawStats?.throughSmoke || 0) / Math.max(a.rawStats?.kills || 1, 1);
+        return bRatio - aRatio;
+      })[0];
     
-    if (throughSmokePlayer) {
-      const throughSmokeRatio = (throughSmokePlayer.rawStats.throughSmoke / Math.max(throughSmokePlayer.rawStats.kills, 1)) * 100;
+    if (throughSmokePlayer && throughSmokePlayer.rawStats) {
+      const throughSmoke = throughSmokePlayer.rawStats.throughSmoke || 0;
+      const kills = Math.max(throughSmokePlayer.rawStats.kills || 1, 1);
+      const throughSmokeRatio = (throughSmoke / kills) * 100;
+      
       outliers.push({
         title: "Smoke Criminal",
         player: throughSmokePlayer,

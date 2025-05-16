@@ -147,13 +147,14 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
       newPositions.push({ id: "pos-5", name: "Lurker", role: PlayerRole.Lurker, player: null });
       
       // Try to populate with current team players
-      if (selectedTeam.players && playersWithScoutMetrics.length > 0) {
+      if (selectedTeam.players && Array.isArray(selectedTeam.players) && playersWithScoutMetrics.length > 0) {
         selectedTeam.players.forEach((teamPlayer, index) => {
-          if (index < newPositions.length) {
+          if (index < newPositions.length && teamPlayer && teamPlayer.id) {
             const playerWithScout = playersWithScoutMetrics.find(p => p.id === teamPlayer.id);
             if (playerWithScout) {
               newPositions[index].player = playerWithScout;
-              newPositions[index].role = playerWithScout.role;
+              // Use player's role or default to position's role if not available
+              newPositions[index].role = playerWithScout.role || newPositions[index].role;
             }
           }
         });
@@ -351,8 +352,15 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
         
         if (player1 && player2) {
           // Calculate chemistry between these two players
-          const sameTeam = player1.team === player2.team;
-          const complementaryRoles = isComplementaryRole(player1.role, player2.role);
+          // Handle empty team names safely
+          const team1 = player1.team?.trim() ? player1.team : '';
+          const team2 = player2.team?.trim() ? player2.team : '';
+          const sameTeam = team1 !== '' && team2 !== '' && team1 === team2;
+          
+          // Get default role if missing
+          const role1 = player1.role || PlayerRole.Support;
+          const role2 = player2.role || PlayerRole.Support;
+          const complementaryRoles = isComplementaryRole(role1, role2);
           
           // Base chemistry score
           let chemistry = 50;
@@ -363,8 +371,10 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
           // Adjust based on roles
           if (complementaryRoles) chemistry += 25;
           
-          // Adjust based on synergy
-          chemistry += (player1.scoutMetrics.synergy + player2.scoutMetrics.synergy) / 4;
+          // Adjust based on synergy (ensure scoutMetrics exists)
+          const synergy1 = player1.scoutMetrics?.synergy || 0;
+          const synergy2 = player2.scoutMetrics?.synergy || 0;
+          chemistry += (synergy1 + synergy2) / 4;
           
           // Ensure in range 0-100
           chemistry = Math.min(100, Math.max(0, chemistry));

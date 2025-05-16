@@ -12,8 +12,26 @@ import path from "path";
 import { getPlayers, getTeams, initializeDataController, DataSource, setDataSource } from "./data-controller";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Enable Supabase API route for switching data source
+  app.post('/api/admin/data-source', ensureAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { source } = req.body;
+      
+      if (source === 'supabase' || source === 'csv') {
+        setDataSource(source === 'supabase' ? DataSource.SUPABASE : DataSource.CSV);
+        res.json({ message: `Data source switched to ${source}` });
+      } else {
+        res.status(400).json({ message: 'Invalid data source. Use "supabase" or "csv".' });
+      }
+    } catch (error) {
+      console.error('Error switching data source:', error);
+      res.status(500).json({ message: 'Failed to switch data source' });
+    }
+  });
+  
   // Initialize data on server start
   try {
+    // Use CSV data loading by default for now
     console.log('Loading and processing player data...');
     const rawPlayerStats = await loadNewPlayerStats();
     
@@ -35,6 +53,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Load and process round data
     await initializeRoundData();
+    
+    // Initialize the data controller (for future Supabase integration)
+    await initializeDataController();
   } catch (error) {
     console.error('Error initializing data:', error);
   }

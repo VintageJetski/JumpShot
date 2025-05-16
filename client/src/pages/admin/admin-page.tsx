@@ -3,7 +3,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { Shield, Database, Users, BarChart2, LogOut, Beaker, Map } from "lucide-react";
+import { Shield, Database, Users, BarChart2, LogOut, Beaker, Map, CloudLightning } from "lucide-react";
+import { DataSourceToggle } from "@/components/admin/DataSourceToggle";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 
@@ -112,31 +113,40 @@ export default function AdminPage() {
         </motion.div>
 
         <motion.div 
-          className="glassmorphism border-glow rounded-lg p-6"
+          className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 1 }}
         >
-          <h2 className="text-xl font-semibold mb-4">Administrator Actions</h2>
-          <p className="text-blue-300/70">
-            This is a protected admin page. Only authenticated administrators can access this area.
-          </p>
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Button className="bg-gradient-to-r from-blue-600 to-blue-500">
-              View System Logs
-            </Button>
-            <Button className="bg-gradient-to-r from-blue-600 to-blue-500">
-              Manage Users
-            </Button>
-            <Button className="bg-gradient-to-r from-blue-600 to-blue-500">
-              System Settings
-            </Button>
-            <Link href="/admin/testing-environment">
-              <Button className="bg-gradient-to-r from-blue-700 to-purple-600 hover:from-blue-800 hover:to-purple-700 w-full flex items-center gap-2">
-                <Beaker className="h-4 w-4" />
-                Testing Environment
+          {/* Data Source Configuration */}
+          <DataSourceToggle />
+
+          {/* Administrator Actions Panel */}
+          <div className="glassmorphism border-glow rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Shield className="h-5 w-5 text-blue-400" />
+              Administrator Actions
+            </h2>
+            <p className="text-blue-300/70">
+              This is a protected admin page. Only authenticated administrators can access this area.
+            </p>
+            <div className="mt-6 grid grid-cols-1 gap-4">
+              <Button className="bg-gradient-to-r from-blue-600 to-blue-500">
+                View System Logs
               </Button>
-            </Link>
+              <Button className="bg-gradient-to-r from-blue-600 to-blue-500">
+                Manage Users
+              </Button>
+              <Button className="bg-gradient-to-r from-blue-600 to-blue-500">
+                System Settings
+              </Button>
+              <Link href="/admin/testing-environment">
+                <Button className="bg-gradient-to-r from-blue-700 to-purple-600 hover:from-blue-800 hover:to-purple-700 w-full flex items-center gap-2">
+                  <Beaker className="h-4 w-4" />
+                  Testing Environment
+                </Button>
+              </Link>
+            </div>
           </div>
         </motion.div>
       </motion.div>

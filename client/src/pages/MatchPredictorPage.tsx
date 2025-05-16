@@ -217,7 +217,16 @@ function getMapStrength(team: TeamWithTIR): string {
   ];
   
   // Use team ID to ensure consistent map for the same team
-  const mapIndex = (team.id.charCodeAt(0) + team.id.charCodeAt(1)) % maps.length;
+  let mapIndex = 0;
+  
+  if (team && team.id) {
+    // Convert the ID to string if it's a number
+    const idStr = String(team.id);
+    // Use a simple hash based on the string
+    const hash = idStr.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    mapIndex = hash % maps.length;
+  }
+  
   return `${maps[mapIndex]} specialist`;
 }
 

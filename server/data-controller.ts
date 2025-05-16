@@ -71,11 +71,57 @@ export async function getPlayers(): Promise<PlayerRawStats[]> {
  * Get teams from the current data source
  */
 export async function getTeams() {
+  console.log(`Getting teams from ${CURRENT_DATA_SOURCE}`);
   if (CURRENT_DATA_SOURCE === DataSource.CSV) {
-    // For CSV, we'll need to implement the team loading logic
-    // For now, return an empty array to prevent errors
-    console.warn('CSV team loading not fully implemented yet');
-    return [];
+    // Generate team data from player data for CSV
+    try {
+      const players = await getPlayers();
+      console.log(`Loaded ${players.length} players for team generation`);
+      
+      // Extract unique teams and build team objects
+      const teamMap = new Map();
+      
+      players.forEach(player => {
+        if (!player.team) return;
+        
+        // Normalize team name to create consistent IDs
+        const teamName = player.team.trim();
+        const teamId = teamName.toLowerCase().replace(/\s+/g, '-');
+        
+        if (!teamMap.has(teamId)) {
+          teamMap.set(teamId, {
+            id: teamId,
+            name: teamName,
+            players: [],
+            tir: 0 // Will be calculated later
+          });
+        }
+        
+        // Add player to the team
+        const team = teamMap.get(teamId);
+        team.players.push({
+          id: player.id,
+          name: player.name,
+          team: teamName,
+          role: player.tRole || player.ctRole, // Use tRole as primary if available
+          piv: player.pivValue || 0,
+          rawStats: player
+        });
+      });
+      
+      // Calculate a simple TIR (Team Impact Rating) based on player PIVs
+      Array.from(teamMap.values()).forEach(team => {
+        if (team.players.length > 0) {
+          const totalPIV = team.players.reduce((sum, player) => sum + (player.piv || 0), 0);
+          team.tir = totalPIV / team.players.length;
+        }
+      });
+      
+      return Array.from(teamMap.values());
+    } catch (error) {
+      console.error('Error generating teams from CSV data:', error);
+      return []; // Return empty array on error
+    }
   } else {
     // Fetch from Supabase
     try {

@@ -12,37 +12,7 @@ import path from "path";
 import { getPlayers, getTeams, initializeDataController, DataSource, setDataSource, refreshData } from "./data-controller";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Enable Supabase API route for switching data source
-  app.post('/api/admin/data-source', async (req: Request, res: Response) => {
-    try {
-      const { source } = req.body;
-      console.log(`Received request to switch data source to: ${source}`);
-      
-      if (source === 'supabase' || source === 'csv') {
-        // Set the new data source
-        setDataSource(source === 'supabase' ? DataSource.SUPABASE : DataSource.CSV);
-        
-        // Refresh player data based on the new source
-        try {
-          await refreshData();
-          console.log(`Successfully refreshed data from ${source}`);
-          res.json({ message: `Data source switched to ${source}` });
-        } catch (refreshError) {
-          console.error('Error refreshing data after switching source:', refreshError);
-          // Still return success for the source switch, even if refresh had issues
-          res.json({ 
-            message: `Data source switched to ${source}`,
-            warning: 'Data refresh encountered issues, some data might be stale'
-          });
-        }
-      } else {
-        res.status(400).json({ message: 'Invalid data source. Use "supabase" or "csv".' });
-      }
-    } catch (error) {
-      console.error('Error switching data source:', error);
-      res.status(500).json({ message: 'Failed to switch data source' });
-    }
-  });
+  // Admin routes are now handled in admin-routes.ts and mounted in index.ts
   
   // Initialize data on server start
   try {

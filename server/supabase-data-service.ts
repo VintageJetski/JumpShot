@@ -273,62 +273,87 @@ export class SupabaseDataService {
   }
   
   /**
-   * Get all available tournaments
+   * Get all available tournaments by extracting unique events from matches table
    */
   async getAllTournaments(forceRefresh = false): Promise<any[]> {
     const cacheKey = 'all_tournaments';
     
     const fetchFn = async () => {
       try {
-        console.log('Fetching all tournaments from Supabase...');
+        console.log('Extracting tournament data from matches in Supabase...');
         
-        // Query tournaments table
-        const { data, error } = await supabase
-          .from('tournaments')
-          .select('*')
-          .order('start_date', { ascending: false });
+        // First try to get unique events from the matches table
+        const { data: matchesData, error: matchesError } = await supabase
+          .from('matches')
+          .select('event, matchDate')
+          .not('event', 'is', null);
           
-        if (error) {
-          console.error('Error fetching tournaments:', error);
+        if (matchesError) {
+          console.error('Error fetching matches for tournament data:', matchesError);
           return [];
         }
         
-        if (!data || data.length === 0) {
-          console.log('No tournament data found in Supabase tournaments table');
-          
-          // Check if we have any events at all in the database
-          const { data: eventsData, error: eventsError } = await supabase
-            .from('events')
-            .select('id, name, location, start_date, end_date')
-            .order('start_date', { ascending: false });
+        if (!matchesData || matchesData.length === 0) {
+          console.log('No match data with events found in database');
+          return [];
+        }
+        
+        // Extract unique events and convert to tournament format
+        const eventMap = new Map();
+        
+        matchesData.forEach(match => {
+          if (match.event && !eventMap.has(match.event)) {
+            // Create a tournament ID from event name
+            const tournamentId = match.event.toLowerCase().replace(/\s+/g, '-');
             
-          if (eventsError) {
-            console.error('Error checking for events:', eventsError);
-            return [];
+            eventMap.set(match.event, {
+              id: tournamentId,
+              name: match.event,
+              location: 'Unknown', // This isn't available in matches table
+              start_date: match.matchDate || new Date().toISOString(),
+              end_date: match.matchDate || new Date().toISOString(),
+              teams_count: 'Unknown',
+              matches_count: 0,
+              source: 'matches',
+              status: 'completed'
+            });
           }
           
-          if (eventsData && eventsData.length > 0) {
-            console.log(`Found ${eventsData.length} events that might contain tournament data`);
+          // Count matches for each event
+          if (match.event) {
+            const tournament = eventMap.get(match.event);
+            if (tournament) {
+              if (tournament.matches_count === 'Unknown') {
+                tournament.matches_count = 1;
+              } else {
+                tournament.matches_count++;
+              }
+            }
+          }
+        });
+        
+        // Count unique teams for each event
+        for (const [eventName, tournament] of eventMap.entries()) {
+          const { data: eventMatches, error: teamCountError } = await supabase
+            .from('matches')
+            .select('team1, team2')
+            .eq('event', eventName);
             
-            // Convert events to tournament format
-            return eventsData.map(event => ({
-              id: event.id || event.name.toLowerCase().replace(/\s+/g, '-'),
-              name: event.name,
-              location: event.location,
-              start_date: event.start_date,
-              end_date: event.end_date,
-              teams_count: 'Unknown',
-              matches_count: 'Unknown',
-              source: 'events',
-              status: 'completed'
-            }));
+          if (!teamCountError && eventMatches) {
+            const uniqueTeams = new Set();
+            eventMatches.forEach(match => {
+              if (match.team1) uniqueTeams.add(match.team1);
+              if (match.team2) uniqueTeams.add(match.team2);
+            });
+            
+            tournament.teams_count = uniqueTeams.size;
           }
         }
         
-        console.log(`Found ${data?.length || 0} tournaments in Supabase`);
-        return data || [];
+        console.log(`Extracted ${eventMap.size} tournaments from match data`);
+        return Array.from(eventMap.values());
       } catch (error) {
-        console.error('Failed to fetch tournaments from Supabase:', error);
+        console.error('Failed to extract tournament data from matches:', error);
         return [];
       }
     };
@@ -337,7 +362,7 @@ export class SupabaseDataService {
   }
   
   /**
-   * Get player statistics for a specific tournament
+   * Get player statistics for a specific tournament by event name
    * @param tournamentId The tournament ID to fetch data for
    */
   async getTournamentPlayerStats(tournamentId: string, forceRefresh = false): Promise<any[]> {
@@ -347,54 +372,122 @@ export class SupabaseDataService {
       try {
         console.log(`Fetching player stats for tournament: ${tournamentId}`);
         
-        // First check the tournament_players table
-        const { data, error } = await supabase
-          .from('tournament_players')
-          .select('*')
-          .eq('tournament_id', tournamentId);
-          
-        if (error) {
-          console.error(`Error fetching players for tournament ${tournamentId}:`, error);
-          return [];
-        }
+        // Convert tournament ID back to event name (removing dashes and converting to original case)
+        // This is a rough approximation; we can refine if needed
+        const eventName = tournamentId.replace(/-/g, ' ');
+        console.log(`Looking for matches with event name: ${eventName}`);
         
-        if (data && data.length > 0) {
-          console.log(`Found ${data.length} players for tournament ${tournamentId}`);
-          return data;
-        }
-        
-        // If not found, try to get from matches with this tournament ID
+        // Get all matches for this event
         const { data: matchData, error: matchError } = await supabase
           .from('matches')
-          .select('*, player_stats(*)')
-          .eq('tournament_id', tournamentId);
+          .select('id, event, team1, team2')
+          .ilike('event', `%${eventName}%`);
           
         if (matchError) {
-          console.error(`Error fetching match data for tournament ${tournamentId}:`, matchError);
+          console.error(`Error fetching matches for event ${eventName}:`, matchError);
           return [];
         }
         
-        if (matchData && matchData.length > 0) {
-          console.log(`Found ${matchData.length} matches for tournament ${tournamentId}`);
-          
-          // Extract player stats from matches
-          const playerStatsMap = new Map();
-          
-          matchData.forEach(match => {
-            if (match.player_stats && Array.isArray(match.player_stats)) {
-              match.player_stats.forEach(stats => {
-                if (!playerStatsMap.has(stats.player_id)) {
-                  playerStatsMap.set(stats.player_id, stats);
-                }
-              });
-            }
-          });
-          
-          return Array.from(playerStatsMap.values());
+        if (!matchData || matchData.length === 0) {
+          console.log(`No matches found for event ${eventName}`);
+          return [];
         }
         
-        console.log(`No player data found for tournament ${tournamentId}`);
-        return [];
+        console.log(`Found ${matchData.length} matches for event ${eventName}`);
+        
+        // Get match IDs
+        const matchIds = matchData.map(match => match.id);
+        
+        // Get player stats for these matches
+        const { data: playerStatsData, error: playerStatsError } = await supabase
+          .from('player_stats')
+          .select('*, players(*)')
+          .in('matchId', matchIds);
+          
+        if (playerStatsError) {
+          console.error(`Error fetching player stats for event matches:`, playerStatsError);
+          return [];
+        }
+        
+        if (!playerStatsData || playerStatsData.length === 0) {
+          console.log(`No player stats found for matches in event ${eventName}`);
+          return [];
+        }
+        
+        console.log(`Found ${playerStatsData.length} player stat entries for event ${eventName}`);
+        
+        // Process player stats to combine them by player
+        const playerMap = new Map();
+        
+        playerStatsData.forEach(stat => {
+          if (stat.playerId && stat.players) {
+            const player = stat.players;
+            
+            if (!playerMap.has(stat.playerId)) {
+              // Initialize player entry
+              playerMap.set(stat.playerId, {
+                id: stat.playerId,
+                name: player.name,
+                team: player.team,
+                isIGL: player.isIGL,
+                tRole: player.tRole,
+                ctRole: player.ctRole,
+                matches: 0,
+                // Aggregate these stats
+                kills: 0,
+                deaths: 0,
+                assists: 0,
+                hs_percentage: 0,
+                adr: 0,
+                kast: 0,
+                first_kills: 0, 
+                first_deaths: 0,
+                utility_damage: 0,
+                flash_assists: 0,
+                rating: 0
+              });
+            }
+            
+            // Update the player's stats
+            const playerStats = playerMap.get(stat.playerId);
+            playerStats.matches++;
+            
+            // Add this match's stats
+            if (stat.kills) playerStats.kills += stat.kills;
+            if (stat.deaths) playerStats.deaths += stat.deaths;
+            if (stat.assists) playerStats.assists += stat.assists;
+            if (stat.hs_percentage) playerStats.hs_percentage += stat.hs_percentage;
+            if (stat.adr) playerStats.adr += stat.adr;
+            if (stat.kast) playerStats.kast += stat.kast;
+            if (stat.first_kills) playerStats.first_kills += stat.first_kills;
+            if (stat.first_deaths) playerStats.first_deaths += stat.first_deaths;
+            if (stat.utility_damage) playerStats.utility_damage += stat.utility_damage;
+            if (stat.flash_assists) playerStats.flash_assists += stat.flash_assists;
+            if (stat.rating) playerStats.rating += stat.rating;
+          }
+        });
+        
+        // Calculate averages for the aggregated stats
+        for (const player of playerMap.values()) {
+          if (player.matches > 0) {
+            player.hs_percentage = player.hs_percentage / player.matches;
+            player.adr = player.adr / player.matches;
+            player.kast = player.kast / player.matches;
+            player.rating = player.rating / player.matches;
+            
+            // Calculate K/D ratio
+            player.kd = player.deaths > 0 ? player.kills / player.deaths : player.kills;
+            
+            // Round numbers for display
+            player.kd = Math.round(player.kd * 100) / 100;
+            player.hs_percentage = Math.round(player.hs_percentage * 100) / 100;
+            player.adr = Math.round(player.adr * 100) / 100;
+            player.kast = Math.round(player.kast * 100) / 100;
+            player.rating = Math.round(player.rating * 100) / 100;
+          }
+        }
+        
+        return Array.from(playerMap.values());
       } catch (error) {
         console.error(`Failed to fetch tournament player stats for ${tournamentId}:`, error);
         return [];

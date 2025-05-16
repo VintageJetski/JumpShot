@@ -73,10 +73,10 @@ export function TournamentBrowser() {
         return (
           <Alert className="bg-amber-950/30 border-amber-900/50 text-amber-100">
             <Info className="h-4 w-4 text-amber-400" />
-            <AlertTitle>Database Setup Required</AlertTitle>
+            <AlertTitle>Tournament Data Available via Matches</AlertTitle>
             <AlertDescription>
-              The tournaments tables haven't been created in your Supabase database yet. 
-              You'll need to create the tournaments table and add tournament data.
+              Tournament data is being extracted from the match events in your Supabase database.
+              If no data appears, make sure your matches table has event data populated.
             </AlertDescription>
           </Alert>
         );

@@ -130,7 +130,7 @@ export async function fetchTeams(forceRefresh: boolean = false): Promise<TeamWit
       
       return {
         id: team.id,
-        name: team.name,
+        name: team.team_clan_name || `Team #${team.id}`,
         tir: team.tir || 0,
         sumPIV: teamPlayers.reduce((sum, p) => sum + p.piv, 0),
         synergy: 0, // Calculate synergy factor

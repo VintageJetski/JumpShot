@@ -54,7 +54,7 @@ export class SupabaseDataService {
       const formattedTeams = (data || []).map(team => {
         return {
           id: team.id || '',
-          name: team.name || '',
+          name: team.team_clan_name || `Team #${team.id}`, // Use team_clan_name as it exists in your database
           tir: parseFloat(team.tir) || 0,
           // Additional Supabase properties
           sum_piv: parseFloat(team.sum_piv) || 0,

@@ -64,7 +64,7 @@ export class CleanSupabaseAdapter {
         // Map role string to PlayerRole enum
         let roleEnum: PlayerRole | undefined;
         if (row.role) {
-          const normalizedRole = row.role.trim().toLowerCase();
+          const normalizedRole = String(row.role).trim().toLowerCase();
           if (normalizedRole === 'awp' || normalizedRole === 'awper') {
             roleEnum = PlayerRole.AWP;
           } else if (normalizedRole === 'support') {

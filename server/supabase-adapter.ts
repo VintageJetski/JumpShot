@@ -3,8 +3,18 @@ import {
   players, teams, killStats, generalStats, utilityStats, playerMatchSummary
 } from './db-schema';
 import { db } from './supabase-db';
-import { eq, and } from 'drizzle-orm';
-import { PlayerRawStats, PlayerRole, TeamRawStats } from '../shared/schema';
+import { eq, and, inArray } from 'drizzle-orm';
+import { PlayerRawStats, PlayerRole } from '../shared/schema';
+
+// Define TeamRawStats interface to match existing schema in the application
+export interface TeamRawStats {
+  name: string;
+  players: number;
+  logo: string;
+  wins: number;
+  losses: number;
+  eventId: number;
+}
 
 /**
  * Adapter to transform database models into application models
@@ -32,11 +42,13 @@ export class SupabaseAdapter {
   }
 
   /**
-   * Get all players for a specific event
+   * Get all players for a specific event using batch processing
    * @param eventId Event ID to fetch players for
    */
   async getPlayersForEvent(eventId: number): Promise<PlayerRawStats[]> {
     try {
+      console.log(`Getting players for event ${eventId} with batch processing...`);
+      
       // Get all player IDs in this event from player_match_summary
       const playerSummaries = await db.select()
         .from(playerMatchSummary)
@@ -47,82 +59,117 @@ export class SupabaseAdapter {
         return [];
       }
 
-      const steamIds = [...new Set(playerSummaries.map(p => p.steamId))];
+      // Get unique Steam IDs for all players in this event
+      const steamIds = Array.from(new Set(playerSummaries.map(p => p.steamId)));
+      console.log(`Found ${steamIds.length} unique players in event ${eventId}`);
       
-      // For each player, get their details and stats
-      const playerStats: PlayerRawStats[] = [];
+      // Get all player info in a single query
+      const playerInfos = await db.select()
+        .from(players)
+        .where(inArray(players.steamId, steamIds));
       
-      for (const steamId of steamIds) {
-        try {
-          // Get basic player info
-          const [playerInfo] = await db.select()
-            .from(players)
-            .where(eq(players.steamId, steamId));
-          
-          if (!playerInfo) {
-            console.warn(`Player with steam ID ${steamId} not found`);
-            continue;
+      console.log(`Found ${playerInfos.length} players with basic info out of ${steamIds.length} players in event`);
+      
+      // Create a map of steam ID to player info for quick lookups
+      const playerInfoMap = new Map<number, Player>();
+      for (const player of playerInfos) {
+        playerInfoMap.set(player.steamId, player);
+      }
+      
+      // Get all kill stats in a single query
+      const playerKillStatsArray = await db.select()
+        .from(killStats)
+        .where(and(
+          inArray(killStats.steamId, steamIds),
+          eq(killStats.eventId, eventId)
+        ));
+      
+      // Create a map of steam ID to kill stats
+      const killStatsMap = new Map<number, KillStat>();
+      for (const stats of playerKillStatsArray) {
+        killStatsMap.set(stats.steamId, stats);
+      }
+      
+      // Get all general stats in a single query
+      const playerGeneralStatsArray = await db.select()
+        .from(generalStats)
+        .where(and(
+          inArray(generalStats.steamId, steamIds),
+          eq(generalStats.eventId, eventId)
+        ));
+      
+      // Create a map of steam ID to general stats
+      const generalStatsMap = new Map<number, GeneralStat>();
+      for (const stats of playerGeneralStatsArray) {
+        generalStatsMap.set(stats.steamId, stats);
+      }
+      
+      // Get all utility stats in a single query
+      const playerUtilityStatsArray = await db.select()
+        .from(utilityStats)
+        .where(and(
+          inArray(utilityStats.steamId, steamIds),
+          eq(utilityStats.eventId, eventId)
+        ));
+      
+      // Create a map of steam ID to utility stats
+      const utilityStatsMap = new Map<number, UtilityStat>();
+      for (const stats of playerUtilityStatsArray) {
+        utilityStatsMap.set(stats.steamId, stats);
+      }
+      
+      // Get all team IDs for each player
+      // We need to associate each player with their most frequent team
+      const teamMap = new Map<number, Map<number, number>>(); // steamId -> (teamId -> count)
+      
+      for (const summary of playerSummaries) {
+        if (!summary.teamId) continue;
+        
+        if (!teamMap.has(summary.steamId)) {
+          teamMap.set(summary.steamId, new Map<number, number>());
+        }
+        
+        const countMap = teamMap.get(summary.steamId)!;
+        countMap.set(summary.teamId, (countMap.get(summary.teamId) || 0) + 1);
+      }
+      
+      // Get all unique team IDs used in this event
+      const allTeamIds = new Set<number>();
+      for (const countMap of teamMap.values()) {
+        for (const teamId of countMap.keys()) {
+          allTeamIds.add(teamId);
+        }
+      }
+      
+      // Get all team info in a single query
+      const teamInfoArray = await db.select()
+        .from(teams)
+        .where(inArray(teams.id, Array.from(allTeamIds)));
+      
+      // Create a map of team ID to team info
+      const teamInfoMap = new Map<number, Team>();
+      for (const team of teamInfoArray) {
+        teamInfoMap.set(team.id, team);
+      }
+      
+      // Find most frequent team for each player
+      const playerTeamMap = new Map<number, Team>();
+      
+      for (const [steamId, countMap] of teamMap.entries()) {
+        let mostFrequentTeamId = 0;
+        let maxCount = 0;
+        
+        for (const [teamId, count] of countMap.entries()) {
+          if (count > maxCount) {
+            maxCount = count;
+            mostFrequentTeamId = teamId;
           }
-          
-          // Get kill stats
-          const [playerKillStats] = await db.select()
-            .from(killStats)
-            .where(and(
-              eq(killStats.steamId, steamId),
-              eq(killStats.eventId, eventId)
-            ));
-          
-          // Get general stats
-          const [playerGeneralStats] = await db.select()
-            .from(generalStats)
-            .where(and(
-              eq(generalStats.steamId, steamId),
-              eq(generalStats.eventId, eventId)
-            ));
-          
-          // Get utility stats
-          const [playerUtilityStats] = await db.select()
-            .from(utilityStats)
-            .where(and(
-              eq(utilityStats.steamId, steamId),
-              eq(utilityStats.eventId, eventId)
-            ));
-          
-          // Get team info
-          const teamMatches = await db.select()
-            .from(playerMatchSummary)
-            .where(and(
-              eq(playerMatchSummary.steamId, steamId),
-              eq(playerMatchSummary.eventId, eventId)
-            ));
-          
-          // Get the most frequent team ID for this player
-          const teamCounts = new Map<number, number>();
-          for (const match of teamMatches) {
-            if (match.teamId) {
-              teamCounts.set(match.teamId, (teamCounts.get(match.teamId) || 0) + 1);
-            }
-          }
-          
-          let mostFrequentTeamId = 0;
-          let maxCount = 0;
-          
-          for (const [teamId, count] of teamCounts.entries()) {
-            if (count > maxCount) {
-              maxCount = count;
-              mostFrequentTeamId = teamId;
-            }
-          }
-          
-          let teamInfo: Team | undefined;
-          
-          if (mostFrequentTeamId) {
-            const [team] = await db.select()
-              .from(teams)
-              .where(eq(teams.id, mostFrequentTeamId));
-            
-            teamInfo = team;
-          }
+        }
+        
+        if (mostFrequentTeamId && teamInfoMap.has(mostFrequentTeamId)) {
+          playerTeamMap.set(steamId, teamInfoMap.get(mostFrequentTeamId)!);
+        }
+      }
           
           // Transform to PlayerRawStats
           const rawStats: PlayerRawStats = {

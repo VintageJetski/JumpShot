@@ -1,5 +1,6 @@
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
+import { eq } from 'drizzle-orm';
 import ws from 'ws';
 import * as schema from './db-schema';
 
@@ -51,7 +52,7 @@ export async function getAvailableEvents(): Promise<{ eventId: number; eventName
 export async function checkEventExists(eventId: number): Promise<boolean> {
   try {
     const events = await db.select().from(schema.events).where(
-      (fields) => fields.eventId.equals(eventId)
+      eq(schema.events.eventId, eventId)
     );
     return events.length > 0;
   } catch (error) {

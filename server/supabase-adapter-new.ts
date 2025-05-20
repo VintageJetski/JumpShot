@@ -293,23 +293,33 @@ export class SupabaseAdapter {
    */
   async getTeamsForEvent(eventId: number): Promise<TeamRawStats[]> {
     try {
-      // Get all teams in this event from player_match_summary
-      const result = await db.execute(
-        'SELECT DISTINCT team_id FROM player_match_summary WHERE event_id = $1',
-        [eventId]
-      );
+      console.log(`Getting teams for event ${eventId}...`);
       
-      const teamIds = (result.rows as { team_id: number }[]).map(t => t.team_id).filter(id => id != null);
+      // Get all team IDs in this event
+      const teamQuery = `
+        SELECT DISTINCT team_id 
+        FROM player_match_summary 
+        WHERE event_id = ${eventId} 
+        AND team_id IS NOT NULL
+      `;
+      
+      const result = await db.execute(teamQuery);
+      
+      const teamIds = (result.rows as { team_id: number }[]).map(t => t.team_id);
       
       if (!teamIds || teamIds.length === 0) {
         console.warn(`No teams found for event ${eventId}`);
         return [];
       }
       
+      console.log(`Found ${teamIds.length} unique teams in event ${eventId}`);
+      
       // Get team details for all teams at once
       const teamInfoArray = await db.select()
         .from(teams)
         .where(inArray(teams.id, teamIds));
+      
+      console.log(`Retrieved information for ${teamInfoArray.length} teams`);
       
       const teamStats: TeamRawStats[] = [];
       
@@ -317,10 +327,14 @@ export class SupabaseAdapter {
       for (const team of teamInfoArray) {
         try {
           // Count players in this team for this event
-          const playerCount = await db.execute(
-            'SELECT COUNT(DISTINCT steam_id) as player_count FROM player_match_summary WHERE team_id = $1 AND event_id = $2',
-            [team.id, eventId]
-          );
+          const countQuery = `
+            SELECT COUNT(DISTINCT steam_id) as player_count 
+            FROM player_match_summary 
+            WHERE team_id = ${team.id} 
+            AND event_id = ${eventId}
+          `;
+          
+          const playerCount = await db.execute(countQuery);
           
           const count = parseInt(playerCount.rows[0]?.player_count || '0', 10);
           

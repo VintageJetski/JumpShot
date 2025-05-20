@@ -111,6 +111,7 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 // Register Vite middleware in development
 import { createServer } from 'http';
 const httpServer = createServer(app);
+// Set up Vite in development mode
 setupVite(app, httpServer);
 
 // Start the server
@@ -119,8 +120,9 @@ const PORT = process.env.PORT || 5000;
 async function start() {
   console.log('Starting server with Direct Supabase integration...');
   
-  // Initialize and start the data refresh manager with the singleton instance
-  const refreshManager = DataRefreshManager.getInstance();
+  // Initialize and start the data refresh manager
+  const dataRefreshManager = await import('./dataRefreshManager');
+  const refreshManager = dataRefreshManager.dataRefreshManager;
   refreshManager.start();
   
   // Test Supabase connection

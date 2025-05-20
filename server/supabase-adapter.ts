@@ -1,395 +1,276 @@
-import { 
-  Player, Team, KillStat, GeneralStat, UtilityStat, 
-  players, teams, killStats, generalStats, utilityStats, playerMatchSummary
-} from './db-schema';
-import { db } from './supabase-db';
-import { eq, and, inArray } from 'drizzle-orm';
-import { PlayerRawStats, PlayerRole } from '../shared/schema';
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import ws from 'ws';
+import { PlayerRole, PlayerWithPIV, TeamWithTIR } from '../shared/schema';
 
-// Define TeamRawStats interface to match existing schema in the application
-export interface TeamRawStats {
-  name: string;
-  players: number;
-  logo: string;
-  wins: number;
-  losses: number;
-  eventId: number;
+// Configure WebSocket for Neon/Supabase
+neonConfig.webSocketConstructor = ws;
+
+// Create database pool with the provided connection string
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
+});
+
+// Create database instance
+export const db = drizzle({ client: pool });
+
+/**
+ * Check if the database connection is available
+ */
+export async function checkConnection(): Promise<boolean> {
+  try {
+    const result = await pool.query('SELECT 1 as test');
+    return result.rows.length > 0;
+  } catch (error) {
+    console.error('Database connection error:', error);
+    return false;
+  }
 }
 
 /**
- * Adapter to transform database models into application models
+ * Get all available events from Supabase
+ * (Currently hardcoded as IEM Katowice 2025 since events aren't separate in DB)
  */
-export class SupabaseAdapter {
-  
-  /**
-   * Get all available event IDs
-   */
-  async getEventIds(): Promise<number[]> {
-    try {
-      const events = await db.select().from(players);
-      if (!events || events.length === 0) {
-        throw new Error('No events found in database');
-      }
-      // Get distinct event IDs from player_match_summary
-      const result = await db.execute(
-        'SELECT DISTINCT event_id FROM player_match_summary ORDER BY event_id'
-      );
-      return (result.rows as { event_id: number }[]).map(e => e.event_id);
-    } catch (error) {
-      console.error('Error getting event IDs:', error);
+export async function getEvents(): Promise<{ id: number, name: string }[]> {
+  try {
+    // Currently there's only one event in the database (IEM Katowice 2025)
+    return [{ id: 1, name: 'IEM Katowice 2025' }];
+  } catch (error) {
+    console.error('Error getting events:', error);
+    return [{ id: 1, name: 'IEM Katowice 2025' }];
+  }
+}
+
+/**
+ * Get player data with PIV values from Supabase
+ */
+export async function getPlayersWithPIV(eventId: number = 1): Promise<PlayerWithPIV[]> {
+  try {
+    console.log(`Getting players with PIV for event ${eventId}...`);
+    
+    // Get player data from player_stats table
+    const query = `
+      SELECT * FROM player_stats
+    `;
+    
+    const result = await pool.query(query);
+    
+    if (!result.rows.length) {
+      console.log('No players found in database');
       return [];
     }
+    
+    console.log(`Found ${result.rows.length} players in database`);
+    
+    // Process player data
+    const players = result.rows.map(player => {
+      // Determine player role from database role field
+      let role = PlayerRole.Support; // Default role
+      let tRole = 'Support';
+      let ctRole = 'Anchor';
+      let isIGL = player.is_igl || false;
+      
+      if (player.role) {
+        const roleStr = player.role.toString().toUpperCase();
+        if (roleStr.includes('IGL')) {
+          role = PlayerRole.IGL;
+          isIGL = true;
+        } else if (roleStr.includes('AWP')) {
+          role = PlayerRole.AWP;
+          tRole = 'AWP';
+          ctRole = 'AWP';
+        } else if (roleStr.includes('LURK')) {
+          role = PlayerRole.Lurker;
+          tRole = 'Lurker';
+          ctRole = 'Rotator';
+        } else if (roleStr.includes('SPACE')) {
+          role = PlayerRole.Entry;
+          tRole = 'Spacetaker';
+          ctRole = 'Rotator';
+        }
+      }
+      
+      // Calculate KD ratio
+      const kills = Number(player.kills) || 0;
+      const deaths = Math.max(1, Number(player.deaths) || 1); // Avoid division by zero
+      const kd = player.kd || kills / deaths || 1.0;
+      
+      // Create consistent record for frontend
+      return {
+        id: player.steam_id.toString(),
+        name: player.user_name || 'Unknown Player',
+        team: player.team_clan_name || 'Unknown Team',
+        teamId: 0, // This will be set later with team data
+        role: role,
+        tRole: tRole,
+        ctRole: ctRole,
+        isIGL: isIGL,
+        piv: Number(player.piv) || 1.0,
+        kd: Number(kd) || 1.0,
+        rating: Number(player.piv) || 1.0, // Using PIV as rating
+        // Metrics that frontend needs
+        metrics: {
+          kills: Number(player.kills) || 0,
+          deaths: Number(player.deaths) || 0,
+          assists: Number(player.assists) || 0,
+          adr: 0, // Not directly in DB
+          kast: 0, // Not directly in DB
+          opening_success: Number(player.first_kills) || 0,
+          headshots: Number(player.headshots) || 0,
+          clutches: 0 // Not directly in DB
+        },
+        // Add fields required by frontend
+        primaryMetric: {
+          name: 'Impact',
+          value: Number(player.piv) || 1.0
+        },
+        // Raw stats needed by frontend
+        rawStats: {
+          steamId: player.steam_id.toString(),
+          kills: Number(player.kills) || 0,
+          deaths: Number(player.deaths) || 0,
+          assists: Number(player.assists) || 0,
+          kd: Number(kd) || 1.0,
+          rating: Number(player.piv) || 1.0,
+          headshots: Number(player.headshots) || 0,
+          openingKills: Number(player.first_kills) || 0,
+          openingDeaths: Number(player.first_deaths) || 0,
+          utilityDamage: 0, // Not directly in DB
+          flashAssists: Number(player.assisted_flashes) || 0,
+          smokeThrown: Number(player.smokes_thrown) || 0,
+          flashesThrown: Number(player.flashes_thrown) || 0,
+          heThrown: Number(player.he_thrown) || 0,
+          infernos_thrown: Number(player.infernos_thrown) || 0,
+        }
+      };
+    });
+    
+    return players;
+  } catch (error) {
+    console.error('Error getting players with PIV:', error);
+    throw error;
   }
+}
 
-  /**
-   * Get all players for a specific event using batch processing
-   * @param eventId Event ID to fetch players for
-   */
-  async getPlayersForEvent(eventId: number): Promise<PlayerRawStats[]> {
-    try {
-      console.log(`Getting players for event ${eventId} with batch processing...`);
-      
-      // Get all player IDs in this event from player_match_summary
-      const playerSummaries = await db.select()
-        .from(playerMatchSummary)
-        .where(eq(playerMatchSummary.eventId, eventId));
-      
-      if (!playerSummaries || playerSummaries.length === 0) {
-        console.warn(`No players found for event ${eventId}`);
-        return [];
-      }
-
-      // Get unique Steam IDs for all players in this event
-      const steamIds = Array.from(new Set(playerSummaries.map(p => p.steamId)));
-      console.log(`Found ${steamIds.length} unique players in event ${eventId}`);
-      
-      // Get all player info in a single query
-      const playerInfos = await db.select()
-        .from(players)
-        .where(inArray(players.steamId, steamIds));
-      
-      console.log(`Found ${playerInfos.length} players with basic info out of ${steamIds.length} players in event`);
-      
-      // Create a map of steam ID to player info for quick lookups
-      const playerInfoMap = new Map<number, Player>();
-      for (const player of playerInfos) {
-        playerInfoMap.set(player.steamId, player);
-      }
-      
-      // Get all kill stats in a single query
-      const playerKillStatsArray = await db.select()
-        .from(killStats)
-        .where(and(
-          inArray(killStats.steamId, steamIds),
-          eq(killStats.eventId, eventId)
-        ));
-      
-      // Create a map of steam ID to kill stats
-      const killStatsMap = new Map<number, KillStat>();
-      for (const stats of playerKillStatsArray) {
-        killStatsMap.set(stats.steamId, stats);
-      }
-      
-      // Get all general stats in a single query
-      const playerGeneralStatsArray = await db.select()
-        .from(generalStats)
-        .where(and(
-          inArray(generalStats.steamId, steamIds),
-          eq(generalStats.eventId, eventId)
-        ));
-      
-      // Create a map of steam ID to general stats
-      const generalStatsMap = new Map<number, GeneralStat>();
-      for (const stats of playerGeneralStatsArray) {
-        generalStatsMap.set(stats.steamId, stats);
-      }
-      
-      // Get all utility stats in a single query
-      const playerUtilityStatsArray = await db.select()
-        .from(utilityStats)
-        .where(and(
-          inArray(utilityStats.steamId, steamIds),
-          eq(utilityStats.eventId, eventId)
-        ));
-      
-      // Create a map of steam ID to utility stats
-      const utilityStatsMap = new Map<number, UtilityStat>();
-      for (const stats of playerUtilityStatsArray) {
-        utilityStatsMap.set(stats.steamId, stats);
-      }
-      
-      // Get all team IDs for each player
-      // We need to associate each player with their most frequent team
-      const teamMap = new Map<number, Map<number, number>>(); // steamId -> (teamId -> count)
-      
-      for (const summary of playerSummaries) {
-        if (!summary.teamId) continue;
-        
-        if (!teamMap.has(summary.steamId)) {
-          teamMap.set(summary.steamId, new Map<number, number>());
-        }
-        
-        const countMap = teamMap.get(summary.steamId)!;
-        countMap.set(summary.teamId, (countMap.get(summary.teamId) || 0) + 1);
-      }
-      
-      // Get all unique team IDs used in this event
-      const allTeamIds = new Set<number>();
-      for (const countMap of teamMap.values()) {
-        for (const teamId of countMap.keys()) {
-          allTeamIds.add(teamId);
-        }
-      }
-      
-      // Get all team info in a single query
-      const teamInfoArray = await db.select()
-        .from(teams)
-        .where(inArray(teams.id, Array.from(allTeamIds)));
-      
-      // Create a map of team ID to team info
-      const teamInfoMap = new Map<number, Team>();
-      for (const team of teamInfoArray) {
-        teamInfoMap.set(team.id, team);
-      }
-      
-      // Find most frequent team for each player
-      const playerTeamMap = new Map<number, Team>();
-      
-      for (const [steamId, countMap] of teamMap.entries()) {
-        let mostFrequentTeamId = 0;
-        let maxCount = 0;
-        
-        for (const [teamId, count] of countMap.entries()) {
-          if (count > maxCount) {
-            maxCount = count;
-            mostFrequentTeamId = teamId;
-          }
-        }
-        
-        if (mostFrequentTeamId && teamInfoMap.has(mostFrequentTeamId)) {
-          playerTeamMap.set(steamId, teamInfoMap.get(mostFrequentTeamId)!);
-        }
-      }
-      
-      // Now construct player stats for each valid player
-      const playerStats: PlayerRawStats[] = [];
-      
-      // Process players with valid information
-      for (const steamId of steamIds) {
-        try {
-          // Get player info from maps
-          const playerInfo = playerInfoMap.get(steamId);
-          if (!playerInfo) {
-            console.log(`Skipping player with steam ID ${steamId} - no basic info found`);
-            continue;
-          }
-          
-          const playerKillStats = killStatsMap.get(steamId);
-          const playerGeneralStats = generalStatsMap.get(steamId);
-          const playerUtilityStats = utilityStatsMap.get(steamId);
-          const teamInfo = playerTeamMap.get(steamId);
-          
-          // Create player stats object with all available data
-          const rawStats: PlayerRawStats = {
-            name: playerInfo.userName,
-            team: teamInfo?.teamClanName || 'Unknown',
-            
-            // Kill stats
-            kills: playerKillStats?.kills || 0,
-            deaths: playerGeneralStats?.deaths || 0,
-            assists: playerGeneralStats?.assists || 0,
-            
-            kd: playerGeneralStats?.kd || 0,
-            kddiff: playerGeneralStats?.kDDiff || 0,
-            
-            adr: playerGeneralStats?.adrTotal || 0,
-            adr_ct: playerGeneralStats?.adrCtSide || 0,
-            adr_t: playerGeneralStats?.adrTSide || 0,
-            
-            kast: playerGeneralStats?.kastTotal || 0,
-            kast_ct: playerGeneralStats?.kastCtSide || 0,
-            kast_t: playerGeneralStats?.kastTSide || 0,
-            
-            hs: playerKillStats?.headshots || 0,
-            
-            // First kill/death stats
-            firstkills: playerKillStats?.firstKills || 0,
-            firstkills_ct: playerKillStats?.ctFirstKills || 0,
-            firstkills_t: playerKillStats?.tFirstKills || 0,
-            
-            firstdeaths: playerKillStats?.firstDeaths || 0,
-            firstdeaths_ct: playerKillStats?.ctFirstDeaths || 0,
-            firstdeaths_t: playerKillStats?.tFirstDeaths || 0,
-            
-            // Utility stats
-            flash_assists: playerUtilityStats?.assistedFlashes || 0,
-            flashes_thrown: playerUtilityStats?.flahesThrown || 0,
-            flashes_thrown_ct: playerUtilityStats?.ctFlahesThrown || 0,
-            flashes_thrown_t: playerUtilityStats?.tFlahesThrown || 0,
-            
-            he_thrown: playerUtilityStats?.heThrown || 0,
-            he_thrown_ct: playerUtilityStats?.ctHeThrown || 0,
-            he_thrown_t: playerUtilityStats?.tHeThrown || 0,
-            
-            molotovs_thrown: playerUtilityStats?.infernosThrown || 0,
-            molotovs_thrown_ct: playerUtilityStats?.ctInfernosThrown || 0,
-            molotovs_thrown_t: playerUtilityStats?.tInfernosThrown || 0,
-            
-            smokes_thrown: playerUtilityStats?.smokesThrown || 0,
-            smokes_thrown_ct: playerUtilityStats?.ctSmokesThrown || 0,
-            smokes_thrown_t: playerUtilityStats?.tSmokesThrown || 0,
-            
-            total_utility_damage: playerUtilityStats?.totalUtilDmg || 0,
-            utility_damage_ct: playerUtilityStats?.ctTotalUtilDmg || 0,
-            utility_damage_t: playerUtilityStats?.tTotalUtilDmg || 0,
-            
-            // Special kill types
-            awp_kills: playerKillStats?.awpKills || 0,
-            pistol_kills: playerKillStats?.pistolKills || 0,
-            wallbang_kills: playerKillStats?.wallbangKills || 0,
-            noscope_kills: playerKillStats?.noScope || 0,
-            blind_kills: playerKillStats?.blindKills || 0,
-            smoke_kills: playerKillStats?.throughSmoke || 0,
-            
-            // Trading stats
-            traded_kills: playerGeneralStats?.tradeKills || 0,
-            traded_deaths: playerGeneralStats?.tradeDeaths || 0,
-            
-            // Round wins
-            total_rounds_won: playerGeneralStats?.totalRoundsWon || 0,
-            t_rounds_won: playerGeneralStats?.tRoundsWon || 0,
-            ct_rounds_won: playerGeneralStats?.ctRoundsWon || 0,
-            
-            // Inferred metrics based on existing data
-            ctSideRoundsPlayed: this.calculateCtRoundsPlayed(playerGeneralStats),
-            tSideRoundsPlayed: this.calculateTRoundsPlayed(playerGeneralStats),
-            
-            // Will be assigned later by the role processing system
-            ct_role: PlayerRole.Anchor,  // Default, will be assigned by role system
-            t_role: PlayerRole.Support,  // Default, will be assigned by role system
-            is_igl: false,  // Default, will be assigned by role system
-            
-            // Store event ID for multi-event handling
-            eventId
-          };
-          
-          playerStats.push(rawStats);
-        } catch (error) {
-          console.error(`Error processing player ${steamId}:`, error);
-        }
-      }
-      
-      console.log(`Successfully processed ${playerStats.length} out of ${steamIds.length} players for event ${eventId}`);
-      return playerStats;
-    } catch (error) {
-      console.error(`Error getting players for event ${eventId}:`, error);
-      return [];
+/**
+ * Get team data with TIR values from Supabase
+ */
+export async function getTeamsWithTIR(eventId: number = 1): Promise<TeamWithTIR[]> {
+  try {
+    console.log(`Getting teams with TIR for event ${eventId}...`);
+    
+    // Get all players for this event
+    const allPlayers = await getPlayersWithPIV(eventId);
+    
+    // Get team data from teams table
+    const teamsQuery = `
+      SELECT * FROM teams
+    `;
+    
+    const teamsResult = await pool.query(teamsQuery);
+    console.log(`Found ${teamsResult.rows.length} teams in database`);
+    
+    if (teamsResult.rows.length === 0) {
+      console.log('No teams found in database, generating from player data...');
+      return generateTeamsFromPlayers(allPlayers);
     }
-  }
-  
-  /**
-   * Get team statistics for a specific event
-   * @param eventId Event ID to fetch team statistics for
-   */
-  async getTeamsForEvent(eventId: number): Promise<TeamRawStats[]> {
-    try {
-      // Get all teams in this event from player_match_summary
-      const result = await db.execute(
-        'SELECT DISTINCT team_id FROM player_match_summary WHERE event_id = $1',
-        [eventId]
+    
+    // Process team data with associated players
+    const teams: TeamWithTIR[] = teamsResult.rows.map(team => {
+      // Find all players in this team
+      const teamPlayers = allPlayers.filter(p => 
+        p.team.toLowerCase() === team.name.toLowerCase()
       );
       
-      const teamIds = (result.rows as { team_id: number }[]).map(t => t.team_id);
+      // Set teamId for players in this team
+      teamPlayers.forEach(player => {
+        player.teamId = team.id;
+      });
       
-      if (!teamIds || teamIds.length === 0) {
-        console.warn(`No teams found for event ${eventId}`);
-        return [];
-      }
+      // Sort by PIV
+      const sortedPlayers = [...teamPlayers].sort((a, b) => b.piv - a.piv);
+      const topPlayer = sortedPlayers.length > 0 ? sortedPlayers[0] : null;
       
-      const teamStats: TeamRawStats[] = [];
-      
-      for (const teamId of teamIds) {
-        try {
-          // Get team info
-          const [teamInfo] = await db.select()
-            .from(teams)
-            .where(eq(teams.id, teamId));
-          
-          if (!teamInfo) {
-            console.warn(`Team with ID ${teamId} not found`);
-            continue;
-          }
-          
-          // Get players in this team for this event
-          const playerSummaries = await db.select()
-            .from(playerMatchSummary)
-            .where(and(
-              eq(playerMatchSummary.teamId, teamId),
-              eq(playerMatchSummary.eventId, eventId)
-            ));
-          
-          const playerSteamIds = [...new Set(playerSummaries.map(p => p.steamId))];
-          
-          // Create team stats object
-          const rawTeamStats: TeamRawStats = {
-            name: teamInfo.teamClanName,
-            players: playerSteamIds.length,
-            logo: '', // Not available in the database
-            wins: 0,  // Will be calculated from match data if needed
-            losses: 0, // Will be calculated from match data if needed
-            eventId
-          };
-          
-          teamStats.push(rawTeamStats);
-        } catch (error) {
-          console.error(`Error processing team ${teamId}:`, error);
-        }
-      }
-      
-      return teamStats;
-    } catch (error) {
-      console.error(`Error getting teams for event ${eventId}:`, error);
-      return [];
-    }
+      return {
+        id: team.id.toString(),
+        name: team.name,
+        logo: '',
+        tir: Number(team.tir) || 1.0,
+        sumPIV: Number(team.sum_piv) || 0,
+        synergy: Number(team.synergy) || 1.0,
+        avgPIV: Number(team.avg_piv) || 1.0,
+        topPlayer: topPlayer,
+        players: sortedPlayers,
+        topPlayers: sortedPlayers.slice(0, 5),
+        wins: 0, // Not in current DB
+        losses: 0, // Not in current DB
+        eventId: eventId
+      };
+    });
+    
+    return teams;
+  } catch (error) {
+    console.error('Error getting teams with TIR:', error);
+    throw error;
   }
+}
+
+/**
+ * Generate team data from player information when team data is not available
+ */
+function generateTeamsFromPlayers(players: PlayerWithPIV[]): TeamWithTIR[] {
+  console.log('Generating teams from player data...');
   
-  /**
-   * Helper method to estimate CT side rounds played
-   */
-  private calculateCtRoundsPlayed(generalStats?: GeneralStat): number {
-    if (!generalStats) return 0;
-    
-    // If KAST values are available, use them to estimate rounds played
-    if (generalStats.kastCtSide && generalStats.kastTotal) {
-      return Math.floor((generalStats.kastCtSide / generalStats.kastTotal) * 30);
-    }
-    
-    // If ADR values are available, use them as backup
-    if (generalStats.adrCtSide && generalStats.adrTotal) {
-      return Math.floor((generalStats.adrCtSide / generalStats.adrTotal) * 30);
-    }
-    
-    // Fallback to 15 rounds (half of standard match)
-    return 15;
-  }
+  // Group players by team
+  const teamMap = new Map<string, PlayerWithPIV[]>();
   
-  /**
-   * Helper method to estimate T side rounds played
-   */
-  private calculateTRoundsPlayed(generalStats?: GeneralStat): number {
-    if (!generalStats) return 0;
-    
-    // If KAST values are available, use them to estimate rounds played
-    if (generalStats.kastTSide && generalStats.kastTotal) {
-      return Math.floor((generalStats.kastTSide / generalStats.kastTotal) * 30);
+  players.forEach(player => {
+    const teamName = player.team || 'Unknown Team';
+    if (!teamMap.has(teamName)) {
+      teamMap.set(teamName, []);
     }
+    teamMap.get(teamName)?.push(player);
+  });
+  
+  // Generate team objects
+  const teams: TeamWithTIR[] = [];
+  let teamId = 1;
+  
+  teamMap.forEach((teamPlayers, teamName) => {
+    if (teamPlayers.length === 0) return;
     
-    // If ADR values are available, use them as backup
-    if (generalStats.adrTSide && generalStats.adrTotal) {
-      return Math.floor((generalStats.adrTSide / generalStats.adrTotal) * 30);
-    }
+    // Sort players by PIV for top players
+    const sortedPlayers = [...teamPlayers].sort((a, b) => b.piv - a.piv);
+    const topPlayer = sortedPlayers.length > 0 ? sortedPlayers[0] : null;
     
-    // Fallback to 15 rounds (half of standard match)
-    return 15;
-  }
+    // Calculate team metrics
+    const sumPIV = teamPlayers.reduce((sum, player) => sum + player.piv, 0);
+    const avgPIV = teamPlayers.length > 0 ? sumPIV / teamPlayers.length : 1.0;
+    
+    // Set teamId for all players in this team
+    teamPlayers.forEach(player => {
+      player.teamId = teamId;
+    });
+    
+    teams.push({
+      id: teamId.toString(),
+      name: teamName,
+      logo: '',
+      tir: avgPIV * 1.1, // A simple formula for TIR
+      sumPIV: sumPIV,
+      synergy: 1.0, // Default synergy
+      avgPIV: avgPIV,
+      topPlayer: topPlayer,
+      players: sortedPlayers,
+      topPlayers: sortedPlayers.slice(0, 5),
+      wins: 0,
+      losses: 0,
+      eventId: 1
+    });
+    
+    teamId++;
+  });
+  
+  // Sort teams by TIR
+  return teams.sort((a, b) => b.tir - a.tir);
 }

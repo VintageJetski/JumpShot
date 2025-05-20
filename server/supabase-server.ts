@@ -1,15 +1,12 @@
-import express, { Express, Request, Response, NextFunction } from 'express';
-import { createServer } from 'http';
+import express, { Express, NextFunction, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import session from 'express-session';
-import { setupAuth, ensureAuthenticated } from './auth';
-import { setupVite } from './vite';
-import { 
-  checkConnection, 
-  getEvents, 
-  getPlayersWithPIV, 
-  getTeamsWithTIR 
-} from './supabase-integration';
+import { setupAuth } from './auth';
+import { checkConnection, getEvents, getPlayersWithPIV, getTeamsWithTIR } from './supabase-adapter';
+import MemoryStore from 'memorystore';
+
+// Create in-memory session store
+const MemStore = MemoryStore(session);
 
 // Create Express app
 const app: Express = express();
@@ -19,6 +16,9 @@ const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'csanalytics-secret',
   resave: false,
   saveUninitialized: false,
+  store: new MemStore({
+    checkPeriod: 86400000 // prune expired entries every 24h
+  }),
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
@@ -33,7 +33,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Set up authentication routes
 setupAuth(app);
 
-// API routes
+// Define API routes
 app.get('/api/events', async (req, res) => {
   try {
     const events = await getEvents();
@@ -46,7 +46,7 @@ app.get('/api/events', async (req, res) => {
 
 app.get('/api/players', async (req, res) => {
   try {
-    const eventId = req.query.eventId ? parseInt(req.query.eventId as string, 10) : 1;
+    const eventId = req.query.eventId ? Number(req.query.eventId) : 1;
     const players = await getPlayersWithPIV(eventId);
     res.json(players);
   } catch (error) {
@@ -57,7 +57,7 @@ app.get('/api/players', async (req, res) => {
 
 app.get('/api/teams', async (req, res) => {
   try {
-    const eventId = req.query.eventId ? parseInt(req.query.eventId as string, 10) : 1;
+    const eventId = req.query.eventId ? Number(req.query.eventId) : 1;
     const teams = await getTeamsWithTIR(eventId);
     res.json(teams);
   } catch (error) {
@@ -66,80 +66,75 @@ app.get('/api/teams', async (req, res) => {
   }
 });
 
-// Check database connection endpoint
-app.get('/api/check-connection', async (req, res) => {
+app.get('/api/player/:id', async (req, res) => {
   try {
-    const isConnected = await checkConnection();
-    res.json({ 
-      connected: isConnected,
-      dataSource: isConnected ? 'Supabase' : 'Unavailable'
-    });
-  } catch (error) {
-    console.error('Error checking connection:', error);
-    res.status(500).json({ error: 'Failed to check connection' });
-  }
-});
-
-// Force data refresh (admin only)
-app.post('/api/refresh-data', ensureAuthenticated, async (req, res) => {
-  try {
-    const eventId = req.body.eventId || 1;
+    const playerId = req.params.id;
+    const eventId = req.query.eventId ? Number(req.query.eventId) : 1;
     const players = await getPlayersWithPIV(eventId);
-    const teams = await getTeamsWithTIR(eventId);
+    const player = players.find(p => p.id === playerId);
     
-    res.json({ 
-      success: true,
-      playerCount: players.length,
-      teamCount: teams.length,
-      dataSource: await checkConnection() ? 'Supabase' : 'Unavailable'
+    if (!player) {
+      return res.status(404).json({ error: 'Player not found' });
+    }
+    
+    res.json(player);
+  } catch (error) {
+    console.error('Error fetching player:', error);
+    res.status(500).json({ error: 'Failed to fetch player' });
+  }
+});
+
+app.get('/api/team/:id', async (req, res) => {
+  try {
+    const teamId = req.params.id;
+    const eventId = req.query.eventId ? Number(req.query.eventId) : 1;
+    const teams = await getTeamsWithTIR(eventId);
+    const team = teams.find(t => t.id === teamId);
+    
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found' });
+    }
+    
+    res.json(team);
+  } catch (error) {
+    console.error('Error fetching team:', error);
+    res.status(500).json({ error: 'Failed to fetch team' });
+  }
+});
+
+// Middleware to serve the React app
+app.use(express.static('dist/client'));
+
+// Catch-all handler for client-side routing
+app.get('*', (req, res) => {
+  res.sendFile('index.html', { root: 'dist/client' });
+});
+
+// Error handler middleware
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('Server error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+// Start server
+async function start() {
+  try {
+    console.log('Starting server with Supabase integration...');
+    
+    // Check database connection
+    const dbAvailable = await checkConnection();
+    console.log(`Supabase database connection: ${dbAvailable ? 'Available ✅' : 'Unavailable ❌'}`);
+    
+    // Start server
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`[express] serving on port ${PORT}`);
     });
   } catch (error) {
-    console.error('Error refreshing data:', error);
-    res.status(500).json({ error: 'Failed to refresh data' });
+    console.error('Failed to start server:', error);
+    process.exit(1);
   }
-});
-
-// Error handling middleware
-app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
-});
-
-// Create HTTP server
-const httpServer = createServer(app);
-
-// Set up Vite in development mode
-setupVite(app, httpServer);
-
-// Start the server
-const PORT = process.env.PORT || 5000;
-
-async function start() {
-  console.log('Starting server with direct Supabase integration...');
-  
-  // Test Supabase connection
-  const isConnected = await checkConnection();
-  console.log(`Supabase database connection: ${isConnected ? 'Available ✅' : 'Unavailable ❌'}`);
-  
-  if (isConnected) {
-    // Get available events
-    const events = await getEvents();
-    console.log(`Available events: ${events.map(e => e.name).join(', ')}`);
-    
-    // Get player and team counts
-    const players = await getPlayersWithPIV(1);
-    const teams = await getTeamsWithTIR(1);
-    
-    console.log(`Found ${players.length} players and ${teams.length} teams for event 1`);
-  }
-  
-  // Start the server
-  httpServer.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
 }
 
-start().catch(error => {
-  console.error('Failed to start server:', error);
-  process.exit(1);
-});
+// Start the server
+start();

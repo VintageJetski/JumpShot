@@ -1,62 +1,80 @@
-import { testConnection, getEvents, getPlayersWithPIV, getTeamsWithTIR } from './supabase-database';
+import { checkConnection, getEvents, getPlayersWithPIV, getTeamsWithTIR } from './supabase-adapter';
 
+/**
+ * Test the connection to Supabase and retrieve data
+ */
 async function testSupabaseDatabase() {
   console.log('Testing Supabase database connection and data retrieval...');
   
-  // Test connection
-  const connected = await testConnection();
-  console.log(`Database connection: ${connected ? '✅ CONNECTED' : '❌ FAILED'}`);
-  
-  if (!connected) {
-    console.error('Cannot proceed with tests, database connection failed');
-    return;
-  }
-  
-  // Test getting events
   try {
+    // Check database connection
+    const isConnected = await checkConnection();
+    console.log(`Database connection: ${isConnected ? '✅ CONNECTED' : '❌ FAILED'}`);
+    
+    if (!isConnected) {
+      console.log('Cannot continue tests without database connection');
+      return;
+    }
+    
+    // Test events
     console.log('\n--- EVENTS ---');
-    const events = await getEvents();
-    console.log(`Found ${events.length} events:`);
-    events.forEach(event => {
-      console.log(`  Event ID: ${event.id}, Name: ${event.name}`);
-    });
-  } catch (error) {
-    console.error('Error retrieving events:', error);
-  }
-  
-  // Test getting players for event 1
-  try {
+    try {
+      console.log('Fetching available events from Supabase...');
+      const events = await getEvents();
+      console.log(`Found ${events.length} events:`);
+      events.forEach(event => {
+        console.log(`  Event ID: ${event.id}, Name: ${event.name}`);
+      });
+    } catch (error) {
+      console.log('Error retrieving events:', error);
+    }
+    
+    // Test players
     console.log('\n--- PLAYERS (Event 1) ---');
-    const players = await getPlayersWithPIV(1);
-    console.log(`Found ${players.length} players for event 1`);
+    try {
+      console.log('Fetching players with PIV for event 1 from Supabase...');
+      const players = await getPlayersWithPIV(1);
+      console.log(`Found ${players.length} players`);
+      
+      if (players.length > 0) {
+        // Show sample data
+        const sample = players[0];
+        console.log('\nSample player data:');
+        console.log(`  Name: ${sample.name}`);
+        console.log(`  Team: ${sample.team}`);
+        console.log(`  Role: ${sample.role}`);
+        console.log(`  PIV: ${sample.piv}`);
+        console.log(`  Is IGL: ${sample.isIGL ? 'Yes' : 'No'}`);
+      }
+    } catch (error) {
+      console.log('Error retrieving players:', error);
+    }
     
-    // Show first 5 players
-    console.log('Top 5 players by PIV:');
-    players.slice(0, 5).forEach(player => {
-      console.log(`  ${player.name} (${player.team}) - PIV: ${player.piv.toFixed(2)}, Role: ${player.tRole}/${player.ctRole}, IGL: ${player.isIGL}`);
-    });
+    // Test teams
+    console.log('\n--- TEAMS (Event 1) ---');
+    try {
+      console.log('Fetching teams with TIR for event 1 from Supabase...');
+      const teams = await getTeamsWithTIR(1);
+      console.log(`Found ${teams.length} teams`);
+      
+      if (teams.length > 0) {
+        // Show sample data
+        const sample = teams[0];
+        console.log('\nSample team data:');
+        console.log(`  Name: ${sample.name}`);
+        console.log(`  TIR: ${sample.tir}`);
+        console.log(`  Top Player: ${sample.topPlayer?.name || 'None'}`);
+        console.log(`  Player Count: ${sample.players.length}`);
+      }
+    } catch (error) {
+      console.log('Error retrieving teams:', error);
+    }
+    
   } catch (error) {
-    console.error('Error retrieving players:', error);
+    console.error('Error during Supabase database tests:', error);
   }
   
-  // Test getting teams for event 1
-  try {
-    console.log('\n--- TEAMS (Event 1) ---');
-    const teams = await getTeamsWithTIR(1);
-    console.log(`Found ${teams.length} teams for event 1`);
-    
-    // Show all teams
-    console.log('Teams by TIR:');
-    teams.forEach(team => {
-      console.log(`  ${team.name} - TIR: ${team.tir.toFixed(2)}, W/L: ${team.wins}/${team.losses}`);
-      console.log(`    Top player: ${team.topPlayers[0]?.name || 'N/A'}`);
-    });
-  } catch (error) {
-    console.error('Error retrieving teams:', error);
-  }
+  console.log('\nSupabase database tests completed');
 }
 
-// Run the tests
-testSupabaseDatabase()
-  .then(() => console.log('\nSupabase database tests completed'))
-  .catch(error => console.error('Error during database tests:', error));
+testSupabaseDatabase();

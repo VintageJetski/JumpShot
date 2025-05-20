@@ -1,27 +1,32 @@
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import ws from 'ws';
 
+// Configure the WebSocket constructor for Neon
 neonConfig.webSocketConstructor = ws;
 
+// Check for database URL
 if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+  console.warn('DATABASE_URL is not set. Database features will not work.');
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle(pool);
+// Create database pool
+export const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres'
+});
+
+// Create database instance
+export const db = drizzle({ client: pool });
 
 /**
- * Test if the database connection is working
+ * Test the database connection
  */
 export async function testDatabaseConnection(): Promise<boolean> {
   try {
     const result = await db.execute('SELECT 1 as test');
-    return result && result.rows && result.rows.length > 0;
+    return result.rows.length > 0;
   } catch (error) {
-    console.error('Database connection test failed:', error);
+    console.error('Database connection error:', error);
     return false;
   }
 }

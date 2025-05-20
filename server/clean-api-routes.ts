@@ -18,11 +18,28 @@ router.get('/health', async (req: Request, res: Response) => {
 });
 
 /**
+ * Get available events
+ */
+router.get('/events', async (req: Request, res: Response) => {
+  try {
+    const events = await cleanSupabaseService.getEvents();
+    res.json(events);
+  } catch (error) {
+    console.error('Error fetching events:', error);
+    res.status(500).json({ error: 'Failed to fetch events data' });
+  }
+});
+
+/**
  * Get all players with PIV
  */
 router.get('/players', async (req: Request, res: Response) => {
   try {
-    const players = await cleanSupabaseService.getPlayersWithPIV();
+    // Get optional event ID from query params
+    const eventId = req.query.eventId ? parseInt(req.query.eventId as string, 10) : undefined;
+    
+    // Filter players by event if specified
+    const players = await cleanSupabaseService.getPlayersWithPIV(eventId);
     res.json(players);
   } catch (error) {
     console.error('Error fetching players:', error);
@@ -68,7 +85,11 @@ router.get('/players/:id', async (req: Request, res: Response) => {
  */
 router.get('/teams', async (req: Request, res: Response) => {
   try {
-    const teams = await cleanSupabaseService.getTeamsWithTIR();
+    // Get optional event ID from query params
+    const eventId = req.query.eventId ? parseInt(req.query.eventId as string, 10) : undefined;
+    
+    // Filter teams by event if specified
+    const teams = await cleanSupabaseService.getTeamsWithTIR(eventId);
     res.json(teams);
   } catch (error) {
     console.error('Error fetching teams:', error);
@@ -82,7 +103,10 @@ router.get('/teams', async (req: Request, res: Response) => {
 router.get('/teams/:id', async (req: Request, res: Response) => {
   try {
     const teamId = req.params.id;
-    const teams = await cleanSupabaseService.getTeamsWithTIR();
+    // Get optional event ID from query params
+    const eventId = req.query.eventId ? parseInt(req.query.eventId as string, 10) : undefined;
+    
+    const teams = await cleanSupabaseService.getTeamsWithTIR(eventId);
     const team = teams.find(t => t.id === teamId);
     
     if (!team) {

@@ -205,25 +205,29 @@ export class CleanSupabaseAdapter {
   /**
    * Get team data with TIR values directly from teams table 
    * and associate with players
+   * @param eventId Optional event ID to filter by (undefined returns all events)
    */
-  async getTeamsWithTIR(): Promise<TeamWithTIR[]> {
+  async getTeamsWithTIR(eventId?: number): Promise<TeamWithTIR[]> {
     try {
-      // Fetch team data from teams table - no filtering by event_id since that column doesn't exist
-      const query = `
-        SELECT * FROM teams
-      `;
+      // Fetch team data from teams table with optional event filtering
+      let query = `SELECT * FROM teams`;
+      
+      // Apply event filter if provided
+      if (eventId !== undefined) {
+        query += ` WHERE event_id = ${eventId}`;
+      }
       
       const result = await db.execute(query);
       const teamData = result.rows as any[];
       
-      console.log(`Found ${teamData.length} teams in teams table`);
+      console.log(`Found ${teamData.length} teams in teams table${eventId ? ` for event ${eventId}` : ''}`);
       
       if (teamData.length === 0) {
         return [];
       }
       
-      // Get all players to associate with teams
-      const playersWithPIV = await this.getPlayersWithPIV();
+      // Get all players to associate with teams - filter by the same event if specified
+      const playersWithPIV = await this.getPlayersWithPIV(eventId);
       
       // Group players by team
       const playersByTeam = new Map<string, PlayerWithPIV[]>();

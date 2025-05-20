@@ -2,12 +2,13 @@ import { cleanSupabaseAdapter } from './clean-supabase-adapter';
 import { PlayerWithPIV, TeamWithTIR } from '@shared/types';
 
 /**
- * Clean service for Supabase data that includes caching
+ * Clean service for Supabase data that includes caching by event
  */
 export class CleanSupabaseService {
   private static instance: CleanSupabaseService;
-  private cachedPlayers: PlayerWithPIV[] | null = null;
-  private cachedTeams: TeamWithTIR[] | null = null;
+  private cachedEvents: { id: number; name: string }[] | null = null;
+  private cachedPlayersByEvent: Map<number, PlayerWithPIV[]> = new Map();
+  private cachedTeamsByEvent: Map<number, TeamWithTIR[]> = new Map();
   private lastRefreshTime: Date | null = null;
   private refreshPromise: Promise<void> | null = null;
   private _isSupabaseAvailable = false;
@@ -65,6 +66,25 @@ export class CleanSupabaseService {
   }
 
   /**
+   * Get all available events
+   */
+  public async getEvents(): Promise<{ id: number, name: string }[]> {
+    // If no cached events or first time, fetch fresh data
+    if (!this.cachedEvents) {
+      try {
+        const events = await cleanSupabaseAdapter.getEvents();
+        this.cachedEvents = events;
+        return events;
+      } catch (error) {
+        console.error('Error getting events:', error);
+        return [];
+      }
+    }
+    
+    return this.cachedEvents;
+  }
+
+  /**
    * Internal refresh method
    */
   private async _refreshData(): Promise<void> {
@@ -78,18 +98,26 @@ export class CleanSupabaseService {
         return;
       }
 
-      // Get fresh player data
-      const players = await cleanSupabaseAdapter.getPlayersWithPIV();
+      // Get all events
+      const events = await cleanSupabaseAdapter.getEvents();
+      this.cachedEvents = events;
       
-      // Get fresh team data (which also includes updated player associations)
-      const teams = await cleanSupabaseAdapter.getTeamsWithTIR();
+      // For each event, get players and teams
+      for (const event of events) {
+        // Get fresh player data for this event
+        const players = await cleanSupabaseAdapter.getPlayersWithPIV(event.id);
+        
+        // Get fresh team data for this event
+        const teams = await cleanSupabaseAdapter.getTeamsWithTIR(event.id);
+        
+        // Update cache for this event
+        this.cachedPlayersByEvent.set(event.id, players);
+        this.cachedTeamsByEvent.set(event.id, teams);
+        
+        console.log(`Refreshed ${players.length} players and ${teams.length} teams for event ${event.name} (ID: ${event.id})`);
+      }
       
-      // Update cache
-      this.cachedPlayers = players;
-      this.cachedTeams = teams;
       this.lastRefreshTime = new Date();
-      
-      console.log(`Refreshed ${players.length} players and ${teams.length} teams`);
     } catch (error) {
       console.error('Error refreshing data:', error);
     }
@@ -97,26 +125,50 @@ export class CleanSupabaseService {
 
   /**
    * Get players with PIV values
+   * @param eventId Optional event ID to filter by (undefined returns players from all events)
    */
-  public async getPlayersWithPIV(): Promise<PlayerWithPIV[]> {
+  public async getPlayersWithPIV(eventId?: number): Promise<PlayerWithPIV[]> {
     // If no cached data or first time, fetch fresh data
-    if (!this.cachedPlayers) {
+    if (this.cachedPlayersByEvent.size === 0) {
       await this.refreshData();
     }
     
-    return this.cachedPlayers || [];
+    // If specific event requested, return just those players
+    if (eventId !== undefined) {
+      return this.cachedPlayersByEvent.get(eventId) || [];
+    }
+    
+    // Otherwise return all players from all events
+    const allPlayers: PlayerWithPIV[] = [];
+    for (const players of this.cachedPlayersByEvent.values()) {
+      allPlayers.push(...players);
+    }
+    
+    return allPlayers;
   }
 
   /**
    * Get teams with TIR values
+   * @param eventId Optional event ID to filter by (undefined returns teams from all events)
    */
-  public async getTeamsWithTIR(): Promise<TeamWithTIR[]> {
+  public async getTeamsWithTIR(eventId?: number): Promise<TeamWithTIR[]> {
     // If no cached data or first time, fetch fresh data
-    if (!this.cachedTeams) {
+    if (this.cachedTeamsByEvent.size === 0) {
       await this.refreshData();
     }
     
-    return this.cachedTeams || [];
+    // If specific event requested, return just those teams
+    if (eventId !== undefined) {
+      return this.cachedTeamsByEvent.get(eventId) || [];
+    }
+    
+    // Otherwise return all teams from all events
+    const allTeams: TeamWithTIR[] = [];
+    for (const teams of this.cachedTeamsByEvent.values()) {
+      allTeams.push(...teams);
+    }
+    
+    return allTeams;
   }
 
   /**
@@ -130,8 +182,9 @@ export class CleanSupabaseService {
    * Clear all cached data
    */
   public clearCache(): void {
-    this.cachedPlayers = null;
-    this.cachedTeams = null;
+    this.cachedEvents = null;
+    this.cachedPlayersByEvent.clear();
+    this.cachedTeamsByEvent.clear();
   }
 }
 

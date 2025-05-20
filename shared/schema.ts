@@ -1,6 +1,155 @@
-import { pgTable, text, serial, integer, boolean, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, real, bigint, foreignKey, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// Supabase schema definitions
+export const supaEvents = pgTable("events", {
+  eventId: integer("event_id").primaryKey(),
+  eventName: text("event_name").notNull(),
+});
+
+export const supaTeams = pgTable("teams", {
+  id: serial("id").primaryKey(),
+  teamClanName: text("team_clan_name").notNull().unique(),
+});
+
+export const supaPlayers = pgTable("players", {
+  steamId: bigint("steam_id", { mode: "number" }).primaryKey(),
+  userName: text("user_name"),
+});
+
+export const supaPlayerHistory = pgTable("player_history", {
+  id: serial("id").primaryKey(),
+  steamId: bigint("steam_id", { mode: "number" }).notNull().references(() => supaPlayers.steamId),
+  teamId: integer("team_id").notNull().references(() => supaTeams.id),
+}, (table) => {
+  return {
+    uniqueSteamTeam: uniqueIndex("unique_steam_team").on(table.steamId, table.teamId),
+  };
+});
+
+export const supaMatches = pgTable("matches", {
+  fileId: integer("file_id").primaryKey(),
+  matchName: text("match_name").notNull(),
+  eventId: integer("event_id").references(() => supaEvents.eventId),
+});
+
+export const supaRounds = pgTable("rounds", {
+  id: serial("id").primaryKey(),
+  roundNum: integer("round_num"),
+  start: integer("start"),
+  freezeEnd: integer("freeze_end"),
+  end: integer("end"),
+  officialEnd: integer("official_end"),
+  winner: text("winner"),
+  reason: text("reason"),
+  bombPlant: real("bomb_plant"),
+  bombSite: text("bomb_site"),
+  ctTeamClanName: text("ct_team_clan_name"),
+  tTeamClanName: text("t_team_clan_name"),
+  winnerClanName: text("winner_clan_name"),
+  ctTeamCurrentEquipValue: real("ct_team_current_equip_value"),
+  tTeamCurrentEquipValue: real("t_team_current_equip_value"),
+  ctLosingStreak: integer("ct_losing_streak"),
+  tLosingStreak: integer("t_losing_streak"),
+  ctBuyType: text("ct_buy_type"),
+  tBuyType: text("t_buy_type"),
+  advantage5v4: text("advantage_5v4"),
+  fileId: integer("file_id").references(() => supaMatches.fileId),
+  eventId: integer("event_id").references(() => supaEvents.eventId),
+  matchName: text("match_name"),
+});
+
+export const supaPlayerMatchSummary = pgTable("player_match_summary", {
+  steamId: bigint("steam_id", { mode: "number" }).notNull().references(() => supaPlayers.steamId),
+  fileId: integer("file_id").notNull().references(() => supaMatches.fileId),
+  teamId: integer("team_id").references(() => supaTeams.id),
+  eventId: integer("event_id").notNull().references(() => supaEvents.eventId),
+}, (table) => {
+  return {
+    pk: uniqueIndex("player_match_summary_pkey").on(table.steamId, table.fileId, table.eventId),
+  };
+});
+
+export const supaKillStats = pgTable("kill_stats", {
+  steamId: bigint("steam_id", { mode: "number" }).notNull().references(() => supaPlayers.steamId),
+  kills: integer("kills"),
+  headshots: integer("headshots"),
+  wallbangKills: integer("wallbang_kills"),
+  noScope: integer("no_scope"),
+  throughSmoke: integer("through_smoke"),
+  airboneKills: integer("airbone_kills"),
+  blindKills: integer("blind_kills"),
+  victimBlindKills: integer("victim_blind_kills"),
+  awpKills: integer("awp_kills"),
+  pistolKills: integer("pistol_kills"),
+  firstKills: integer("first_kills"),
+  ctFirstKills: integer("ct_first_kills"),
+  tFirstKills: integer("t_first_kills"),
+  firstDeaths: integer("first_deaths"),
+  ctFirstDeaths: integer("ct_first_deaths"),
+  tFirstDeaths: integer("t_first_deaths"),
+  eventId: integer("event_id").notNull().references(() => supaEvents.eventId),
+}, (table) => {
+  return {
+    pk: uniqueIndex("kill_stats_pkey").on(table.steamId, table.eventId),
+  };
+});
+
+export const supaGeneralStats = pgTable("general_stats", {
+  steamId: bigint("steam_id", { mode: "number" }).notNull().references(() => supaPlayers.steamId),
+  assists: real("assists"),
+  deaths: real("deaths"),
+  tradeKills: real("trade_kills"),
+  tradeDeaths: real("trade_deaths"),
+  kd: real("kd"),
+  kDDiff: real("k_d_diff"),
+  adrTotal: real("adr_total"),
+  adrCtSide: real("adr_ct_side"),
+  adrTSide: real("adr_t_side"),
+  kastTotal: real("kast_total"),
+  kastCtSide: real("kast_ct_side"),
+  kastTSide: real("kast_t_side"),
+  totalRoundsWon: real("total_rounds_won"),
+  tRoundsWon: real("t_rounds_won"),
+  ctRoundsWon: real("ct_rounds_won"),
+  eventId: integer("event_id").notNull().references(() => supaEvents.eventId),
+}, (table) => {
+  return {
+    pk: uniqueIndex("general_stats_pkey").on(table.steamId, table.eventId),
+  };
+});
+
+export const supaUtilityStats = pgTable("utility_stats", {
+  steamId: bigint("steam_id", { mode: "number" }).notNull().references(() => supaPlayers.steamId),
+  assistedFlashes: integer("assisted_flashes"),
+  flahesThrown: integer("flahes_thrown"),
+  ctFlahesThrown: integer("ct_flahes_thrown"),
+  tFlahesThrown: integer("t_flahes_thrown"),
+  flahesTownInPistolRound: integer("flahes_thrown_in_pistol_round"),
+  heThrown: integer("he_thrown"),
+  ctHeThrown: integer("ct_he_thrown"),
+  tHeThrown: integer("t_he_thrown"),
+  heThrownInPistolRound: integer("he_thrown_in_pistol_round"),
+  infernosThrown: integer("infernos_thrown"),
+  ctInfernosThrown: integer("ct_infernos_thrown"),
+  tInfernosThrown: integer("t_infernos_thrown"),
+  infernosThrownInPistolRound: integer("infernos_thrown_in_pistol_round"),
+  smokesThrown: integer("smokes_thrown"),
+  ctSmokesThrown: integer("ct_smokes_thrown"),
+  tSmokesThrown: integer("t_smokes_thrown"),
+  smokesThrownInPistolRound: integer("smokes_thrown_in_pistol_round"),
+  utilInPistolRound: integer("util_in_pistol_round"),
+  totalUtilThrown: integer("total_util_thrown"),
+  totalUtilDmg: integer("total_util_dmg"),
+  ctTotalUtilDmg: integer("ct_total_util_dmg"),
+  tTotalUtilDmg: integer("t_total_util_dmg"),
+  eventId: integer("event_id").notNull().references(() => supaEvents.eventId),
+}, (table) => {
+  return {
+    pk: uniqueIndex("utility_stats_pkey").on(table.steamId, table.eventId),
+  };
+});
 
 // Player statistics model from CSV
 export const playerStats = pgTable("player_stats", {
@@ -332,3 +481,36 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+// Supabase type definitions
+export type SupaEvent = typeof supaEvents.$inferSelect;
+export type SupaTeam = typeof supaTeams.$inferSelect;
+export type SupaPlayer = typeof supaPlayers.$inferSelect;
+export type SupaPlayerHistory = typeof supaPlayerHistory.$inferSelect;
+export type SupaMatch = typeof supaMatches.$inferSelect;
+export type SupaRound = typeof supaRounds.$inferSelect;
+export type SupaPlayerMatchSummary = typeof supaPlayerMatchSummary.$inferSelect;
+export type SupaKillStats = typeof supaKillStats.$inferSelect;
+export type SupaGeneralStats = typeof supaGeneralStats.$inferSelect;
+export type SupaUtilityStats = typeof supaUtilityStats.$inferSelect;
+
+// Composite interfaces for joining multiple Supabase tables
+export interface SupaPlayerData {
+  player: SupaPlayer;
+  killStats?: SupaKillStats;
+  generalStats?: SupaGeneralStats;
+  utilityStats?: SupaUtilityStats;
+  teamInfo?: SupaTeam;
+}
+
+// Insertion schemas
+export const insertSupaEventSchema = createInsertSchema(supaEvents);
+export const insertSupaTeamSchema = createInsertSchema(supaTeams);
+export const insertSupaPlayerSchema = createInsertSchema(supaPlayers);
+export const insertSupaPlayerHistorySchema = createInsertSchema(supaPlayerHistory);
+export const insertSupaMatchSchema = createInsertSchema(supaMatches);
+export const insertSupaRoundSchema = createInsertSchema(supaRounds);
+export const insertSupaPlayerMatchSummarySchema = createInsertSchema(supaPlayerMatchSummary);
+export const insertSupaKillStatsSchema = createInsertSchema(supaKillStats);
+export const insertSupaGeneralStatsSchema = createInsertSchema(supaGeneralStats);
+export const insertSupaUtilityStatsSchema = createInsertSchema(supaUtilityStats);

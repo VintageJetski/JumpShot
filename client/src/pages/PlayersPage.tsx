@@ -13,16 +13,28 @@ import TeamGroup from "@/components/players/TeamGroup";
 import RoleFilterChips from "@/components/players/RoleFilterChips";
 import EnhancedStatsCard from "@/components/stats/EnhancedStatsCard";
 import StatisticalOutliers from "@/components/players/StatisticalOutliers";
+import EventSelector from "@/components/events/EventSelector";
 
 export default function PlayersPage() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("All Roles");
   const [viewMode, setViewMode] = useState<"cards" | "table" | "teams">("cards");
+  const [selectedEventId, setSelectedEventId] = useState<number | undefined>(undefined);
   
-  // Fetch all players data (we'll filter client-side for more flexibility)
+  // Fetch players data with optional event filtering
   const { data: players, isLoading, isError } = useQuery<PlayerWithPIV[]>({
-    queryKey: ["/api/players"],
+    queryKey: ["/api/players", selectedEventId],
+    queryFn: async () => {
+      const url = selectedEventId 
+        ? `/api/players?eventId=${selectedEventId}` 
+        : "/api/players";
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch players');
+      }
+      return response.json();
+    }
   });
 
   // Generate teams data from players
@@ -241,14 +253,20 @@ export default function PlayersPage() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
-          <motion.h1 
-            className="text-3xl font-bold mb-1 text-gradient"
-            initial={{ backgroundPosition: "200% 0" }}
-            animate={{ backgroundPosition: "0% 0" }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
-          >
-            Players
-          </motion.h1>
+          <div className="flex items-center gap-4 mb-2">
+            <motion.h1 
+              className="text-3xl font-bold text-gradient"
+              initial={{ backgroundPosition: "200% 0" }}
+              animate={{ backgroundPosition: "0% 0" }}
+              transition={{ duration: 1.2, ease: "easeOut" }}
+            >
+              Players
+            </motion.h1>
+            <EventSelector 
+              selectedEventId={selectedEventId}
+              onEventChange={setSelectedEventId}
+            />
+          </div>
           <motion.p 
             className="text-blue-300/80 text-sm"
             initial={{ opacity: 0, y: 10 }}
@@ -352,7 +370,10 @@ export default function PlayersPage() {
 
       {/* Statistical Outliers Section */}
       {!isLoading && !isError && filteredPlayers.length > 0 && (
-        <StatisticalOutliers players={players || []} />
+        <StatisticalOutliers 
+          players={players || []} 
+          eventId={selectedEventId} 
+        />
       )}
 
       {/* Stats Overview Cards (Top Players) */}

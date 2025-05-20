@@ -1,75 +1,101 @@
-import express, { Express } from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express';
+import session from 'express-session';
+import { v4 as uuidv4 } from 'uuid';
+import { setupAuth, ensureAuthenticated } from './auth';
+import { registerVite } from './vite';
 import { registerRoutes } from './routes';
-import { setupAuth } from './auth';
-import { initializePlayerData } from './playerDataLoader';
-import { initializeRoundData } from './roundDataLoader';
 import { dataRefreshManager } from './dataRefreshManager';
-import { storage } from './storage';
 import { supabaseStorage } from './supabase-storage';
 
-// Initialize app
+// Create Express app
 const app: Express = express();
 
-// Configure middleware
+// Configure Express
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Setup authentication
+// Session configuration
+const SESSION_SECRET = process.env.SESSION_SECRET || uuidv4();
+app.use(
+  session({
+    secret: SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+  })
+);
+
+// Set up authentication
 setupAuth(app);
 
-// Initialize data and start server
+// API routes
+app.get('/api/check-connection', async (req: Request, res: Response) => {
+  const isConnected = await dataRefreshManager.checkSupabaseConnection();
+  res.json({ connected: isConnected });
+});
+
+app.get('/api/refresh-data', ensureAuthenticated, async (req: Request, res: Response) => {
+  try {
+    await dataRefreshManager.refreshData();
+    const lastRefresh = dataRefreshManager.getLastRefreshTime();
+    res.json({ success: true, lastRefresh });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to refresh data' });
+  }
+});
+
+app.get('/api/events', async (req: Request, res: Response) => {
+  try {
+    const events = await supabaseStorage.getEvents();
+    res.json(events);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch events' });
+  }
+});
+
+// Error handler
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
+});
+
+// Start server
 async function start() {
   try {
-    // Start the data refresh manager - this will test the Supabase connection
+    // Register routes
+    registerRoutes(app);
+    
+    // Register Vite middleware
+    await registerVite(app);
+    
+    // Initialize data refresh manager
     await dataRefreshManager.start();
     
-    if (dataRefreshManager.isSupabaseAvailable()) {
-      console.log('Using Supabase as the primary data source');
-      
-      // In a full implementation, you could replace the global storage
-      // storage = supabaseStorage;
-      
-      // For now, let's still initialize data from CSV as a fallback
-      await initializePlayerData();
-      await initializeRoundData();
-    } else {
-      console.log('Using CSV files as the data source');
-      await initializePlayerData();
-      await initializeRoundData();
-    }
-    
-    // Register routes and get HTTP server
-    const httpServer = registerRoutes(app);
-
-    // Default port
+    // Start the server
     const PORT = process.env.PORT || 5000;
-    
-    // Start server
-    httpServer.listen(PORT, () => {
-      console.log(`[express] serving on port ${PORT}`);
+    app.listen(PORT, () => {
+      console.log(`${new Date().toLocaleTimeString()} [express] serving on port ${PORT}`);
     });
     
-    // Handle graceful shutdown
-    process.on('SIGTERM', () => {
-      console.log('SIGTERM received, shutting down gracefully');
+    // Handle shutdown
+    process.on('SIGINT', async () => {
+      console.log('Shutting down server...');
       dataRefreshManager.stop();
-      httpServer.close(() => {
-        console.log('HTTP server closed');
-      });
+      process.exit(0);
     });
     
-    process.on('SIGINT', () => {
-      console.log('SIGINT received, shutting down gracefully');
+    process.on('SIGTERM', async () => {
+      console.log('Shutting down server...');
       dataRefreshManager.stop();
-      httpServer.close(() => {
-        console.log('HTTP server closed');
-      });
+      process.exit(0);
     });
-    
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
   }
 }
 
-// Start the application
 start();

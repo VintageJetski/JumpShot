@@ -130,7 +130,7 @@ export class CleanSupabaseAdapter {
    */
   async getTeamsWithTIR(): Promise<TeamWithTIR[]> {
     try {
-      // Fetch team data from teams table
+      // Fetch team data from teams table - no filtering by event_id since that column doesn't exist
       const query = `
         SELECT * FROM teams
       `;
@@ -277,6 +277,7 @@ export class CleanSupabaseAdapter {
           tir: averagePIV * 1.05,
           sumPIV: totalPIV,
           synergy: 0.85,
+          synergyFactor: 0.85, // Added for interface compatibility 
           avgPIV: averagePIV,
           topPlayer: topPlayer,
           players: players,

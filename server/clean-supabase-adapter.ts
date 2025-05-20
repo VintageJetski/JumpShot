@@ -27,19 +27,37 @@ export class CleanSupabaseAdapter {
   }
   
   /**
-   * Get players with PIV values directly from player_stats table
+   * Get all available events
    */
-  async getPlayersWithPIV(): Promise<PlayerWithPIV[]> {
+  async getEvents(): Promise<{ id: number, name: string }[]> {
     try {
-      // Get all players from player_stats table
-      const query = `
-        SELECT * FROM player_stats 
-      `;
+      const query = `SELECT id, name FROM events ORDER BY start_date DESC`;
+      const result = await db.execute(query);
+      return result.rows as { id: number, name: string }[];
+    } catch (error) {
+      console.error('Error getting events:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get players with PIV values directly from player_stats table
+   * @param eventId Optional event ID to filter by (undefined returns all events)
+   */
+  async getPlayersWithPIV(eventId?: number): Promise<PlayerWithPIV[]> {
+    try {
+      // Get players with optional event filtering
+      let query = `SELECT * FROM player_stats`;
+      
+      // Apply event filter if provided
+      if (eventId !== undefined) {
+        query += ` WHERE event_id = ${eventId}`;
+      }
       
       const result = await db.execute(query);
       const playerRows = result.rows as any[];
       
-      console.log(`Found ${playerRows.length} players in player_stats table`);
+      console.log(`Found ${playerRows.length} players in player_stats table${eventId ? ` for event ${eventId}` : ''}`);
       
       if (playerRows.length === 0) {
         return [];

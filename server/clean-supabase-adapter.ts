@@ -42,22 +42,17 @@ export class CleanSupabaseAdapter {
 
   /**
    * Get players with PIV values directly from player_stats table
-   * @param eventId Optional event ID to filter by (undefined returns all events)
+   * This returns all players regardless of event as we're amalgamating data
    */
-  async getPlayersWithPIV(eventId?: number): Promise<PlayerWithPIV[]> {
+  async getPlayersWithPIV(): Promise<PlayerWithPIV[]> {
     try {
-      // Get players with optional event filtering
-      let query = `SELECT * FROM player_stats`;
-      
-      // Apply event filter if provided
-      if (eventId !== undefined) {
-        query += ` WHERE event_id = ${eventId}`;
-      }
+      // Get all players without event filtering
+      const query = `SELECT * FROM player_stats`;
       
       const result = await db.execute(query);
       const playerRows = result.rows as any[];
       
-      console.log(`Found ${playerRows.length} players in player_stats table${eventId ? ` for event ${eventId}` : ''}`);
+      console.log(`Found ${playerRows.length} players in player_stats table`);
       
       if (playerRows.length === 0) {
         return [];
@@ -205,29 +200,24 @@ export class CleanSupabaseAdapter {
   /**
    * Get team data with TIR values directly from teams table 
    * and associate with players
-   * @param eventId Optional event ID to filter by (undefined returns all events)
+   * This returns all teams regardless of event as we're amalgamating data
    */
-  async getTeamsWithTIR(eventId?: number): Promise<TeamWithTIR[]> {
+  async getTeamsWithTIR(): Promise<TeamWithTIR[]> {
     try {
-      // Fetch team data from teams table with optional event filtering
-      let query = `SELECT * FROM teams`;
-      
-      // Apply event filter if provided
-      if (eventId !== undefined) {
-        query += ` WHERE event_id = ${eventId}`;
-      }
+      // Fetch all team data from teams table without event filtering
+      const query = `SELECT * FROM teams`;
       
       const result = await db.execute(query);
       const teamData = result.rows as any[];
       
-      console.log(`Found ${teamData.length} teams in teams table${eventId ? ` for event ${eventId}` : ''}`);
+      console.log(`Found ${teamData.length} teams in teams table`);
       
       if (teamData.length === 0) {
         return [];
       }
       
-      // Get all players to associate with teams - filter by the same event if specified
-      const playersWithPIV = await this.getPlayersWithPIV(eventId);
+      // Get all players to associate with teams without event filtering
+      const playersWithPIV = await this.getPlayersWithPIV();
       
       // Group players by team
       const playersByTeam = new Map<string, PlayerWithPIV[]>();

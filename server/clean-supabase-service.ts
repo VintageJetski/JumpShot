@@ -98,24 +98,22 @@ export class CleanSupabaseService {
         return;
       }
 
-      // Get all events
+      // Get all events (just for reference)
       const events = await cleanSupabaseAdapter.getEvents();
       this.cachedEvents = events;
       
-      // For each event, get players and teams
-      for (const event of events) {
-        // Get fresh player data for this event
-        const players = await cleanSupabaseAdapter.getPlayersWithPIV(event.id);
-        
-        // Get fresh team data for this event
-        const teams = await cleanSupabaseAdapter.getTeamsWithTIR(event.id);
-        
-        // Update cache for this event
-        this.cachedPlayersByEvent.set(event.id, players);
-        this.cachedTeamsByEvent.set(event.id, teams);
-        
-        console.log(`Refreshed ${players.length} players and ${teams.length} teams for event ${event.name} (ID: ${event.id})`);
-      }
+      // Get all player data (amalgamated across events)
+      const players = await cleanSupabaseAdapter.getPlayersWithPIV();
+      
+      // Get all team data (amalgamated across events)
+      const teams = await cleanSupabaseAdapter.getTeamsWithTIR();
+      
+      // Store in a special "amalgamated" key
+      const amalgamatedEventId = 0; // Special ID for amalgamated data
+      this.cachedPlayersByEvent.set(amalgamatedEventId, players);
+      this.cachedTeamsByEvent.set(amalgamatedEventId, teams);
+      
+      console.log(`Loaded ${players.length} players and ${teams.length} teams from Supabase`);
       
       this.lastRefreshTime = new Date();
     } catch (error) {

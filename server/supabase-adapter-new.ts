@@ -299,41 +299,35 @@ export class SupabaseAdapter {
         [eventId]
       );
       
-      const teamIds = (result.rows as { team_id: number }[]).map(t => t.team_id);
+      const teamIds = (result.rows as { team_id: number }[]).map(t => t.team_id).filter(id => id != null);
       
       if (!teamIds || teamIds.length === 0) {
         console.warn(`No teams found for event ${eventId}`);
         return [];
       }
       
+      // Get team details for all teams at once
+      const teamInfoArray = await db.select()
+        .from(teams)
+        .where(inArray(teams.id, teamIds));
+      
       const teamStats: TeamRawStats[] = [];
       
-      for (const teamId of teamIds) {
+      // For each team, count players and create TeamRawStats object
+      for (const team of teamInfoArray) {
         try {
-          // Get team info
-          const [teamInfo] = await db.select()
-            .from(teams)
-            .where(eq(teams.id, teamId));
+          // Count players in this team for this event
+          const playerCount = await db.execute(
+            'SELECT COUNT(DISTINCT steam_id) as player_count FROM player_match_summary WHERE team_id = $1 AND event_id = $2',
+            [team.id, eventId]
+          );
           
-          if (!teamInfo) {
-            console.warn(`Team with ID ${teamId} not found`);
-            continue;
-          }
-          
-          // Get players in this team for this event
-          const playerSummaries = await db.select()
-            .from(playerMatchSummary)
-            .where(and(
-              eq(playerMatchSummary.teamId, teamId),
-              eq(playerMatchSummary.eventId, eventId)
-            ));
-          
-          const playerSteamIds = [...new Set(playerSummaries.map(p => p.steamId))];
+          const count = parseInt(playerCount.rows[0]?.player_count || '0', 10);
           
           // Create team stats object
           const rawTeamStats: TeamRawStats = {
-            name: teamInfo.teamClanName,
-            players: playerSteamIds.length,
+            name: team.teamClanName,
+            players: count,
             logo: '', // Not available in the database
             wins: 0,  // Will be calculated from match data if needed
             losses: 0, // Will be calculated from match data if needed
@@ -342,7 +336,7 @@ export class SupabaseAdapter {
           
           teamStats.push(rawTeamStats);
         } catch (error) {
-          console.error(`Error processing team ${teamId}:`, error);
+          console.error(`Error processing team ${team.id}:`, error);
         }
       }
       

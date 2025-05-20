@@ -1,11 +1,12 @@
-import { PlayerRawStats, PlayerWithPIV, PlayerRole, TeamWithTIR, TeamRawStats } from '../shared/schema';
+import { PlayerRawStats, PlayerWithPIV, PlayerRole, TeamWithTIR } from '../shared/schema';
 import { parseCSVData, loadPlayerData } from './csvParser';
 import { parsePlayerStatsCSV, loadNewPlayerStats } from './newDataParser';
 import { processPlayerStats } from './playerAnalytics';
 import { processPlayerStatsWithRoles } from './newPlayerAnalytics';
-import { path } from './utils';
+import * as fs from 'fs';
+import * as path from 'path';
 import { testDatabaseConnection, getAvailableEvents, getPlayerCountForEvent } from './supabase-db';
-import { SupabaseAdapter } from './supabase-adapter';
+import { SupabaseAdapter, TeamRawStats } from './supabase-adapter-new';
 
 /**
  * SupabaseStorage class that fetches data from Supabase database

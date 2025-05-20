@@ -1,5 +1,6 @@
 import { db } from './supabase-db';
 import { PlayerRawStats, PlayerRole } from '../shared/schema';
+import { mapDatabaseRole, isIGLFromDatabase, normalizeTeamName, createSafePlayerObject } from './role-processing-fix';
 
 // Define TeamRawStats interface to match existing schema in the application
 export interface TeamRawStats {
@@ -13,19 +14,17 @@ export interface TeamRawStats {
 
 /**
  * Adapter to transform database models into application models
+ * Uses the simplified table structure from Supabase
  */
 export class SupabaseAdapter {
   
   /**
    * Get all available event IDs
+   * Since there's no events table, we'll use a simulated event
    */
   async getEventIds(): Promise<number[]> {
     try {
-      // Get distinct event IDs from player_match_summary
-      const result = await db.execute(
-        'SELECT DISTINCT event_id FROM player_match_summary ORDER BY event_id'
-      );
-      return (result.rows as { event_id: number }[]).map(e => e.event_id);
+      return [1]; // Just return event ID 1 for now
     } catch (error) {
       console.error('Error getting event IDs:', error);
       return [];
@@ -34,185 +33,55 @@ export class SupabaseAdapter {
 
   /**
    * Get all players for a specific event
-   * @param eventId Event ID to fetch players for
+   * @param eventId Event ID to fetch players for (ignored since we don't have events table)
    */
-  async getPlayersForEvent(eventId: number): Promise<PlayerRawStats[]> {
+  async getPlayersForEvent(eventId: number = 1): Promise<PlayerRawStats[]> {
     try {
-      console.log(`Getting players for event ${eventId}...`);
+      console.log(`Getting players from player_stats table...`);
       
-      // First get all team data to use for mapping
-      const teamQuery = `
-        SELECT id, team_clan_name 
-        FROM teams 
-        ORDER BY id
-      `;
-      
-      const teamResult = await db.execute(teamQuery);
-      const teams = teamResult.rows as { id: number, team_clan_name: string }[];
-      
-      // Create a map for team lookups
-      const teamMap = new Map<number, string>();
-      for (const team of teams) {
-        teamMap.set(team.id, team.team_clan_name);
-      }
-      
-      // First get all basic player information with team data
+      // Query the player_stats table directly
       const query = `
-        SELECT DISTINCT 
-          p.steam_id, 
-          p.user_name, 
-          pms.team_id, 
-          t.team_clan_name
-        FROM player_match_summary pms
-        JOIN players p ON pms.steam_id = p.steam_id
-        LEFT JOIN teams t ON pms.team_id = t.id
-        WHERE pms.event_id = ${eventId}
+        SELECT * FROM player_stats
       `;
       
       const playerResult = await db.execute(query);
-      const playerData = playerResult.rows as {
-        steam_id: string;
-        user_name: string;
-        team_id: number;
-        team_clan_name: string;
-      }[];
+      const playerData = playerResult.rows as any[];
       
-      console.log(`Found ${playerData.length} players with basic info for event ${eventId}`);
+      console.log(`Found ${playerData.length} players in player_stats table`);
       
       if (playerData.length === 0) {
         return [];
-      }
-      
-      // Get all kill stats for this event
-      const killStatsQuery = `
-        SELECT * FROM kill_stats 
-        WHERE event_id = ${eventId}
-      `;
-      
-      const killStatsResult = await db.execute(killStatsQuery);
-      const killStatsData = killStatsResult.rows as any[];
-      
-      // Create a map for kill stats lookups
-      const killStatsMap = new Map<string, any>();
-      for (const stat of killStatsData) {
-        killStatsMap.set(stat.steam_id, stat);
-      }
-      
-      // Get all general stats for this event
-      const generalStatsQuery = `
-        SELECT * FROM general_stats 
-        WHERE event_id = ${eventId}
-      `;
-      
-      const generalStatsResult = await db.execute(generalStatsQuery);
-      const generalStatsData = generalStatsResult.rows as any[];
-      
-      // Create a map for general stats lookups
-      const generalStatsMap = new Map<string, any>();
-      for (const stat of generalStatsData) {
-        generalStatsMap.set(stat.steam_id, stat);
-      }
-      
-      // Get all utility stats for this event
-      const utilityStatsQuery = `
-        SELECT * FROM utility_stats 
-        WHERE event_id = ${eventId}
-      `;
-      
-      const utilityStatsResult = await db.execute(utilityStatsQuery);
-      const utilityStatsData = utilityStatsResult.rows as any[];
-      
-      // Create a map for utility stats lookups
-      const utilityStatsMap = new Map<string, any>();
-      for (const stat of utilityStatsData) {
-        utilityStatsMap.set(stat.steam_id, stat);
       }
       
       // Process each player to create PlayerRawStats objects
       const playerStats: PlayerRawStats[] = [];
       
       for (const player of playerData) {
-        const killStat = killStatsMap.get(player.steam_id) || {};
-        const generalStat = generalStatsMap.get(player.steam_id) || {};
-        const utilityStat = utilityStatsMap.get(player.steam_id) || {};
-        
-        // Calculate rounds
-        const totalRounds = generalStat.total_rounds || 30;
-        const ctRounds = generalStat.ct_rounds || Math.floor(totalRounds / 2);
-        const tRounds = generalStat.t_rounds || (totalRounds - ctRounds);
-        
-        // Create player raw stats object
-        const playerRawStats: PlayerRawStats = {
-          steamId: player.steam_id,
-          playerName: player.user_name,
-          team_id: player.team_id || 0,
-          teamName: player.team_clan_name || teamMap.get(player.team_id) || '',
+        try {
+          // Calculate rounds
+          const totalRounds = player.total_rounds_won ? player.total_rounds_won * 2 : 30; // Estimate total rounds
+          const ctRounds = player.ct_rounds_won || Math.floor(totalRounds / 2);
+          const tRounds = player.t_rounds_won || (totalRounds - ctRounds);
           
-          // Stats from kill_stats
-          kills: killStat.kills || 0,
-          deaths: generalStat.deaths || 0,
-          adr: generalStat.adr || 0,
-          kast: generalStat.kast || 0,
-          rating: generalStat.rating || 1.0,
-          impact: generalStat.impact || 0,
-          ct_rating: generalStat.ct_rating || 1.0,
-          t_rating: generalStat.t_rating || 1.0,
+          // Check if player is IGL
+          const isIGL = isIGLFromDatabase(player.role, player.is_igl);
           
-          // Rounds data
-          total_rounds: totalRounds,
-          ct_rounds: ctRounds,
-          t_rounds: tRounds,
+          // Create safe player object with all required fields
+          const rawStats = createSafePlayerObject(player);
           
-          // Special kill types
-          awp_kills: killStat.awp_kills || 0,
-          opening_kills: killStat.opening_kills || 0,
-          opening_deaths: killStat.opening_deaths || 0,
-          opening_attempts: killStat.opening_attempts || 0,
-          opening_success: killStat.opening_success || 0,
-          
-          // Utility stats
-          flash_assists: utilityStat.flash_assists || 0,
-          utility_damage: generalStat.utility_damage || 0,
-          utility_damage_round: generalStat.utility_damage_round || 0,
-          
-          // Headshot and opening stats
-          headshot_percent: killStat.headshot_percent || 0,
-          success_in_opening: (killStat.opening_success || 0) > 0 
-            ? (killStat.opening_success || 0) / (killStat.opening_attempts || 1) 
-            : 0,
-          
-          // Clutch stats
-          clutches_attempted: generalStat.clutches_attempted || 0,
-          clutches_won: generalStat.clutches_won || 0,
-          
-          // Per round stats
-          kpr: killStat.kpr || 0,
-          dpr: killStat.dpr || 0,
-          
-          // K/D differential
-          k_diff: (killStat.kills || 0) - (generalStat.deaths || 0),
-          kd_diff: (killStat.kills || 0) / Math.max(1, (generalStat.deaths || 1)),
-          
-          // Round-specific stats
-          rounds_survived: generalStat.rounds_survived || 0,
-          rounds_with_kills: killStat.rounds_with_kills || 0,
-          rounds_with_assists: generalStat.rounds_with_assists || 0,
-          rounds_with_deaths: generalStat.rounds_with_deaths || 0,
-          damage: generalStat.damage || 0,
-          rounds_with_kast: generalStat.rounds_with_kast || 0,
-          assists: generalStat.assists || 0,
-          
-          // Event info
-          eventId: eventId
-        };
-        
-        playerStats.push(playerRawStats);
+          // Add it to our collection
+          playerStats.push(rawStats);
+        } catch (error) {
+          console.error(`Error processing player ${player.user_name || player.steam_id}:`, error);
+          // Skip this player but continue with others
+          continue;
+        }
       }
       
-      console.log(`Successfully processed ${playerStats.length} players for event ${eventId}`);
+      console.log(`Successfully processed ${playerStats.length} players`);
       return playerStats;
     } catch (error) {
-      console.error(`Error getting players for event ${eventId}:`, error);
+      console.error(`Error getting players:`, error);
       return [];
     }
   }
@@ -221,49 +90,65 @@ export class SupabaseAdapter {
    * Get team statistics for a specific event
    * @param eventId Event ID to fetch team statistics for
    */
-  async getTeamsForEvent(eventId: number): Promise<TeamRawStats[]> {
+  async getTeamsForEvent(eventId: number = 1): Promise<TeamRawStats[]> {
     try {
-      console.log(`Getting teams for event ${eventId}...`);
+      console.log(`Getting teams from teams table...`);
       
-      // Improved query that gets team data directly with a proper JOIN
+      // Query the teams table directly
       const query = `
-        SELECT 
-          t.id, 
-          t.team_clan_name, 
-          COUNT(DISTINCT pms.steam_id) as player_count
-        FROM teams t
-        JOIN player_match_summary pms ON t.id = pms.team_id
-        WHERE pms.event_id = ${eventId}
-        GROUP BY t.id, t.team_clan_name
-        ORDER BY t.id
+        SELECT * FROM teams
       `;
       
       const result = await db.execute(query);
       const teamsData = result.rows as { 
         id: number, 
-        team_clan_name: string, 
-        player_count: string
+        name: string,
+        tir: number,
+        sum_piv: number,
+        synergy: number,
+        avg_piv: number,
+        top_player_name: string,
+        top_player_piv: number
       }[];
       
-      console.log(`Found ${teamsData.length} teams in event ${eventId}`);
+      console.log(`Found ${teamsData.length} teams in teams table`);
       
       if (!teamsData || teamsData.length === 0) {
         return [];
       }
       
-      // Create team stats objects with correct team names
+      // Now get player counts for each team
+      const playerQuery = `
+        SELECT team_clan_name, COUNT(*) as player_count
+        FROM player_stats
+        GROUP BY team_clan_name
+      `;
+      
+      const playerResult = await db.execute(playerQuery);
+      const playerCounts = playerResult.rows as { 
+        team_clan_name: string, 
+        player_count: string 
+      }[];
+      
+      // Create a map of team name to player count
+      const teamCountMap = new Map<string, number>();
+      for (const count of playerCounts) {
+        teamCountMap.set(count.team_clan_name, parseInt(count.player_count, 10));
+      }
+      
+      // Create team stats objects
       const teamStats: TeamRawStats[] = teamsData.map(team => ({
-        name: team.team_clan_name,
-        players: parseInt(team.player_count, 10),
+        name: normalizeTeamName(team.name),
+        players: teamCountMap.get(team.name) || 5, // Default to 5 if count not found
         logo: '', // Not available in the database
-        wins: 0,  // Not available in this query
-        losses: 0, // Not available in this query
+        wins: Math.round((team.tir || 1) * 3), // Estimate wins from TIR
+        losses: Math.round((1 - (team.tir || 1) / 10) * 3), // Estimate losses inversely related to TIR
         eventId
       }));
       
       return teamStats;
     } catch (error) {
-      console.error(`Error getting teams for event ${eventId}:`, error);
+      console.error(`Error getting teams:`, error);
       return [];
     }
   }

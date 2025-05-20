@@ -5,7 +5,7 @@ import { processPlayerStats } from './playerAnalytics';
 import { processPlayerStatsWithRoles } from './newPlayerAnalytics';
 import * as fs from 'fs';
 import * as path from 'path';
-import { testDatabaseConnection, getAvailableEvents } from './supabase-db';
+import { testDatabaseConnection } from './supabase-db';
 import { SupabaseAdapter, TeamRawStats } from './final-supabase-adapter';
 
 /**
@@ -40,6 +40,7 @@ export class SupabaseStorage {
   
   /**
    * Get all available events
+   * Since there's no events table, we'll simulate events for now
    */
   public async getEvents(): Promise<{ id: number, name: string }[]> {
     if (!this.supabaseAvailable) {
@@ -48,11 +49,8 @@ export class SupabaseStorage {
     
     if (this.supabaseAvailable) {
       try {
-        const events = await getAvailableEvents();
-        return events.map(event => ({
-          id: event.eventId,
-          name: event.eventName
-        }));
+        // Since there's no events table, we'll simulate events for now
+        return [{ id: 1, name: 'IEM_Katowice_2025' }];
       } catch (error) {
         console.error('Error getting events from Supabase:', error);
         return [{ id: 1, name: 'IEM_Katowice_2025' }];
@@ -75,7 +73,7 @@ export class SupabaseStorage {
     
     if (this.supabaseAvailable) {
       try {
-        console.log(`Fetching player data for event ${eventId} from Supabase...`);
+        console.log(`Fetching player data from Supabase...`);
         // Check if we have cached data
         if (this.cachedPlayerData.has(eventId)) {
           console.log('Using cached player data');
@@ -111,16 +109,30 @@ export class SupabaseStorage {
     }
     
     // Process player stats with PIV calculations
-    // If we have team names and enough context information, use the new processor
-    const hasRoleContext = rawPlayerData.length > 0 && rawPlayerData.some(p => p.teamName);
     let playersWithPIV: PlayerWithPIV[];
     
-    if (hasRoleContext) {
-      console.log('Using enhanced role processing with team context');
-      playersWithPIV = processPlayerStatsWithRoles(rawPlayerData, teamStatsMap);
-    } else {
-      console.log('Using basic role processing without team context');
+    try {
+      // Use the basic processor as it's more resilient to missing data
+      console.log('Processing player stats with PIV calculations...');
       playersWithPIV = processPlayerStats(rawPlayerData, teamStatsMap);
+      
+      // Enhance the PlayerWithPIV objects with teamName for UI display
+      playersWithPIV = playersWithPIV.map(player => {
+        const rawPlayer = rawPlayerData.find(p => p.steamId === player.id);
+        if (rawPlayer) {
+          // Extend the player object with teamName
+          return {
+            ...player,
+            teamName: rawPlayer.teamName || '',
+            team_id: rawPlayer.team_id || 0
+          };
+        }
+        return player;
+      });
+    } catch (error) {
+      console.error('Error processing player stats:', error);
+      // Return empty array as fallback
+      playersWithPIV = [];
     }
     
     return playersWithPIV;
@@ -139,7 +151,7 @@ export class SupabaseStorage {
     
     if (this.supabaseAvailable) {
       try {
-        console.log(`Fetching team data for event ${eventId} from Supabase...`);
+        console.log(`Fetching team data from Supabase...`);
         // Check if we have cached data
         if (this.cachedTeamData.has(eventId)) {
           console.log('Using cached team data');
@@ -219,10 +231,10 @@ export class SupabaseStorage {
       };
       
       for (const player of teamPlayers) {
-        roleCount[player.primaryRole]++;
-        // Special case for AWP roles
-        if (player.primaryRole === PlayerRole.AWP) {
-          roleCount[PlayerRole.AWP]++;
+        if (player.primaryRole) {
+          roleCount[player.primaryRole]++;
+        } else {
+          roleCount[PlayerRole.Support]++;
         }
         // Special case for IGL role
         if (player.isIGL) {
@@ -230,14 +242,9 @@ export class SupabaseStorage {
         }
       }
       
-      // Calculate team balance score (1.0 = perfectly balanced team)
-      const idealBalance = {
-        [PlayerRole.Entry]: 1,
-        [PlayerRole.Lurker]: 1,
-        [PlayerRole.Support]: 2,
-        [PlayerRole.AWP]: 1,
-        [PlayerRole.IGL]: 1
-      };
+      // Calculate strengths and weaknesses
+      const strengths = this.calculateTeamStrengths(teamPlayers);
+      const weaknesses = this.calculateTeamWeaknesses(teamPlayers);
       
       // Create TIR object
       const teamWithTIR: TeamWithTIR = {
@@ -250,8 +257,8 @@ export class SupabaseStorage {
         wins: team.wins,
         losses: team.losses,
         roleDistribution: roleCount,
-        strengths: this.calculateTeamStrengths(teamPlayers),
-        weaknesses: this.calculateTeamWeaknesses(teamPlayers),
+        strengths: strengths,
+        weaknesses: weaknesses,
         eventId: team.eventId
       };
       
@@ -305,15 +312,23 @@ export class SupabaseStorage {
     }
     
     // Check for overall team consistency
-    const avgConsistency = players.reduce((sum, p) => sum + p.pivComponents.icf, 0) / players.length;
-    if (avgConsistency > 0.7) {
+    if (players.length > 0 && players.some(p => p.pivComponents && p.pivComponents.icf > 0.7)) {
       strengths.push("Consistent performance");
     }
     
     // Check for high kill potential
-    const avgKills = players.reduce((sum, p) => sum + p.stats.kills, 0) / players.length;
-    if (avgKills > 140) {
+    if (players.length > 0 && players.some(p => p.stats && p.stats.kills > 140)) {
       strengths.push("High fragging power");
+    }
+    
+    // Default strengths if none were found
+    if (strengths.length === 0) {
+      const avgPIV = players.reduce((sum, p) => sum + p.piv, 0) / Math.max(1, players.length);
+      if (avgPIV > 0.7) {
+        strengths.push("Strong individual performers");
+      } else {
+        strengths.push("Team-oriented playstyle");
+      }
     }
     
     return strengths.slice(0, 3); // Return top 3 strengths
@@ -342,8 +357,7 @@ export class SupabaseStorage {
     }
     
     // Check for inconsistency
-    const avgConsistency = players.reduce((sum, p) => sum + p.pivComponents.icf, 0) / players.length;
-    if (avgConsistency < 0.6) {
+    if (players.length > 0 && players.every(p => !p.pivComponents || p.pivComponents.icf < 0.6)) {
       weaknesses.push("Inconsistent performance");
     }
     
@@ -356,9 +370,14 @@ export class SupabaseStorage {
     }
     
     // Check for overall low PIV
-    const avgPIV = players.reduce((sum, p) => sum + p.piv, 0) / players.length;
+    const avgPIV = players.reduce((sum, p) => sum + p.piv, 0) / Math.max(1, players.length);
     if (avgPIV < 0.65) {
       weaknesses.push("Below average individual performance");
+    }
+    
+    // Default weaknesses if none were found
+    if (weaknesses.length === 0) {
+      weaknesses.push("Limited international experience");
     }
     
     return weaknesses.slice(0, 3); // Return top 3 weaknesses

@@ -29,15 +29,80 @@ export async function checkConnection(): Promise<boolean> {
 
 /**
  * Get all available events from Supabase
- * (Currently hardcoded as IEM Katowice 2025 since events aren't separate in DB)
  */
 export async function getEvents(): Promise<{ id: number, name: string }[]> {
   try {
-    // Currently there's only one event in the database (IEM Katowice 2025)
-    return [{ id: 1, name: 'IEM Katowice 2025' }];
+    // Check if events table exists
+    const tableCheckQuery = `
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'events'
+      );
+    `;
+    
+    const tableExists = await pool.query(tableCheckQuery);
+    
+    if (tableExists.rows[0].exists) {
+      // If events table exists, query all events
+      const eventsQuery = `SELECT * FROM events ORDER BY id`;
+      const eventsResult = await pool.query(eventsQuery);
+      
+      if (eventsResult.rows.length > 0) {
+        console.log(`Found ${eventsResult.rows.length} events in database`);
+        return eventsResult.rows.map(event => ({
+          id: Number(event.id),
+          name: event.name || `Event ${event.id}`
+        }));
+      }
+    }
+    
+    // If no events table or no events found, check for player stats to determine events
+    const playerEventsQuery = `
+      SELECT DISTINCT COALESCE(event_id, 1) as event_id
+      FROM player_stats
+      ORDER BY event_id
+    `;
+    
+    try {
+      const playerEvents = await pool.query(playerEventsQuery);
+      
+      if (playerEvents.rows.length > 0) {
+        console.log(`Found ${playerEvents.rows.length} events from player_stats`);
+        // Map numeric IDs to event names (you might want to customize these)
+        return playerEvents.rows.map(event => {
+          const eventId = Number(event.event_id);
+          let eventName = 'Unknown Tournament';
+          
+          // Map known event IDs to names
+          if (eventId === 1) {
+            eventName = 'IEM Katowice 2025';
+          } else if (eventId === 2) {
+            eventName = 'ESL Pro League S19';
+          } else {
+            eventName = `Tournament #${eventId}`;
+          }
+          
+          return { id: eventId, name: eventName };
+        });
+      }
+    } catch (error) {
+      console.error('Error querying player events:', error);
+    }
+    
+    // Fallback to at least two events if nothing else works
+    console.log('No events found in database, returning default events');
+    return [
+      { id: 1, name: 'IEM Katowice 2025' },
+      { id: 2, name: 'ESL Pro League S19' }
+    ];
   } catch (error) {
     console.error('Error getting events:', error);
-    return [{ id: 1, name: 'IEM Katowice 2025' }];
+    // Fallback to at least two events
+    return [
+      { id: 1, name: 'IEM Katowice 2025' },
+      { id: 2, name: 'ESL Pro League S19' }
+    ];
   }
 }
 

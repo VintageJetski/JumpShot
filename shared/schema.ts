@@ -2,9 +2,9 @@ import { pgTable, text, serial, integer, boolean, real, bigint, foreignKey, uniq
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Supabase schema definitions
+// Supabase schema definitions matching the actual database structure
 export const supaEvents = pgTable("events", {
-  eventId: integer("event_id").primaryKey(),
+  eventId: integer("event_id").notNull().primaryKey(),
   eventName: text("event_name").notNull(),
 });
 

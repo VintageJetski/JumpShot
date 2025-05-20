@@ -293,34 +293,38 @@ export class SupabaseAdapter {
    */
   async getTeamsForEvent(eventId: number): Promise<TeamRawStats[]> {
     try {
-      // Get all teams in this event from player_match_summary
-      const result = await db.execute(
-        'SELECT DISTINCT team_id FROM player_match_summary WHERE event_id = $1',
-        [eventId]
-      );
+      console.log(`Getting teams for event ${eventId}...`);
       
-      const teamIds = (result.rows as { team_id: number }[]).map(t => t.team_id).filter(id => id != null);
+      // Get all teams in this event directly from the database with a simple query
+      // This avoids parameter binding issues with prepared statements
+      const query = `SELECT DISTINCT team_id FROM player_match_summary WHERE event_id = ${eventId} AND team_id IS NOT NULL`;
+      const result = await db.execute(query);
+      
+      const teamIds = (result.rows as { team_id: number }[]).map(t => t.team_id);
       
       if (!teamIds || teamIds.length === 0) {
         console.warn(`No teams found for event ${eventId}`);
         return [];
       }
       
+      console.log(`Found ${teamIds.length} unique teams for event ${eventId}`);
+      
       // Get team details for all teams at once
       const teamInfoArray = await db.select()
         .from(teams)
         .where(inArray(teams.id, teamIds));
+      
+      console.log(`Retrieved ${teamInfoArray.length} teams from the teams table`);
       
       const teamStats: TeamRawStats[] = [];
       
       // For each team, count players and create TeamRawStats object
       for (const team of teamInfoArray) {
         try {
-          // Count players in this team for this event
-          const playerCount = await db.execute(
-            'SELECT COUNT(DISTINCT steam_id) as player_count FROM player_match_summary WHERE team_id = $1 AND event_id = $2',
-            [team.id, eventId]
-          );
+          // Count players in this team for this event directly with a simple query
+          // This avoids parameter binding issues with prepared statements
+          const countQuery = `SELECT COUNT(DISTINCT steam_id) as player_count FROM player_match_summary WHERE team_id = ${team.id} AND event_id = ${eventId}`;
+          const playerCount = await db.execute(countQuery);
           
           const count = parseInt(playerCount.rows[0]?.player_count || '0', 10);
           
@@ -335,11 +339,13 @@ export class SupabaseAdapter {
           };
           
           teamStats.push(rawTeamStats);
+          console.log(`Processed team: ${team.teamClanName} with ${count} players`);
         } catch (error) {
           console.error(`Error processing team ${team.id}:`, error);
         }
       }
       
+      console.log(`Successfully processed ${teamStats.length} teams for event ${eventId}`);
       return teamStats;
     } catch (error) {
       console.error(`Error getting teams for event ${eventId}:`, error);

@@ -11,10 +11,21 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 // Create Supabase client
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Print confirmation
+console.log('Connected to Supabase database:', supabaseUrl);
+
 // Path to CSV files
 const playerStatsFile = path.join(__dirname, 'attached_assets', 'CS Data Points (IEM_Katowice_2025) - player_stats (IEM_Katowice_2025).csv');
 const roundsFile = path.join(__dirname, 'attached_assets', 'CS Data Points (IEM_Katowice_2025) - rounds (IEM_Katowice_2025).csv');
 const rolesFile = path.join(__dirname, 'attached_assets', 'CS2dkbasics - Teams and roles.csv');
+
+// Check if files exist and log paths
+console.log('Player Stats File Path:', playerStatsFile);
+console.log('Player Stats File Exists:', fs.existsSync(playerStatsFile));
+console.log('Rounds File Path:', roundsFile);
+console.log('Rounds File Exists:', fs.existsSync(roundsFile));
+console.log('Roles File Path:', rolesFile);
+console.log('Roles File Exists:', fs.existsSync(rolesFile));
 
 // Utility functions
 function normalizeNumber(value) {

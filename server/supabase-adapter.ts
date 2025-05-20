@@ -186,21 +186,21 @@ export class SupabaseAdapter {
         ));
       
       // Fetch team info if team ID is available
-      let teamInfo = null;
+      let teamInfo = undefined;
       if (playerMatchSummary.teamId) {
         const teams = await supaDb.select()
           .from(supaTeams)
           .where(eq(supaTeams.id, playerMatchSummary.teamId));
         
-        teamInfo = teams.length > 0 ? teams[0] : null;
+        teamInfo = teams.length > 0 ? teams[0] : undefined;
       }
       
       return {
         player,
-        killStats,
-        generalStats,
-        utilityStats,
-        teamInfo
+        killStats: killStats || undefined,
+        generalStats: generalStats || undefined,
+        utilityStats: utilityStats || undefined,
+        teamInfo: teamInfo || undefined
       };
     } catch (error) {
       console.error(`Error fetching player data for ${steamIdNum}:`, error);

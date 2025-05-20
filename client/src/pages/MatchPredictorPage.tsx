@@ -176,15 +176,8 @@ function getTeamStrength(team: TeamWithTIR): string {
     "mid-round adaptability"
   ];
   
-  // Use team name or ID to ensure consistent strength for the same team
-  // Handle case where team.id might not be a string or is empty
-  const teamIdentifier = typeof team.id === 'string' && team.id.length > 0 
-    ? team.id 
-    : (team.name || '1');
-  
-  // Get the first character code point or use a fallback
-  const firstChar = teamIdentifier.charAt(0) || 'A';
-  const strengthIndex = firstChar.charCodeAt(0) % strengths.length;
+  // Use team ID to ensure consistent strength for the same team
+  const strengthIndex = team.id.charCodeAt(0) % strengths.length;
   return strengths[strengthIndex];
 }
 
@@ -217,16 +210,7 @@ function getMapStrength(team: TeamWithTIR): string {
   ];
   
   // Use team ID to ensure consistent map for the same team
-  let mapIndex = 0;
-  
-  if (team && team.id) {
-    // Convert the ID to string if it's a number
-    const idStr = String(team.id);
-    // Use a simple hash based on the string
-    const hash = idStr.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    mapIndex = hash % maps.length;
-  }
-  
+  const mapIndex = (team.id.charCodeAt(0) + team.id.charCodeAt(1)) % maps.length;
   return `${maps[mapIndex]} specialist`;
 }
 

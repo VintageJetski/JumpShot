@@ -33,13 +33,10 @@ export default function PlayersPage() {
       // Group players by team
       const teamGroups: {[key: string]: PlayerWithPIV[]} = {};
       players.forEach(player => {
-        // Handle case where team property might be undefined or null
-        const teamName = player.team || "Unassigned";
-        
-        if (!teamGroups[teamName]) {
-          teamGroups[teamName] = [];
+        if (!teamGroups[player.team]) {
+          teamGroups[player.team] = [];
         }
-        teamGroups[teamName].push(player);
+        teamGroups[player.team].push(player);
       });
       setTeams(teamGroups);
     }
@@ -49,11 +46,10 @@ export default function PlayersPage() {
   const hasRole = (player: PlayerWithPIV, role: string): boolean => {
     if (role === "All Roles") return true;
     
-    // Safe check in case properties are undefined from Supabase
     return (
-      (player.role && player.role === role) ||
-      (player.ctRole && player.ctRole === role) ||
-      (player.tRole && player.tRole === role) ||
+      player.role === role ||
+      player.ctRole === role ||
+      player.tRole === role ||
       (role === PlayerRole.IGL && player.isIGL === true)
     );
   };
@@ -61,25 +57,17 @@ export default function PlayersPage() {
   // Apply search and role filters
   const filteredPlayers = players ? players
     .filter(player => {
-      // Text search filter - with safety checks for undefined properties
-      const playerName = player.name || '';
-      const playerTeam = player.team || '';
-      
-      const matchesSearch = searchQuery === '' || 
-        playerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        playerTeam.toLowerCase().includes(searchQuery.toLowerCase());
+      // Text search filter
+      const matchesSearch = 
+        player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        player.team.toLowerCase().includes(searchQuery.toLowerCase());
       
       // Role filter
       const matchesRole = hasRole(player, roleFilter);
       
       return matchesSearch && matchesRole;
     })
-    .sort((a, b) => {
-      // Handle undefined PIV values
-      const pivA = a.piv || 0;
-      const pivB = b.piv || 0;
-      return pivB - pivA;
-    }) : [];
+    .sort((a, b) => b.piv - a.piv) : [];
 
   // Extract top players by role with comprehensive role checking
   const findTopPlayerByRole = (role: PlayerRole) => {
@@ -469,11 +457,9 @@ export default function PlayersPage() {
                   }}
                   layout
                 >
-                  {filteredPlayers.map((player, index) => {
-                    // Generate a stable key using player ID or fallback to a combined value
-                    const key = player.id || `player-${player.name}-${index}`;
-                    return <PlayerCard key={key} player={player} index={index} />;
-                  })}
+                  {filteredPlayers.map((player, index) => (
+                    <PlayerCard key={player.id} player={player} index={index} />
+                  ))}
                 </motion.div>
               )}
               

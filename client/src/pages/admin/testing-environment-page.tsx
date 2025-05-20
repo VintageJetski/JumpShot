@@ -186,8 +186,6 @@ export default function TestingEnvironmentPage() {
               </div>
             </Card>
           </TabsContent>
-          
-
         </Tabs>
       </motion.div>
     </ProtectedRoute>

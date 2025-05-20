@@ -40,10 +40,7 @@ export default function TeamsPage() {
       accessorKey: "name",
       cell: ({ row }: any) => {
         const team = row.original;
-        // Use team ID when name is empty
-        const displayName = team.name?.trim() ? team.name : `Team #${team.id}`;
-        // Get the initial from the display name
-        const initial = displayName.charAt(0).toUpperCase();
+        const initial = team.name.charAt(0).toUpperCase();
         
         return (
           <div className="flex items-center">
@@ -51,7 +48,7 @@ export default function TeamsPage() {
               {initial}
             </div>
             <div className="ml-4">
-              <div className="text-sm font-medium">{displayName}</div>
+              <div className="text-sm font-medium">{team.name}</div>
             </div>
           </div>
         );
@@ -91,20 +88,11 @@ export default function TeamsPage() {
       cell: ({ row }: any) => {
         const { topPlayer } = row.original;
         
-        // Handle missing top player data
-        if (!topPlayer || !topPlayer.name) {
-          return (
-            <div className="text-sm text-muted-foreground">
-              No data available
-            </div>
-          );
-        }
-        
         return (
           <div className="flex items-center">
             <span className="text-sm font-medium">{topPlayer.name}</span>
             <span className="ml-2 text-xs rounded-full bg-green-500/20 text-green-400 px-2">
-              {typeof topPlayer.piv === 'number' ? topPlayer.piv.toFixed(2) : 'N/A'}
+              {topPlayer.piv}
             </span>
           </div>
         );
@@ -153,8 +141,8 @@ export default function TeamsPage() {
         {topTeams.highest && (
           <StatsCard
             title="Highest TIR"
-            value={topTeams.highest.name?.trim() ? topTeams.highest.name : `Team #${topTeams.highest.id}`}
-            metric={`${typeof topTeams.highest.tir === 'number' ? topTeams.highest.tir.toFixed(2) : 'N/A'} TIR`}
+            value={topTeams.highest.name}
+            metric={`${topTeams.highest.tir} TIR`}
             metricColor="text-green-400"
             bgColor="bg-green-500/10"
             icon={<BarChart3 className="h-6 w-6 text-green-500" />}
@@ -162,15 +150,11 @@ export default function TeamsPage() {
               <div className="mt-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-400">Total PIV:</span>
-                  <span className="font-medium">
-                    {typeof topTeams.highest.sumPIV === 'number' ? Math.round(topTeams.highest.sumPIV * 100) : 'N/A'}
-                  </span>
+                  <span className="font-medium">{Math.round(topTeams.highest.sumPIV * 100)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm mt-1">
                   <span className="text-gray-400">Synergy Layer:</span>
-                  <span className="font-medium">
-                    {typeof topTeams.highest.synergy === 'number' ? topTeams.highest.synergy.toFixed(2) : 'N/A'}
-                  </span>
+                  <span className="font-medium">{topTeams.highest.synergy.toFixed(2)}</span>
                 </div>
               </div>
             }
@@ -180,8 +164,8 @@ export default function TeamsPage() {
         {topTeams.bestSynergy && (
           <StatsCard
             title="Best Synergy"
-            value={topTeams.bestSynergy.name?.trim() ? topTeams.bestSynergy.name : `Team #${topTeams.bestSynergy.id}`}
-            metric={`${typeof topTeams.bestSynergy.synergy === 'number' ? topTeams.bestSynergy.synergy.toFixed(2) : 'N/A'} TSL`}
+            value={topTeams.bestSynergy.name}
+            metric={`${topTeams.bestSynergy.synergy.toFixed(2)} TSL`}
             metricColor="text-blue-400"
             bgColor="bg-blue-500/10"
             icon={<Zap className="h-6 w-6 text-blue-500" />}
@@ -193,9 +177,7 @@ export default function TeamsPage() {
                 </div>
                 <div className="flex items-center justify-between text-sm mt-1">
                   <span className="text-gray-400">TIR:</span>
-                  <span className="font-medium">
-                    {typeof topTeams.bestSynergy.tir === 'number' ? topTeams.bestSynergy.tir.toFixed(2) : 'N/A'}
-                  </span>
+                  <span className="font-medium">{topTeams.bestSynergy.tir}</span>
                 </div>
               </div>
             }
@@ -205,8 +187,8 @@ export default function TeamsPage() {
         {topTeams.highestAvg && (
           <StatsCard
             title="Highest Avg PIV"
-            value={topTeams.highestAvg.name?.trim() ? topTeams.highestAvg.name : `Team #${topTeams.highestAvg.id}`}
-            metric={`${typeof topTeams.highestAvg.avgPIV === 'number' ? Math.round(topTeams.highestAvg.avgPIV * 100) : 'N/A'} Avg PIV`}
+            value={topTeams.highestAvg.name}
+            metric={`${Math.round(topTeams.highestAvg.avgPIV * 100)} Avg PIV`}
             metricColor="text-amber-400"
             bgColor="bg-amber-500/10"
             icon={<Users className="h-6 w-6 text-amber-500" />}
@@ -214,15 +196,11 @@ export default function TeamsPage() {
               <div className="mt-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-400">Total PIV:</span>
-                  <span className="font-medium">
-                    {typeof topTeams.highestAvg.sumPIV === 'number' ? topTeams.highestAvg.sumPIV.toFixed(2) : 'N/A'}
-                  </span>
+                  <span className="font-medium">{topTeams.highestAvg.sumPIV}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm mt-1">
                   <span className="text-gray-400">TIR:</span>
-                  <span className="font-medium">
-                    {typeof topTeams.highestAvg.tir === 'number' ? topTeams.highestAvg.tir.toFixed(2) : 'N/A'}
-                  </span>
+                  <span className="font-medium">{topTeams.highestAvg.tir}</span>
                 </div>
               </div>
             }

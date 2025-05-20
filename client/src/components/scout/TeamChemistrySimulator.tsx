@@ -147,14 +147,13 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
       newPositions.push({ id: "pos-5", name: "Lurker", role: PlayerRole.Lurker, player: null });
       
       // Try to populate with current team players
-      if (selectedTeam.players && Array.isArray(selectedTeam.players) && playersWithScoutMetrics.length > 0) {
+      if (selectedTeam.players && playersWithScoutMetrics.length > 0) {
         selectedTeam.players.forEach((teamPlayer, index) => {
-          if (index < newPositions.length && teamPlayer && teamPlayer.id) {
+          if (index < newPositions.length) {
             const playerWithScout = playersWithScoutMetrics.find(p => p.id === teamPlayer.id);
             if (playerWithScout) {
               newPositions[index].player = playerWithScout;
-              // Use player's role or default to position's role if not available
-              newPositions[index].role = playerWithScout.role || newPositions[index].role;
+              newPositions[index].role = playerWithScout.role;
             }
           }
         });
@@ -212,20 +211,9 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
   }, [selectedPlayerId, players, playersWithScoutMetrics, positions, toast]);
 
   // Handle team selection
-  const handleTeamSelect = (teamName: string | number) => {
-    // Check if we're looking for a team by ID or name
-    const team = typeof teamName === 'number' 
-      ? teams?.find(t => t.id === teamName.toString()) 
-      : teams?.find(t => {
-          // First try to match by name if it exists and isn't empty
-          if (t.name && t.name.trim() && t.name === teamName) {
-            return true;
-          }
-          // Otherwise match by ID converted to string
-          return t.id.toString() === teamName.toString();
-        });
-
-    setSelectedTeam(team || null);
+  const handleTeamSelect = (teamName: string) => {
+    const team = teams?.find(t => t.name === teamName) || null;
+    setSelectedTeam(team);
   };
 
   // Handle drag and drop of players
@@ -359,15 +347,8 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
         
         if (player1 && player2) {
           // Calculate chemistry between these two players
-          // Handle empty team names safely
-          const team1 = player1.team?.trim() ? player1.team : '';
-          const team2 = player2.team?.trim() ? player2.team : '';
-          const sameTeam = team1 !== '' && team2 !== '' && team1 === team2;
-          
-          // Get default role if missing
-          const role1 = player1.role || PlayerRole.Support;
-          const role2 = player2.role || PlayerRole.Support;
-          const complementaryRoles = isComplementaryRole(role1, role2);
+          const sameTeam = player1.team === player2.team;
+          const complementaryRoles = isComplementaryRole(player1.role, player2.role);
           
           // Base chemistry score
           let chemistry = 50;
@@ -378,10 +359,8 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
           // Adjust based on roles
           if (complementaryRoles) chemistry += 25;
           
-          // Adjust based on synergy (ensure scoutMetrics exists)
-          const synergy1 = player1.scoutMetrics?.synergy || 0;
-          const synergy2 = player2.scoutMetrics?.synergy || 0;
-          chemistry += (synergy1 + synergy2) / 4;
+          // Adjust based on synergy
+          chemistry += (player1.scoutMetrics.synergy + player2.scoutMetrics.synergy) / 4;
           
           // Ensure in range 0-100
           chemistry = Math.min(100, Math.max(0, chemistry));
@@ -557,64 +536,33 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
         </CardHeader>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-          {teams?.map((team) => {
-            // Make sure team has a valid ID
-            if (!team || !team.id) return null;
-            
-            // Use team ID as a fallback when name is empty
-            const displayName = team.name?.trim() ? team.name : `Team #${team.id}`;
-            const tirValue = typeof team.tir === 'number' ? team.tir : 0;
-            
-            return (
-              <Card 
-                key={team.id.toString()} 
-                className="cursor-pointer hover:border-primary transition-colors"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleTeamSelect(team.id || '');
-                }}
-              >
-                <CardHeader>
-                  <CardTitle>{displayName}</CardTitle>
-                  <CardDescription>TIR: {tirValue.toFixed(2)}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {Array.isArray(team.players) && team.players.slice(0, 5).map((player) => {
-                      // Skip invalid player entries
-                      if (!player) return null;
-                      
-                      const playerId = player.id ? player.id.toString() : `player-${Math.random().toString().substring(2, 10)}`;
-                      return (
-                        <Badge 
-                          key={playerId} 
-                          variant="outline"
-                        >
-                          {player.name || 'Unknown Player'}
-                        </Badge>
-                      );
-                    })}
-                    {(!team.players || !Array.isArray(team.players) || team.players.length === 0) && (
-                      <div className="text-sm text-muted-foreground">No players assigned</div>
-                    )}
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent double-firing of the event
-                      handleTeamSelect(team.id || ''); // Ensure we provide a default value
-                    }}
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    Select Team
-                  </Button>
-                </CardFooter>
-              </Card>
-            );
-          })}
+          {teams?.map((team) => (
+            <Card 
+              key={team.name} 
+              className="cursor-pointer hover:border-primary transition-colors"
+              onClick={() => handleTeamSelect(team.name)}
+            >
+              <CardHeader>
+                <CardTitle>{team.name}</CardTitle>
+                <CardDescription>TIR: {team.tir.toFixed(2)}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {team.players.slice(0, 5).map((player) => (
+                    <Badge key={player.id} variant="outline">
+                      {player.name}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline" className="w-full" onClick={() => handleTeamSelect(team.name)}>
+                  <Users className="h-4 w-4 mr-2" />
+                  Select Team
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
         </div>
       </div>
     );
@@ -626,7 +574,7 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
       <CardHeader className="px-0 flex flex-row items-center justify-between">
         <div>
           <CardTitle className="text-2xl">
-            {selectedTeam.name?.trim() ? selectedTeam.name : `Team #${selectedTeam.id}`} - Team Chemistry Simulator
+            {selectedTeam.name} - Team Chemistry Simulator
           </CardTitle>
           <CardDescription>
             Add, remove, and replace players to optimize your lineup
@@ -963,8 +911,8 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
                           return (
                             <div key={index} className="border rounded-md p-2">
                               <div className="flex justify-between mb-1">
-                                <div className="text-xs font-medium truncate">{player1.name?.trim() ? player1.name.split(' ')[0] : 'Player 1'}</div>
-                                <div className="text-xs font-medium truncate">{player2.name?.trim() ? player2.name.split(' ')[0] : 'Player 2'}</div>
+                                <div className="text-xs font-medium truncate">{player1.name.split(' ')[0]}</div>
+                                <div className="text-xs font-medium truncate">{player2.name.split(' ')[0]}</div>
                               </div>
                               <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                                 <div 

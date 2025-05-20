@@ -9,15 +9,10 @@ import { initializeRoundData } from "./roundDataLoader";
 import { setupAuth, ensureAuthenticated } from "./auth";
 import { processXYZDataFromFile, RoundPositionalMetrics, PlayerMovementAnalysis } from "./xyz-data-parser";
 import path from "path";
-import { getPlayers, getTeams, initializeDataController, DataSource, setDataSource, refreshData, CURRENT_DATA_SOURCE } from "./data-controller";
-import { supabaseDataService } from "./supabase-data-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Admin routes are now handled in admin-routes.ts and mounted in index.ts
-  
   // Initialize data on server start
   try {
-    // Use CSV data loading by default for now
     console.log('Loading and processing player data...');
     const rawPlayerStats = await loadNewPlayerStats();
     
@@ -39,9 +34,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Load and process round data
     await initializeRoundData();
-    
-    // Initialize the data controller (for future Supabase integration)
-    await initializeDataController();
   } catch (error) {
     console.error('Error initializing data:', error);
   }
@@ -51,29 +43,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const role = req.query.role as string | undefined;
       
-      if (CURRENT_DATA_SOURCE === DataSource.SUPABASE) {
-        // For Supabase data source, get players and filter by role if needed
-        const allPlayers = await supabaseDataService.getAllPlayers();
-        
-        let players = allPlayers;
-        if (role && role !== 'All Roles') {
-          players = allPlayers.filter(player => 
-            player.tRole === role || 
-            player.ctRole === role
-          );
-        }
-        
-        console.log(`GET /api/players: Returning ${players.length} players from Supabase`);
+      if (role && role !== 'All Roles') {
+        const players = await storage.getPlayersByRole(role);
         res.json(players);
       } else {
-        // For CSV source, use memory storage
-        if (role && role !== 'All Roles') {
-          const players = await storage.getPlayersByRole(role);
-          res.json(players);
-        } else {
-          const players = await storage.getAllPlayers();
-          res.json(players);
-        }
+        const players = await storage.getAllPlayers();
+        res.json(players);
       }
     } catch (error) {
       console.error('Error fetching players:', error);
@@ -83,37 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get('/api/players/:id', async (req: Request, res: Response) => {
     try {
-      let player;
-      
-      if (CURRENT_DATA_SOURCE === DataSource.SUPABASE) {
-        // Get player from Supabase
-        const allPlayers = await supabaseDataService.getAllPlayers();
-        player = allPlayers.find(p => p.id === req.params.id);
-        
-        // If player was found, supplement with player stats if available
-        if (player) {
-          const playerStats = await supabaseDataService.getPlayerStats();
-          const stats = playerStats.find(s => 
-            s.playerId === player.id || 
-            (player.name && s.playerName && player.name.toLowerCase() === s.playerName.toLowerCase())
-          );
-          
-          if (stats) {
-            // Merge player stats with player data
-            player = {
-              ...player,
-              kills: stats.kills || 0,
-              deaths: stats.deaths || 0,
-              assists: stats.assists || 0,
-              kd: stats.kd || 1.0,
-              headshots: stats.hs_percentage || 0
-            };
-          }
-        }
-      } else {
-        // Get player from memory storage (CSV)
-        player = await storage.getPlayerById(req.params.id);
-      }
+      const player = await storage.getPlayerById(req.params.id);
       
       if (player) {
         res.json(player);
@@ -128,17 +73,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get('/api/teams', async (req: Request, res: Response) => {
     try {
-      let teams;
-      if (CURRENT_DATA_SOURCE === DataSource.SUPABASE) {
-        // Direct call to get formatted teams from Supabase
-        teams = await supabaseDataService.getAllTeams();
-        console.log(`GET /api/teams: Returning ${teams.length} Supabase teams`);
-      } else {
-        // Default CSV handling
-        teams = await storage.getAllTeams();
-        console.log(`GET /api/teams: Returning ${teams.length} CSV teams`);
-      }
-      
+      const teams = await storage.getAllTeams();
+      console.log(`GET /api/teams: Returning ${teams.length} teams`);
       if (teams.length > 0) {
         console.log(`Team sample: ${JSON.stringify(teams[0])}`);
       }
@@ -151,18 +87,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get('/api/teams/:name', async (req: Request, res: Response) => {
     try {
-      let team;
-      
-      if (CURRENT_DATA_SOURCE === DataSource.SUPABASE) {
-        // Try to get team from Supabase first
-        const teams = await supabaseDataService.getAllTeams();
-        team = teams.find(t => 
-          t.name.toLowerCase() === req.params.name.toLowerCase() || 
-          t.id.toLowerCase() === req.params.name.toLowerCase()
-        );
-      } else {
-        team = await storage.getTeamByName(req.params.name);
-      }
+      const team = await storage.getTeamByName(req.params.name);
       
       if (team) {
         res.json(team);
@@ -189,83 +114,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching round metrics:', error);
       res.status(500).json({ message: 'Failed to fetch round metrics' });
-    }
-  });
-  
-  // Tournament API routes
-  app.get('/api/tournaments', async (req: Request, res: Response) => {
-    try {
-      if (CURRENT_DATA_SOURCE === DataSource.SUPABASE) {
-        const tournaments = await supabaseDataService.getAllTournaments();
-        res.json(tournaments);
-      } else {
-        // Just return IEM Katowice 2025 as the only tournament for CSV source
-        res.json([{
-          id: 'iem-katowice-2025',
-          name: 'IEM Katowice 2025',
-          location: 'Katowice, Poland',
-          start_date: '2025-01-31',
-          end_date: '2025-02-12',
-          teams_count: 16,
-          matches_count: 45,
-          source: 'csv',
-          status: 'completed'
-        }]);
-      }
-    } catch (error) {
-      console.error('Error fetching tournaments:', error);
-      res.status(500).json({ message: 'Failed to fetch tournaments' });
-    }
-  });
-  
-  app.get('/api/tournaments/:id/players', async (req: Request, res: Response) => {
-    try {
-      const tournamentId = req.params.id;
-      
-      if (CURRENT_DATA_SOURCE === DataSource.SUPABASE) {
-        const players = await supabaseDataService.getTournamentPlayerStats(tournamentId);
-        res.json(players);
-      } else {
-        // For CSV, if it's IEM Katowice 2025, return all players
-        if (tournamentId === 'iem-katowice-2025') {
-          const players = await getPlayers();
-          res.json(players);
-        } else {
-          res.status(404).json({ message: 'Tournament not found' });
-        }
-      }
-    } catch (error) {
-      console.error(`Error fetching players for tournament ${req.params.id}:`, error);
-      res.status(500).json({ message: 'Failed to fetch tournament players' });
-    }
-  });
-  
-  // Specific tournament data routes
-  app.get('/api/tournaments/pgl-bucharest', async (req: Request, res: Response) => {
-    try {
-      if (CURRENT_DATA_SOURCE === DataSource.SUPABASE) {
-        const data = await supabaseDataService.getPGLBucharestData();
-        
-        if (!data) {
-          return res.status(404).json({ 
-            message: 'PGL Bucharest data not found in database',
-            available: false
-          });
-        }
-        
-        res.json({
-          available: true,
-          data: data
-        });
-      } else {
-        res.status(404).json({ 
-          message: 'PGL Bucharest data only available in Supabase data source',
-          available: false
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching PGL Bucharest data:', error);
-      res.status(500).json({ message: 'Failed to fetch PGL Bucharest data' });
     }
   });
 

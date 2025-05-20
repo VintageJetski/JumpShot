@@ -104,16 +104,14 @@ export default function DataVisualizationPage() {
   // Get selected player
   const selectedPlayer = selectedPlayerId ? players.find(p => p.id === selectedPlayerId) : null;
   
-  // Get comparison players by ID
-  const selectedComparisonPlayers = comparisonPlayers.map(id => 
-    players.find(p => p.id === id)
-  ).filter((p): p is PlayerWithPIV => p !== undefined);
+  // Get comparison players
+  const selectedComparisonPlayers = players.filter(p => comparisonPlayers.includes(p.id));
   
   // Get selected team
   const selectedTeam = selectedTeamName ? teams.find(t => t.name === selectedTeamName) : null;
   
-  // Get comparison teams by name
-  const selectedComparisonTeams = comparisonTeams;
+  // Get comparison teams
+  const selectedComparisonTeams = teams.filter(t => comparisonTeams.includes(t.name));
   
   // Handle player selection
   const handlePlayerSelect = (playerId: string) => {
@@ -226,9 +224,9 @@ export default function DataVisualizationPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all-teams">All Teams</SelectItem>
-                        {teams.filter(team => team.name && team.name.trim() !== '').map((team) => (
-                          <SelectItem key={team.id} value={team.name || `team-${team.id}`}>
-                            {team.name || `Team ${team.id}`}
+                        {teams.map((team) => (
+                          <SelectItem key={team.id} value={team.name}>
+                            {team.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -260,7 +258,7 @@ export default function DataVisualizationPage() {
                   <div>
                     <label className="text-sm font-medium mb-1 block">Sort By</label>
                     <Select 
-                      value={filters.sortBy || "piv"} 
+                      value={filters.sortBy} 
                       onValueChange={(value) => setFilters({ ...filters, sortBy: value as 'piv' | 'kd' | 'name' })}
                     >
                       <SelectTrigger>
@@ -306,7 +304,7 @@ export default function DataVisualizationPage() {
                               </div>
                             </div>
                             <div className="flex flex-col items-end">
-                              <span className="font-bold">{player.piv !== undefined ? player.piv.toFixed(2) : "N/A"}</span>
+                              <span className="font-bold">{player.piv.toFixed(2)}</span>
                               <span className="text-xs text-muted-foreground">PIV</span>
                             </div>
                           </div>
@@ -449,7 +447,7 @@ export default function DataVisualizationPage() {
                                 </span>
                               </div>
                               <div className="flex flex-col items-end">
-                                <span className="font-bold">{team.tir !== undefined && team.tir !== null ? team.tir.toFixed(2) : 'N/A'}</span>
+                                <span className="font-bold">{team.tir.toFixed(2)}</span>
                                 <span className="text-xs text-muted-foreground">TIR</span>
                               </div>
                             </div>
@@ -468,26 +466,21 @@ export default function DataVisualizationPage() {
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {comparisonTeams.map((teamName) => {
-                          // Find the matching team data
-                          const teamData = teams.find(t => t.name === teamName);
-                          
-                          return (
-                            <div 
-                              key={teamName}
-                              className="flex items-center justify-between p-2 rounded-md border border-primary/50 bg-primary/10"
+                        {selectedComparisonTeams.map((team) => (
+                          <div 
+                            key={team.id}
+                            className="flex items-center justify-between p-2 rounded-md border border-primary/50 bg-primary/10"
+                          >
+                            <span>{team.name}</span>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => toggleComparisonTeam(team.name)}
                             >
-                              <span>{teamName}</span>
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => toggleComparisonTeam(teamName)}
-                              >
-                                Remove
-                              </Button>
-                            </div>
-                          );
-                        })}
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -623,30 +616,24 @@ export default function DataVisualizationPage() {
                       </div>
                       
                       <div className="grid grid-cols-1 gap-2 mb-4">
-                        {selectedComparisonTeams.map((teamName) => {
-                          // Find the team data for this team name
-                          const teamData = teams.find(t => t.name === teamName);
-                          const tirValue = teamData?.tir;
-                          
-                          return (
-                            <div 
-                              key={teamName}
-                              className="flex items-center justify-between p-2 rounded-md border border-primary/50 bg-primary/10"
-                            >
-                              <span className="font-medium">{teamName}</span>
-                              <div className="flex items-center gap-2">
-                                <span>TIR: {tirValue !== undefined && tirValue !== null ? tirValue.toFixed(2) : 'N/A'}</span>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => toggleComparisonTeam(teamName)}
-                                >
-                                  Remove
-                                </Button>
-                              </div>
+                        {selectedComparisonTeams.map((team) => (
+                          <div 
+                            key={team.id}
+                            className="flex items-center justify-between p-2 rounded-md border border-primary/50 bg-primary/10"
+                          >
+                            <span className="font-medium">{team.name}</span>
+                            <div className="flex items-center gap-2">
+                              <span>TIR: {team.tir.toFixed(2)}</span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => toggleComparisonTeam(team.name)}
+                              >
+                                Remove
+                              </Button>
                             </div>
-                          );
-                        })}
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ) : (
@@ -674,32 +661,24 @@ export default function DataVisualizationPage() {
                 {selectedComparisonPlayers.length > 0 && (
                   <div className="mb-8">
                     <h3 className="text-lg font-semibold mb-4">Player Performance Comparison</h3>
-                    <PlayerPerformanceChart 
-                      player={selectedComparisonPlayers[0]} 
-                      comparisonPlayers={selectedComparisonPlayers.slice(1)} 
-                    />
+                    {selectedComparisonPlayers.length > 0 && (
+                      <PlayerPerformanceChart 
+                        player={selectedComparisonPlayers[0]} 
+                        comparisonPlayers={selectedComparisonPlayers.slice(1)} 
+                      />
+                    )}
                   </div>
                 )}
                 
                 {selectedComparisonTeams.length > 0 && (
                   <div>
                     <h3 className="text-lg font-semibold mb-4">Team Performance Comparison</h3>
-                    {/* Find team data corresponding to the selected team names */}
-                    {teams.length > 0 && (() => {
-                      const firstTeam = teams.find(t => t.name === selectedComparisonTeams[0]);
-                      if (!firstTeam) return null;
-                      
-                      const comparisonTeamObjects = selectedComparisonTeams.slice(1)
-                        .map(name => teams.find(t => t.name === name))
-                        .filter((t): t is TeamWithTIR => t !== undefined);
-                      
-                      return (
-                        <TeamPerformanceChart 
-                          team={firstTeam} 
-                          comparisonTeams={comparisonTeamObjects} 
-                        />
-                      );
-                    })()}
+                    {selectedComparisonTeams.length > 0 && (
+                      <TeamPerformanceChart 
+                        team={selectedComparisonTeams[0]} 
+                        comparisonTeams={selectedComparisonTeams.slice(1)} 
+                      />
+                    )}
                   </div>
                 )}
                 

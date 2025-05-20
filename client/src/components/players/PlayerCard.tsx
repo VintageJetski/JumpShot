@@ -31,8 +31,6 @@ const roleColors: Record<PlayerRole, string> = {
 };
 
 export default function PlayerCard({ player, index }: PlayerCardProps) {
-  // Generate a unique key for this player if it's missing an ID
-  const playerKey = player.id || `player-${player.name}-${index}`;
   const [, setLocation] = useLocation();
   
   // Determine primary role for styling
@@ -42,20 +40,14 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
   // Collect all unique roles to display
   const rolesToDisplay = new Set<PlayerRole>();
   
-  // Check if player has all necessary properties
-  const defaultRole = PlayerRole.Support;
-  
   // If player is IGL, add it first
   if (player.isIGL) {
     rolesToDisplay.add(PlayerRole.IGL);
   }
   
-  // Add primary role if it's not IGL and exists
-  if (player.role && player.role !== PlayerRole.IGL) {
+  // Add primary role if it's not IGL
+  if (player.role !== PlayerRole.IGL) {
     rolesToDisplay.add(player.role);
-  } else if (!rolesToDisplay.size) {
-    // If no role added yet, add a default
-    rolesToDisplay.add(defaultRole);
   }
   
   // Add T role if it's different from primary role
@@ -64,14 +56,12 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
   }
   
   // Add CT role if it's different from primary and T role
-  if (player.ctRole && player.ctRole !== player.role && 
-      (player.tRole ? player.ctRole !== player.tRole : true) && 
-      player.ctRole !== PlayerRole.IGL) {
+  if (player.ctRole && player.ctRole !== player.role && player.ctRole !== player.tRole && player.ctRole !== PlayerRole.IGL) {
     rolesToDisplay.add(player.ctRole);
   }
 
   // Format PIV score for display (0-100 scale)
-  const pivScore = player.piv !== undefined ? Math.round(player.piv * 100) : 0;
+  const pivScore = Math.round(player.piv * 100);
   
   // Determine color based on PIV score
   const getPivColor = (score: number) => {
@@ -200,7 +190,7 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
           transition={{ delay: staggerDelay + 0.2, duration: 0.3 }}
           whileHover={{ scale: 1.1, backgroundColor: "rgba(0,0,0,0.4)" }}
         >
-          {player.team || 'Unknown Team'}
+          {player.team}
         </motion.div>
         
         {/* Player Avatar Circle */}
@@ -212,7 +202,7 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
             transition={{ delay: staggerDelay + 0.15, type: "spring", stiffness: 200 }}
             whileHover={{ scale: 1.1, borderColor: "rgba(255,255,255,0.5)" }}
           >
-            {(player.name && player.name.length > 0) ? player.name.charAt(0) : '?'}
+            {player.name.charAt(0)}
           </motion.div>
           <div className="ml-3">
             <motion.h3 
@@ -297,8 +287,8 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
             <div className="text-xs text-blue-300 mb-1 flex items-center">
               <Gauge className="h-3 w-3 mr-1" /> K/D Ratio
             </div>
-            <div className={`text-base font-medium ${(player.kd || 0) >= 1.0 ? 'text-green-400' : 'text-yellow-400'}`}>
-              {player.kd !== undefined ? player.kd.toFixed(2) : '0.00'}
+            <div className={`text-base font-medium ${player.kd >= 1.0 ? 'text-green-400' : 'text-yellow-400'}`}>
+              {player.kd.toFixed(2)}
             </div>
           </motion.div>
           
@@ -308,12 +298,12 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
             transition={{ type: "spring", stiffness: 300, damping: 15 }}
           >
             <div className="text-xs text-blue-300 mb-1 truncate">
-              {player.primaryMetric?.name || 'Key Stat'}
+              {player.primaryMetric.name}
             </div>
             <div className="text-base font-medium text-blue-200">
-              {player.primaryMetric && typeof player.primaryMetric.value === 'number' ? 
+              {typeof player.primaryMetric.value === 'number' ? 
                 player.primaryMetric.value.toFixed(2) : 
-                (player.primaryMetric?.value || 'N/A')}
+                player.primaryMetric.value}
             </div>
           </motion.div>
         </motion.div>
@@ -329,7 +319,7 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
           >
             <span>CT PIV</span>
             <span className="font-medium text-blue-200">
-              {player.ctPIV !== undefined ? Math.round(player.ctPIV * 100) : '-'}
+              {player.ctPIV ? Math.round(player.ctPIV * 100) : '-'}
             </span>
           </motion.div>
           <motion.div 
@@ -338,7 +328,7 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
           >
             <span>T PIV</span>
             <span className="font-medium text-blue-200">
-              {player.tPIV !== undefined ? Math.round(player.tPIV * 100) : '-'}
+              {player.tPIV ? Math.round(player.tPIV * 100) : '-'}
             </span>
           </motion.div>
         </motion.div>

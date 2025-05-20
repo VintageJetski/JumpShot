@@ -28,12 +28,14 @@ const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players }) =>
     const outliers: OutlierCard[] = [];
     
     // Find highest headshot player
-    const headshotPlayer = [...players].sort((a, b) => 
-      b.rawStats.headshots / Math.max(b.rawStats.kills, 1) - 
-      a.rawStats.headshots / Math.max(a.rawStats.kills, 1)
-    )[0];
+    const headshotPlayer = [...players]
+      .filter(p => p.rawStats && typeof p.rawStats.headshots === 'number' && typeof p.rawStats.kills === 'number')
+      .sort((a, b) => 
+        (b.rawStats.headshots / Math.max(b.rawStats.kills, 1)) - 
+        (a.rawStats.headshots / Math.max(a.rawStats.kills, 1))
+      )[0];
     
-    if (headshotPlayer) {
+    if (headshotPlayer && headshotPlayer.rawStats.headshots) {
       const headshotRatio = (headshotPlayer.rawStats.headshots / Math.max(headshotPlayer.rawStats.kills, 1)) * 100;
       outliers.push({
         title: "Headshot King",
@@ -46,12 +48,14 @@ const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players }) =>
     }
     
     // Find top flash assist player
-    const flashPlayer = [...players].sort((a, b) => 
-      b.rawStats.assistedFlashes / Math.max(b.rawStats.flashesThrown, 1) - 
-      a.rawStats.assistedFlashes / Math.max(a.rawStats.flashesThrown, 1)
-    )[0];
+    const flashPlayer = [...players]
+      .filter(p => p.rawStats && typeof p.rawStats.assistedFlashes === 'number' && typeof p.rawStats.flashesThrown === 'number')
+      .sort((a, b) => 
+        (b.rawStats.assistedFlashes / Math.max(b.rawStats.flashesThrown, 1)) - 
+        (a.rawStats.assistedFlashes / Math.max(a.rawStats.flashesThrown, 1))
+      )[0];
     
-    if (flashPlayer) {
+    if (flashPlayer && flashPlayer.rawStats.assistedFlashes) {
       const flashRatio = (flashPlayer.rawStats.assistedFlashes / Math.max(flashPlayer.rawStats.flashesThrown, 1)) * 100;
       outliers.push({
         title: "Flash Master",
@@ -64,12 +68,14 @@ const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players }) =>
     }
     
     // Find best opening kill player
-    const openingKillPlayer = [...players].sort((a, b) => 
-      (b.rawStats.firstKills / Math.max(b.rawStats.firstKills + b.rawStats.firstDeaths, 1)) - 
-      (a.rawStats.firstKills / Math.max(a.rawStats.firstKills + a.rawStats.firstDeaths, 1))
-    )[0];
+    const openingKillPlayer = [...players]
+      .filter(p => p.rawStats && typeof p.rawStats.firstKills === 'number' && typeof p.rawStats.firstDeaths === 'number')
+      .sort((a, b) => 
+        (b.rawStats.firstKills / Math.max(b.rawStats.firstKills + b.rawStats.firstDeaths, 1)) - 
+        (a.rawStats.firstKills / Math.max(a.rawStats.firstKills + a.rawStats.firstDeaths, 1))
+      )[0];
     
-    if (openingKillPlayer) {
+    if (openingKillPlayer && openingKillPlayer.rawStats.firstKills) {
       const openingRatio = (openingKillPlayer.rawStats.firstKills / Math.max(openingKillPlayer.rawStats.firstKills + openingKillPlayer.rawStats.firstDeaths, 1)) * 100;
       outliers.push({
         title: "Opening Kill Specialist",
@@ -82,11 +88,13 @@ const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players }) =>
     }
     
     // Find smoke specialist
-    const smokePlayer = [...players].sort((a, b) => 
-      b.rawStats.smokesThrown - a.rawStats.smokesThrown
-    )[0];
+    const smokePlayer = [...players]
+      .filter(p => p.rawStats && typeof p.rawStats.smokesThrown === 'number')
+      .sort((a, b) => 
+        (b.rawStats.smokesThrown || 0) - (a.rawStats.smokesThrown || 0)
+      )[0];
     
-    if (smokePlayer) {
+    if (smokePlayer && smokePlayer.rawStats.smokesThrown) {
       outliers.push({
         title: "Smoke Specialist",
         player: smokePlayer,
@@ -98,12 +106,14 @@ const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players }) =>
     }
     
     // Find through smoke killer
-    const throughSmokePlayer = [...players].sort((a, b) => 
-      b.rawStats.throughSmoke / Math.max(b.rawStats.kills, 1) - 
-      a.rawStats.throughSmoke / Math.max(a.rawStats.kills, 1)
-    )[0];
+    const throughSmokePlayer = [...players]
+      .filter(p => p.rawStats && typeof p.rawStats.throughSmoke === 'number' && typeof p.rawStats.kills === 'number')
+      .sort((a, b) => 
+        (b.rawStats.throughSmoke / Math.max(b.rawStats.kills, 1)) - 
+        (a.rawStats.throughSmoke / Math.max(a.rawStats.kills, 1))
+      )[0];
     
-    if (throughSmokePlayer) {
+    if (throughSmokePlayer && throughSmokePlayer.rawStats.throughSmoke) {
       const throughSmokeRatio = (throughSmokePlayer.rawStats.throughSmoke / Math.max(throughSmokePlayer.rawStats.kills, 1)) * 100;
       outliers.push({
         title: "Smoke Criminal",

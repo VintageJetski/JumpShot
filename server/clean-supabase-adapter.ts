@@ -8,34 +8,34 @@ import { PlayerWithPIV, TeamWithTIR, PlayerRole } from '@shared/types';
  */
 export class CleanSupabaseAdapter {
   private pool: Pool;
-  
+
   constructor() {
-    this.pool = db.$client;
+    this.pool = db.client;
   }
-  
+
   /**
    * Check database connection
    */
   async checkConnection(): Promise<boolean> {
     try {
-      const result = await this.pool.query('SELECT NOW()');
-      return result.rowCount === 1;
+      await this.pool.query('SELECT 1');
+      return true;
     } catch (error) {
-      console.error('Database connection check failed:', error);
+      console.error('Database connection error:', error);
       return false;
     }
   }
-  
+
   /**
    * Get all available events
    */
   async getEvents(): Promise<{ id: number, name: string }[]> {
     try {
-      // Use direct SQL query matching the actual schema
-      const query = `SELECT id, name FROM events`;
-      const result = await db.execute(query);
-      
-      return result.rows as { id: number, name: string }[];
+      const result = await this.pool.query('SELECT id, name FROM events');
+      return result.rows.map(row => ({
+        id: row.id,
+        name: row.name
+      }));
     } catch (error) {
       console.error('Error getting events:', error);
       return [];
@@ -48,128 +48,116 @@ export class CleanSupabaseAdapter {
    */
   async getPlayersWithPIV(): Promise<PlayerWithPIV[]> {
     try {
-      // Use direct SQL instead of schema to ensure correct field names
-      const query = `SELECT * FROM player_stats`;
-      const result = await db.execute(query);
-      const playerRows = result.rows as any[];
+      const query = `
+        SELECT 
+          ps.steam_id, 
+          ps.user_name, 
+          ps.team_clan_name, 
+          ps.kills, 
+          ps.headshots, 
+          ps.assists, 
+          ps.deaths, 
+          ps.kd, 
+          ps.first_kills, 
+          ps.first_deaths,
+          ps.assisted_flashes,
+          ps.flashes_thrown,
+          ps.he_thrown,
+          ps.infernos_thrown,
+          ps.smokes_thrown,
+          ps.total_utility_thrown
+        FROM player_stats ps
+      `;
+
+      const result = await this.pool.query(query);
       
-      console.log(`Found ${playerRows.length} players in player_stats table`);
+      console.log(`Found ${result.rows.length} players in database`);
       
-      if (playerRows.length === 0) {
-        return [];
-      }
-
-      // Transform database rows to PlayerWithPIV objects
-      const playersWithPIV: PlayerWithPIV[] = playerRows.map(row => {
-        // Map role string to PlayerRole enum
-        let roleEnum: PlayerRole | undefined;
-        if (row.role) {
-          const normalizedRole = String(row.role).trim().toLowerCase();
-          if (normalizedRole === 'awp' || normalizedRole === 'awper') {
-            roleEnum = PlayerRole.AWP;
-          } else if (normalizedRole === 'support') {
-            roleEnum = PlayerRole.Support;
-          } else if (normalizedRole === 'lurker') {
-            roleEnum = PlayerRole.Lurker;
-          } else if (normalizedRole === 'igl' || normalizedRole === 'in-game leader') {
-            roleEnum = PlayerRole.IGL;
-          } else if (normalizedRole === 'spacetaker' || normalizedRole === 'space-taker') {
-            roleEnum = PlayerRole.Spacetaker;
-          } else if (normalizedRole === 'anchor') {
-            roleEnum = PlayerRole.Anchor;
-          } else if (normalizedRole === 'rotator') {
-            roleEnum = PlayerRole.Rotator;
-          }
-        }
-
-        // Calculate rating as a derived value
-        const calculatedRating = ((parseFloat(row.kd?.toString() || "1") || 1) * 
-                              (parseFloat(row.piv?.toString() || "1") || 1)).toFixed(2);
+      // Map raw database results to PlayerWithPIV objects
+      return result.rows.map(player => {
+        // Calculate PIV based on player stats
+        // This is a simplified calculation - you'd want a more sophisticated algorithm in production
+        const kills = parseInt(player.kills || '0');
+        const deaths = parseInt(player.deaths || '0');
+        const assists = parseInt(player.assists || '0');
+        const firstKills = parseInt(player.first_kills || '0');
+        const firstDeaths = parseInt(player.first_deaths || '0');
         
-        // Format player metrics for frontend using proper schema property names
-        const metrics = {
-          kills: row.kills || 0,
-          deaths: row.deaths || 0,
-          assists: row.assists || 0,
-          flashAssists: row.assistedFlashes || 0,
-          headshotPercentage: row.headshots && row.kills ? 
-            ((row.headshots / Math.max(row.kills, 1)) * 100).toFixed(1) : '0.0',
-          kd: row.kd || 1.0,
-          adr: 0, // Not in our schema, default to 0
-          clutches: 0 // Not in our schema, default to 0
-        };
-
-        const utilityStats = {
-          flashesThrown: row.flashesThrown || 0,
-          smokeGrenades: row.smokesThrown || 0, 
-          heGrenades: row.heThrown || 0,
-          molotovs: row.infernosThrown || 0,
-          totalUtility: row.totalUtilityThrown || 0
-        };
-
-        // Create primary metric for player card
-        const primaryMetric = {
-          value: row.piv || 1.0,
-          label: 'PIV',
-          description: 'Player Impact Value'
-        };
+        // Use KD from database if available, otherwise calculate
+        const kd = parseFloat(player.kd) || (deaths > 0 ? kills / deaths : 1.0);
         
-        // Create the complex nested metrics structure needed by PlayerDetailPage
-        const pivValue = row.piv || 1.0;
-        const kdValue = row.kd || 1.0;
-        const entryValue = row.firstKills / (row.firstKills + row.firstDeaths || 1) || 0.6;
-        const supportValue = row.assistedFlashes / 15 || 0.5;
-        const utilityValue = row.totalUtilityThrown / 200 || 0.6;
-        const clutchValue = 0.7; // Placeholder value
+        // Calculate PIV (in a real app would be more complex)
+        const kdFactor = kd * 0.3;
+        const firstKillRatio = firstDeaths > 0 ? firstKills / firstDeaths : firstKills;
+        const firstKillFactor = firstKillRatio * 0.2;
         
-        // Create complex nested metrics structure for PlayerDetailPage component
-        const complexMetrics = {
-          rcs: {
-            value: 0.75,
-            metrics: {
-              "Entry Kills": entryValue,
-              "Trading": 0.65,
-              "Positioning": 0.72,
-              "Utility Usage": utilityValue,
-              "Support Play": supportValue,
-              "Clutch Factor": clutchValue,
-              "Map Control": 0.68,
-              "Consistency": 0.7
-            }
-          },
-          icf: {
-            value: 0.7,
-            sigma: 0.3
-          },
-          sc: {
-            value: supportValue,
-            metric: "Team Contribution"
-          },
-          osm: 1.1
-        };
+        // Calculate utility factor
+        const flashAssists = parseInt(player.assisted_flashes || '0');
+        const flashesThrown = parseInt(player.flashes_thrown || '10'); // Avoid division by zero
+        const flashFactor = (flashAssists / Math.max(10, flashesThrown)) * 0.15;
         
-        // Create the player object with all required fields
+        let piv = 0.8 + kdFactor + firstKillFactor + flashFactor;
+        
+        // Clamp PIV to reasonable range
+        piv = Math.max(0.5, Math.min(2.0, piv));
+        
+        // Create PlayerWithPIV object
         return {
-          id: row.steam_id || row.id?.toString() || '',
-          name: row.user_name || '',
-          team: row.team_clan_name || '',
-          role: roleEnum,
-          tRole: roleEnum, // Use the same role for T side
-          ctRole: roleEnum, // Use the same role for CT side
-          isIGL: row.is_igl === true,
-          isMainAWPer: row.is_main_awper === true,
-          piv: pivValue,
-          tPIV: pivValue * 0.95, // Slightly modified for T side
-          ctPIV: pivValue * 1.05, // Slightly modified for CT side
-          kd: kdValue,
-          rating: parseFloat(calculatedRating) || 1.0,
-          metrics: metrics,
-          // Add in the complex metrics structure
-          ...complexMetrics,
-          // Add side-specific metrics
+          id: player.steam_id || `player_${player.user_name?.replace(/\s+/g, '_').toLowerCase()}`,
+          name: player.user_name,
+          team: player.team_clan_name,
+          
+          // Default to Support role since we don't have role information
+          role: PlayerRole.Support,
+          tRole: PlayerRole.Support,
+          ctRole: PlayerRole.Support,
+          
+          // Default values for fields not available in database
+          isIGL: false,
+          isMainAWPer: false,
+          
+          // Calculated metrics
+          piv: piv,
+          tPIV: piv * 0.95,
+          ctPIV: piv * 1.05,
+          kd: kd,
+          rating: piv * kd,
+          
+          // Stats from database
+          metrics: {
+            kills: kills,
+            deaths: deaths,
+            assists: assists,
+            flashAssists: flashAssists,
+            headshotPercentage: kills > 0 ? 
+              ((parseInt(player.headshots || '0') / kills) * 100).toFixed(1) : '0.0',
+            kd: kd,
+            adr: 0, // Not available in our data
+            clutches: 0 // Not available in our data
+          },
+          
+          // Utility stats from database
+          utilityStats: {
+            flashesThrown: flashesThrown,
+            smokeGrenades: parseInt(player.smokes_thrown || '0'),
+            heGrenades: parseInt(player.he_thrown || '0'),
+            molotovs: parseInt(player.infernos_thrown || '0'),
+            totalUtility: parseInt(player.total_utility_thrown || '0')
+          },
+          
+          primaryMetric: {
+            value: piv,
+            label: 'PIV',
+            description: 'Player Impact Value'
+          },
+          
+          // Default values for fields not available in database
+          icf: { value: 0.7, sigma: 0.3 },
+          sc: { value: 0.7, metric: "Team Contribution" },
+          osm: 1.1,
           tMetrics: {
             roleMetrics: {
-              "Entry Efficiency": entryValue * 0.9,
+              "Entry Efficiency": 0.7,
               "Site Control": 0.68,
               "Trade Efficiency": 0.72
             }
@@ -181,18 +169,11 @@ export class CleanSupabaseAdapter {
               "Position Rotation": 0.63
             }
           },
-          primaryMetric: primaryMetric,
-          utilityStats: utilityStats,
-          rawStats: {
-            ...row,
-            tFirstKills: row.tFirstKills || 0,
-            tFirstDeaths: row.tFirstDeaths || 0,
-            tRoundsWon: row.tRoundsWon || 0
-          }  // Keep the original row for reference with added properties
+          
+          // Store raw stats
+          rawStats: player
         };
       });
-      
-      return playersWithPIV;
     } catch (error) {
       console.error('Error getting players with PIV:', error);
       return [];
@@ -206,37 +187,57 @@ export class CleanSupabaseAdapter {
    */
   async getTeamsWithTIR(): Promise<TeamWithTIR[]> {
     try {
-      // Use direct SQL query to ensure we have the right field names
-      const query = `SELECT * FROM teams`;
-      const result = await db.execute(query);
-      const teamData = result.rows as any[];
-      
-      console.log(`Found ${teamData.length} teams in teams table`);
-      
-      if (teamData.length === 0) {
-        return [];
-      }
-      
-      // Get all players to associate with teams without event filtering
-      const playersWithPIV = await this.getPlayersWithPIV();
+      // Get all players first
+      const players = await this.getPlayersWithPIV();
       
       // Group players by team
       const playersByTeam = new Map<string, PlayerWithPIV[]>();
-      for (const player of playersWithPIV) {
-        const teamName = player.team || '';
-        if (!playersByTeam.has(teamName)) {
-          playersByTeam.set(teamName, []);
+      for (const player of players) {
+        if (!player.team) continue;
+        
+        if (!playersByTeam.has(player.team)) {
+          playersByTeam.set(player.team, []);
         }
-        playersByTeam.get(teamName)!.push(player);
+        playersByTeam.get(player.team)?.push(player);
       }
       
-      // Transform to TeamWithTIR format
-      const teamsWithTIR: TeamWithTIR[] = teamData.map(team => {
-        const teamName = team.name || '';
-        // Find players for this team
+      // Get all teams from teams table
+      const teamsQuery = `SELECT * FROM teams`;
+      const teamsResult = await this.pool.query(teamsQuery);
+      console.log(`Found ${teamsResult.rows.length} teams in database`);
+      
+      // Process all teams and merge with player data
+      const teams: TeamWithTIR[] = [];
+      
+      for (const teamRow of teamsResult.rows) {
+        const teamName = teamRow.name;
         const teamPlayers = playersByTeam.get(teamName) || [];
         
-        // Count roles for distribution - ensure all possible roles are represented
+        // Sort players by PIV
+        const sortedPlayers = [...teamPlayers].sort((a, b) => (b.piv || 0) - (a.piv || 0));
+        
+        // Calculate team metrics
+        const totalPIV = teamPlayers.reduce((sum, p) => sum + (p.piv || 0), 0);
+        const avgPIV = teamPlayers.length > 0 ? totalPIV / teamPlayers.length : 1.0;
+        
+        // Calculate synergy based on team composition
+        let synergy = 0.85;
+        if (teamPlayers.length >= 2) {
+          const pivValues = teamPlayers.map(p => p.piv || 0);
+          const pivMean = pivValues.reduce((sum, val) => sum + val, 0) / pivValues.length;
+          const pivVariance = pivValues.reduce((sum, val) => sum + Math.pow(val - pivMean, 2), 0) / pivValues.length;
+          const pivStdDev = Math.sqrt(pivVariance);
+          
+          // Higher stdev = lower synergy, lower stdev = higher synergy
+          synergy = 0.85 * (1 - (pivStdDev / 2)); 
+          synergy = Math.max(0.7, Math.min(0.95, synergy));
+        }
+        
+        // Calculate TIR
+        // TIR can come from database if available, otherwise calculate
+        const tir = teamRow.tir || (avgPIV * synergy * Math.min(1.15, 0.9 + (teamPlayers.length * 0.05)));
+        
+        // Count roles
         const roleCount = {
           [PlayerRole.Support]: 0,
           [PlayerRole.AWP]: 0,
@@ -247,123 +248,82 @@ export class CleanSupabaseAdapter {
           [PlayerRole.Rotator]: 0
         };
         
-        // Count roles from player data
+        // Count roles from team players
         for (const player of teamPlayers) {
-          if (player.role && roleCount[player.role] !== undefined) {
+          if (player.role) {
             roleCount[player.role]++;
           }
-          if (player.isIGL && roleCount[PlayerRole.IGL] !== undefined) {
+          if (player.isIGL) {
             roleCount[PlayerRole.IGL]++;
           }
         }
         
-        // Ensure at least one player has each role (for UI display)
-        for (const role in roleCount) {
-          if (roleCount[role as PlayerRole] === 0 && teamPlayers.length > 0) {
-            // Assign a minimum value to avoid UI issues
-            roleCount[role as PlayerRole] = 1;
-          }
+        // Generate strengths and weaknesses
+        const strengths = [];
+        const weaknesses = [];
+        
+        // Check role balance
+        const roleBalance = Object.values(roleCount).filter(count => count > 0).length;
+        if (roleBalance >= 5) {
+          strengths.push("Balanced roster");
+        } else if (roleBalance <= 3) {
+          weaknesses.push("Limited role diversity");
         }
         
-        // Sort players by PIV for topPlayer
-        const sortedByPIV = [...teamPlayers].sort((a, b) => (b.piv || 0) - (a.piv || 0));
-        const topPlayer = sortedByPIV.length > 0 ? {
-          name: sortedByPIV[0].name,
-          piv: sortedByPIV[0].piv
+        // Check AWPers
+        if (roleCount[PlayerRole.AWP] >= 1) {
+          strengths.push("Strong AWP presence");
+        } else {
+          weaknesses.push("Lack of dedicated AWPer");
+        }
+        
+        // Check IGL
+        if (roleCount[PlayerRole.IGL] >= 1) {
+          strengths.push("Strong leadership");
+        } else {
+          weaknesses.push("Needs dedicated IGL");
+        }
+        
+        // Ensure we have at least one strength and weakness
+        if (strengths.length === 0) {
+          strengths.push("Developing team chemistry");
+        }
+        if (weaknesses.length === 0) {
+          weaknesses.push("Needs more experience");
+        }
+        
+        // Get top player
+        const topPlayer = sortedPlayers.length > 0 ? {
+          id: sortedPlayers[0].id,
+          name: sortedPlayers[0].name,
+          piv: sortedPlayers[0].piv
         } : {
-          name: team.top_player_name || teamName + ' Top Player',
-          piv: team.top_player_piv || 1.0
+          id: teamRow.top_player_name ? `player_${teamRow.top_player_name.replace(/\s+/g, '_').toLowerCase()}` : 'unknown',
+          name: teamRow.top_player_name || 'Unknown',
+          piv: teamRow.top_player_piv || 1.0
         };
         
-        // Calculate team aggregated metrics
-        const totalPIV = sortedByPIV.reduce((sum, p) => sum + (p.piv || 0), 0);
-        const averagePIV = sortedByPIV.length > 0 
-          ? totalPIV / sortedByPIV.length 
-          : (Number(team.avg_piv) || 0.8);
-        
-        // Create TeamWithTIR object that meets frontend requirements
-        return {
-          id: team.id?.toString() || `team_${teamName}`,
+        // Create team object
+        teams.push({
+          id: `team_${teamName.replace(/\s+/g, '_').toLowerCase()}`,
           name: teamName,
-          logo: '', // No logo in database, provide default
-          tir: Number(team.tir) || (averagePIV * 1.05), // Derived TIR if missing
-          sumPIV: Number(team.sum_piv) || totalPIV,
-          synergy: Number(team.synergy) || 0.85,
-          avgPIV: averagePIV,
+          logo: '', // No logo available
+          tir: tir,
+          sumPIV: teamRow.sum_piv || totalPIV,
+          synergy: teamRow.synergy || synergy,
+          avgPIV: teamRow.avg_piv || avgPIV,
           topPlayer: topPlayer,
           players: teamPlayers,
-          topPlayers: sortedByPIV.slice(0, 5),
-          wins: 0, // Not in our schema, default to 0
-          losses: 0, // Not in our schema, default to 0
-          // Required for UI
+          topPlayers: sortedPlayers.slice(0, 5),
+          wins: 0, // Not available
+          losses: 0, // Not available
           roleDistribution: roleCount,
-          strengths: ["Balanced roster", "Strong teamwork"], // Default values
-          weaknesses: ["Needs more experience", "Inconsistent performance"] // Default values
-        };
-      });
-      
-      // Generate teams from player data for any teams not found in the database
-      for (const [teamName, players] of playersByTeam.entries()) {
-        // If we already have this team from database, skip it
-        if (teamsWithTIR.some(t => t.name === teamName)) {
-          continue;
-        }
-        
-        // Sort players by PIV
-        const sortedByPIV = [...players].sort((a, b) => (b.piv || 0) - (a.piv || 0));
-        const totalPIV = sortedByPIV.reduce((sum, p) => sum + (p.piv || 0), 0);
-        const averagePIV = players.length > 0 ? totalPIV / players.length : 0.8;
-        
-        // Count roles
-        const roleCount = {
-          [PlayerRole.Support]: 0, 
-          [PlayerRole.AWP]: 0,
-          [PlayerRole.Lurker]: 0, 
-          [PlayerRole.IGL]: 0,
-          [PlayerRole.Spacetaker]: 0,
-          [PlayerRole.Anchor]: 0,
-          [PlayerRole.Rotator]: 0
-        };
-        
-        for (const player of players) {
-          if (player.role && roleCount[player.role] !== undefined) {
-            roleCount[player.role]++;
-          }
-          if (player.isIGL && roleCount[PlayerRole.IGL] !== undefined) {
-            roleCount[PlayerRole.IGL]++;
-          }
-        }
-        
-        const topPlayer = sortedByPIV.length > 0 ? {
-          name: sortedByPIV[0].name,
-          piv: sortedByPIV[0].piv
-        } : {
-          name: teamName + ' Top Player',
-          piv: 1.0
-        };
-        
-        // Create generated team
-        teamsWithTIR.push({
-          id: `team_${teamName}`,
-          name: teamName,
-          logo: '',
-          tir: averagePIV * 1.05,
-          sumPIV: totalPIV,
-          synergy: 0.85,
-          synergyFactor: 0.85, // Added for interface compatibility 
-          avgPIV: averagePIV,
-          topPlayer: topPlayer,
-          players: players,
-          topPlayers: sortedByPIV.slice(0, 5),
-          wins: 0,
-          losses: 0,
-          roleDistribution: roleCount,
-          strengths: ["Balanced roster", "Strong teamwork"],
-          weaknesses: ["Needs more experience", "Inconsistent performance"]
+          strengths: strengths.slice(0, 3),
+          weaknesses: weaknesses.slice(0, 3)
         });
       }
       
-      return teamsWithTIR;
+      return teams;
     } catch (error) {
       console.error('Error getting teams with TIR:', error);
       return [];
@@ -371,5 +331,4 @@ export class CleanSupabaseAdapter {
   }
 }
 
-// Singleton instance
 export const cleanSupabaseAdapter = new CleanSupabaseAdapter();

@@ -31,8 +31,8 @@ export class CleanSupabaseAdapter {
    */
   async getEvents(): Promise<{ id: number, name: string }[]> {
     try {
-      // Use direct SQL query for now to ensure it works
-      const query = `SELECT event_id as id, event_name as name FROM events`;
+      // Use direct SQL query matching the actual schema
+      const query = `SELECT id, name FROM events`;
       const result = await db.execute(query);
       
       return result.rows as { id: number, name: string }[];
@@ -275,7 +275,7 @@ export class CleanSupabaseAdapter {
         const totalPIV = sortedByPIV.reduce((sum, p) => sum + (p.piv || 0), 0);
         const averagePIV = sortedByPIV.length > 0 
           ? totalPIV / sortedByPIV.length 
-          : (Number(team.avg_piv) || 0.8);
+          : (Number(team.avgPIV) || 0.8);
         
         // Create TeamWithTIR object that meets frontend requirements
         return {
@@ -283,14 +283,14 @@ export class CleanSupabaseAdapter {
           name: teamName,
           logo: '', // No logo in database, provide default
           tir: Number(team.tir) || (averagePIV * 1.05), // Derived TIR if missing
-          sumPIV: Number(team.sum_piv) || totalPIV,
+          sumPIV: Number(team.sumPIV) || totalPIV,
           synergy: Number(team.synergy) || 0.85,
           avgPIV: averagePIV,
           topPlayer: topPlayer,
           players: teamPlayers,
           topPlayers: sortedByPIV.slice(0, 5),
-          wins: Number(team.wins) || 0,
-          losses: Number(team.losses) || 0,
+          wins: 0, // Not in our schema, default to 0
+          losses: 0, // Not in our schema, default to 0
           // Required for UI
           roleDistribution: roleCount,
           strengths: ["Balanced roster", "Strong teamwork"], // Default values

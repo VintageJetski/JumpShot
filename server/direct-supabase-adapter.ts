@@ -34,25 +34,41 @@ export class DirectSupabaseAdapter {
         
         // Create PlayerWithPIV object
         return {
-          id: player.steam_id,
-          name: player.user_name,
-          teamName: player.team_clan_name,
-          team_id: 0,
+          id: player.steam_id || `player_${Math.random().toString(36).substring(2, 10)}`,
+          name: player.user_name || 'Unknown Player',
+          team: player.team_clan_name || 'No Team',
+          teamId: 0,
           role: role,
+          tRole: role, // Consistent with the schema
+          ctRole: role, // Consistent with the schema
           isIGL: isIglFlag,
-          piv: player.piv || 1.0,
-          kd: player.kd || (player.kills / Math.max(1, player.deaths)),
-          rating: player.rating || 1.0,
-          // Additional calculated fields
+          piv: Number(player.piv) || 1.0,
+          kd: Number(player.kd) || (Number(player.kills || 0) / Math.max(1, Number(player.deaths || 1))),
+          rating: Number(player.rating || player.piv) || 1.0,
+          // Required metrics
           metrics: {
-            kills: player.kills || 0,
-            deaths: player.deaths || 0,
-            assists: player.assists || 0,
-            adr: player.adr || 0,
-            kast: player.kast || 0,
-            opening_success: player.first_kills_success || 0,
-            headshots: player.headshots || 0,
-            clutches: player.clutches_won || 0,
+            kills: Number(player.kills) || 0,
+            deaths: Number(player.deaths) || 0,
+            assists: Number(player.assists) || 0,
+            adr: Number(player.adr) || 0,
+            kast: Number(player.kast) || 0,
+            opening_success: Number(player.first_kills) || 0,
+            headshots: Number(player.headshots) || 0,
+            clutches: Number(player.clutches_won) || 0,
+          },
+          // Primary metric required by the UI
+          primaryMetric: {
+            name: 'PIV',
+            value: Number(player.piv) || 1.0
+          },
+          // Required by the UI
+          rawStats: {
+            steamId: player.steam_id || '',
+            kills: Number(player.kills) || 0,
+            deaths: Number(player.deaths) || 0,
+            assists: Number(player.assists) || 0,
+            kd: Number(player.kd) || 1.0,
+            rating: Number(player.piv) || 1.0
           }
         };
       });
@@ -119,20 +135,31 @@ export class DirectSupabaseAdapter {
           }
         }
         
-        // Create TeamWithTIR object
+        // Sort players by PIV for topPlayer
+        const sortedByPIV = [...teamPlayers].sort((a, b) => (b.piv || 0) - (a.piv || 0));
+        const topPlayer = sortedByPIV.length > 0 ? {
+          name: sortedByPIV[0].name,
+          piv: sortedByPIV[0].piv
+        } : {
+          name: team.top_player_name || teamName + ' Top Player',
+          piv: team.top_player_piv || 1.0
+        };
+        
+        // Create TeamWithTIR object that meets frontend requirements
         return {
-          id: `${teamName}_${eventId}`,
+          id: team.id?.toString() || `${teamName}_${eventId}`,
           name: teamName,
-          logo: '',
-          players: teamPlayers.map(p => p.id),
-          tir: team.tir || 1.0,
-          averagePIV: team.avg_piv || 0,
-          wins: team.wins || 0,
-          losses: team.losses || 0,
-          eventId: eventId,
-          roleDistribution: roleCount,
-          strengths: team.strengths ? team.strengths.split(',') : ["Balanced roster"],
-          weaknesses: team.weaknesses ? team.weaknesses.split(',') : ["Needs more experience"]
+          logo: team.logo || '',
+          tir: Number(team.tir) || 1.0,
+          sumPIV: Number(team.sum_piv) || sortedByPIV.reduce((sum, p) => sum + (p.piv || 0), 0),
+          synergy: Number(team.synergy) || 1.0,
+          avgPIV: Number(team.avg_piv) || (sortedByPIV.length ? sortedByPIV.reduce((sum, p) => sum + (p.piv || 0), 0) / sortedByPIV.length : 0),
+          topPlayer: topPlayer, // Using the safe topPlayer object with required properties
+          players: teamPlayers,
+          topPlayers: sortedByPIV.slice(0, 5),
+          wins: Number(team.wins) || 0,
+          losses: Number(team.losses) || 0,
+          eventId: eventId
         };
       });
       
@@ -144,10 +171,46 @@ export class DirectSupabaseAdapter {
   }
   
   /**
-   * Get all available events (simulated for now)
+   * Get all available events from the database
    */
   async getEvents(): Promise<{ id: number, name: string }[]> {
-    return [{ id: 1, name: 'IEM_Katowice_2025' }];
+    try {
+      // Try to find event_id in player_stats table
+      const query = `
+        SELECT DISTINCT 
+          COALESCE(event_id, 1) as id,
+          CASE 
+            WHEN event_id = 1 THEN 'IEM Katowice 2025'
+            WHEN event_id = 2 THEN 'ESL Pro League S19'
+            ELSE 'Tournament ' || COALESCE(event_id, 1)::text
+          END as name
+        FROM player_stats
+        ORDER BY id
+      `;
+      
+      const result = await db.execute(query);
+      
+      if (result.rows && result.rows.length > 0) {
+        console.log(`Found ${result.rows.length} events in database`);
+        return result.rows.map(row => ({
+          id: Number(row.id),
+          name: row.name
+        }));
+      }
+      
+      // Fallback to at least two events
+      return [
+        { id: 1, name: 'IEM Katowice 2025' },
+        { id: 2, name: 'ESL Pro League S19' }
+      ];
+    } catch (error) {
+      console.error('Error getting events:', error);
+      // Fallback to at least two events
+      return [
+        { id: 1, name: 'IEM Katowice 2025' },
+        { id: 2, name: 'ESL Pro League S19' }
+      ];
+    }
   }
   
   /**

@@ -4,8 +4,8 @@ import bodyParser from 'body-parser';
 import session from 'express-session';
 import { setupVite } from './vite';
 import { setupAuth, ensureAuthenticated } from './auth';
-import { directSupabaseStorage } from './direct-supabase-storage';
-import { DataRefreshManager } from './dataRefreshManager';
+import { cleanSupabaseService } from './clean-supabase-service';
+import cleanApiRoutes from './clean-api-routes';
 
 // Create Express app
 const app: Express = express();
@@ -29,72 +29,28 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Set up authentication routes
 setupAuth(app);
 
-// API routes
-app.get('/api/events', async (req, res) => {
-  try {
-    const events = await directSupabaseStorage.getEvents();
-    res.json(events);
-  } catch (error) {
-    console.error('Error fetching events:', error);
-    res.status(500).json({ error: 'Failed to fetch events' });
-  }
-});
-
-app.get('/api/players', async (req, res) => {
-  try {
-    const eventId = req.query.eventId ? parseInt(req.query.eventId as string, 10) : 1;
-    const players = await directSupabaseStorage.getPlayersWithPIV(eventId);
-    res.json(players);
-  } catch (error) {
-    console.error('Error fetching players:', error);
-    res.status(500).json({ error: 'Failed to fetch players' });
-  }
-});
-
-app.get('/api/teams', async (req, res) => {
-  try {
-    const eventId = req.query.eventId ? parseInt(req.query.eventId as string, 10) : 1;
-    const teams = await directSupabaseStorage.getTeamsWithTIR(eventId);
-    res.json(teams);
-  } catch (error) {
-    console.error('Error fetching teams:', error);
-    res.status(500).json({ error: 'Failed to fetch teams' });
-  }
-});
-
-// Check database connection endpoint
-app.get('/api/check-connection', async (req, res) => {
-  try {
-    const isConnected = await directSupabaseStorage.checkConnection();
-    res.json({ 
-      connected: isConnected,
-      lastRefresh: directSupabaseStorage.getLastRefreshTime()
-    });
-  } catch (error) {
-    console.error('Error checking connection:', error);
-    res.status(500).json({ error: 'Failed to check connection' });
-  }
-});
+// Register our clean API routes
+app.use('/api', cleanApiRoutes);
 
 // Force database refresh (admin only)
 app.post('/api/refresh-data', ensureAuthenticated, async (req, res) => {
   try {
     // Clear cache to force refresh 
-    directSupabaseStorage.clearCache();
+    cleanSupabaseService.clearCache();
     
-    // Check connection to refresh data
-    await directSupabaseStorage.checkConnection();
+    // Check connection and refresh data
+    await cleanSupabaseService.checkConnection();
+    await cleanSupabaseService.refreshData();
     
-    // Get fresh data
-    const eventId = req.body.eventId || 1;
-    const players = await directSupabaseStorage.getPlayersWithPIV(eventId);
-    const teams = await directSupabaseStorage.getTeamsWithTIR(eventId);
+    // Get fresh data stats
+    const players = await cleanSupabaseService.getPlayersWithPIV();
+    const teams = await cleanSupabaseService.getTeamsWithTIR();
     
     res.json({ 
       success: true,
       playerCount: players.length,
       teamCount: teams.length,
-      dataSource: directSupabaseStorage.isSupabaseAvailable() ? 'Supabase' : 'CSV fallback'
+      dataSource: cleanSupabaseService.isSupabaseAvailable() ? 'Supabase' : 'CSV fallback'
     });
   } catch (error) {
     console.error('Error refreshing data:', error);
@@ -117,18 +73,22 @@ setupVite(app, httpServer);
 const PORT = process.env.PORT || 5000;
 
 async function start() {
-  console.log('Starting server with Direct Supabase integration...');
+  console.log('Starting server with clean Supabase integration...');
   
-  // Initialize and start the data refresh manager with the singleton instance
-  const refreshManager = DataRefreshManager.getInstance();
-  refreshManager.start();
-  
-  // Test Supabase connection
-  const isConnected = await directSupabaseStorage.checkConnection();
+  // Initialize data by checking connection and doing initial refresh
+  const isConnected = await cleanSupabaseService.checkConnection();
   console.log(`Supabase database connection: ${isConnected ? 'Available ✅' : 'Unavailable ❌'}`);
   
-  if (!isConnected) {
-    console.log('Using CSV fallback data source');
+  if (isConnected) {
+    console.log('Refreshing data from Supabase...');
+    await cleanSupabaseService.refreshData();
+    
+    // Get data stats
+    const players = await cleanSupabaseService.getPlayersWithPIV();
+    const teams = await cleanSupabaseService.getTeamsWithTIR();
+    console.log(`Loaded ${players.length} players and ${teams.length} teams from Supabase`);
+  } else {
+    console.error('Warning: Could not connect to Supabase. Please check your database connection string.');
   }
   
   // Start the server

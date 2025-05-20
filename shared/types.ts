@@ -87,28 +87,63 @@ export interface PlayerWithPIV {
   id: string;
   name: string;
   team: string;
-  role: PlayerRole;
-  tRole: PlayerRole;
-  ctRole: PlayerRole;
+  role?: PlayerRole;
+  tRole?: PlayerRole;
+  ctRole?: PlayerRole;
   isIGL: boolean;
+  isMainAWPer?: boolean;
   piv: number;
-  tPIV: number;
-  ctPIV: number;
+  tPIV?: number;
+  ctPIV?: number;
   kd: number;
-  primaryMetric: {
-    name: string;
-    value: number;
+  rating?: number;
+  metrics: {
+    kills: number;
+    deaths: number;
+    assists: number;
+    flashAssists: number;
+    headshotPercentage: string;
+    kd: number;
+    adr: number;
+    clutches: number;
   };
-  rawStats?: RawStats;
-  metrics?: PlayerMetrics;
+  primaryMetric: {
+    value: number;
+    label: string;
+    description: string;
+  };
+  utilityStats?: {
+    flashesThrown: number;
+    smokeGrenades: number;
+    heGrenades: number;
+    molotovs: number;
+    totalUtility: number;
+  };
+  rawStats?: any; 
 }
 
 export interface TeamWithTIR {
-  id?: string;
+  id: string;
   name: string;
+  logo?: string;
   tir: number;
   players: PlayerWithPIV[];
-  synergyFactor: number;
+  topPlayers: PlayerWithPIV[];
+  wins: number;
+  losses: number;
+  sumPIV: number;
+  synergy: number;
+  synergyFactor?: number;
+  avgPIV: number;
+  topPlayer: {
+    name: string;
+    piv: number;
+  };
+  roleDistribution?: {
+    [key in PlayerRole]?: number;
+  };
+  strengths?: string[];
+  weaknesses?: string[];
   
   // Additional fields for visualization
   matchesWon?: number;
@@ -120,7 +155,6 @@ export interface TeamWithTIR {
   tRoundsPlayed?: number;
   ctRoundsWon?: number;
   ctRoundsPlayed?: number;
-  averagePIV?: number;
   teamSynergy?: number;
   mapPool?: string[];
 }

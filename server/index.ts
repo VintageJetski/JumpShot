@@ -4,8 +4,7 @@ import bodyParser from 'body-parser';
 import session from 'express-session';
 import { setupVite } from './vite';
 import { setupAuth, ensureAuthenticated } from './auth';
-import { cleanSupabaseService } from './clean-supabase-service';
-import cleanApiRoutes from './clean-api-routes';
+import { getPlayersWithPIV, getTeamsWithTIR, checkDatabaseConnection } from './final-solution';
 
 // Create Express app
 const app: Express = express();
@@ -29,8 +28,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Set up authentication routes
 setupAuth(app);
 
-// Register our clean API routes
-app.use('/api', cleanApiRoutes);
+// Register our API routes using the final solution
+app.use('/api/cs2', createFinalRoutes());
 
 // Force database refresh (admin only)
 app.post('/api/refresh-data', ensureAuthenticated, async (req, res) => {

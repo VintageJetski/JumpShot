@@ -12,12 +12,12 @@ import {
 } from '@shared/schema';
 import { SupabaseAdapter } from './supabase-adapter';
 import { processPlayerStats } from './playerAnalytics';
-import { evaluatePlayerRoles } from './playerRoles';
 import { supaDb } from './supabase-db';
 import { testSupabaseConnection } from './supabase-db';
 import { eq } from 'drizzle-orm';
 import { db } from './db';
-import { loadNewPlayerStats, loadRoundData } from './csvParser';
+import { loadNewPlayerStats } from './newDataParser';
+import { loadRoundData } from './roundAnalytics';
 import { loadPlayerRoles } from './roleParser';
 
 /**
@@ -460,6 +460,17 @@ export class SupabaseStorage implements IStorage {
     }
     
     return this.cachedTeamData?.find(t => t.name === name);
+  }
+  
+  /**
+   * Get a team by ID
+   */
+  async getTeamById(id: string): Promise<TeamWithTIR | undefined> {
+    if (!this.cachedTeamData) {
+      await this.refreshData();
+    }
+    
+    return this.cachedTeamData?.find(t => t.id === id);
   }
   
   /**

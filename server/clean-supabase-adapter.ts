@@ -31,8 +31,10 @@ export class CleanSupabaseAdapter {
    */
   async getEvents(): Promise<{ id: number, name: string }[]> {
     try {
-      const query = `SELECT id, name FROM events ORDER BY start_date DESC`;
+      // Use direct SQL query for now to ensure it works
+      const query = `SELECT event_id as id, event_name as name FROM events`;
       const result = await db.execute(query);
+      
       return result.rows as { id: number, name: string }[];
     } catch (error) {
       console.error('Error getting events:', error);
@@ -46,11 +48,8 @@ export class CleanSupabaseAdapter {
    */
   async getPlayersWithPIV(): Promise<PlayerWithPIV[]> {
     try {
-      // Get all players without event filtering
-      const query = `SELECT * FROM player_stats`;
-      
-      const result = await db.execute(query);
-      const playerRows = result.rows as any[];
+      // Use the proper schema definition for player_stats table
+      const playerRows = await db.query.playerStats.findMany();
       
       console.log(`Found ${playerRows.length} players in player_stats table`);
       
@@ -81,43 +80,44 @@ export class CleanSupabaseAdapter {
           }
         }
 
-        // Calculate rating as a derived value if not present
-        const rating = parseFloat(row.rating) || 
-          ((parseFloat(row.kd) || 1) * (parseFloat(row.piv) || 1)).toFixed(2);
+        // Calculate rating as a derived value
+        const calculatedRating = ((parseFloat(row.kd?.toString() || "1") || 1) * 
+                              (parseFloat(row.piv?.toString() || "1") || 1)).toFixed(2);
         
-        // Format player metrics for frontend
+        // Format player metrics for frontend using proper schema property names
         const metrics = {
-          kills: parseInt(row.kills) || 0,
-          deaths: parseInt(row.deaths) || 0,
-          assists: parseInt(row.assists) || 0,
-          flashAssists: parseInt(row.assisted_flashes) || 0,
-          headshotPercentage: row.headshots ? (parseInt(row.headshots) / parseInt(row.kills) * 100).toFixed(1) : '0.0',
-          kd: parseFloat(row.kd) || 1.0,
-          adr: parseInt(row.adr) || 0,
-          clutches: parseInt(row.clutches) || 0
+          kills: row.kills || 0,
+          deaths: row.deaths || 0,
+          assists: row.assists || 0,
+          flashAssists: row.assistedFlashes || 0,
+          headshotPercentage: row.headshots && row.kills ? 
+            ((row.headshots / Math.max(row.kills, 1)) * 100).toFixed(1) : '0.0',
+          kd: row.kd || 1.0,
+          adr: 0, // Not in our schema, default to 0
+          clutches: 0 // Not in our schema, default to 0
         };
 
         const utilityStats = {
-          flashesThrown: parseInt(row.flashes_thrown) || 0,
-          smokeGrenades: parseInt(row.smokes_thrown) || 0, 
-          heGrenades: parseInt(row.he_thrown) || 0,
-          molotovs: parseInt(row.infernos_thrown) || 0,
-          totalUtility: parseInt(row.total_utility_thrown) || 0
+          flashesThrown: row.flashesThrown || 0,
+          smokeGrenades: row.smokesThrown || 0, 
+          heGrenades: row.heThrown || 0,
+          molotovs: row.infernosThrown || 0,
+          totalUtility: row.totalUtilityThrown || 0
         };
 
         // Create primary metric for player card
         const primaryMetric = {
-          value: parseFloat(row.piv) || 1.0,
+          value: row.piv || 1.0,
           label: 'PIV',
           description: 'Player Impact Value'
         };
         
         // Create the complex nested metrics structure needed by PlayerDetailPage
-        const pivValue = parseFloat(row.piv) || 1.0;
-        const kdValue = parseFloat(row.kd) || 1.0;
-        const entryValue = parseInt(row.first_kills) / (parseInt(row.first_kills) + parseInt(row.first_deaths) || 1) || 0.6;
-        const supportValue = parseInt(row.assisted_flashes) / 15 || 0.5;
-        const utilityValue = parseInt(row.total_utility_thrown) / 200 || 0.6;
+        const pivValue = row.piv || 1.0;
+        const kdValue = row.kd || 1.0;
+        const entryValue = row.firstKills / (row.firstKills + row.firstDeaths || 1) || 0.6;
+        const supportValue = row.assistedFlashes / 15 || 0.5;
+        const utilityValue = row.totalUtilityThrown / 200 || 0.6;
         const clutchValue = 0.7; // Placeholder value
         
         // Create complex nested metrics structure for PlayerDetailPage component
@@ -148,19 +148,19 @@ export class CleanSupabaseAdapter {
         
         // Create the player object with all required fields
         return {
-          id: row.steam_id || row.id?.toString() || '',
-          name: row.user_name || '',
-          team: row.team_clan_name || '',
+          id: row.steamId || row.id?.toString() || '',
+          name: row.userName || '',
+          team: row.teamName || '',
           role: roleEnum,
           tRole: roleEnum, // Use the same role for T side
           ctRole: roleEnum, // Use the same role for CT side
-          isIGL: row.is_igl === true,
-          isMainAWPer: row.is_main_awper === true,
+          isIGL: row.isIGL === true,
+          isMainAWPer: row.isMainAwper === true,
           piv: pivValue,
           tPIV: pivValue * 0.95, // Slightly modified for T side
           ctPIV: pivValue * 1.05, // Slightly modified for CT side
           kd: kdValue,
-          rating: parseFloat(rating) || 1.0,
+          rating: parseFloat(calculatedRating) || 1.0,
           metrics: metrics,
           // Add in the complex metrics structure
           ...complexMetrics,
@@ -183,9 +183,9 @@ export class CleanSupabaseAdapter {
           utilityStats: utilityStats,
           rawStats: {
             ...row,
-            tFirstKills: parseInt(row.t_first_kills) || 0,
-            tFirstDeaths: parseInt(row.t_first_deaths) || 0,
-            tRoundsWon: parseInt(row.t_rounds_won) || 0
+            tFirstKills: row.tFirstKills || 0,
+            tFirstDeaths: row.tFirstDeaths || 0,
+            tRoundsWon: row.tRoundsWon || 0
           }  // Keep the original row for reference with added properties
         };
       });
@@ -204,11 +204,8 @@ export class CleanSupabaseAdapter {
    */
   async getTeamsWithTIR(): Promise<TeamWithTIR[]> {
     try {
-      // Fetch all team data from teams table without event filtering
-      const query = `SELECT * FROM teams`;
-      
-      const result = await db.execute(query);
-      const teamData = result.rows as any[];
+      // Use the proper schema definition for teams table
+      const teamData = await db.query.teams.findMany();
       
       console.log(`Found ${teamData.length} teams in teams table`);
       
@@ -270,8 +267,8 @@ export class CleanSupabaseAdapter {
           name: sortedByPIV[0].name,
           piv: sortedByPIV[0].piv
         } : {
-          name: team.top_player_name || teamName + ' Top Player',
-          piv: team.top_player_piv || 1.0
+          name: team.topPlayerName || teamName + ' Top Player',
+          piv: team.topPlayerPIV || 1.0
         };
         
         // Calculate team aggregated metrics

@@ -6,6 +6,7 @@ import { Target, Shield, CircleDot, Gauge, ZapIcon, Brain, FlameIcon, Users, Zap
 
 interface StatisticalOutliersProps {
   players: PlayerWithPIV[];
+  eventId?: number;
 }
 
 interface OutlierCard {
@@ -17,18 +18,21 @@ interface OutlierCard {
   description: string;
 }
 
-const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players }) => {
+const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players, eventId }) => {
   const [, setLocation] = useLocation();
   
   // Find outliers based on specific metrics
   const findOutliers = (): OutlierCard[] => {
     if (!players || players.length === 0) return [];
     
+    // Using the players directly as they're already filtered by eventId from the API call
+    const filteredPlayers = players;
+    
     // Results array
     const outliers: OutlierCard[] = [];
     
     // Find highest headshot player
-    const headshotPlayer = [...players]
+    const headshotPlayer = [...filteredPlayers]
       .filter(p => p.rawStats && typeof p.rawStats.headshots === 'number' && typeof p.rawStats.kills === 'number')
       .sort((a, b) => 
         (b.rawStats.headshots / Math.max(b.rawStats.kills, 1)) - 

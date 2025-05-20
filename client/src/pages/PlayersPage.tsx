@@ -273,7 +273,7 @@ export default function PlayersPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            Ranked by Player Impact Value (PIV)
+            {selectedEventId ? "Event-specific players" : "All events combined"} - Ranked by Player Impact Value (PIV)
           </motion.p>
         </motion.div>
         

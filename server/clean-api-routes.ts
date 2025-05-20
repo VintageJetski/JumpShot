@@ -43,7 +43,20 @@ router.get('/players/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Player not found' });
     }
     
-    res.json(player);
+    // Restructure player data to match what PlayerDetailPage component expects
+    const restructuredPlayer = {
+      ...player,
+      // Move nested metrics into the structure expected by PlayerDetailPage
+      metrics: {
+        ...player.metrics,
+        rcs: player.rcs,
+        icf: player.icf,
+        sc: player.sc,
+        osm: player.osm
+      }
+    };
+    
+    res.json(restructuredPlayer);
   } catch (error) {
     console.error('Error fetching player:', error);
     res.status(500).json({ error: 'Failed to fetch player data' });

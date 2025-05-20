@@ -124,51 +124,141 @@ export class CleanSupabaseService {
   }
 
   /**
-   * Get players with PIV values
-   * @param eventId Optional event ID to filter by (undefined returns players from all events)
+   * Get players with PIV values - amalgamated across all events
    */
-  public async getPlayersWithPIV(eventId?: number): Promise<PlayerWithPIV[]> {
+  public async getPlayersWithPIV(): Promise<PlayerWithPIV[]> {
     // If no cached data or first time, fetch fresh data
     if (this.cachedPlayersByEvent.size === 0) {
       await this.refreshData();
     }
     
-    // If specific event requested, return just those players
-    if (eventId !== undefined) {
-      return this.cachedPlayersByEvent.get(eventId) || [];
-    }
+    // Create a map to combine players by their unique ID
+    const playerMap = new Map<string, PlayerWithPIV>();
     
-    // Otherwise return all players from all events
-    const allPlayers: PlayerWithPIV[] = [];
+    // Process each event's players
     for (const players of this.cachedPlayersByEvent.values()) {
-      allPlayers.push(...players);
+      for (const player of players) {
+        if (!playerMap.has(player.id)) {
+          // First time seeing this player - add them to the map
+          playerMap.set(player.id, {...player});
+        } else {
+          // Player already exists - combine their stats
+          const existingPlayer = playerMap.get(player.id)!;
+          
+          // Combine raw stats
+          if (existingPlayer.rawStats && player.rawStats) {
+            // Sum numerical stats
+            for (const key in player.rawStats) {
+              if (typeof player.rawStats[key] === 'number') {
+                existingPlayer.rawStats[key] = (existingPlayer.rawStats[key] || 0) + player.rawStats[key];
+              }
+            }
+          }
+          
+          // Recalculate derived metrics based on combined raw stats
+          if (existingPlayer.rawStats) {
+            // Recalculate averages like K/D ratio
+            if (existingPlayer.rawStats.kills !== undefined && existingPlayer.rawStats.deaths !== undefined) {
+              existingPlayer.kd = existingPlayer.rawStats.deaths > 0 
+                ? existingPlayer.rawStats.kills / existingPlayer.rawStats.deaths 
+                : existingPlayer.rawStats.kills;
+            }
+            
+            // Update PIV - weighted average based on rounds played
+            const existingRounds = existingPlayer.rawStats.roundsPlayed || 0;
+            const currentRounds = player.rawStats?.roundsPlayed || 0;
+            const totalRounds = existingRounds + currentRounds;
+            
+            if (totalRounds > 0) {
+              // Calculate weighted average of PIV based on rounds played
+              existingPlayer.piv = (
+                (existingPlayer.piv * existingRounds) + 
+                (player.piv * currentRounds)
+              ) / totalRounds;
+              
+              // Same for side-specific PIV
+              if (existingPlayer.ctPIV !== undefined && player.ctPIV !== undefined) {
+                existingPlayer.ctPIV = (
+                  (existingPlayer.ctPIV * existingRounds) + 
+                  (player.ctPIV * currentRounds)
+                ) / totalRounds;
+              }
+              
+              if (existingPlayer.tPIV !== undefined && player.tPIV !== undefined) {
+                existingPlayer.tPIV = (
+                  (existingPlayer.tPIV * existingRounds) + 
+                  (player.tPIV * currentRounds)
+                ) / totalRounds;
+              }
+            }
+          }
+        }
+      }
     }
     
-    return allPlayers;
+    // Convert the map back to an array
+    return Array.from(playerMap.values());
   }
 
   /**
-   * Get teams with TIR values
-   * @param eventId Optional event ID to filter by (undefined returns teams from all events)
+   * Get teams with TIR values - amalgamated across all events
    */
-  public async getTeamsWithTIR(eventId?: number): Promise<TeamWithTIR[]> {
+  public async getTeamsWithTIR(): Promise<TeamWithTIR[]> {
     // If no cached data or first time, fetch fresh data
     if (this.cachedTeamsByEvent.size === 0) {
       await this.refreshData();
     }
     
-    // If specific event requested, return just those teams
-    if (eventId !== undefined) {
-      return this.cachedTeamsByEvent.get(eventId) || [];
-    }
+    // Create a map to combine teams by their unique ID
+    const teamMap = new Map<string, TeamWithTIR>();
     
-    // Otherwise return all teams from all events
-    const allTeams: TeamWithTIR[] = [];
+    // Process each event's teams
     for (const teams of this.cachedTeamsByEvent.values()) {
-      allTeams.push(...teams);
+      for (const team of teams) {
+        if (!teamMap.has(team.id)) {
+          // First time seeing this team - add it to the map
+          teamMap.set(team.id, {...team});
+        } else {
+          // Team already exists - combine their stats
+          const existingTeam = teamMap.get(team.id)!;
+          
+          // Combine match statistics
+          existingTeam.wins = (existingTeam.wins || 0) + (team.wins || 0);
+          existingTeam.losses = (existingTeam.losses || 0) + (team.losses || 0);
+          
+          // Average the TIR (team impact rating) - weighted by number of matches
+          const existingMatches = (existingTeam.wins || 0) + (existingTeam.losses || 0);
+          const currentMatches = (team.wins || 0) + (team.losses || 0);
+          const totalMatches = existingMatches + currentMatches;
+          
+          if (totalMatches > 0 && existingTeam.tir !== undefined && team.tir !== undefined) {
+            // Weighted average for TIR based on number of matches
+            existingTeam.tir = (
+              (existingTeam.tir * existingMatches) + 
+              (team.tir * currentMatches)
+            ) / totalMatches;
+          }
+          
+          // Combine players from both teams (we'll rely on player amalgamation to handle duplicates)
+          if (team.players && team.players.length > 0) {
+            if (!existingTeam.players) {
+              existingTeam.players = [];
+            }
+            
+            // Merge in any players that don't already exist in the team
+            const existingPlayerIds = new Set(existingTeam.players.map(p => p.id));
+            for (const player of team.players) {
+              if (!existingPlayerIds.has(player.id)) {
+                existingTeam.players.push(player);
+              }
+            }
+          }
+        }
+      }
     }
     
-    return allTeams;
+    // Convert the map back to an array
+    return Array.from(teamMap.values());
   }
 
   /**

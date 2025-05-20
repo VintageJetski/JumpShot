@@ -31,15 +31,12 @@ router.get('/events', async (req: Request, res: Response) => {
 });
 
 /**
- * Get all players with PIV
+ * Get all players with PIV from all events combined
  */
 router.get('/players', async (req: Request, res: Response) => {
   try {
-    // Get optional event ID from query params
-    const eventId = req.query.eventId ? parseInt(req.query.eventId as string, 10) : undefined;
-    
-    // Filter players by event if specified
-    const players = await cleanSupabaseService.getPlayersWithPIV(eventId);
+    // Get amalgamated player data across all events
+    const players = await cleanSupabaseService.getPlayersWithPIV();
     res.json(players);
   } catch (error) {
     console.error('Error fetching players:', error);
@@ -81,15 +78,12 @@ router.get('/players/:id', async (req: Request, res: Response) => {
 });
 
 /**
- * Get all teams with TIR
+ * Get all teams with TIR across all events
  */
 router.get('/teams', async (req: Request, res: Response) => {
   try {
-    // Get optional event ID from query params
-    const eventId = req.query.eventId ? parseInt(req.query.eventId as string, 10) : undefined;
-    
-    // Filter teams by event if specified
-    const teams = await cleanSupabaseService.getTeamsWithTIR(eventId);
+    // Get amalgamated team data across all events
+    const teams = await cleanSupabaseService.getTeamsWithTIR();
     res.json(teams);
   } catch (error) {
     console.error('Error fetching teams:', error);
@@ -98,15 +92,14 @@ router.get('/teams', async (req: Request, res: Response) => {
 });
 
 /**
- * Get a team by ID
+ * Get a team by ID (using amalgamated data across all events)
  */
 router.get('/teams/:id', async (req: Request, res: Response) => {
   try {
     const teamId = req.params.id;
-    // Get optional event ID from query params
-    const eventId = req.query.eventId ? parseInt(req.query.eventId as string, 10) : undefined;
     
-    const teams = await cleanSupabaseService.getTeamsWithTIR(eventId);
+    // Get all teams from all events
+    const teams = await cleanSupabaseService.getTeamsWithTIR();
     const team = teams.find(t => t.id === teamId);
     
     if (!team) {
@@ -121,15 +114,14 @@ router.get('/teams/:id', async (req: Request, res: Response) => {
 });
 
 /**
- * Get players for a specific team
+ * Get players for a specific team (using amalgamated data across all events)
  */
 router.get('/teams/:id/players', async (req: Request, res: Response) => {
   try {
     const teamId = req.params.id;
-    // Get optional event ID from query params
-    const eventId = req.query.eventId ? parseInt(req.query.eventId as string, 10) : undefined;
     
-    const teams = await cleanSupabaseService.getTeamsWithTIR(eventId);
+    // Get all teams across all events
+    const teams = await cleanSupabaseService.getTeamsWithTIR();
     const team = teams.find(t => t.id === teamId);
     
     if (!team) {

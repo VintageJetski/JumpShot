@@ -1,6 +1,11 @@
-import { Pool } from 'pg';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import * as schema from '@shared/schema';
+import { Pool } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import * as schema from '../shared/schema.db';
+import ws from 'ws';
+
+// Configure Neon for serverless environment
+import { neonConfig } from '@neondatabase/serverless';
+neonConfig.webSocketConstructor = ws;
 
 // Create a connection pool using the database URL from environment variables
 export const supaPool = new Pool({

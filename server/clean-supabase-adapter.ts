@@ -48,8 +48,10 @@ export class CleanSupabaseAdapter {
    */
   async getPlayersWithPIV(): Promise<PlayerWithPIV[]> {
     try {
-      // Use the proper schema definition for player_stats table
-      const playerRows = await db.query.playerStats.findMany();
+      // Use direct SQL instead of schema to ensure correct field names
+      const query = `SELECT * FROM player_stats`;
+      const result = await db.execute(query);
+      const playerRows = result.rows as any[];
       
       console.log(`Found ${playerRows.length} players in player_stats table`);
       
@@ -148,14 +150,14 @@ export class CleanSupabaseAdapter {
         
         // Create the player object with all required fields
         return {
-          id: row.steamId || row.id?.toString() || '',
-          name: row.userName || '',
-          team: row.teamName || '',
+          id: row.steam_id || row.id?.toString() || '',
+          name: row.user_name || '',
+          team: row.team_clan_name || '',
           role: roleEnum,
           tRole: roleEnum, // Use the same role for T side
           ctRole: roleEnum, // Use the same role for CT side
-          isIGL: row.isIGL === true,
-          isMainAWPer: row.isMainAwper === true,
+          isIGL: row.is_igl === true,
+          isMainAWPer: row.is_main_awper === true,
           piv: pivValue,
           tPIV: pivValue * 0.95, // Slightly modified for T side
           ctPIV: pivValue * 1.05, // Slightly modified for CT side
@@ -204,8 +206,10 @@ export class CleanSupabaseAdapter {
    */
   async getTeamsWithTIR(): Promise<TeamWithTIR[]> {
     try {
-      // Use the proper schema definition for teams table
-      const teamData = await db.query.teams.findMany();
+      // Use direct SQL query to ensure we have the right field names
+      const query = `SELECT * FROM teams`;
+      const result = await db.execute(query);
+      const teamData = result.rows as any[];
       
       console.log(`Found ${teamData.length} teams in teams table`);
       
@@ -267,15 +271,15 @@ export class CleanSupabaseAdapter {
           name: sortedByPIV[0].name,
           piv: sortedByPIV[0].piv
         } : {
-          name: team.topPlayerName || teamName + ' Top Player',
-          piv: team.topPlayerPIV || 1.0
+          name: team.top_player_name || teamName + ' Top Player',
+          piv: team.top_player_piv || 1.0
         };
         
         // Calculate team aggregated metrics
         const totalPIV = sortedByPIV.reduce((sum, p) => sum + (p.piv || 0), 0);
         const averagePIV = sortedByPIV.length > 0 
           ? totalPIV / sortedByPIV.length 
-          : (Number(team.avgPIV) || 0.8);
+          : (Number(team.avg_piv) || 0.8);
         
         // Create TeamWithTIR object that meets frontend requirements
         return {

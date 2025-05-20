@@ -126,7 +126,10 @@ router.get('/teams/:id', async (req: Request, res: Response) => {
 router.get('/teams/:id/players', async (req: Request, res: Response) => {
   try {
     const teamId = req.params.id;
-    const teams = await cleanSupabaseService.getTeamsWithTIR();
+    // Get optional event ID from query params
+    const eventId = req.query.eventId ? parseInt(req.query.eventId as string, 10) : undefined;
+    
+    const teams = await cleanSupabaseService.getTeamsWithTIR(eventId);
     const team = teams.find(t => t.id === teamId);
     
     if (!team) {

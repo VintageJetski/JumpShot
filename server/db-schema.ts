@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, bigint, doublePrecision, foreignKey, uniqueIndex, primaryKey, boolean, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, bigint, doublePrecision, primaryKey, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -127,7 +127,7 @@ export const utilityStats = pgTable("utility_stats", {
   flahesThrown: integer("flahes_thrown"), // Note: this matches the typo in your DB schema
   ctFlahesThrown: integer("ct_flahes_thrown"),
   tFlahesThrown: integer("t_flahes_thrown"),
-  flahesTownInPistolRound: integer("flahes_thrown_in_pistol_round"), 
+  flahesThrowInPistolRound: integer("flahes_thrown_in_pistol_round"),
   heThrown: integer("he_thrown"),
   ctHeThrown: integer("ct_he_thrown"),
   tHeThrown: integer("t_he_thrown"),

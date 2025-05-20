@@ -8,9 +8,9 @@ neonConfig.webSocketConstructor = ws;
 async function testDatabaseTables() {
   console.log('Testing Supabase database tables...');
   
-  // Create a database pool with the exact connection string
+  // Create a database pool with the transaction pooler URI
   const pool = new Pool({ 
-    connectionString: 'postgresql://postgres:7847T8RtFanS6RUC@db.rrtfmkpqembrnieogqmk.supabase.co:5432/postgres' 
+    connectionString: 'postgresql://postgres.rrtfmkpqembrnieogqmk:7847T8RtFanS6RUC@aws-0-sa-east-1.pooler.supabase.com:6543/postgres' 
   });
   
   try {

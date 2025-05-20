@@ -134,7 +134,7 @@ export class SupabaseAdapter {
   }
   
   /**
-   * Fetch player data from Supabase based on steam ID
+   * Fetch player data from Supabase based on steam ID, with support for multiple events
    */
   static async fetchPlayerData(steamId: string | number): Promise<SupaPlayerData | null> {
     // Ensure steam ID is a number
@@ -150,40 +150,50 @@ export class SupabaseAdapter {
         return null;
       }
       
-      // Fetch most recent event ID for this player
+      // Fetch all events this player participated in
       const playerMatchSummaries = await supaDb.select()
         .from(supaPlayerMatchSummary)
         .where(eq(supaPlayerMatchSummary.steamId, steamIdNum))
         .orderBy(supaPlayerMatchSummary.eventId);
       
-      const playerMatchSummary = playerMatchSummaries.length > 0 ? playerMatchSummaries[0] : null;
-      
-      if (!playerMatchSummary) {
-        console.error(`No match summary found for player ${steamIdNum}`);
+      if (playerMatchSummaries.length === 0) {
+        console.error(`No match summaries found for player ${steamIdNum}`);
         return { player };
       }
       
+      // Get the most recent event for this player
+      // In a full implementation, we could aggregate stats across multiple events
+      const playerMatchSummary = playerMatchSummaries[playerMatchSummaries.length - 1];
+      
+      console.log(`Using data from event ID ${playerMatchSummary.eventId} for player ${player.userName}`);
+      
       // Now fetch stats using the event ID
-      const [killStats] = await supaDb.select()
+      const killStatsResults = await supaDb.select()
         .from(supaKillStats)
         .where(and(
           eq(supaKillStats.steamId, steamIdNum),
           eq(supaKillStats.eventId, playerMatchSummary.eventId)
         ));
       
-      const [generalStats] = await supaDb.select()
+      const killStats = killStatsResults.length > 0 ? killStatsResults[0] : undefined;
+      
+      const generalStatsResults = await supaDb.select()
         .from(supaGeneralStats)
         .where(and(
           eq(supaGeneralStats.steamId, steamIdNum),
           eq(supaGeneralStats.eventId, playerMatchSummary.eventId)
         ));
       
-      const [utilityStats] = await supaDb.select()
+      const generalStats = generalStatsResults.length > 0 ? generalStatsResults[0] : undefined;
+      
+      const utilityStatsResults = await supaDb.select()
         .from(supaUtilityStats)
         .where(and(
           eq(supaUtilityStats.steamId, steamIdNum),
           eq(supaUtilityStats.eventId, playerMatchSummary.eventId)
         ));
+      
+      const utilityStats = utilityStatsResults.length > 0 ? utilityStatsResults[0] : undefined;
       
       // Fetch team info if team ID is available
       let teamInfo = undefined;

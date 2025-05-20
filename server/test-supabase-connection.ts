@@ -1,6 +1,7 @@
 import { supaDb } from './supabase-db';
-import { supaEvents, supaPlayers, supaTeams } from '@shared/schema';
+import { supaEvents, supaPlayers, supaTeams, supaPlayerMatchSummary } from '@shared/schema';
 import { SupabaseAdapter } from './supabase-adapter';
+import { Pool } from '@neondatabase/serverless';
 
 /**
  * Test script to verify Supabase connection and data retrieval

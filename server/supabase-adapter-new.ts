@@ -7,29 +7,33 @@ import { eq, and, inArray } from 'drizzle-orm';
 import { PlayerRawStats, PlayerRole } from '../shared/schema';
 
 /**
- * Normalizes steam IDs to handle format differences between tables
- * This trims the last 1-2 digits that might vary across tables
+ * Gets the normalized steam ID by removing the last few digits
+ * that might vary across tables
  */
-function normalizeSteamId(steamId: string | number): string {
-  // Convert to string if it's a number
-  const idString = String(steamId);
+function getNormalizedSteamId(steamId: number | string): number {
+  // Convert to number if it's a string
+  const steamIdNum = typeof steamId === 'string' ? parseInt(steamId, 10) : steamId;
   
-  // Trim the last 1-2 digits for fuzzy matching
-  // Most Steam IDs are 17 digits, so we'll keep the first 15
-  return idString.substring(0, 15);
+  // Divide by 100 to remove last 2 digits, then multiply by 100 to get a clean number
+  // This effectively truncates the last 2 digits
+  return Math.floor(steamIdNum / 100) * 100;
 }
 
 /**
- * Checks if two steam IDs match after normalization
+ * Checks if two steam IDs match, either exactly or after normalization
  */
-function steamIdMatches(id1: string | number, id2: string | number): boolean {
+function steamIdsMatch(id1: number | string, id2: number | string): boolean {
+  // Convert to numbers if needed
+  const num1 = typeof id1 === 'string' ? parseInt(id1, 10) : id1;
+  const num2 = typeof id2 === 'string' ? parseInt(id2, 10) : id2;
+  
   // Try exact match first
-  if (String(id1) === String(id2)) {
+  if (num1 === num2) {
     return true;
   }
   
   // Fall back to normalized comparison
-  return normalizeSteamId(id1) === normalizeSteamId(id2);
+  return getNormalizedSteamId(num1) === getNormalizedSteamId(num2);
 }
 
 // Define TeamRawStats interface to match existing schema in the application
@@ -96,25 +100,28 @@ export class SupabaseAdapter {
       
       console.log(`Found ${playerInfos.length} players with basic info out of ${steamIds.length} players in event`);
       
-      // Create a map of normalized steam ID to player info for quick lookups
-      const playerInfoMap = new Map<string, Player>();
+      // Create a map of player info for quick lookups
+      const playerInfoMap = new Map<number, Player>();
+      const normalizedPlayerMap = new Map<number, Player>();
+      
       for (const player of playerInfos) {
         // Store with both exact ID and normalized ID for reliable lookup
-        playerInfoMap.set(String(player.steamId), player);
-        playerInfoMap.set(normalizeSteamId(player.steamId), player);
+        playerInfoMap.set(player.steamId, player);
+        normalizedPlayerMap.set(getNormalizedSteamId(player.steamId), player);
       }
       
-      // Get all kill stats for this event (without steam ID filtering to avoid type issues)
+      // Get all kill stats for this event
       const playerKillStatsArray = await db.select()
         .from(killStats)
         .where(eq(killStats.eventId, eventId));
       
-      // Create a map of normalized steam ID to kill stats
-      const killStatsMap = new Map<string, KillStat>();
+      // Create maps for kill stats lookups
+      const killStatsMap = new Map<number, KillStat>();
+      const normalizedKillStatsMap = new Map<number, KillStat>();
+      
       for (const stats of playerKillStatsArray) {
-        // Store with both exact ID and normalized ID for reliable lookup
-        killStatsMap.set(String(stats.steamId), stats);
-        killStatsMap.set(normalizeSteamId(stats.steamId), stats);
+        killStatsMap.set(stats.steamId, stats);
+        normalizedKillStatsMap.set(getNormalizedSteamId(stats.steamId), stats);
       }
       
       // Get all general stats for this event
@@ -122,12 +129,13 @@ export class SupabaseAdapter {
         .from(generalStats)
         .where(eq(generalStats.eventId, eventId));
       
-      // Create a map of normalized steam ID to general stats
-      const generalStatsMap = new Map<string, GeneralStat>();
+      // Create maps for general stats lookups
+      const generalStatsMap = new Map<number, GeneralStat>();
+      const normalizedGeneralStatsMap = new Map<number, GeneralStat>();
+      
       for (const stats of playerGeneralStatsArray) {
-        // Store with both exact ID and normalized ID for reliable lookup
-        generalStatsMap.set(String(stats.steamId), stats);
-        generalStatsMap.set(normalizeSteamId(stats.steamId), stats);
+        generalStatsMap.set(stats.steamId, stats);
+        normalizedGeneralStatsMap.set(getNormalizedSteamId(stats.steamId), stats);
       }
       
       // Get all utility stats for this event
@@ -135,12 +143,13 @@ export class SupabaseAdapter {
         .from(utilityStats)
         .where(eq(utilityStats.eventId, eventId));
       
-      // Create a map of normalized steam ID to utility stats
-      const utilityStatsMap = new Map<string, UtilityStat>();
+      // Create maps for utility stats lookups
+      const utilityStatsMap = new Map<number, UtilityStat>();
+      const normalizedUtilityStatsMap = new Map<number, UtilityStat>();
+      
       for (const stats of playerUtilityStatsArray) {
-        // Store with both exact ID and normalized ID for reliable lookup
-        utilityStatsMap.set(String(stats.steamId), stats);
-        utilityStatsMap.set(normalizeSteamId(stats.steamId), stats);
+        utilityStatsMap.set(stats.steamId, stats);
+        normalizedUtilityStatsMap.set(getNormalizedSteamId(stats.steamId), stats);
       }
       
       // Get all team IDs for each player
@@ -202,46 +211,49 @@ export class SupabaseAdapter {
       // Process players with valid information
       for (const steamId of steamIds) {
         try {
-          // Try lookup with exact match, then with normalized ID
-          let playerInfo = playerInfoMap.get(steamId);
+          // Convert string steam ID to number if needed
+          const numericSteamId = typeof steamId === 'string' ? parseInt(steamId, 10) : steamId;
+          
+          // Try lookup with exact match first
+          let playerInfo = playerInfoMap.get(numericSteamId);
+          
+          // If no exact match, try with normalized ID
           if (!playerInfo) {
-            // Try with normalized ID
-            const normalizedId = normalizeSteamId(steamId);
-            playerInfo = playerInfoMap.get(normalizedId);
+            const normalizedId = getNormalizedSteamId(numericSteamId);
+            playerInfo = normalizedPlayerMap.get(normalizedId);
             
             if (playerInfo) {
-              console.log(`Found player using normalized ID for ${steamId} (normalized to ${normalizedId})`);
+              console.log(`Found player using normalized ID for ${numericSteamId} (normalized to ${normalizedId})`);
             }
           }
           
           if (!playerInfo) {
-            console.log(`Skipping player with steam ID ${steamId} - no basic info found after normalization`);
+            console.log(`Skipping player with steam ID ${numericSteamId} - no basic info found after normalization`);
             continue;
           }
           
-          // Try lookup for stats in the same way - exact then normalized
-          const normalizedId = normalizeSteamId(steamId);
+          // Get normalized ID for stats lookups
+          const normalizedId = getNormalizedSteamId(numericSteamId);
           
           // Get kill stats
-          let playerKillStats = killStatsMap.get(steamId);
+          let playerKillStats = killStatsMap.get(numericSteamId);
           if (!playerKillStats) {
-            playerKillStats = killStatsMap.get(normalizedId);
+            playerKillStats = normalizedKillStatsMap.get(normalizedId);
           }
           
           // Get general stats
-          let playerGeneralStats = generalStatsMap.get(steamId);
+          let playerGeneralStats = generalStatsMap.get(numericSteamId);
           if (!playerGeneralStats) {
-            playerGeneralStats = generalStatsMap.get(normalizedId);
+            playerGeneralStats = normalizedGeneralStatsMap.get(normalizedId);
           }
           
           // Get utility stats
-          let playerUtilityStats = utilityStatsMap.get(steamId);
+          let playerUtilityStats = utilityStatsMap.get(numericSteamId);
           if (!playerUtilityStats) {
-            playerUtilityStats = utilityStatsMap.get(normalizedId);
+            playerUtilityStats = normalizedUtilityStatsMap.get(normalizedId);
           }
           
           // Team info will use numeric ID match since team IDs are consistent
-          const numericSteamId = parseInt(steamId, 10);
           const teamInfo = playerTeamMap.get(numericSteamId);
           
           // Create player stats object with all available data

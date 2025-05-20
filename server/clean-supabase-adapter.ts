@@ -10,7 +10,7 @@ export class CleanSupabaseAdapter {
   private pool: Pool;
 
   constructor() {
-    this.pool = db.client;
+    this.pool = db.$client;
   }
 
   /**

@@ -4,7 +4,7 @@ import bodyParser from 'body-parser';
 import session from 'express-session';
 import { setupVite } from './vite';
 import { setupAuth, ensureAuthenticated } from './auth';
-import { supabaseRawAdapter } from './supabase-raw-adapter';
+import { getPlayersFromSupabase, getTeamsFromPlayers, getEvents } from './direct-supabase-query';
 import { Router } from 'express';
 
 // Create Express app
@@ -34,19 +34,23 @@ const apiRouter = Router();
 
 // Health check
 apiRouter.get('/health', async (req, res) => {
-  const isConnected = await supabaseRawAdapter.checkConnection();
-  res.json({ status: 'ok', connected: isConnected });
+  try {
+    const events = await getEvents();
+    res.json({ status: 'ok', connected: events.length > 0 });
+  } catch (error) {
+    res.json({ status: 'error', connected: false });
+  }
 });
 
 // Get players
 apiRouter.get('/players', async (req, res) => {
-  const players = await supabaseRawAdapter.getPlayersWithPIV();
+  const players = await getPlayersFromSupabase();
   res.json(players);
 });
 
 // Get player by ID
 apiRouter.get('/players/:id', async (req, res) => {
-  const players = await supabaseRawAdapter.getPlayersWithPIV();
+  const players = await getPlayersFromSupabase();
   const player = players.find(p => p.id === req.params.id);
   
   if (!player) {
@@ -58,13 +62,13 @@ apiRouter.get('/players/:id', async (req, res) => {
 
 // Get teams
 apiRouter.get('/teams', async (req, res) => {
-  const teams = await supabaseRawAdapter.getTeamsWithTIR();
+  const teams = await getTeamsFromPlayers();
   res.json(teams);
 });
 
 // Get team by ID
 apiRouter.get('/teams/:id', async (req, res) => {
-  const teams = await supabaseRawAdapter.getTeamsWithTIR();
+  const teams = await getTeamsFromPlayers();
   const team = teams.find(t => t.id === req.params.id);
   
   if (!team) {
@@ -76,7 +80,7 @@ apiRouter.get('/teams/:id', async (req, res) => {
 
 // Get players for a team
 apiRouter.get('/teams/:id/players', async (req, res) => {
-  const teams = await supabaseRawAdapter.getTeamsWithTIR();
+  const teams = await getTeamsFromPlayers();
   const team = teams.find(t => t.id === req.params.id);
   
   if (!team) {
@@ -88,7 +92,7 @@ apiRouter.get('/teams/:id/players', async (req, res) => {
 
 // Get events
 apiRouter.get('/events', async (req, res) => {
-  const events = await supabaseRawAdapter.getEvents();
+  const events = await getEvents();
   res.json(events);
 });
 
@@ -98,18 +102,15 @@ app.use('/api/cs2', apiRouter);
 // Force database refresh (admin only)
 app.post('/api/refresh-data', ensureAuthenticated, async (req, res) => {
   try {
-    // Check connection
-    const isConnected = await supabaseRawAdapter.checkConnection();
-    
     // Get fresh data stats
-    const players = await supabaseRawAdapter.getPlayersWithPIV();
-    const teams = await supabaseRawAdapter.getTeamsWithTIR();
+    const players = await getPlayersFromSupabase();
+    const teams = await getTeamsFromPlayers();
     
     res.json({ 
       success: true,
       playerCount: players.length,
       teamCount: teams.length,
-      dataSource: isConnected ? 'Supabase' : 'Unknown'
+      dataSource: 'Supabase'
     });
   } catch (error) {
     console.error('Error refreshing data:', error);
@@ -134,17 +135,14 @@ const PORT = process.env.PORT || 5000;
 async function start() {
   console.log('Starting server with raw Supabase data integration...');
   
-  // Initialize data by checking connection
-  const isConnected = await supabaseRawAdapter.checkConnection();
-  console.log(`Supabase database connection: ${isConnected ? 'Available ✅' : 'Unavailable ❌'}`);
-  
-  if (isConnected) {
+  try {
     // Get data stats
-    const players = await supabaseRawAdapter.getPlayersWithPIV();
-    const teams = await supabaseRawAdapter.getTeamsWithTIR();
+    const players = await getPlayersFromSupabase();
+    const teams = await getTeamsFromPlayers();
+    
     console.log(`Processed ${players.length} players and ${teams.length} teams from Supabase`);
-  } else {
-    console.error('Warning: Could not connect to Supabase. Please check your database connection string.');
+  } catch (error) {
+    console.error('Warning: Error processing Supabase data:', error);
   }
   
   // Start the server

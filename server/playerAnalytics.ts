@@ -469,8 +469,8 @@ export function processPlayerStats(rawStats: PlayerRawStats[], teamStatsMap: Map
       secondaryRole,
       isMainAwper,
       isIGL,
-      piv: Number((piv || 0).toFixed(2)),
-      kd: Number((stats.kd || 1).toFixed(2)),
+      piv: Number(piv.toFixed(2)),
+      kd: Number(stats.kd.toFixed(2)),
       primaryMetric: {
         name: primaryMetricKey,
         value: Number(detailedRoleMetrics[primaryMetricKey as keyof RoleMetrics]?.toFixed(2) || "0")

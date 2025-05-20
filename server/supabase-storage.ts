@@ -5,192 +5,169 @@ import { processPlayerStats } from './playerAnalytics';
 import { processPlayerStatsWithRoles } from './newPlayerAnalytics';
 import * as fs from 'fs';
 import * as path from 'path';
-import { testDatabaseConnection } from './supabase-db';
-import { SupabaseAdapter, TeamRawStats } from './final-supabase-adapter';
+import { testDatabaseConnection, getAvailableEvents, getPlayerCountForEvent } from './supabase-db';
+import { SupabaseAdapter, TeamRawStats } from './supabase-adapter-new';
 
 /**
  * SupabaseStorage class that fetches data from Supabase database
  * with CSV fallback if database connection fails
  */
 export class SupabaseStorage {
-  private supabaseAvailable: boolean = false;
   private adapter: SupabaseAdapter;
-  private cachedPlayerData: Map<number, PlayerRawStats[]> = new Map();
-  private cachedTeamData: Map<number, TeamRawStats[]> = new Map();
+  private isConnected: boolean = false;
+  private availableEvents: number[] = [];
+  private cachedPlayerStats: Map<number, PlayerRawStats[]> = new Map();
+  private cachedTeamStats: Map<number, TeamRawStats[]> = new Map();
+  private cachedPlayerPIV: Map<number, PlayerWithPIV[]> = new Map();
+  private cachedTeamTIR: Map<number, TeamWithTIR[]> = new Map();
+  private eventNames: Map<number, string> = new Map();
   
   constructor() {
     this.adapter = new SupabaseAdapter();
-    this.checkConnection();
   }
   
   /**
-   * Check if the Supabase database connection is available
+   * Initialize the storage by testing database connection
+   * and fetching available events
    */
-  public async checkConnection(): Promise<boolean> {
+  async initialize(): Promise<void> {
     try {
-      this.supabaseAvailable = await testDatabaseConnection();
-      console.log(`Supabase connection: ${this.supabaseAvailable ? 'Available' : 'Unavailable'}`);
-      return this.supabaseAvailable;
-    } catch (error) {
-      console.error('Error checking Supabase connection:', error);
-      this.supabaseAvailable = false;
-      return false;
-    }
-  }
-  
-  /**
-   * Get all available events
-   * Since there's no events table, we'll simulate events for now
-   */
-  public async getEvents(): Promise<{ id: number, name: string }[]> {
-    if (!this.supabaseAvailable) {
-      await this.checkConnection();
-    }
-    
-    if (this.supabaseAvailable) {
-      try {
-        // Since there's no events table, we'll simulate events for now
-        return [{ id: 1, name: 'IEM_Katowice_2025' }];
-      } catch (error) {
-        console.error('Error getting events from Supabase:', error);
-        return [{ id: 1, name: 'IEM_Katowice_2025' }];
-      }
-    }
-    
-    // Fallback to default event if Supabase is not available
-    return [{ id: 1, name: 'IEM_Katowice_2025' }];
-  }
-  
-  /**
-   * Get players for a specific event with PIV calculations
-   */
-  public async getPlayersWithPIV(eventId: number = 1): Promise<PlayerWithPIV[]> {
-    if (!this.supabaseAvailable) {
-      await this.checkConnection();
-    }
-    
-    let rawPlayerData: PlayerRawStats[] = [];
-    
-    if (this.supabaseAvailable) {
-      try {
-        console.log(`Fetching player data from Supabase...`);
-        // Check if we have cached data
-        if (this.cachedPlayerData.has(eventId)) {
-          console.log('Using cached player data');
-          rawPlayerData = this.cachedPlayerData.get(eventId)!;
-        } else {
-          // Fetch from Supabase
-          rawPlayerData = await this.adapter.getPlayersForEvent(eventId);
-          // Cache the data
-          this.cachedPlayerData.set(eventId, rawPlayerData);
-        }
-        
-        if (rawPlayerData.length === 0) {
-          console.warn('No player data found in Supabase, falling back to CSV');
-          rawPlayerData = await this.loadFromCSV();
-        }
-      } catch (error) {
-        console.error('Error getting players from Supabase:', error);
-        rawPlayerData = await this.loadFromCSV();
-      }
-    } else {
-      console.log('Supabase not available, loading from CSV...');
-      rawPlayerData = await this.loadFromCSV();
-    }
-    
-    // Group players by team for role assignment
-    const teamStatsMap = new Map<string, PlayerRawStats[]>();
-    for (const player of rawPlayerData) {
-      const teamKey = player.teamName || `team_${player.team_id}`;
-      if (!teamStatsMap.has(teamKey)) {
-        teamStatsMap.set(teamKey, []);
-      }
-      teamStatsMap.get(teamKey)!.push(player);
-    }
-    
-    // Process player stats with PIV calculations
-    let playersWithPIV: PlayerWithPIV[];
-    
-    try {
-      // Use the basic processor as it's more resilient to missing data
-      console.log('Processing player stats with PIV calculations...');
-      playersWithPIV = processPlayerStats(rawPlayerData, teamStatsMap);
+      console.log('Initializing Supabase storage...');
+      this.isConnected = await testDatabaseConnection();
       
-      // Enhance the PlayerWithPIV objects with teamName for UI display
-      playersWithPIV = playersWithPIV.map(player => {
-        const rawPlayer = rawPlayerData.find(p => p.steamId === player.id);
-        if (rawPlayer) {
-          // Extend the player object with teamName
-          return {
-            ...player,
-            teamName: rawPlayer.teamName || '',
-            team_id: rawPlayer.team_id || 0
-          };
-        }
-        return player;
-      });
+      if (this.isConnected) {
+        console.log('Connected to Supabase database');
+        await this.fetchAvailableEvents();
+      } else {
+        console.warn('Failed to connect to Supabase database, falling back to CSV data');
+      }
     } catch (error) {
-      console.error('Error processing player stats:', error);
-      // Return empty array as fallback
-      playersWithPIV = [];
+      console.error('Error initializing Supabase storage:', error);
+      this.isConnected = false;
     }
-    
-    return playersWithPIV;
   }
   
   /**
-   * Get teams for a specific event with TIR calculations
+   * Fetch available events from database
    */
-  public async getTeamsWithTIR(eventId: number = 1): Promise<TeamWithTIR[]> {
-    if (!this.supabaseAvailable) {
-      await this.checkConnection();
-    }
-    
-    let teamData: TeamRawStats[] = [];
-    let playersWithPIV: PlayerWithPIV[] = [];
-    
-    if (this.supabaseAvailable) {
-      try {
-        console.log(`Fetching team data from Supabase...`);
-        // Check if we have cached data
-        if (this.cachedTeamData.has(eventId)) {
-          console.log('Using cached team data');
-          teamData = this.cachedTeamData.get(eventId)!;
-        } else {
-          // Fetch from Supabase
-          teamData = await this.adapter.getTeamsForEvent(eventId);
-          // Cache the data
-          this.cachedTeamData.set(eventId, teamData);
-        }
-        
-        // Get players with PIV for this event
-        playersWithPIV = await this.getPlayersWithPIV(eventId);
-      } catch (error) {
-        console.error('Error getting teams from Supabase:', error);
-        // Use playerWithPIV data to construct teams
-        playersWithPIV = await this.getPlayersWithPIV(eventId);
+  private async fetchAvailableEvents(): Promise<void> {
+    try {
+      const events = await getAvailableEvents();
+      if (events && events.length > 0) {
+        this.availableEvents = events.map(event => event.eventId);
+        events.forEach(event => this.eventNames.set(event.eventId, event.eventName));
+        console.log(`Found ${events.length} events in database:`, events.map(e => e.eventName).join(', '));
+      } else {
+        console.warn('No events found in database');
       }
-    } else {
-      console.log('Supabase not available, processing from player data...');
-      playersWithPIV = await this.getPlayersWithPIV(eventId);
+    } catch (error) {
+      console.error('Error fetching available events:', error);
+    }
+  }
+  
+  /**
+   * Get player stats from database for a specific event
+   * @param eventId Event ID to fetch player stats for
+   */
+  async getPlayerStatsForEvent(eventId: number): Promise<PlayerRawStats[]> {
+    // Check if we have cached data
+    if (this.cachedPlayerStats.has(eventId)) {
+      return this.cachedPlayerStats.get(eventId) || [];
     }
     
-    // Generate team data from player information if needed
-    if (teamData.length === 0 && playersWithPIV.length > 0) {
-      const teamMap = new Map<string, PlayerWithPIV[]>();
+    // If connected to Supabase, fetch from database
+    if (this.isConnected && this.availableEvents.includes(eventId)) {
+      try {
+        console.log(`Fetching player stats for event ${eventId} from Supabase...`);
+        const playerCount = await getPlayerCountForEvent(eventId);
+        console.log(`Found ${playerCount} players for event ${eventId}`);
+        
+        const playerStats = await this.adapter.getPlayersForEvent(eventId);
+        
+        if (playerStats && playerStats.length > 0) {
+          console.log(`Successfully fetched ${playerStats.length} player stats from Supabase for event ${eventId}`);
+          this.cachedPlayerStats.set(eventId, playerStats);
+          return playerStats;
+        } else {
+          console.warn(`No player stats found in Supabase for event ${eventId}, falling back to CSV data`);
+        }
+      } catch (error) {
+        console.error(`Error fetching player stats from Supabase for event ${eventId}:`, error);
+        console.log('Falling back to CSV data');
+      }
+    }
+    
+    // Fall back to CSV data
+    try {
+      console.log('Loading player data from CSV...');
+      const csvData = await this.loadCSVData();
+      this.cachedPlayerStats.set(1, csvData); // Assume CSV data is for event 1 (IEM_Katowice_2025)
+      return eventId === 1 ? csvData : [];
+    } catch (error) {
+      console.error('Error loading CSV data:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Get team stats from database for a specific event
+   * @param eventId Event ID to fetch team stats for
+   */
+  async getTeamStatsForEvent(eventId: number): Promise<TeamRawStats[]> {
+    // Check if we have cached data
+    if (this.cachedTeamStats.has(eventId)) {
+      return this.cachedTeamStats.get(eventId) || [];
+    }
+    
+    // If connected to Supabase, fetch from database
+    if (this.isConnected && this.availableEvents.includes(eventId)) {
+      try {
+        console.log(`Fetching team stats for event ${eventId} from Supabase...`);
+        const teamStats = await this.adapter.getTeamsForEvent(eventId);
+        
+        if (teamStats && teamStats.length > 0) {
+          console.log(`Successfully fetched ${teamStats.length} team stats from Supabase for event ${eventId}`);
+          this.cachedTeamStats.set(eventId, teamStats);
+          return teamStats;
+        } else {
+          console.warn(`No team stats found in Supabase for event ${eventId}, falling back to CSV data`);
+        }
+      } catch (error) {
+        console.error(`Error fetching team stats from Supabase for event ${eventId}:`, error);
+        console.log('Falling back to CSV data');
+      }
+    }
+    
+    // Fall back to calculating teams from player data (CSV fallback)
+    return this.getTeamsFromPlayerStats(eventId);
+  }
+  
+  /**
+   * Calculate teams from player stats
+   * @param eventId Event ID to calculate teams for
+   */
+  private async getTeamsFromPlayerStats(eventId: number): Promise<TeamRawStats[]> {
+    try {
+      const playerStats = await this.getPlayerStatsForEvent(eventId);
+      if (!playerStats || playerStats.length === 0) {
+        return [];
+      }
       
       // Group players by team
-      for (const player of playersWithPIV) {
-        const teamKey = player.teamName || `team_${player.team_id}`;
-        if (!teamMap.has(teamKey)) {
-          teamMap.set(teamKey, []);
+      const teamMap = new Map<string, PlayerRawStats[]>();
+      for (const player of playerStats) {
+        if (player.team) {
+          if (!teamMap.has(player.team)) {
+            teamMap.set(player.team, []);
+          }
+          teamMap.get(player.team)?.push(player);
         }
-        teamMap.get(teamKey)!.push(player);
       }
       
-      // Create team stats from the grouped players
+      // Create team stats
+      const teamStats: TeamRawStats[] = [];
       for (const [teamName, players] of teamMap.entries()) {
-        teamData.push({
+        teamStats.push({
           name: teamName,
           players: players.length,
           logo: '',
@@ -199,189 +176,210 @@ export class SupabaseStorage {
           eventId
         });
       }
-    }
-    
-    // Calculate TIR and roles distribution for each team
-    const teamsWithTIR: TeamWithTIR[] = [];
-    
-    for (const team of teamData) {
-      // Find players for this team
-      const teamPlayers = playersWithPIV.filter(p => 
-        p.teamName === team.name || 
-        (!p.teamName && p.team_id === 
-          parseInt(team.name.replace(/^team_/, ''), 10)
-        )
-      );
       
-      if (teamPlayers.length === 0) {
-        console.warn(`No players found for team ${team.name}`);
-        continue;
-      }
-      
-      // Calculate average PIV for the team
-      const avgPIV = teamPlayers.reduce((sum, p) => sum + p.piv, 0) / teamPlayers.length;
-      
-      // Count role distribution
-      const roleCount = {
-        [PlayerRole.Entry]: 0,
-        [PlayerRole.Lurker]: 0,
-        [PlayerRole.Support]: 0,
-        [PlayerRole.AWP]: 0,
-        [PlayerRole.IGL]: 0
-      };
-      
-      for (const player of teamPlayers) {
-        if (player.primaryRole) {
-          roleCount[player.primaryRole]++;
-        } else {
-          roleCount[PlayerRole.Support]++;
-        }
-        // Special case for IGL role
-        if (player.isIGL) {
-          roleCount[PlayerRole.IGL]++;
-        }
-      }
-      
-      // Calculate strengths and weaknesses
-      const strengths = this.calculateTeamStrengths(teamPlayers);
-      const weaknesses = this.calculateTeamWeaknesses(teamPlayers);
-      
-      // Create TIR object
-      const teamWithTIR: TeamWithTIR = {
-        id: `${team.name}_${team.eventId}`,
-        name: team.name,
-        logo: team.logo,
-        players: teamPlayers.map(p => p.id),
-        averagePIV: avgPIV,
-        tir: avgPIV * 1.2, // TIR calculation can be improved
-        wins: team.wins,
-        losses: team.losses,
-        roleDistribution: roleCount,
-        strengths: strengths,
-        weaknesses: weaknesses,
-        eventId: team.eventId
-      };
-      
-      teamsWithTIR.push(teamWithTIR);
-    }
-    
-    return teamsWithTIR;
-  }
-  
-  /**
-   * Load player data from CSV as a fallback
-   */
-  private async loadFromCSV(): Promise<PlayerRawStats[]> {
-    try {
-      console.log('Loading data from CSV files...');
-      // Try the new CSV format first
-      const csvPath = path.join(process.cwd(), 'attached_assets', 'CS Data Points (IEM_Katowice_2025) - player_stats (IEM_Katowice_2025).csv');
-      if (fs.existsSync(csvPath)) {
-        return await loadNewPlayerStats();
-      }
-      
-      // Fall back to old CSV format if new format isn't available
-      return await loadPlayerData();
+      this.cachedTeamStats.set(eventId, teamStats);
+      return teamStats;
     } catch (error) {
-      console.error('Error loading data from CSV:', error);
+      console.error(`Error calculating teams from player stats for event ${eventId}:`, error);
       return [];
     }
   }
   
   /**
-   * Calculate team strengths based on player PIVs
+   * Get player stats with PIV (Player Impact Value) for a specific event
+   * @param eventId Event ID to fetch player stats with PIV for
    */
-  private calculateTeamStrengths(players: PlayerWithPIV[]): string[] {
-    const strengths: string[] = [];
-    
-    // Check if team has a strong AWPer
-    const awpers = players.filter(p => p.primaryRole === PlayerRole.AWP);
-    if (awpers.length > 0 && awpers.some(p => p.piv > 0.75)) {
-      strengths.push("Strong AWP presence");
+  async getPlayerStatsWithPIV(eventId: number): Promise<PlayerWithPIV[]> {
+    // Check if we have cached data
+    if (this.cachedPlayerPIV.has(eventId)) {
+      return this.cachedPlayerPIV.get(eventId) || [];
     }
     
-    // Check for strong entry fraggers
-    const entryFraggers = players.filter(p => p.primaryRole === PlayerRole.Entry);
-    if (entryFraggers.length > 0 && entryFraggers.some(p => p.piv > 0.7)) {
-      strengths.push("Powerful entry fraggers");
-    }
-    
-    // Check for experienced IGL
-    if (players.some(p => p.isIGL && p.piv > 0.65)) {
-      strengths.push("Seasoned in-game leadership");
-    }
-    
-    // Check for overall team consistency
-    if (players.length > 0 && players.some(p => p.pivComponents && p.pivComponents.icf > 0.7)) {
-      strengths.push("Consistent performance");
-    }
-    
-    // Check for high kill potential
-    if (players.length > 0 && players.some(p => p.stats && p.stats.kills > 140)) {
-      strengths.push("High fragging power");
-    }
-    
-    // Default strengths if none were found
-    if (strengths.length === 0) {
-      const avgPIV = players.reduce((sum, p) => sum + p.piv, 0) / Math.max(1, players.length);
-      if (avgPIV > 0.7) {
-        strengths.push("Strong individual performers");
-      } else {
-        strengths.push("Team-oriented playstyle");
+    try {
+      // Get raw player stats first
+      const playerStats = await this.getPlayerStatsForEvent(eventId);
+      if (!playerStats || playerStats.length === 0) {
+        return [];
       }
+      
+      // Group players by team for team stats
+      const teamMap = new Map<string, PlayerRawStats[]>();
+      for (const player of playerStats) {
+        if (player.team) {
+          if (!teamMap.has(player.team)) {
+            teamMap.set(player.team, []);
+          }
+          teamMap.get(player.team)?.push(player);
+        }
+      }
+      
+      // Process player stats with PIV
+      console.log(`Processing PIV for ${playerStats.length} players in event ${eventId}...`);
+      let playersWithPIV: PlayerWithPIV[];
+      
+      if (eventId === 1) {
+        // For IEM Katowice, we have role information
+        playersWithPIV = processPlayerStatsWithRoles(playerStats, teamMap);
+      } else {
+        // For other events, use general role assignment
+        playersWithPIV = processPlayerStats(playerStats, teamMap);
+      }
+      
+      console.log(`Processed PIV for ${playersWithPIV.length} players`);
+      this.cachedPlayerPIV.set(eventId, playersWithPIV);
+      return playersWithPIV;
+    } catch (error) {
+      console.error(`Error processing player stats with PIV for event ${eventId}:`, error);
+      return [];
     }
-    
-    return strengths.slice(0, 3); // Return top 3 strengths
   }
   
   /**
-   * Calculate team weaknesses based on player PIVs
+   * Get team stats with TIR (Team Impact Rating) for a specific event
+   * @param eventId Event ID to fetch team stats with TIR for
    */
-  private calculateTeamWeaknesses(players: PlayerWithPIV[]): string[] {
-    const weaknesses: string[] = [];
-    
-    // Check for balanced role distribution
-    const roleCount = {
-      [PlayerRole.Entry]: players.filter(p => p.primaryRole === PlayerRole.Entry).length,
-      [PlayerRole.Lurker]: players.filter(p => p.primaryRole === PlayerRole.Lurker).length,
-      [PlayerRole.Support]: players.filter(p => p.primaryRole === PlayerRole.Support).length,
-      [PlayerRole.AWP]: players.filter(p => p.primaryRole === PlayerRole.AWP).length
-    };
-    
-    if (roleCount[PlayerRole.AWP] === 0) {
-      weaknesses.push("No dedicated AWPer");
+  async getTeamStatsWithTIR(eventId: number): Promise<TeamWithTIR[]> {
+    // Check if we have cached data
+    if (this.cachedTeamTIR.has(eventId)) {
+      return this.cachedTeamTIR.get(eventId) || [];
     }
     
-    if (roleCount[PlayerRole.Entry] === 0) {
-      weaknesses.push("Lacks entry fragging capability");
+    try {
+      // Get players with PIV first
+      const playersWithPIV = await this.getPlayerStatsWithPIV(eventId);
+      if (!playersWithPIV || playersWithPIV.length === 0) {
+        return [];
+      }
+      
+      // Group players by team
+      const teamMap = new Map<string, PlayerWithPIV[]>();
+      for (const player of playersWithPIV) {
+        if (player.stats.team) {
+          if (!teamMap.has(player.stats.team)) {
+            teamMap.set(player.stats.team, []);
+          }
+          teamMap.get(player.stats.team)?.push(player);
+        }
+      }
+      
+      // Calculate team TIR scores
+      const teamsWithTIR: TeamWithTIR[] = [];
+      
+      for (const [teamName, players] of teamMap.entries()) {
+        // Calculate average PIV for the team
+        const totalPIV = players.reduce((sum, player) => sum + player.piv, 0);
+        const avgPIV = totalPIV / players.length;
+        
+        // Calculate role balance score (better if each role is represented)
+        const roles = new Set<PlayerRole>();
+        players.forEach(player => {
+          roles.add(player.stats.ct_role);
+          roles.add(player.stats.t_role);
+        });
+        const roleBalanceScore = roles.size / 6; // 6 possible roles
+        
+        // Calculate synergy score based on complementary roles
+        const hasIGL = players.some(player => player.stats.is_igl);
+        const hasCTAWP = players.some(player => player.stats.ct_role === PlayerRole.AWPCT);
+        const hasTAWP = players.some(player => player.stats.t_role === PlayerRole.AWPT);
+        
+        // Better synergy with IGL and balanced AWP roles
+        let synergyScore = 0.5;
+        if (hasIGL) synergyScore += 0.2;
+        if (hasCTAWP && hasTAWP) synergyScore += 0.2;
+        else if (hasCTAWP || hasTAWP) synergyScore += 0.1;
+        
+        // Team Impact Rating = Average PIV * Role Balance * Synergy Score
+        const tir = avgPIV * roleBalanceScore * synergyScore;
+        
+        // Find team stats
+        const teamStats = await this.getTeamStatsForEvent(eventId);
+        const team = teamStats.find(t => t.name === teamName);
+        
+        if (team) {
+          teamsWithTIR.push({
+            ...team,
+            avgPIV: avgPIV,
+            roleBalance: roleBalanceScore,
+            synergyScore: synergyScore,
+            tir: tir,
+            players: players.map(p => ({
+              id: p.stats.name,
+              name: p.stats.name,
+              piv: p.piv,
+              role: p.primaryRole
+            }))
+          });
+        }
+      }
+      
+      // Sort by TIR
+      teamsWithTIR.sort((a, b) => b.tir - a.tir);
+      
+      this.cachedTeamTIR.set(eventId, teamsWithTIR);
+      return teamsWithTIR;
+    } catch (error) {
+      console.error(`Error calculating team TIR for event ${eventId}:`, error);
+      return [];
+    }
+  }
+  
+  /**
+   * Get available events
+   */
+  getEvents(): { id: number; name: string }[] {
+    const events: { id: number; name: string }[] = [];
+    
+    // Add database events
+    for (const [id, name] of this.eventNames.entries()) {
+      events.push({ id, name });
     }
     
-    // Check for inconsistency
-    if (players.length > 0 && players.every(p => !p.pivComponents || p.pivComponents.icf < 0.6)) {
-      weaknesses.push("Inconsistent performance");
+    // If no database events, add CSV event
+    if (events.length === 0) {
+      events.push({ id: 1, name: 'IEM_Katowice_2025' });
     }
     
-    // Check for weak in-game leadership
-    const igls = players.filter(p => p.isIGL);
-    if (igls.length === 0) {
-      weaknesses.push("No identified in-game leader");
-    } else if (igls.every(p => p.piv < 0.6)) {
-      weaknesses.push("Weak in-game leadership");
+    return events;
+  }
+  
+  /**
+   * Load player data from CSV files (fallback method)
+   */
+  private async loadCSVData(): Promise<PlayerRawStats[]> {
+    // Try new CSV format first
+    try {
+      const newPlayerStats = await loadNewPlayerStats();
+      if (newPlayerStats && newPlayerStats.length > 0) {
+        console.log(`Loaded ${newPlayerStats.length} players from new CSV format`);
+        return newPlayerStats;
+      }
+    } catch (error) {
+      console.error('Error loading new CSV format:', error);
     }
     
-    // Check for overall low PIV
-    const avgPIV = players.reduce((sum, p) => sum + p.piv, 0) / Math.max(1, players.length);
-    if (avgPIV < 0.65) {
-      weaknesses.push("Below average individual performance");
+    // Fall back to old CSV format
+    try {
+      const oldPlayerStats = await loadPlayerData();
+      console.log(`Loaded ${oldPlayerStats.length} players from old CSV format`);
+      return oldPlayerStats;
+    } catch (error) {
+      console.error('Error loading old CSV format:', error);
+      return [];
     }
-    
-    // Default weaknesses if none were found
-    if (weaknesses.length === 0) {
-      weaknesses.push("Limited international experience");
-    }
-    
-    return weaknesses.slice(0, 3); // Return top 3 weaknesses
+  }
+  
+  /**
+   * Check if database connection is available
+   */
+  isSupabaseConnected(): boolean {
+    return this.isConnected;
+  }
+  
+  /**
+   * Get the number of available events
+   */
+  getEventCount(): number {
+    return this.availableEvents.length;
   }
 }
-
-export const supabaseStorage = new SupabaseStorage();

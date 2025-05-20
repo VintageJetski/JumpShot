@@ -13,7 +13,6 @@ import TeamGroup from "@/components/players/TeamGroup";
 import RoleFilterChips from "@/components/players/RoleFilterChips";
 import EnhancedStatsCard from "@/components/stats/EnhancedStatsCard";
 import StatisticalOutliers from "@/components/players/StatisticalOutliers";
-// No event selector needed as we're amalgamating all data
 
 export default function PlayersPage() {
   const [, setLocation] = useLocation();
@@ -21,7 +20,7 @@ export default function PlayersPage() {
   const [roleFilter, setRoleFilter] = useState<string>("All Roles");
   const [viewMode, setViewMode] = useState<"cards" | "table" | "teams">("cards");
   
-  // Fetch all players data from all events combined
+  // Fetch all players data (we'll filter client-side for more flexibility)
   const { data: players, isLoading, isError } = useQuery<PlayerWithPIV[]>({
     queryKey: ["/api/players"],
   });
@@ -256,7 +255,7 @@ export default function PlayersPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            All tournaments combined - Ranked by Player Impact Value (PIV)
+            Ranked by Player Impact Value (PIV)
           </motion.p>
         </motion.div>
         
@@ -353,9 +352,7 @@ export default function PlayersPage() {
 
       {/* Statistical Outliers Section */}
       {!isLoading && !isError && filteredPlayers.length > 0 && (
-        <StatisticalOutliers 
-          players={players || []} 
-        />
+        <StatisticalOutliers players={players || []} />
       )}
 
       {/* Stats Overview Cards (Top Players) */}

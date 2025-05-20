@@ -47,9 +47,9 @@ export default function PlayerDetailPage() {
   }
 
   // Get the metrics for each side
-  const overallMetricsKeys = player.rcs && player.rcs.metrics ? Object.keys(player.rcs.metrics) : [];
-  const tMetricsKeys = player.tMetrics && player.tMetrics.roleMetrics ? Object.keys(player.tMetrics.roleMetrics) : [];
-  const ctMetricsKeys = player.ctMetrics && player.ctMetrics.roleMetrics ? Object.keys(player.ctMetrics.roleMetrics) : [];
+  const overallMetricsKeys = Object.keys(player.metrics.rcs.metrics);
+  const tMetricsKeys = player.tMetrics ? Object.keys(player.tMetrics.roleMetrics) : [];
+  const ctMetricsKeys = player.ctMetrics ? Object.keys(player.ctMetrics.roleMetrics) : [];
   
   return (
     <div className="space-y-6">

@@ -24,21 +24,16 @@ const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players }) =>
   const findOutliers = (): OutlierCard[] => {
     if (!players || players.length === 0) return [];
     
-    // Using all players combined across all events
-    const filteredPlayers = players;
-    
     // Results array
     const outliers: OutlierCard[] = [];
     
     // Find highest headshot player
-    const headshotPlayer = [...filteredPlayers]
-      .filter(p => p.rawStats && typeof p.rawStats.headshots === 'number' && typeof p.rawStats.kills === 'number')
-      .sort((a, b) => 
-        (b.rawStats.headshots / Math.max(b.rawStats.kills, 1)) - 
-        (a.rawStats.headshots / Math.max(a.rawStats.kills, 1))
-      )[0];
+    const headshotPlayer = [...players].sort((a, b) => 
+      b.rawStats.headshots / Math.max(b.rawStats.kills, 1) - 
+      a.rawStats.headshots / Math.max(a.rawStats.kills, 1)
+    )[0];
     
-    if (headshotPlayer && headshotPlayer.rawStats.headshots) {
+    if (headshotPlayer) {
       const headshotRatio = (headshotPlayer.rawStats.headshots / Math.max(headshotPlayer.rawStats.kills, 1)) * 100;
       outliers.push({
         title: "Headshot King",
@@ -51,15 +46,13 @@ const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players }) =>
     }
     
     // Find top flash assist player
-    const flashPlayer = [...players]
-      .filter(p => p.rawStats && typeof p.rawStats.assisted_flashes === 'number' && typeof p.rawStats.flashes_thrown === 'number')
-      .sort((a, b) => 
-        (b.rawStats.assisted_flashes / Math.max(b.rawStats.flashes_thrown, 1)) - 
-        (a.rawStats.assisted_flashes / Math.max(a.rawStats.flashes_thrown, 1))
-      )[0];
+    const flashPlayer = [...players].sort((a, b) => 
+      b.rawStats.assistedFlashes / Math.max(b.rawStats.flashesThrown, 1) - 
+      a.rawStats.assistedFlashes / Math.max(a.rawStats.flashesThrown, 1)
+    )[0];
     
-    if (flashPlayer && flashPlayer.rawStats.assisted_flashes) {
-      const flashRatio = (flashPlayer.rawStats.assisted_flashes / Math.max(flashPlayer.rawStats.flashes_thrown, 1)) * 100;
+    if (flashPlayer) {
+      const flashRatio = (flashPlayer.rawStats.assistedFlashes / Math.max(flashPlayer.rawStats.flashesThrown, 1)) * 100;
       outliers.push({
         title: "Flash Master",
         player: flashPlayer,
@@ -68,34 +61,16 @@ const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players }) =>
         icon: <Zap className="h-5 w-5 text-cyan-300" />,
         description: `${flashRatio.toFixed(1)}% flash effectiveness`
       });
-    } else {
-      // Fallback to player with most flashes
-      const mostFlashesPlayer = [...players]
-        .filter(p => p.rawStats && typeof p.rawStats.flashes_thrown === 'number')
-        .sort((a, b) => (b.rawStats.flashes_thrown || 0) - (a.rawStats.flashes_thrown || 0))[0];
-        
-      if (mostFlashesPlayer && mostFlashesPlayer.rawStats.flashes_thrown) {
-        outliers.push({
-          title: "Flash Master",
-          player: mostFlashesPlayer,
-          statValue: mostFlashesPlayer.rawStats.flashes_thrown,
-          bgGradient: "from-blue-700 to-cyan-500",
-          icon: <Zap className="h-5 w-5 text-cyan-300" />,
-          description: `${mostFlashesPlayer.rawStats.flashes_thrown} flashes thrown`
-        });
-      }
     }
     
     // Find best opening kill player
-    const openingKillPlayer = [...players]
-      .filter(p => p.rawStats && typeof p.rawStats.first_kills === 'number' && typeof p.rawStats.first_deaths === 'number')
-      .sort((a, b) => 
-        (b.rawStats.first_kills / Math.max(b.rawStats.first_kills + b.rawStats.first_deaths, 1)) - 
-        (a.rawStats.first_kills / Math.max(a.rawStats.first_kills + a.rawStats.first_deaths, 1))
-      )[0];
+    const openingKillPlayer = [...players].sort((a, b) => 
+      (b.rawStats.firstKills / Math.max(b.rawStats.firstKills + b.rawStats.firstDeaths, 1)) - 
+      (a.rawStats.firstKills / Math.max(a.rawStats.firstKills + a.rawStats.firstDeaths, 1))
+    )[0];
     
-    if (openingKillPlayer && openingKillPlayer.rawStats.first_kills) {
-      const openingRatio = (openingKillPlayer.rawStats.first_kills / Math.max(openingKillPlayer.rawStats.first_kills + openingKillPlayer.rawStats.first_deaths, 1)) * 100;
+    if (openingKillPlayer) {
+      const openingRatio = (openingKillPlayer.rawStats.firstKills / Math.max(openingKillPlayer.rawStats.firstKills + openingKillPlayer.rawStats.firstDeaths, 1)) * 100;
       outliers.push({
         title: "Opening Kill Specialist",
         player: openingKillPlayer,
@@ -104,68 +79,32 @@ const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players }) =>
         icon: <ZapIcon className="h-5 w-5 text-emerald-300" />,
         description: `${openingRatio.toFixed(1)}% opening duel winrate`
       });
-    } else {
-      // Fallback to player with most first kills
-      const mostFirstKills = [...players]
-        .filter(p => p.rawStats && typeof p.rawStats.first_kills === 'number')
-        .sort((a, b) => (b.rawStats.first_kills || 0) - (a.rawStats.first_kills || 0))[0];
-        
-      if (mostFirstKills && mostFirstKills.rawStats.first_kills) {
-        outliers.push({
-          title: "Opening Kill Specialist",
-          player: mostFirstKills,
-          statValue: mostFirstKills.rawStats.first_kills,
-          bgGradient: "from-emerald-700 to-emerald-500",
-          icon: <ZapIcon className="h-5 w-5 text-emerald-300" />,
-          description: `${mostFirstKills.rawStats.first_kills} opening kills`
-        });
-      }
     }
     
     // Find smoke specialist
-    const smokePlayer = [...players]
-      .filter(p => p.rawStats && typeof p.rawStats.smokes_thrown === 'number')
-      .sort((a, b) => 
-        (b.rawStats.smokes_thrown || 0) - (a.rawStats.smokes_thrown || 0)
-      )[0];
+    const smokePlayer = [...players].sort((a, b) => 
+      b.rawStats.smokesThrown - a.rawStats.smokesThrown
+    )[0];
     
-    if (smokePlayer && smokePlayer.rawStats.smokes_thrown) {
+    if (smokePlayer) {
       outliers.push({
         title: "Smoke Specialist",
         player: smokePlayer,
-        statValue: smokePlayer.rawStats.smokes_thrown,
+        statValue: smokePlayer.rawStats.smokesThrown,
         bgGradient: "from-indigo-700 to-indigo-500",
         icon: <CircleDot className="h-5 w-5 text-indigo-300" />,
-        description: `${smokePlayer.rawStats.smokes_thrown} smokes thrown`
+        description: `${smokePlayer.rawStats.smokesThrown} smokes thrown`
       });
-    } else {
-      // Fallback to any player with utility usage
-      const utilityPlayer = [...players]
-        .filter(p => p.rawStats && typeof p.rawStats.total_utility_thrown === 'number')
-        .sort((a, b) => (b.rawStats.total_utility_thrown || 0) - (a.rawStats.total_utility_thrown || 0))[0];
-        
-      if (utilityPlayer && utilityPlayer.rawStats.total_utility_thrown) {
-        outliers.push({
-          title: "Utility Specialist",
-          player: utilityPlayer,
-          statValue: utilityPlayer.rawStats.total_utility_thrown,
-          bgGradient: "from-indigo-700 to-indigo-500",
-          icon: <CircleDot className="h-5 w-5 text-indigo-300" />,
-          description: `${utilityPlayer.rawStats.total_utility_thrown} utility thrown`
-        });
-      }
     }
     
     // Find through smoke killer
-    const throughSmokePlayer = [...players]
-      .filter(p => p.rawStats && typeof p.rawStats.through_smoke === 'number' && typeof p.rawStats.kills === 'number')
-      .sort((a, b) => 
-        (b.rawStats.through_smoke / Math.max(b.rawStats.kills, 1)) - 
-        (a.rawStats.through_smoke / Math.max(a.rawStats.kills, 1))
-      )[0];
+    const throughSmokePlayer = [...players].sort((a, b) => 
+      b.rawStats.throughSmoke / Math.max(b.rawStats.kills, 1) - 
+      a.rawStats.throughSmoke / Math.max(a.rawStats.kills, 1)
+    )[0];
     
-    if (throughSmokePlayer && throughSmokePlayer.rawStats.through_smoke) {
-      const throughSmokeRatio = (throughSmokePlayer.rawStats.through_smoke / Math.max(throughSmokePlayer.rawStats.kills, 1)) * 100;
+    if (throughSmokePlayer) {
+      const throughSmokeRatio = (throughSmokePlayer.rawStats.throughSmoke / Math.max(throughSmokePlayer.rawStats.kills, 1)) * 100;
       outliers.push({
         title: "Smoke Criminal",
         player: throughSmokePlayer,
@@ -174,22 +113,6 @@ const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players }) =>
         icon: <FlameIcon className="h-5 w-5 text-purple-300" />,
         description: `${throughSmokeRatio.toFixed(1)}% kills through smoke`
       });
-    } else {
-      // Fallback to most wallbang kills
-      const wallbangPlayer = [...players]
-        .filter(p => p.rawStats && typeof p.rawStats.wallbang_kills === 'number')
-        .sort((a, b) => (b.rawStats.wallbang_kills || 0) - (a.rawStats.wallbang_kills || 0))[0];
-        
-      if (wallbangPlayer && wallbangPlayer.rawStats.wallbang_kills) {
-        outliers.push({
-          title: "Wallbang King",
-          player: wallbangPlayer,
-          statValue: wallbangPlayer.rawStats.wallbang_kills,
-          bgGradient: "from-purple-700 to-purple-500",
-          icon: <FlameIcon className="h-5 w-5 text-purple-300" />,
-          description: `${wallbangPlayer.rawStats.wallbang_kills} wallbang kills`
-        });
-      }
     }
     
     // Find highest impact CT player based on CT PIV
@@ -206,22 +129,6 @@ const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players }) =>
         icon: <Shield className="h-5 w-5 text-blue-300" />,
         description: `${Math.round(ctPlayer.ctPIV * 100)} CT side PIV`
       });
-    } else {
-      // Fallback if ctPIV is not available - use CT round wins
-      const bestCtPlayer = [...players]
-        .filter(p => p.rawStats && typeof p.rawStats.ct_rounds_won === 'number')
-        .sort((a, b) => (b.rawStats.ct_rounds_won || 0) - (a.rawStats.ct_rounds_won || 0))[0];
-        
-      if (bestCtPlayer && bestCtPlayer.rawStats.ct_rounds_won) {
-        outliers.push({
-          title: "CT Side Monster",
-          player: bestCtPlayer,
-          statValue: bestCtPlayer.rawStats.ct_rounds_won,
-          bgGradient: "from-blue-700 to-blue-400",
-          icon: <Shield className="h-5 w-5 text-blue-300" />,
-          description: `${bestCtPlayer.rawStats.ct_rounds_won} CT rounds won`
-        });
-      }
     }
     
     // Find highest T side impact player
@@ -238,22 +145,6 @@ const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players }) =>
         icon: <Award className="h-5 w-5 text-amber-300" />,
         description: `${Math.round(tPlayer.tPIV * 100)} T side PIV`
       });
-    } else {
-      // Fallback if tPIV is not available - use T round wins
-      const bestTPlayer = [...players]
-        .filter(p => p.rawStats && typeof p.rawStats.t_rounds_won === 'number')
-        .sort((a, b) => (b.rawStats.t_rounds_won || 0) - (a.rawStats.t_rounds_won || 0))[0];
-        
-      if (bestTPlayer && bestTPlayer.rawStats.t_rounds_won) {
-        outliers.push({
-          title: "T Side Dominator",
-          player: bestTPlayer,
-          statValue: bestTPlayer.rawStats.t_rounds_won,
-          bgGradient: "from-amber-700 to-amber-400",
-          icon: <Award className="h-5 w-5 text-amber-300" />,
-          description: `${bestTPlayer.rawStats.t_rounds_won} T rounds won`
-        });
-      }
     }
     
     // Return all outliers

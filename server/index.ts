@@ -1,47 +1,70 @@
-import express, { Express, Request, Response, NextFunction } from 'express';
-import { createServer } from 'http';
-import { setupVite } from './vite';
-import { createCleanServer } from './clean-index';
-import { cleanSupabaseService } from './clean-supabase-service';
-import { getPlayersFromSupabase, getTeamsFromPlayers } from './direct-supabase-query';
+import express, { type Request, Response, NextFunction } from "express";
+import { registerRoutes } from "./routes";
+import { setupVite, serveStatic, log } from "./vite";
 
-// Start the server
-const PORT = process.env.PORT || 5000;
+const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-async function start() {
-  console.log('Starting server with raw Supabase data integration...');
-  
-  try {
-    // Get data stats
-    const players = await getPlayersFromSupabase();
-    const teams = await getTeamsFromPlayers();
-    
-    console.log(`Found ${players.length} player stats in Supabase`);
-    console.log(`Created ${teams.length} teams from player data`);
-    console.log(`Processed ${players.length} players and ${teams.length} teams from Supabase`);
-  } catch (error) {
-    console.error('Warning: Error processing Supabase data:', error);
-  }
-  
-  try {
-    // Create and start the server using our clean implementation
-    const app: Express = express();
-    const httpServer = createServer(app);
-    
-    // Set up Vite middleware in development
-    setupVite(app, httpServer);
-    
-    // Start the server
-    httpServer.listen(PORT, () => {
-      console.log(`[express] serving on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-}
+app.use((req, res, next) => {
+  const start = Date.now();
+  const path = req.path;
+  let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
-start().catch(error => {
-  console.error('Failed to start server:', error);
-  process.exit(1);
+  const originalResJson = res.json;
+  res.json = function (bodyJson, ...args) {
+    capturedJsonResponse = bodyJson;
+    return originalResJson.apply(res, [bodyJson, ...args]);
+  };
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (path.startsWith("/api")) {
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      if (capturedJsonResponse) {
+        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      }
+
+      if (logLine.length > 80) {
+        logLine = logLine.slice(0, 79) + "…";
+      }
+
+      log(logLine);
+    }
+  });
+
+  next();
 });
+
+(async () => {
+  const server = await registerRoutes(app);
+
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+
+    res.status(status).json({ message });
+    throw err;
+  });
+
+  // importantly only setup vite in development and after
+  // setting up all the other routes so the catch-all route
+  // doesn't interfere with the other routes
+  if (app.get("env") === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
+  }
+
+  // ALWAYS serve the app on port 5000
+  // this serves both the API and the client.
+  // It is the only port that is not firewalled.
+  const port = 5000;
+  server.listen({
+    port,
+    host: "0.0.0.0",
+    reusePort: true,
+  }, () => {
+    log(`serving on port ${port}`);
+  });
+})();

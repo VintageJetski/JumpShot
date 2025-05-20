@@ -1,55 +1,75 @@
-import express, { Express, Request, Response, NextFunction } from 'express';
-import path from 'path';
-import bodyParser from 'body-parser';
-import apiRoutes from './routes-with-supabase';
-import session from 'express-session';
+import express, { Express } from 'express';
+import { registerRoutes } from './routes';
+import { setupAuth } from './auth';
+import { initializePlayerData } from './playerDataLoader';
+import { initializeRoundData } from './roundDataLoader';
+import { dataRefreshManager } from './dataRefreshManager';
+import { storage } from './storage';
 import { supabaseStorage } from './supabase-storage';
 
-// Create Express app
+// Initialize app
 const app: Express = express();
 
-// Configure session
-const sessionConfig = {
-  secret: process.env.SESSION_SECRET || 'keyboard cat',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-  }
-};
+// Configure middleware
+app.use(express.json());
 
-// Configure app
-app.use(session(sessionConfig));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// Setup authentication
+setupAuth(app);
 
-// Use the API routes
-app.use(apiRoutes);
-
-// Error handling middleware
-app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
-});
-
-// Start the server
-const PORT = process.env.PORT || 5000;
-
+// Initialize data and start server
 async function start() {
-  console.log('Starting server with Supabase integration...');
-  
-  // Test Supabase connection
-  const isConnected = await supabaseStorage.checkConnection();
-  console.log(`Supabase database connection: ${isConnected ? 'Available' : 'Unavailable'}`);
-  
-  // Start the server
-  app.listen(PORT, () => {
-    console.log(`[express] serving on port ${PORT}`);
-  });
+  try {
+    // Start the data refresh manager - this will test the Supabase connection
+    await dataRefreshManager.start();
+    
+    if (dataRefreshManager.isSupabaseAvailable()) {
+      console.log('Using Supabase as the primary data source');
+      
+      // In a full implementation, you could replace the global storage
+      // storage = supabaseStorage;
+      
+      // For now, let's still initialize data from CSV as a fallback
+      await initializePlayerData();
+      await initializeRoundData();
+    } else {
+      console.log('Using CSV files as the data source');
+      await initializePlayerData();
+      await initializeRoundData();
+    }
+    
+    // Register routes and get HTTP server
+    const httpServer = registerRoutes(app);
+
+    // Default port
+    const PORT = process.env.PORT || 5000;
+    
+    // Start server
+    httpServer.listen(PORT, () => {
+      console.log(`[express] serving on port ${PORT}`);
+    });
+    
+    // Handle graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM received, shutting down gracefully');
+      dataRefreshManager.stop();
+      httpServer.close(() => {
+        console.log('HTTP server closed');
+      });
+    });
+    
+    process.on('SIGINT', () => {
+      console.log('SIGINT received, shutting down gracefully');
+      dataRefreshManager.stop();
+      httpServer.close(() => {
+        console.log('HTTP server closed');
+      });
+    });
+    
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
 }
 
-start().catch(error => {
-  console.error('Failed to start server:', error);
-  process.exit(1);
-});
+// Start the application
+start();

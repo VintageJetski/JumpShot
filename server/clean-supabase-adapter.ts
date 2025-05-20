@@ -287,7 +287,7 @@ export class CleanSupabaseAdapter {
           name: teamName,
           logo: '', // No logo in database, provide default
           tir: Number(team.tir) || (averagePIV * 1.05), // Derived TIR if missing
-          sumPIV: Number(team.sumPIV) || totalPIV,
+          sumPIV: Number(team.sum_piv) || totalPIV,
           synergy: Number(team.synergy) || 0.85,
           avgPIV: averagePIV,
           topPlayer: topPlayer,

@@ -186,10 +186,9 @@ export class SupabaseStorage {
    * @param eventId Event ID to fetch player stats with PIV for
    */
   async getPlayerStatsWithPIV(eventId: number): Promise<PlayerWithPIV[]> {
-    // Check if we have cached data
-    if (this.cachedPlayerPIV.has(eventId)) {
-      return this.cachedPlayerPIV.get(eventId) || [];
-    }
+    // Temporarily disable cache for debugging
+    console.log('DEBUG - Forcing fresh processing (cache disabled for debugging)');
+    this.cachedPlayerPIV.delete(eventId);
     
     try {
       // Get raw player stats first

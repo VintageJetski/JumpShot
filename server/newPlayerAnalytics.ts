@@ -268,44 +268,57 @@ function calculateRCS(normalizedMetrics: Record<string, number>): number {
  * Redesigned to better reward high-performing players
  */
 function calculateICF(stats: PlayerRawStats, isIGL: boolean = false): { value: number, sigma: number } {
+  // Helper function to safely access fields with different naming conventions
+  const getField = (fieldName: string, fallbackValue: number = 0): number => {
+    if (fieldName in stats && typeof stats[fieldName as keyof PlayerRawStats] === 'number') {
+      return stats[fieldName as keyof PlayerRawStats] as number;
+    }
+    return fallbackValue;
+  };
+
+  // Get KD from Supabase data - supports both snake_case and camelCase
+  const kd = getField('kd', getField('k_d_diff', 1.0) / 10 + 1.0);
+  
   // Calculate base sigma - lower values = better consistency
   let sigma = 0;
   
-  if (stats.kd >= 1.4) {
+  if (kd >= 1.4) {
     // For star players with high K/D, give a much lower sigma (high consistency)
     sigma = 0.3;
-  } else if (stats.kd >= 1.2) {
+  } else if (kd >= 1.2) {
     // For good players, give a moderately low sigma
     sigma = 0.5;
-  } else if (stats.kd >= 1.0) {
+  } else if (kd >= 1.0) {
     // For average players, standard sigma
-    sigma = Math.abs(1 - stats.kd) * 1.2;
+    sigma = Math.abs(1 - kd) * 1.2;
   } else {
     // For below average players, higher sigma
-    sigma = Math.abs(1 - stats.kd) * 1.8;
+    sigma = Math.abs(1 - kd) * 1.8;
   }
   
   // Calculate ICF - normalize to 0-1 range
   let icf = 1 / (1 + sigma);
   
   // Boost for high-performing players
-  if (stats.kd > 1.3) {
+  if (kd > 1.3) {
     // Apply a multiplier based on how much above 1.3 the K/D is
-    const boostFactor = 1 + ((stats.kd - 1.3) * 0.5);
+    const boostFactor = 1 + ((kd - 1.3) * 0.5);
     icf = Math.min(icf * boostFactor, 1.0); // Cap at 1.0
   }
   
   // Adjust for IGL role
   if (isIGL) {
     // Less aggressive reduction for IGLs with good K/D
-    const reductionFactor = (stats.kd >= 1.2) ? 0.85 : 0.75;
+    const reductionFactor = (kd >= 1.2) ? 0.85 : 0.75;
     icf = icf * reductionFactor;
   }
-  else if (stats.kd > 1.2) { // Lower threshold to 1.2 (previously 1.3)
+  else if (kd > 1.2) { // Lower threshold to 1.2 (previously 1.3)
     // Provide a scaling bonus based on how high the K/D is
-    const kdBonus = (stats.kd - 1.2) * 0.25; // Increased bonus multiplier from 0.2 to 0.25
+    const kdBonus = (kd - 1.2) * 0.25; // Increased bonus multiplier from 0.2 to 0.25
     icf = Math.min(icf + kdBonus, 0.92); // Cap at 0.92 (previously 0.9)
   }
+  
+  console.log(`Calculated ICF: ${icf.toFixed(3)}, sigma: ${sigma.toFixed(3)} based on KD: ${kd.toFixed(2)}`);
   
   return { value: icf, sigma };
 }
@@ -314,39 +327,76 @@ function calculateICF(stats: PlayerRawStats, isIGL: boolean = false): { value: n
  * Calculate SC (Synergy Contribution) based on role
  */
 function calculateSC(stats: PlayerRawStats, role: PlayerRole): { value: number, metric: string } {
+  // Helper function to safely access fields with different naming conventions
+  const getField = (fieldName: string, fallbackValue: number = 0): number => {
+    if (fieldName in stats && typeof stats[fieldName as keyof PlayerRawStats] === 'number') {
+      return stats[fieldName as keyof PlayerRawStats] as number;
+    }
+    return fallbackValue;
+  };
+  
+  // Get primary metrics with fallbacks for different naming conventions
+  const kd = getField('kd', getField('k_d_diff', 1.0) / 10 + 1.0);
+  const kills = getField('kills', 1);
+  const assists = getField('assists', 0);
+  const firstKills = getField('first_kills') || getField('firstKills', 0);
+  const tFirstKills = getField('t_first_kills') || getField('tFirstKills', 0);
+  const ctFirstKills = getField('ct_first_kills') || getField('ctFirstKills', 0);
+  const tFirstDeaths = getField('t_first_deaths') || getField('tFirstDeaths', 0);
+  const assistedFlashes = getField('assisted_flashes') || getField('assistedFlashes', 0);
+  const throughSmoke = getField('through_smoke') || getField('throughSmoke', 0);
+  
+  // Calculate total utility metrics
+  const flashesThrown = getField('flahes_thrown') || getField('flashesThrown', 1);
+  const smokesThrown = getField('smokes_thrown') || getField('smokesThrown', 0);
+  const heThrown = getField('he_thrown') || getField('heThrown', 0);
+  const infernosThrown = getField('infernos_thrown') || getField('infernosThrown', 0);
+  const totalUtilityThrown = flashesThrown + smokesThrown + heThrown + infernosThrown;
+  
   // For all roles, introduce a small K/D component to ensure consistency
   // between fragging ability and role performance
-  const kdFactor = Math.min(stats.kd / 2, 0.6); // K/D contribution, capped at 0.6
+  const kdFactor = Math.min(kd / 2, 0.6); // K/D contribution, capped at 0.6
   
   switch (role) {
     case PlayerRole.AWP:
       // Rebalanced AWP impact to prevent AWP dominance
       // Reduced weighting of K/D ratio and added utility component
-      const awpOpeningKills = stats.firstKills / Math.max(stats.tFirstKills + stats.ctFirstKills, 1);
-      const awpKDRating = Math.min(stats.kd / 1.8, 0.85); // Lower cap and normalizing factor
-      const awpUtilityImpact = stats.assistedFlashes / Math.max(stats.totalUtilityThrown, 1);
+      const awpOpeningKills = firstKills / Math.max(tFirstKills + ctFirstKills, 1);
+      const awpKDRating = Math.min(kd / 1.8, 0.85); // Lower cap and normalizing factor
+      const awpUtilityImpact = assistedFlashes / Math.max(totalUtilityThrown, 1);
+      
+      const awpValue = (awpOpeningKills * 0.35) + (awpKDRating * 0.35) + (awpUtilityImpact * 0.15) + (kdFactor * 0.15);
+      console.log(`AWP SC: ${awpValue.toFixed(3)}`);
+      
       return { 
-        value: (awpOpeningKills * 0.35) + (awpKDRating * 0.35) + (awpUtilityImpact * 0.15) + (kdFactor * 0.15),
+        value: awpValue,
         metric: "AWP Impact Rating"
       };
     case PlayerRole.IGL:
       // For IGLs, maintain assist focus but reduce weighting, increase K/D importance
+      const iglValue = (assists / (kills || 1) * 0.4) + (kdFactor * 0.2);
+      console.log(`IGL SC: ${iglValue.toFixed(3)}`);
+      
       return { 
-        value: (stats.assists / (stats.kills || 1) * 0.4) + (kdFactor * 0.2),
+        value: iglValue,
         metric: "In-game Impact Rating"
       };
     case PlayerRole.Spacetaker:
       // For Spacetakers (entry fraggers), heavily reward opening duels and high K/D
-      const entrySuccess = stats.tFirstKills / Math.max(stats.tFirstKills + stats.tFirstDeaths, 1);
-      const entryKDRating = Math.min(stats.kd / 1.3, 1); // Normalize to 0-1
+      const entrySuccess = tFirstKills / Math.max(tFirstKills + tFirstDeaths, 1);
+      const entryKDRating = Math.min(kd / 1.3, 1); // Normalize to 0-1
+      
+      const spacetakerValue = (entrySuccess * 0.5) + (entryKDRating * 0.4) + (kdFactor * 0.1);
+      console.log(`Spacetaker SC: ${spacetakerValue.toFixed(3)}`);
+      
       return { 
-        value: (entrySuccess * 0.5) + (entryKDRating * 0.4) + (kdFactor * 0.1),
+        value: spacetakerValue,
         metric: "Entry Impact Rating"
       };
     case PlayerRole.Lurker:
       // For lurkers, reward clutch situations (using K/D as proxy) and smoke kills
-      const clutchRating = Math.min(stats.kd / 1.3, 1);
-      const smokeImpact = stats.throughSmoke / Math.max(stats.kills, 1);
+      const clutchRating = Math.min(kd / 1.3, 1);
+      const smokeImpact = throughSmoke / Math.max(kills, 1);
       return { 
         value: (clutchRating * 0.45) + (smokeImpact * 0.35) + (kdFactor * 0.2),
         metric: "Clutch & Information Rating"

@@ -211,15 +211,26 @@ export class SupabaseStorage {
       
       // Process player stats with PIV
       console.log(`Processing PIV for ${playerStats.length} players in event ${eventId}...`);
+      console.log('DEBUG - Sample player data before processing:', playerStats[0] ? {
+        fields: Object.keys(playerStats[0]),
+        steamId: playerStats[0].steamId,
+        userName: playerStats[0].userName,
+        teamName: playerStats[0].teamName,
+        kills: playerStats[0].kills,
+        deaths: playerStats[0].deaths
+      } : 'No player data');
+      
       let playersWithPIV: PlayerWithPIV[];
       
       if (eventId === 1) {
         // For IEM Katowice, load role information and process
         const { loadPlayerRoles } = await import('./loadRoleData');
         const roleMap = await loadPlayerRoles();
+        console.log(`DEBUG - Role map loaded with ${roleMap.size} entries`);
         playersWithPIV = processPlayerStatsWithRoles(playerStats, roleMap);
       } else {
         // For other events, use general role assignment
+        console.log('DEBUG - Using general role assignment for event', eventId);
         playersWithPIV = processPlayerStats(playerStats, teamMap);
       }
       

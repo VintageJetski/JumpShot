@@ -630,6 +630,17 @@ function calculateOSM(): number {
  * Calculate PIV (Player Impact Value)
  */
 function calculatePIV(rcs: number, icf: number, sc: number, osm: number, kd: number = 1.0, basicScore: number = 0.5, role: PlayerRole = PlayerRole.Support): number {
+  // Handle situation where SC or ICF values are null - this is what's causing our issue
+  if (sc === null || sc === undefined) {
+    console.log(`WARNING: SC value is null for role ${role}, using default value 0.4`);
+    sc = 0.4; // Default value to prevent null PIV
+  }
+  
+  if (icf === null || icf === undefined) {
+    console.log(`WARNING: ICF value is null for role ${role}, using default value 0.6`);
+    icf = 0.6; // Default value to prevent null PIV
+  }
+
   // New calculation with basic metrics integration
   // Reduce advanced metrics (RCS) to 50% weight
   const reducedRCS = rcs * 0.5;
@@ -672,7 +683,10 @@ function calculatePIV(rcs: number, icf: number, sc: number, osm: number, kd: num
       roleModifier = 1.0;
   }
   
-  return basePIV * (1 + kdFactor + starBonus) * roleModifier;
+  const finalPIV = basePIV * (1 + kdFactor + starBonus) * roleModifier;
+  console.log(`PIV calculation: RCS=${rcs.toFixed(2)}, ICF=${icf.toFixed(2)}, SC=${sc.toFixed(2)}, Final PIV=${finalPIV.toFixed(2)}`);
+  
+  return finalPIV;
 }
 
 /**

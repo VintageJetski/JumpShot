@@ -382,4 +382,78 @@ export class SupabaseStorage {
   getEventCount(): number {
     return this.availableEvents.length;
   }
+  
+  /**
+   * Update event data from raw SQL adapter
+   * This method allows the data refresh manager to inject fresh Supabase data
+   */
+  updateEventData(eventId: number, data: {
+    players: any[];
+    teams: any[];
+    event: { id: number; name: string };
+  }): void {
+    try {
+      console.log(`Updating cached data for event ${eventId} (${data.event.name})`);
+      
+      // Update event name
+      this.eventNames.set(eventId, data.event.name);
+      
+      // Convert and cache player data
+      if (data.players && data.players.length > 0) {
+        // Convert raw player data to PlayerRawStats format
+        const playerStats: PlayerRawStats[] = data.players.map(p => ({
+          name: p.name || 'Unknown',
+          team: p.team_name || 'Unknown',
+          kills: p.kills || 0,
+          deaths: p.deaths || 0,
+          assists: p.assists || 0,
+          adr: p.adr || 0,
+          kast: p.kast || 0,
+          rating: p.rating || 0,
+          entryKills: p.entry_kills || 0,
+          entryDeaths: p.entry_deaths || 0,
+          multiKills: p.multi_kills || 0,
+          clutchWins: p.clutch_wins || 0,
+          clutchAttempts: p.clutch_attempts || 0,
+          flashAssists: p.flash_assists || 0,
+          rounds: p.rounds || 1,
+          maps: p.maps || 1,
+          teamRounds: p.team_rounds || 1
+        }));
+        
+        this.cachedPlayerStats.set(eventId, playerStats);
+        console.log(`  - Cached ${playerStats.length} players`);
+      }
+      
+      // Convert and cache team data
+      if (data.teams && data.teams.length > 0) {
+        const teamStats: TeamRawStats[] = data.teams.map(t => ({
+          id: t.id || 0,
+          name: t.name || 'Unknown',
+          eventId: eventId,
+          kills: t.total_kills || 0,
+          deaths: t.total_deaths || 0,
+          assists: t.total_assists || 0,
+          adr: t.avg_adr || 0,
+          kast: t.avg_kast || 0,
+          rating: t.avg_rating || 0,
+          roundsWon: t.rounds_won || 0,
+          roundsTotal: t.rounds_total || 0,
+          mapsWon: t.maps_won || 0,
+          mapsTotal: t.maps_total || 0
+        }));
+        
+        this.cachedTeamStats.set(eventId, teamStats);
+        console.log(`  - Cached ${teamStats.length} teams`);
+      }
+      
+      // Clear dependent caches to force recalculation with fresh data
+      this.cachedPlayerPIV.delete(eventId);
+      this.cachedTeamTIR.delete(eventId);
+      
+      console.log(`Successfully updated cached data for event ${eventId}`);
+    } catch (error) {
+      console.error(`Error updating event data for event ${eventId}:`, error);
+    }
+  }
 }

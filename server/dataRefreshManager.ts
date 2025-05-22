@@ -1,5 +1,6 @@
 import { SupabaseStorage } from './supabase-storage';
 import { testDatabaseConnection } from './supabase-db';
+import { RawSQLAdapter } from './raw-sql-adapter';
 
 /**
  * Class to manage scheduled data refreshes from Supabase
@@ -12,9 +13,11 @@ export class DataRefreshManager {
   private lastRefreshTime: Date | null = null;
   private _isSupabaseAvailable = false;
   private storage: SupabaseStorage;
+  private rawSQLAdapter: RawSQLAdapter;
 
   private constructor() {
     this.storage = new SupabaseStorage();
+    this.rawSQLAdapter = new RawSQLAdapter();
   }
 
   /**
@@ -88,7 +91,7 @@ export class DataRefreshManager {
   }
 
   /**
-   * Refresh data from Supabase or fallback sources
+   * Refresh data from Supabase using raw SQL adapter
    */
   public async refreshData(): Promise<void> {
     if (this.isRefreshing) {
@@ -99,39 +102,67 @@ export class DataRefreshManager {
     this.isRefreshing = true;
     
     try {
-      console.log('Starting data refresh...');
+      console.log('Starting data refresh using raw SQL adapter...');
       
-      // Check connection
-      const isConnected = await this.checkSupabaseConnection();
+      // Check connection using raw SQL adapter
+      const isConnected = await this.rawSQLAdapter.testConnection();
+      this._isSupabaseAvailable = isConnected;
       
       if (!isConnected) {
-        console.warn('Supabase connection not available, using CSV fallback data');
-        // Continue with fallback mechanisms in the storage class
+        console.warn('Supabase connection not available via raw SQL adapter, using CSV fallback data');
+        // Force storage to refresh by re-initializing with CSV fallback
+        await this.storage.initialize();
+        
+        // Get events from CSV fallback
+        const events = this.storage.getEvents();
+        console.log(`Found ${events.length} events from CSV fallback: ${events.map(e => e.name).join(', ')}`);
+        
+        this.lastRefreshTime = new Date();
+        console.log(`Data refresh completed with CSV fallback at ${this.lastRefreshTime.toISOString()}`);
+        return;
       }
       
-      // Force storage to refresh by re-initializing
-      await this.storage.initialize();
+      // Use raw SQL adapter to get fresh data from Supabase
+      console.log('Fetching fresh data from Supabase using raw SQL adapter...');
       
-      // Get all available events
-      const events = this.storage.getEvents();
+      // Get events from raw SQL
+      const events = await this.rawSQLAdapter.getEvents();
+      console.log(`Found ${events.length} events from Supabase: ${events.map(e => e.name).join(', ')}`);
       
-      console.log(`Found ${events.length} events: ${events.map(e => e.name).join(', ')}`);
-      
-      // Warm up the cache for each event
+      // Warm up the cache for each event using raw SQL data
       for (const event of events) {
         console.log(`Refreshing data for event ${event.name} (ID: ${event.id})...`);
         
-        // This will populate the internal caches
-        await this.storage.getPlayerStatsForEvent(event.id);
-        await this.storage.getTeamStatsForEvent(event.id);
-        await this.storage.getPlayerStatsWithPIV(event.id);
-        await this.storage.getTeamStatsWithTIR(event.id);
+        // Get players for this event using raw SQL adapter
+        const players = await this.rawSQLAdapter.getPlayersForEvent(event.id);
+        console.log(`  - Retrieved ${players.length} players for ${event.name}`);
+        
+        // Get teams for this event using raw SQL adapter
+        const teams = await this.rawSQLAdapter.getTeamsForEvent(event.id);
+        console.log(`  - Retrieved ${teams.length} teams for ${event.name}`);
+        
+        // Update storage with fresh Supabase data
+        this.storage.updateEventData(event.id, {
+          players,
+          teams,
+          event
+        });
       }
       
       this.lastRefreshTime = new Date();
-      console.log(`Data refresh completed at ${this.lastRefreshTime.toISOString()}`);
+      console.log(`Data refresh completed successfully using raw SQL adapter at ${this.lastRefreshTime.toISOString()}`);
     } catch (error) {
-      console.error('Error during data refresh:', error);
+      console.error('Error during data refresh with raw SQL adapter:', error);
+      console.log('Falling back to CSV data...');
+      
+      // Fallback to CSV data if Supabase fails
+      try {
+        await this.storage.initialize();
+        const events = this.storage.getEvents();
+        console.log(`Fallback successful: Found ${events.length} events from CSV`);
+      } catch (fallbackError) {
+        console.error('Fallback to CSV data also failed:', fallbackError);
+      }
     } finally {
       this.isRefreshing = false;
     }

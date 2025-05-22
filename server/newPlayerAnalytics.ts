@@ -915,7 +915,7 @@ function findPlayerRoleInfo(playerName: string, roleMap: Map<string, PlayerRoleI
   const entries = Array.from(roleMap.entries());
   
   // Try case-insensitive match
-  const lowerPlayerName = playerName.toLowerCase();
+  const lowerPlayerName = playerName ? playerName.toLowerCase() : '';
   for (const [name, info] of entries) {
     if (name.toLowerCase() === lowerPlayerName) {
       return info;

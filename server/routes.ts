@@ -40,23 +40,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const event of events) {
         try {
-          // Get raw player stats first
-          const rawPlayerStats = await supabaseStorage.getPlayerStatsForEvent(event.id);
-          
-          // Convert to basic player format for frontend
-          const basicPlayers = rawPlayerStats.map(stats => ({
-            id: stats.steamId || stats.userName || Math.random().toString(),
-            name: stats.userName || stats.name || 'Unknown',
-            team: stats.teamName || stats.team || 'Unknown',
-            role: 'Support', // Default role
-            piv: 1.0, // Default PIV
-            kd: stats.kd || (stats.kills && stats.deaths ? stats.kills / Math.max(stats.deaths, 1) : 1.0),
-            rawStats: stats,
-            eventId: event.id,
-            eventName: event.name
-          }));
-          
-          allPlayers = allPlayers.concat(basicPlayers);
+          const playersWithPIV = await supabaseStorage.getPlayerStatsWithPIV(event.id);
+          allPlayers = allPlayers.concat(playersWithPIV);
         } catch (error) {
           console.warn(`Could not get players for event ${event.id}:`, error);
         }
@@ -65,7 +50,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Apply role filter if specified
       const role = req.query.role as string | undefined;
       if (role && role !== 'All Roles') {
-        allPlayers = allPlayers.filter(player => player.role === role);
+        allPlayers = allPlayers.filter(player => 
+          player.role === role || player.tRole === role || player.ctRole === role
+        );
       }
       
       console.log(`Returning ${allPlayers.length} players from Supabase data`);

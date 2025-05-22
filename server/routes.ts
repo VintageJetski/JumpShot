@@ -31,6 +31,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
   app.get('/api/players', async (req: Request, res: Response) => {
     try {
+      console.log('DEBUG API ENTRY - Players API called');
       const { dataRefreshManager } = await import('./dataRefreshManager');
       const supabaseStorage = dataRefreshManager.getStorage();
       
@@ -40,7 +41,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const event of events) {
         try {
+          console.log(`DEBUG ROUTE - Processing event ${event.id}`);
           const playersWithPIV = await supabaseStorage.getPlayerStatsWithPIV(event.id);
+          console.log(`DEBUG ROUTE - Got ${playersWithPIV.length} players for event ${event.id}`);
+          if (playersWithPIV.length > 0) {
+            console.log('DEBUG ROUTE - Sample player object:', JSON.stringify(playersWithPIV[0], null, 2));
+          }
           allPlayers = allPlayers.concat(playersWithPIV);
         } catch (error) {
           console.warn(`Could not get players for event ${event.id}:`, error);
@@ -56,6 +62,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`Returning ${allPlayers.length} players from Supabase data`);
+      
+      // Show the actual structure we're returning
+      if (allPlayers.length > 0) {
+        console.log('ACTUAL PLAYER STRUCTURE:', JSON.stringify(allPlayers[0], null, 2));
+      }
+      
       res.json(allPlayers);
     } catch (error) {
       console.error('Error fetching players from Supabase:', error);

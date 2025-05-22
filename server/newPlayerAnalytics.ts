@@ -644,15 +644,25 @@ function calculateOSM(): number {
  * Calculate PIV (Player Impact Value)
  */
 function calculatePIV(rcs: number, icf: number, sc: number, osm: number, kd: number = 1.0, basicScore: number = 0.5, role: PlayerRole = PlayerRole.Support): number {
-  // Handle situation where SC or ICF values are null - this is what's causing our issue
-  if (sc === null || sc === undefined) {
-    console.log(`WARNING: SC value is null for role ${role}, using default value 0.4`);
+  // Handle situation where any values are null or NaN - this is what's causing our issue
+  if (sc === null || sc === undefined || isNaN(sc)) {
+    console.log(`WARNING: SC value is null/NaN for role ${role}, using default value 0.4`);
     sc = 0.4; // Default value to prevent null PIV
   }
   
-  if (icf === null || icf === undefined) {
-    console.log(`WARNING: ICF value is null for role ${role}, using default value 0.6`);
+  if (icf === null || icf === undefined || isNaN(icf)) {
+    console.log(`WARNING: ICF value is null/NaN for role ${role}, using default value 0.6`);
     icf = 0.6; // Default value to prevent null PIV
+  }
+  
+  if (rcs === null || rcs === undefined || isNaN(rcs)) {
+    console.log(`WARNING: RCS value is null/NaN for role ${role}, using default value 0.4`);
+    rcs = 0.4; // Default value to prevent null PIV
+  }
+  
+  if (osm === null || osm === undefined || isNaN(osm)) {
+    console.log(`WARNING: OSM value is null/NaN for role ${role}, using default value 1.0`);
+    osm = 1.0; // Default value to prevent null PIV
   }
 
   // New calculation with basic metrics integration
@@ -697,7 +707,14 @@ function calculatePIV(rcs: number, icf: number, sc: number, osm: number, kd: num
       roleModifier = 1.0;
   }
   
-  const finalPIV = basePIV * (1 + kdFactor + starBonus) * roleModifier;
+  let finalPIV = basePIV * (1 + kdFactor + starBonus) * roleModifier;
+  
+  // Final safety check to ensure we never return null/NaN/undefined
+  if (finalPIV === null || finalPIV === undefined || isNaN(finalPIV)) {
+    console.log(`WARNING: Final PIV calculation resulted in invalid value, using fallback value 0.5`);
+    finalPIV = 0.5;
+  }
+  
   console.log(`PIV calculation: RCS=${rcs.toFixed(2)}, ICF=${icf.toFixed(2)}, SC=${sc.toFixed(2)}, Final PIV=${finalPIV.toFixed(2)}`);
   
   return finalPIV;

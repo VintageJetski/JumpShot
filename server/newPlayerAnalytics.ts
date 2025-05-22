@@ -346,6 +346,10 @@ function calculateSC(stats: PlayerRawStats, role: PlayerRole): { value: number, 
   const assistedFlashes = getField('assisted_flashes') || getField('assistedFlashes', 0);
   const throughSmoke = getField('through_smoke') || getField('throughSmoke', 0);
   
+  // Get CT/T rounds data
+  const ctRoundsWon = getField('ct_rounds_won') || getField('ctRoundsWon', 0);
+  const totalRoundsWon = getField('total_rounds_won') || getField('totalRoundsWon', 1);
+  
   // Calculate total utility metrics
   const flashesThrown = getField('flahes_thrown') || getField('flashesThrown', 1);
   const smokesThrown = getField('smokes_thrown') || getField('smokesThrown', 0);
@@ -397,26 +401,36 @@ function calculateSC(stats: PlayerRawStats, role: PlayerRole): { value: number, 
       // For lurkers, reward clutch situations (using K/D as proxy) and smoke kills
       const clutchRating = Math.min(kd / 1.3, 1);
       const smokeImpact = throughSmoke / Math.max(kills, 1);
+      
+      const lurkerValue = (clutchRating * 0.45) + (smokeImpact * 0.35) + (kdFactor * 0.2);
+      console.log(`Lurker SC: ${lurkerValue.toFixed(3)}`);
+      
       return { 
-        value: (clutchRating * 0.45) + (smokeImpact * 0.35) + (kdFactor * 0.2),
+        value: lurkerValue,
         metric: "Clutch & Information Rating"
       };
     case PlayerRole.Anchor:
-      // For anchors, emphasize CT rounds
+      const anchorValue = (ctRoundsWon / (totalRoundsWon || 1) * 0.45) + (kdFactor * 0.25);
+      console.log(`Anchor SC: ${anchorValue.toFixed(3)}`);
+      
       return { 
-        value: (stats.ctRoundsWon / (stats.totalRoundsWon || 1) * 0.45) + (kdFactor * 0.25),
+        value: anchorValue,
         metric: "Site Hold Effectiveness"
       };
     case PlayerRole.Rotator:
-      // For rotators, balance CT performance with K/D
+      const rotatorValue = (ctRoundsWon / (totalRoundsWon || 1) * 0.4) + (kdFactor * 0.25);
+      console.log(`Rotator SC: ${rotatorValue.toFixed(3)}`);
+      
       return {
-        value: (stats.ctRoundsWon / (stats.totalRoundsWon || 1) * 0.4) + (kdFactor * 0.25),
+        value: rotatorValue,
         metric: "Rotation Efficiency"
       };
     case PlayerRole.Support:
-      // For support, maintain flash-centric measure but add small K/D component
+      const supportValue = (assistedFlashes / (totalUtilityThrown || 1) * 0.65) + (kdFactor * 0.15);
+      console.log(`Support SC: ${supportValue.toFixed(3)}`);
+      
       return { 
-        value: (stats.assistedFlashes / (stats.totalUtilityThrown || 1) * 0.65) + (kdFactor * 0.15),
+        value: supportValue,
         metric: "Utility Contribution Score"
       };
     default:

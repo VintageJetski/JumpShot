@@ -104,8 +104,8 @@ export class DataRefreshManager {
     try {
       console.log('Starting data refresh using raw SQL adapter...');
       
-      // Check connection using raw SQL adapter
-      const isConnected = await this.rawSQLAdapter.testConnection();
+      // Check connection using database test function
+      const isConnected = await testDatabaseConnection();
       this._isSupabaseAvailable = isConnected;
       
       if (!isConnected) {
@@ -116,27 +116,28 @@ export class DataRefreshManager {
       // Use raw SQL adapter to get fresh data from Supabase
       console.log('Fetching fresh data from Supabase using raw SQL adapter...');
       
-      // Get events from raw SQL
-      const events = await this.rawSQLAdapter.getEvents();
-      console.log(`Found ${events.length} events from Supabase: ${events.map(e => e.name).join(', ')}`);
+      // Get event IDs from raw SQL
+      const eventIds = await this.rawSQLAdapter.getEventIds();
+      console.log(`Found ${eventIds.length} events from Supabase: ${eventIds.join(', ')}`);
       
       // Warm up the cache for each event using raw SQL data
-      for (const event of events) {
-        console.log(`Refreshing data for event ${event.name} (ID: ${event.id})...`);
+      for (const eventId of eventIds) {
+        const eventName = eventId === 1 ? 'IEM_Katowice_2025' : eventId === 2 ? 'PGL_Bucharest_2025' : `Event_${eventId}`;
+        console.log(`Refreshing data for event ${eventName} (ID: ${eventId})...`);
         
         // Get players for this event using raw SQL adapter
-        const players = await this.rawSQLAdapter.getPlayersForEvent(event.id);
-        console.log(`  - Retrieved ${players.length} players for ${event.name}`);
+        const players = await this.rawSQLAdapter.getPlayersForEvent(eventId);
+        console.log(`  - Retrieved ${players.length} players for ${eventName}`);
         
         // Get teams for this event using raw SQL adapter
-        const teams = await this.rawSQLAdapter.getTeamsForEvent(event.id);
-        console.log(`  - Retrieved ${teams.length} teams for ${event.name}`);
+        const teams = await this.rawSQLAdapter.getTeamsForEvent(eventId);
+        console.log(`  - Retrieved ${teams.length} teams for ${eventName}`);
         
         // Update storage with fresh Supabase data
-        this.storage.updateEventData(event.id, {
+        this.storage.updateEventData(eventId, {
           players,
           teams,
-          event
+          event: { id: eventId, name: eventName }
         });
       }
       

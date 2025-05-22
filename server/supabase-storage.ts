@@ -214,8 +214,10 @@ export class SupabaseStorage {
       let playersWithPIV: PlayerWithPIV[];
       
       if (eventId === 1) {
-        // For IEM Katowice, we have role information
-        playersWithPIV = processPlayerStatsWithRoles(playerStats, teamMap);
+        // For IEM Katowice, load role information and process
+        const { loadPlayerRoles } = await import('./loadRoleData');
+        const roleMap = await loadPlayerRoles();
+        playersWithPIV = processPlayerStatsWithRoles(playerStats, roleMap);
       } else {
         // For other events, use general role assignment
         playersWithPIV = processPlayerStats(playerStats, teamMap);

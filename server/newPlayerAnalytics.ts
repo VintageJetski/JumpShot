@@ -905,7 +905,12 @@ function calculatePlayerWithPIV(
 /**
  * Find a player in the role map by fuzzy name matching
  */
-function findPlayerRoleInfo(playerName: string, roleMap: Map<string, PlayerRoleInfo>): PlayerRoleInfo | undefined {
+function findPlayerRoleInfo(playerName: string | undefined, roleMap: Map<string, PlayerRoleInfo>): PlayerRoleInfo | undefined {
+  // Null safety check
+  if (!playerName || typeof playerName !== 'string' || !roleMap) {
+    return undefined;
+  }
+  
   // Try direct match
   if (roleMap.has(playerName)) {
     return roleMap.get(playerName);
@@ -915,9 +920,9 @@ function findPlayerRoleInfo(playerName: string, roleMap: Map<string, PlayerRoleI
   const entries = Array.from(roleMap.entries());
   
   // Try case-insensitive match
-  const lowerPlayerName = playerName ? playerName.toLowerCase() : '';
+  const lowerPlayerName = playerName.toLowerCase();
   for (const [name, info] of entries) {
-    if (name.toLowerCase() === lowerPlayerName) {
+    if (name && name.toLowerCase() === lowerPlayerName) {
       return info;
     }
   }

@@ -57,10 +57,10 @@ export default function PlayersPage() {
   // Apply search and role filters
   const filteredPlayers = players ? players
     .filter(player => {
-      // Text search filter
+      // Text search filter with null safety
       const matchesSearch = 
-        player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        player.team.toLowerCase().includes(searchQuery.toLowerCase());
+        (player.name && player.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (player.team && player.team.toLowerCase().includes(searchQuery.toLowerCase()));
       
       // Role filter
       const matchesRole = hasRole(player, roleFilter);

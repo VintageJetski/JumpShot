@@ -177,6 +177,9 @@ export class RawSQLAdapter {
       const playerStats: PlayerRawStats[] = result.rows.map(row => {
         // Convert DB fields to PlayerRawStats format
         return {
+          steamId: row.steam_id,
+          userName: row.user_name,
+          teamName: row.team_name || 'Unknown',
           id: row.steam_id,
           name: row.user_name,
           team: row.team_name || 'Unknown',

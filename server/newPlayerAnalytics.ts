@@ -583,8 +583,23 @@ export function processPlayerStatsWithRoles(
   const processedPlayers: PlayerWithPIV[] = [];
   
   for (const stats of rawStats) {
+    // Debug: Log the actual data structure we're receiving
+    console.log('DEBUG - Processing player data:', {
+      available_fields: Object.keys(stats),
+      userName: stats.userName,
+      name: stats.name,
+      teamName: stats.teamName,
+      team: stats.team,
+      kills: stats.kills,
+      deaths: stats.deaths,
+      adr: stats.adr,
+      kd: stats.kd
+    });
+    
     // Get player name from available fields (handle different field names from Supabase)
     const playerName = stats.userName || stats.name || stats.player_name || stats.displayName;
+    
+    console.log(`DEBUG - Looking for role info for player: "${playerName}"`);
     
     // Try to find player in role map
     const roleInfo = findPlayerRoleInfo(playerName, roleMap);
@@ -594,6 +609,8 @@ export function processPlayerStatsWithRoles(
       // Skip players that are not in the role dataset (per user request)
       continue;
     }
+    
+    console.log(`DEBUG - Found role info for ${playerName}:`, roleInfo);
     
     // Get roles from CSV data
     const tRole = roleInfo.tRole;

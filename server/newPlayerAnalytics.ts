@@ -583,11 +583,14 @@ export function processPlayerStatsWithRoles(
   const processedPlayers: PlayerWithPIV[] = [];
   
   for (const stats of rawStats) {
+    // Get player name from available fields (handle different field names from Supabase)
+    const playerName = stats.userName || stats.name || stats.player_name || stats.displayName;
+    
     // Try to find player in role map
-    const roleInfo = findPlayerRoleInfo(stats.userName, roleMap);
+    const roleInfo = findPlayerRoleInfo(playerName, roleMap);
     
     if (!roleInfo) {
-      console.warn(`No role information found for player ${stats.userName}, skipping`);
+      console.warn(`No role information found for player ${playerName}, skipping`);
       // Skip players that are not in the role dataset (per user request)
       continue;
     }

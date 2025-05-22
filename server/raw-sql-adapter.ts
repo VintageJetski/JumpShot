@@ -188,26 +188,26 @@ export class RawSQLAdapter {
           roundsPlayed: (Number(row.ct_rounds_won) || 0) + (Number(row.t_rounds_won) || 0) + (Number(row.deaths) || 0) * 0.7,
           assists: Number(row.assists) || 0,
           adr: Number(row.adr_total) || 0,
-          hsKills: row.headshots || 0,
-          ctRoundsPlayed: Math.floor(row.kast_ct_side / (row.kast_total || 1) * 30) || 15,
-          tRoundsPlayed: Math.floor(row.kast_t_side / (row.kast_total || 1) * 30) || 15,
-          flashAssists: row.assisted_flashes || 0,
-          utilityDamage: row.total_util_dmg || 0,
+          hsKills: Number(row.headshots) || 0,
+          ctRoundsPlayed: Math.floor(Number(row.kast_ct_side) / (Number(row.kast_total) || 1) * 30) || 15,
+          tRoundsPlayed: Math.floor(Number(row.kast_t_side) / (Number(row.kast_total) || 1) * 30) || 15,
+          flashAssists: Number(row.assisted_flashes) || 0,
+          utilityDamage: Number(row.total_util_dmg) || 0,
           enemiesFlashed: 0, // Not available in schema
           flashDuration: 0, // Not available in schema
-          kast: row.kast_total || 0,
+          kast: Number(row.kast_total) || 0,
           impact: 0, // Not available in schema
-          awtKills: row.awp_kills || 0,
+          awtKills: Number(row.awp_kills) || 0,
           clutchKills: 0, // Not available in schema
-          openingKills: row.first_kills || 0,
-          openingDeaths: row.first_deaths || 0,
+          openingKills: Number(row.first_kills) || 0,
+          openingDeaths: Number(row.first_deaths) || 0,
           multiKills: 0, // Not available in schema
-          tradedDeaths: row.trade_deaths || 0,
-          tradingKills: row.trade_kills || 0,
-          rating: 0, // Calculate based on available data
+          tradedDeaths: Number(row.trade_deaths) || 0,
+          tradingKills: Number(row.trade_kills) || 0,
+          rating: Number(row.rating) || 0,
           
           // Side-specific data
-          kd: row.kd || 0,
+          kd: Number(row.kd) || (Number(row.kills) / Math.max(Number(row.deaths), 1)),
           kddiff: row.k_d_diff || 0,
           adr_ct: row.adr_ct_side || 0,
           adr_t: row.adr_t_side || 0,

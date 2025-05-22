@@ -109,17 +109,8 @@ export class DataRefreshManager {
       this._isSupabaseAvailable = isConnected;
       
       if (!isConnected) {
-        console.warn('Supabase connection not available via raw SQL adapter, using CSV fallback data');
-        // Force storage to refresh by re-initializing with CSV fallback
-        await this.storage.initialize();
-        
-        // Get events from CSV fallback
-        const events = this.storage.getEvents();
-        console.log(`Found ${events.length} events from CSV fallback: ${events.map(e => e.name).join(', ')}`);
-        
-        this.lastRefreshTime = new Date();
-        console.log(`Data refresh completed with CSV fallback at ${this.lastRefreshTime.toISOString()}`);
-        return;
+        console.error('Supabase connection not available - cannot refresh data without database connection');
+        throw new Error('Database connection required for data refresh');
       }
       
       // Use raw SQL adapter to get fresh data from Supabase
@@ -153,16 +144,8 @@ export class DataRefreshManager {
       console.log(`Data refresh completed successfully using raw SQL adapter at ${this.lastRefreshTime.toISOString()}`);
     } catch (error) {
       console.error('Error during data refresh with raw SQL adapter:', error);
-      console.log('Falling back to CSV data...');
-      
-      // Fallback to CSV data if Supabase fails
-      try {
-        await this.storage.initialize();
-        const events = this.storage.getEvents();
-        console.log(`Fallback successful: Found ${events.length} events from CSV`);
-      } catch (fallbackError) {
-        console.error('Fallback to CSV data also failed:', fallbackError);
-      }
+      // No CSV fallback - throw the error to indicate failure
+      throw error;
     } finally {
       this.isRefreshing = false;
     }

@@ -39,11 +39,12 @@ export class SupabaseStorage {
         console.log('Connected to Supabase database');
         await this.fetchAvailableEvents();
       } else {
-        console.warn('Failed to connect to Supabase database, falling back to CSV data');
+        throw new Error('Failed to connect to Supabase database - no fallback available');
       }
     } catch (error) {
       console.error('Error initializing Supabase storage:', error);
       this.isConnected = false;
+      throw error;
     }
   }
   
@@ -75,37 +76,32 @@ export class SupabaseStorage {
       return this.cachedPlayerStats.get(eventId) || [];
     }
     
-    // If connected to Supabase, fetch from database
-    if (this.isConnected && this.availableEvents.includes(eventId)) {
-      try {
-        console.log(`Fetching player stats for event ${eventId} from Supabase...`);
-        const playerCount = await getPlayerCountForEvent(eventId);
-        console.log(`Found ${playerCount} players for event ${eventId}`);
-        
-        const playerStats = await this.adapter.getPlayersForEvent(eventId);
-        
-        if (playerStats && playerStats.length > 0) {
-          console.log(`Successfully fetched ${playerStats.length} player stats from Supabase for event ${eventId}`);
-          this.cachedPlayerStats.set(eventId, playerStats);
-          return playerStats;
-        } else {
-          console.warn(`No player stats found in Supabase for event ${eventId}, falling back to CSV data`);
-        }
-      } catch (error) {
-        console.error(`Error fetching player stats from Supabase for event ${eventId}:`, error);
-        console.log('Falling back to CSV data');
-      }
+    // Only use Supabase database - no CSV fallback
+    if (!this.isConnected) {
+      throw new Error('Database not connected - cannot retrieve player stats');
     }
     
-    // Fall back to CSV data
+    if (!this.availableEvents.includes(eventId)) {
+      throw new Error(`Event ${eventId} not found in available events`);
+    }
+    
     try {
-      console.log('Loading player data from CSV...');
-      const csvData = await this.loadCSVData();
-      this.cachedPlayerStats.set(1, csvData); // Assume CSV data is for event 1 (IEM_Katowice_2025)
-      return eventId === 1 ? csvData : [];
+      console.log(`Fetching player stats for event ${eventId} from Supabase...`);
+      const playerCount = await getPlayerCountForEvent(eventId);
+      console.log(`Found ${playerCount} players for event ${eventId}`);
+      
+      const playerStats = await this.adapter.getPlayersForEvent(eventId);
+      
+      if (!playerStats || playerStats.length === 0) {
+        throw new Error(`No player stats found in Supabase for event ${eventId}`);
+      }
+      
+      console.log(`Successfully fetched ${playerStats.length} player stats from Supabase for event ${eventId}`);
+      this.cachedPlayerStats.set(eventId, playerStats);
+      return playerStats;
     } catch (error) {
-      console.error('Error loading CSV data:', error);
-      return [];
+      console.error(`Error fetching player stats from Supabase for event ${eventId}:`, error);
+      throw error;
     }
   }
   

@@ -13,52 +13,82 @@ import { PlayerRoleInfo } from './roleParser';
 export function evaluateTSideMetrics(stats: PlayerRawStats, role: PlayerRole): Record<string, number> {
   const metrics: Record<string, number> = {};
   
+  // Helper function to safely access fields with different possible names
+  const getField = (fieldName: string, fallbackValue: number = 0): number => {
+    // Field could be in original CSV name format or mapped format
+    if (fieldName in stats && typeof stats[fieldName as keyof PlayerRawStats] === 'number') {
+      return stats[fieldName as keyof PlayerRawStats] as number;
+    }
+    // Fallback value if field not found
+    return fallbackValue;
+  };
+
+  // Map field names for backwards compatibility
+  const tFirstKills = getField('t_first_kills') || getField('tFirstKills');
+  const tFirstDeaths = getField('t_first_deaths') || getField('tFirstDeaths');
+  const firstKills = getField('first_kills') || getField('firstKills');
+  const noScope = getField('no_scope') || getField('noScope');
+  const assistedFlashes = getField('assisted_flashes') || getField('assistedFlashes');
+  const tFlashesThrown = getField('t_flahes_thrown') || getField('tFlashesThrown');
+  const throughSmoke = getField('through_smoke') || getField('throughSmoke');
+  const tRoundsWon = getField('t_rounds_won') || getField('tRoundsWon');
+  const totalRoundsWon = getField('total_rounds_won') || getField('totalRoundsWon');
+  const blindKills = getField('blind_kills') || getField('blindKills');
+  const headshots = getField('headshots') || getField('hsKills');
+  const tSmokesThrown = getField('t_smokes_thrown') || getField('tSmokesThrown');
+  const smokesThrown = getField('smokes_thrown') || getField('smokesThrown');
+  const flashesThrown = getField('flahes_thrown') || getField('flashesThrown');
+  const tHeThrown = getField('t_he_thrown') || getField('tHeThrown');
+  const heThrown = getField('he_thrown') || getField('heThrown');
+  const tInfernosThrown = getField('t_infernos_thrown') || getField('tInfernosThrown');
+  const infernosThrown = getField('infernos_thrown') || getField('infernosThrown');
+
   switch (role) {
     case PlayerRole.AWP:
-      metrics["Opening Pick Success Rate"] = stats.tFirstKills / Math.max(stats.tFirstKills + stats.tFirstDeaths, 1);
-      metrics["Multi Kill Conversion"] = stats.noScope / Math.max(stats.kills, 1);
-      metrics["AWPer Flash Assistance"] = stats.assistedFlashes / Math.max(stats.tFlashesThrown, 1);
-      metrics["Utility Punish Rate"] = stats.throughSmoke / Math.max(stats.kills, 1);
+      metrics["Opening Pick Success Rate"] = tFirstKills / Math.max(tFirstKills + tFirstDeaths, 1);
+      metrics["Multi Kill Conversion"] = noScope / Math.max(stats.kills, 1);
+      metrics["AWPer Flash Assistance"] = assistedFlashes / Math.max(tFlashesThrown, 1);
+      metrics["Utility Punish Rate"] = throughSmoke / Math.max(stats.kills, 1);
       break;
       
     case PlayerRole.Spacetaker:
-      metrics["Opening Duel Success Rate"] = stats.tFirstKills / Math.max(stats.tFirstKills + stats.tFirstDeaths, 1);
-      metrics["Aggression Efficiency Index"] = stats.kd * (stats.tFirstKills / Math.max(stats.firstKills, 1));
-      metrics["First Blood Impact"] = stats.tFirstKills / Math.max(stats.kills, 1);
-      metrics["Trade Conversion Rate"] = (stats.kills - stats.tFirstKills) / Math.max(stats.kills, 1);
-      metrics["Space Creation Index"] = stats.tRoundsWon / Math.max(stats.totalRoundsWon, 1);
+      metrics["Opening Duel Success Rate"] = tFirstKills / Math.max(tFirstKills + tFirstDeaths, 1);
+      metrics["Aggression Efficiency Index"] = stats.kd * (tFirstKills / Math.max(firstKills, 1));
+      metrics["First Blood Impact"] = tFirstKills / Math.max(stats.kills, 1);
+      metrics["Trade Conversion Rate"] = (stats.kills - tFirstKills) / Math.max(stats.kills, 1);
+      metrics["Space Creation Index"] = tRoundsWon / Math.max(totalRoundsWon, 1);
       break;
       
     case PlayerRole.Lurker:
-      metrics["Zone Influence Stability"] = (stats.kills - stats.tFirstKills) / Math.max(stats.kills, 1);
-      metrics["Flank Success Rate"] = stats.throughSmoke / Math.max(stats.kills, 1);
-      metrics["Information Gathering Efficiency"] = 1 - (stats.tFirstDeaths / Math.max(stats.deaths, 1));
-      metrics["Clutch Conversion Rate"] = stats.blindKills / Math.max(stats.kills, 1);
-      metrics["Delayed Timing Effectiveness"] = stats.headshots / Math.max(stats.kills, 1);
+      metrics["Zone Influence Stability"] = (stats.kills - tFirstKills) / Math.max(stats.kills, 1);
+      metrics["Flank Success Rate"] = throughSmoke / Math.max(stats.kills, 1);
+      metrics["Information Gathering Efficiency"] = 1 - (tFirstDeaths / Math.max(stats.deaths, 1));
+      metrics["Clutch Conversion Rate"] = blindKills / Math.max(stats.kills, 1);
+      metrics["Delayed Timing Effectiveness"] = headshots / Math.max(stats.kills, 1);
       break;
       
     case PlayerRole.Support:
-      metrics["Utility Setup Efficiency"] = stats.tSmokesThrown / Math.max(stats.smokesThrown, 1);
-      metrics["Support Flash Assist"] = stats.assistedFlashes / Math.max(stats.flashesThrown, 1);
-      metrics["Bomb Plant Utility Coverage"] = stats.tHeThrown / Math.max(stats.heThrown, 1);
+      metrics["Utility Setup Efficiency"] = tSmokesThrown / Math.max(smokesThrown, 1);
+      metrics["Support Flash Assist"] = assistedFlashes / Math.max(flashesThrown, 1);
+      metrics["Bomb Plant Utility Coverage"] = tHeThrown / Math.max(heThrown, 1);
       metrics["Post-Plant Aid Ratio"] = stats.assists / Math.max(stats.kills, 1);
-      metrics["Teammate Save Ratio"] = stats.tInfernosThrown / Math.max(stats.infernosThrown, 1);
+      metrics["Teammate Save Ratio"] = tInfernosThrown / Math.max(infernosThrown, 1);
       break;
       
     case PlayerRole.IGL:
-      metrics["Tactical Timeout Success"] = stats.tRoundsWon / Math.max(stats.totalRoundsWon, 1);
+      metrics["Tactical Timeout Success"] = tRoundsWon / Math.max(totalRoundsWon, 1);
       metrics["Team Economy Preservation"] = 1 - (stats.deaths / Math.max(stats.kills, 1));
       metrics["Kill Participation Index"] = (stats.kills + stats.assists) / Math.max(stats.kills, 1);
-      metrics["Opening Play Success Rate"] = stats.tFirstKills / Math.max(stats.tFirstKills + stats.tFirstDeaths, 1);
-      metrics["Utility Setup Optimization"] = stats.tSmokesThrown / Math.max(stats.smokesThrown, 1);
+      metrics["Opening Play Success Rate"] = tFirstKills / Math.max(tFirstKills + tFirstDeaths, 1);
+      metrics["Utility Setup Optimization"] = tSmokesThrown / Math.max(smokesThrown, 1);
       break;
       
     default:
       // Fallback to basic metrics for any other role (e.g., Rotator)
-      metrics["Utility Usage"] = stats.tSmokesThrown / Math.max(stats.smokesThrown, 1);
+      metrics["Utility Usage"] = tSmokesThrown / Math.max(smokesThrown, 1);
       metrics["Kill Efficiency"] = stats.kd;
-      metrics["Flash Effectiveness"] = stats.assistedFlashes / Math.max(stats.flashesThrown, 1);
-      metrics["Opening Duel Rate"] = stats.tFirstKills / Math.max(stats.tFirstKills + stats.tFirstDeaths, 1);
+      metrics["Flash Effectiveness"] = assistedFlashes / Math.max(flashesThrown, 1);
+      metrics["Opening Duel Rate"] = tFirstKills / Math.max(tFirstKills + tFirstDeaths, 1);
   }
   
   return metrics;
@@ -70,34 +100,60 @@ export function evaluateTSideMetrics(stats: PlayerRawStats, role: PlayerRole): R
 export function evaluateCTSideMetrics(stats: PlayerRawStats, role: PlayerRole): Record<string, number> {
   const metrics: Record<string, number> = {};
   
+  // Helper function to safely access fields with different possible names
+  const getField = (fieldName: string, fallbackValue: number = 0): number => {
+    // Field could be in original CSV name format or mapped format
+    if (fieldName in stats && typeof stats[fieldName as keyof PlayerRawStats] === 'number') {
+      return stats[fieldName as keyof PlayerRawStats] as number;
+    }
+    // Fallback value if field not found
+    return fallbackValue;
+  };
+
+  // Map field names for backwards compatibility
+  const ctFirstKills = getField('ct_first_kills') || getField('ctFirstKills');
+  const ctFirstDeaths = getField('ct_first_deaths') || getField('ctFirstDeaths');
+  const firstKills = getField('first_kills') || getField('firstKills');
+  const noScope = getField('no_scope') || getField('noScope');
+  const assistedFlashes = getField('assisted_flashes') || getField('assistedFlashes');
+  const ctRoundsWon = getField('ct_rounds_won') || getField('ctRoundsWon');
+  const totalRoundsWon = getField('total_rounds_won') || getField('totalRoundsWon');
+  const ctSmokesThrown = getField('ct_smokes_thrown') || getField('ctSmokesThrown');
+  const smokesThrown = getField('smokes_thrown') || getField('smokesThrown');
+  const flashesThrown = getField('flahes_thrown') || getField('flashesThrown');
+  const ctHeThrown = getField('ct_he_thrown') || getField('ctHeThrown');
+  const heThrown = getField('he_thrown') || getField('heThrown');
+  const ctInfernosThrown = getField('ct_infernos_thrown') || getField('ctInfernosThrown');
+  const infernosThrown = getField('infernos_thrown') || getField('infernosThrown');
+  
   switch (role) {
     case PlayerRole.AWP:
-      metrics["Site Lockdown Rate"] = stats.ctFirstKills / Math.max(stats.ctFirstKills + stats.ctFirstDeaths, 1);
-      metrics["Entry Denial Efficiency"] = stats.ctFirstKills / Math.max(stats.firstKills, 1);
-      metrics["Angle Hold Success"] = 1 - (stats.ctFirstDeaths / Math.max(stats.deaths, 1));
-      metrics["Retake Contribution Index"] = stats.noScope / Math.max(stats.kills, 1);
+      metrics["Site Lockdown Rate"] = ctFirstKills / Math.max(ctFirstKills + ctFirstDeaths, 1);
+      metrics["Entry Denial Efficiency"] = ctFirstKills / Math.max(firstKills, 1);
+      metrics["Angle Hold Success"] = 1 - (ctFirstDeaths / Math.max(stats.deaths, 1));
+      metrics["Retake Contribution Index"] = noScope / Math.max(stats.kills, 1);
       break;
       
     case PlayerRole.Anchor:
-      metrics["Site Hold Success Rate"] = stats.ctRoundsWon / Math.max(stats.totalRoundsWon, 1);
-      metrics["Survival Rate Post-Engagement"] = 1 - (stats.ctFirstDeaths / Math.max(stats.deaths, 1));
-      metrics["Multi-Kill Defense Ratio"] = stats.ctFirstKills / Math.max(stats.firstKills, 1);
-      metrics["Opponent Entry Denial Rate"] = stats.ctFirstKills / Math.max(stats.ctFirstKills + stats.ctFirstDeaths, 1);
-      metrics["Defensive Efficiency Rating"] = stats.ctRoundsWon / Math.max(stats.totalRoundsWon, 1);
+      metrics["Site Hold Success Rate"] = ctRoundsWon / Math.max(totalRoundsWon, 1);
+      metrics["Survival Rate Post-Engagement"] = 1 - (ctFirstDeaths / Math.max(stats.deaths, 1));
+      metrics["Multi-Kill Defense Ratio"] = ctFirstKills / Math.max(firstKills, 1);
+      metrics["Opponent Entry Denial Rate"] = ctFirstKills / Math.max(ctFirstKills + ctFirstDeaths, 1);
+      metrics["Defensive Efficiency Rating"] = ctRoundsWon / Math.max(totalRoundsWon, 1);
       break;
       
     case PlayerRole.Rotator:
-      metrics["Rotation Efficiency Index"] = stats.ctRoundsWon / Math.max(stats.totalRoundsWon, 1);
-      metrics["Adaptive Defense Score"] = 1 - (stats.ctFirstDeaths / Math.max(stats.deaths, 1));
-      metrics["Retake Utility Coordination"] = stats.ctSmokesThrown / Math.max(stats.smokesThrown, 1);
-      metrics["Anti-Exec Utility Success"] = stats.ctHeThrown / Math.max(stats.heThrown, 1);
+      metrics["Rotation Efficiency Index"] = ctRoundsWon / Math.max(totalRoundsWon, 1);
+      metrics["Adaptive Defense Score"] = 1 - (ctFirstDeaths / Math.max(stats.deaths, 1));
+      metrics["Retake Utility Coordination"] = ctSmokesThrown / Math.max(smokesThrown, 1);
+      metrics["Anti-Exec Utility Success"] = ctHeThrown / Math.max(heThrown, 1);
       break;
       
     case PlayerRole.Support:
-      metrics["Utility Setup Efficiency"] = stats.ctSmokesThrown / Math.max(stats.smokesThrown, 1);
-      metrics["Support Flash Assist"] = stats.assistedFlashes / Math.max(stats.flashesThrown, 1);
-      metrics["Anti-Exec Utility Success"] = stats.ctHeThrown / Math.max(stats.heThrown, 1);
-      metrics["Teammate Save Ratio"] = stats.ctInfernosThrown / Math.max(stats.infernosThrown, 1);
+      metrics["Utility Setup Efficiency"] = ctSmokesThrown / Math.max(smokesThrown, 1);
+      metrics["Support Flash Assist"] = assistedFlashes / Math.max(flashesThrown, 1);
+      metrics["Anti-Exec Utility Success"] = ctHeThrown / Math.max(heThrown, 1);
+      metrics["Teammate Save Ratio"] = ctInfernosThrown / Math.max(infernosThrown, 1);
       metrics["Retake Utility Coordination"] = stats.ctSmokesThrown / Math.max(stats.smokesThrown, 1);
       break;
       

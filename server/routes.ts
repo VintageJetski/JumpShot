@@ -35,21 +35,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { dataRefreshManager } = await import('./dataRefreshManager');
       const supabaseStorage = dataRefreshManager.getStorage();
       
-      // Get fresh Supabase data for all events
+      // Get fresh raw data from Supabase and calculate PIV in real-time
       const events = supabaseStorage.getEvents();
       let allPlayers: any[] = [];
       
       for (const event of events) {
         try {
           console.log(`DEBUG ROUTE - Processing event ${event.id}`);
-          const playersWithPIV = await supabaseStorage.getPlayerStatsWithPIV(event.id);
-          console.log(`DEBUG ROUTE - Got ${playersWithPIV.length} players for event ${event.id}`);
-          if (playersWithPIV.length > 0) {
-            console.log('DEBUG ROUTE - Sample player object:', JSON.stringify(playersWithPIV[0], null, 2));
-          }
+          // Get raw player stats (no PIV calculations)
+          const rawPlayerStats = await supabaseStorage.getPlayerStatsForEvent(event.id);
+          console.log(`DEBUG ROUTE - Got ${rawPlayerStats.length} raw players for event ${event.id}`);
+          
+          // Run PIV calculations in real-time
+          const { processPlayerStatsWithRoles } = await import('./newPlayerAnalytics');
+          const { loadPlayerRoles } = await import('./loadRoleData');
+          
+          // Load role data from CSV
+          const roleMap = await loadPlayerRoles();
+          console.log(`DEBUG ROUTE - Loaded ${roleMap.size} players from role CSV`);
+          
+          // Process raw stats through PIV algorithms
+          const playersWithPIV = processPlayerStatsWithRoles(rawPlayerStats, roleMap);
+          console.log(`DEBUG ROUTE - Calculated PIV for ${playersWithPIV.length} players`);
+          
           allPlayers = allPlayers.concat(playersWithPIV);
         } catch (error) {
-          console.warn(`Could not get players for event ${event.id}:`, error);
+          console.warn(`Could not process players for event ${event.id}:`, error);
         }
       }
       

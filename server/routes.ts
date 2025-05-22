@@ -11,48 +11,55 @@ import { processXYZDataFromFile, RoundPositionalMetrics, PlayerMovementAnalysis 
 import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Initialize data on server start
+  // Initialize Supabase data refresh system
   try {
-    console.log('Loading and processing player data...');
-    const rawPlayerStats = await loadNewPlayerStats();
+    console.log('Initializing Supabase data refresh system...');
+    const { dataRefreshManager } = await import('./dataRefreshManager');
     
-    // Load player roles from CSV
-    console.log('Loading player roles from CSV...');
-    const roleMap = await loadPlayerRoles();
+    // Start the data refresh manager to get fresh Supabase data
+    await dataRefreshManager.start();
     
-    // Process player stats with roles and calculate PIV
-    const playersWithPIV = processPlayerStatsWithRoles(rawPlayerStats, roleMap);
+    console.log('Supabase data refresh system initialized successfully');
     
-    // Calculate team TIR
-    const teamsWithTIR = calculateTeamImpactRatings(playersWithPIV);
-    
-    // Store processed data
-    await storage.setPlayers(playersWithPIV);
-    await storage.setTeams(teamsWithTIR);
-    
-    console.log(`Processed ${playersWithPIV.length} players and ${teamsWithTIR.length} teams`);
-    
-    // Load and process round data
+    // Load and process round data (keeping this for now as it's still CSV-based)
     await initializeRoundData();
   } catch (error) {
-    console.error('Error initializing data:', error);
+    console.error('Error initializing Supabase data system:', error);
+    // Don't fail completely - the API endpoints will handle errors gracefully
   }
   
   // API routes
   app.get('/api/players', async (req: Request, res: Response) => {
     try {
-      const role = req.query.role as string | undefined;
+      const { dataRefreshManager } = await import('./dataRefreshManager');
+      const supabaseStorage = dataRefreshManager.getStorage();
       
-      if (role && role !== 'All Roles') {
-        const players = await storage.getPlayersByRole(role);
-        res.json(players);
-      } else {
-        const players = await storage.getAllPlayers();
-        res.json(players);
+      // Get fresh Supabase data for all events
+      const events = supabaseStorage.getEvents();
+      let allPlayers: any[] = [];
+      
+      for (const event of events) {
+        try {
+          const playersWithPIV = await supabaseStorage.getPlayerStatsWithPIV(event.id);
+          allPlayers = allPlayers.concat(playersWithPIV);
+        } catch (error) {
+          console.warn(`Could not get players for event ${event.id}:`, error);
+        }
       }
+      
+      // Apply role filter if specified
+      const role = req.query.role as string | undefined;
+      if (role && role !== 'All Roles') {
+        allPlayers = allPlayers.filter(player => 
+          player.role === role || player.tRole === role || player.ctRole === role
+        );
+      }
+      
+      console.log(`Returning ${allPlayers.length} players from Supabase data`);
+      res.json(allPlayers);
     } catch (error) {
-      console.error('Error fetching players:', error);
-      res.status(500).json({ message: 'Failed to fetch players' });
+      console.error('Error fetching players from Supabase:', error);
+      res.status(500).json({ message: 'Failed to fetch players from database' });
     }
   });
   
@@ -73,15 +80,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get('/api/teams', async (req: Request, res: Response) => {
     try {
-      const teams = await storage.getAllTeams();
-      console.log(`GET /api/teams: Returning ${teams.length} teams`);
-      if (teams.length > 0) {
-        console.log(`Team sample: ${JSON.stringify(teams[0])}`);
+      const { dataRefreshManager } = await import('./dataRefreshManager');
+      const supabaseStorage = dataRefreshManager.getStorage();
+      
+      // Get fresh Supabase data for all events
+      const events = supabaseStorage.getEvents();
+      let allTeams: any[] = [];
+      
+      for (const event of events) {
+        try {
+          const teamsWithTIR = await supabaseStorage.getTeamStatsWithTIR(event.id);
+          allTeams = allTeams.concat(teamsWithTIR);
+        } catch (error) {
+          console.warn(`Could not get teams for event ${event.id}:`, error);
+        }
       }
-      res.json(teams);
+      
+      console.log(`GET /api/teams: Returning ${allTeams.length} teams from Supabase data`);
+      res.json(allTeams);
     } catch (error) {
-      console.error('Error fetching teams:', error);
-      res.status(500).json({ message: 'Failed to fetch teams' });
+      console.error('Error fetching teams from Supabase:', error);
+      res.status(500).json({ message: 'Failed to fetch teams from database' });
     }
   });
   

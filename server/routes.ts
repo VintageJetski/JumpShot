@@ -31,7 +31,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
   app.get('/api/players', async (req: Request, res: Response) => {
     try {
-      console.log('DEBUG API ENTRY - Players API called');
+      // Prevent caching to ensure fresh data
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      console.log('🚀 REAL-TIME PIV CALCULATION - API Entry Point');
       const { dataRefreshManager } = await import('./dataRefreshManager');
       const supabaseStorage = dataRefreshManager.getStorage();
       

@@ -46,24 +46,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get roles data from Supabase database instead of CSV files
       const rawSQLAdapter = dataRefreshManager.getRawSQLAdapter();
-      const rolesData = await rawSQLAdapter.getRolesData();
-      console.log(`Loaded ${rolesData.length} role assignments from Supabase database`);
+      let roleMap = new Map();
       
-      // Convert roles data to Map format for compatibility with existing processing
-      const roleMap = new Map();
-      rolesData.forEach(role => {
-        const roleInfo = {
-          team: role.teamName,
-          player: role.playerName,
-          isIGL: role.isIGL,
-          tRole: role.tRole,
-          ctRole: role.ctRole
-        };
-        // Set by player name for fuzzy matching
-        roleMap.set(role.playerName, roleInfo);
-        // Also set by steamId for exact matching
-        roleMap.set(role.steamId.toString(), roleInfo);
-      });
+      try {
+        const rolesData = await rawSQLAdapter.getRolesData();
+        console.log(`Loaded ${rolesData.length} role assignments from Supabase database`);
+        
+        // Convert roles data to Map format for compatibility with existing processing
+        rolesData.forEach(role => {
+          const roleInfo = {
+            team: role.teamName,
+            player: role.playerName,
+            isIGL: role.isIGL,
+            tRole: role.tRole,
+            ctRole: role.ctRole
+          };
+          // Set by player name for fuzzy matching
+          roleMap.set(role.playerName, roleInfo);
+          // Also set by steamId for exact matching
+          roleMap.set(role.steamId.toString(), roleInfo);
+        });
+      } catch (error) {
+        console.warn('Could not load roles from Supabase database:', error);
+        console.log('Falling back to CSV role data temporarily...');
+        
+        // Temporary fallback to CSV until Supabase roles table is properly set up
+        const { loadPlayerRoles } = await import('./loadRoleData');
+        roleMap = await loadPlayerRoles();
+        console.log(`Loaded ${roleMap.size} role assignments from CSV fallback`);
+      }
       
       for (const event of events) {
         try {

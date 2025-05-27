@@ -36,6 +36,17 @@ export const playerHistory = pgTable("player_history", {
   teamId: integer("team_id").notNull().references(() => teams.id)
 });
 
+// Roles table - contains player role assignments
+export const roles = pgTable("roles", {
+  id: serial("id").notNull().primaryKey(),
+  steamId: bigint("steam_id", { mode: "number" }).notNull().references(() => players.steamId),
+  teamName: text("team_name").notNull(),
+  playerName: text("player_name").notNull(),
+  isIGL: boolean("is_igl").notNull().default(false),
+  tRole: text("t_role").notNull(),
+  ctRole: text("ct_role").notNull()
+});
+
 // Rounds table
 export const rounds = pgTable("rounds", {
   id: serial("id").notNull().primaryKey(),
@@ -155,6 +166,7 @@ export type Event = typeof events.$inferSelect;
 export type Team = typeof teams.$inferSelect;
 export type Player = typeof players.$inferSelect;
 export type PlayerHistory = typeof playerHistory.$inferSelect;
+export type Role = typeof roles.$inferSelect;
 export type Match = typeof matches.$inferSelect;
 export type Round = typeof rounds.$inferSelect;
 export type PlayerMatchSummary = typeof playerMatchSummary.$inferSelect;

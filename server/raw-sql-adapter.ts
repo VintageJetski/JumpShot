@@ -1,7 +1,7 @@
 import { db } from './supabase-db';
 import { eq } from 'drizzle-orm';
 import { PlayerRawStats, PlayerRole } from '../shared/schema';
-import { Team, teams } from './db-schema';
+import { Team, teams, Role } from './db-schema';
 
 /**
  * TeamRawStats interface matches the existing schema in the application
@@ -35,6 +35,37 @@ export class RawSQLAdapter {
     }
   }
   
+  /**
+   * Get roles data from Supabase database
+   */
+  async getRolesData(): Promise<Role[]> {
+    try {
+      console.log('Getting roles data from Supabase...');
+      
+      const rolesQuery = `
+        SELECT 
+          id,
+          steam_id,
+          team_name,
+          player_name,
+          is_igl,
+          t_role,
+          ct_role
+        FROM roles
+        ORDER BY team_name, player_name
+      `;
+      
+      const result = await db.execute(rolesQuery);
+      const roles = result.rows as Role[];
+      
+      console.log(`Retrieved ${roles.length} role assignments from Supabase`);
+      return roles;
+    } catch (error) {
+      console.error('Error getting roles data:', error);
+      return [];
+    }
+  }
+
   /**
    * Get teams for a specific event
    */

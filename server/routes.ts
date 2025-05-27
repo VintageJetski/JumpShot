@@ -44,6 +44,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const events = supabaseStorage.getEvents();
       let allPlayers: any[] = [];
       
+      // Get roles data from Supabase database instead of CSV files
+      const rawSQLAdapter = dataRefreshManager.rawSQLAdapter;
+      const rolesData = await rawSQLAdapter.getRolesData();
+      console.log(`Loaded ${rolesData.length} role assignments from Supabase database`);
+      
+      // Convert roles data to Map format for compatibility with existing processing
+      const roleMap = new Map();
+      rolesData.forEach(role => {
+        const roleInfo = {
+          team: role.teamName,
+          player: role.playerName,
+          isIGL: role.isIGL,
+          tRole: role.tRole,
+          ctRole: role.ctRole
+        };
+        // Set by player name for fuzzy matching
+        roleMap.set(role.playerName, roleInfo);
+        // Also set by steamId for exact matching
+        roleMap.set(role.steamId.toString(), roleInfo);
+      });
+      
       for (const event of events) {
         try {
           console.log(`DEBUG ROUTE - Processing event ${event.id}`);
@@ -51,17 +72,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const rawPlayerStats = await supabaseStorage.getPlayerStatsForEvent(event.id);
           console.log(`DEBUG ROUTE - Got ${rawPlayerStats.length} raw players for event ${event.id}`);
           
-          // Run PIV calculations in real-time
+          // Run PIV calculations in real-time using Supabase role data
           const { processPlayerStatsWithRoles } = await import('./newPlayerAnalytics');
-          const { loadPlayerRoles } = await import('./loadRoleData');
           
-          // Load role data from CSV
-          const roleMap = await loadPlayerRoles();
-          console.log(`DEBUG ROUTE - Loaded ${roleMap.size} players from role CSV`);
-          
-          // Process raw stats through PIV algorithms
+          // Process raw stats through PIV algorithms using Supabase roles
           const playersWithPIV = processPlayerStatsWithRoles(rawPlayerStats, roleMap);
-          console.log(`DEBUG ROUTE - Calculated PIV for ${playersWithPIV.length} players`);
+          console.log(`DEBUG ROUTE - Calculated PIV for ${playersWithPIV.length} players using Supabase roles`);
           
           allPlayers = allPlayers.concat(playersWithPIV);
         } catch (error) {

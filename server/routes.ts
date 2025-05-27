@@ -67,6 +67,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Created role map with ${roleMap.size} entries using steam_id matching`);
       
+      // Debug: Show sample role entries
+      if (rolesData.length > 0) {
+        console.log('DEBUG - Sample role data from Supabase:', {
+          steamId: rolesData[0].steamId,
+          teamName: rolesData[0].teamName,
+          playerName: rolesData[0].playerName,
+          isIGL: rolesData[0].isIGL,
+          tRole: rolesData[0].tRole,
+          ctRole: rolesData[0].ctRole
+        });
+      }
+      
       for (const event of events) {
         try {
           console.log(`DEBUG ROUTE - Processing event ${event.id}`);

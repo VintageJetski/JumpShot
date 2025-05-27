@@ -1054,9 +1054,9 @@ function calculatePlayerWithPIV(
   };
   
   return {
-    id: stats.steamId,
-    name: stats.userName,
-    team: stats.teamName,
+    id: stats.steamId || stats.id,
+    name: stats.userName || stats.name,
+    team: stats.teamName || stats.team,
     role: primaryRole,
     tRole,
     ctRole,

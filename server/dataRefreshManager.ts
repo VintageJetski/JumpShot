@@ -193,6 +193,13 @@ export class DataRefreshManager {
   public getStorage(): SupabaseStorage {
     return this.storage;
   }
+
+  /**
+   * Get the raw SQL adapter for direct database queries
+   */
+  public getRawSQLAdapter(): RawSQLAdapter {
+    return this.rawSQLAdapter;
+  }
 }
 
 export const dataRefreshManager = DataRefreshManager.getInstance();

@@ -45,7 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let allPlayers: any[] = [];
       
       // Get roles data from Supabase database instead of CSV files
-      const rawSQLAdapter = dataRefreshManager.rawSQLAdapter;
+      const rawSQLAdapter = dataRefreshManager.getRawSQLAdapter();
       const rolesData = await rawSQLAdapter.getRolesData();
       console.log(`Loaded ${rolesData.length} role assignments from Supabase database`);
       

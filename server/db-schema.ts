@@ -38,11 +38,8 @@ export const playerHistory = pgTable("player_history", {
 
 // Roles table - contains player role assignments
 export const roles = pgTable("roles", {
-  id: serial("id").notNull().primaryKey(),
   steamId: bigint("steam_id", { mode: "number" }).notNull().references(() => players.steamId),
-  teamName: text("team_name").notNull(),
-  playerName: text("player_name").notNull(),
-  isIGL: boolean("is_igl").notNull().default(false),
+  inGameLeader: boolean("in_game_leader").notNull().default(false),
   tRole: text("t_role").notNull(),
   ctRole: text("ct_role").notNull()
 });

@@ -53,16 +53,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const roleMap = new Map();
       rolesData.forEach(role => {
         const roleInfo = {
-          team: role.teamName,
-          player: role.playerName,
-          isIGL: role.isIGL,
+          team: 'Unknown', // Team info will come from players table join
+          player: role.playerUsername || 'Unknown',
+          isIGL: role.inGameLeader,
           tRole: role.tRole,
           ctRole: role.ctRole
         };
         // Use steam_id as the primary key for exact matching
         roleMap.set(role.steamId.toString(), roleInfo);
-        // Also set by player name for additional matching options
-        roleMap.set(role.playerName, roleInfo);
+        // Also set by player username for additional matching options
+        if (role.playerUsername) {
+          roleMap.set(role.playerUsername, roleInfo);
+        }
       });
       
       console.log(`Created role map with ${roleMap.size} entries using steam_id matching`);
@@ -71,9 +73,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (rolesData.length > 0) {
         console.log('DEBUG - Sample role data from Supabase:', {
           steamId: rolesData[0].steamId,
-          teamName: rolesData[0].teamName,
-          playerName: rolesData[0].playerName,
-          isIGL: rolesData[0].isIGL,
+          playerUsername: rolesData[0].playerUsername,
+          inGameLeader: rolesData[0].inGameLeader,
           tRole: rolesData[0].tRole,
           ctRole: rolesData[0].ctRole
         });

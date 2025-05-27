@@ -44,35 +44,41 @@ export class RawSQLAdapter {
       
       const rolesQuery = `
         SELECT 
-          r.id,
           r.steam_id,
-          r.team_name,
-          r.player_name,
-          r.is_igl,
+          r.in_game_leader,
           r.t_role,
           r.ct_role,
           p.user_name as player_username
         FROM roles r
         LEFT JOIN players p ON r.steam_id = p.steam_id
-        ORDER BY r.team_name, r.player_name
+        ORDER BY p.user_name
       `;
       
       const result = await db.execute(rolesQuery);
-      const roles = result.rows as (Role & { player_username?: string })[];
+      const rawRoles = result.rows as any[];
       
-      console.log(`Retrieved ${roles.length} role assignments from Supabase with steam_id matching`);
+      console.log(`Retrieved ${rawRoles.length} role assignments from Supabase with steam_id matching`);
+      
+      // Map the raw data to our Role interface format
+      const roles = rawRoles.map(row => ({
+        steamId: row.steam_id,
+        inGameLeader: row.in_game_leader,
+        tRole: row.t_role,
+        ctRole: row.ct_role,
+        playerUsername: row.player_username
+      }));
       
       if (roles.length > 0) {
         console.log(`Sample role data:`, {
           steamId: roles[0].steamId,
-          teamName: roles[0].teamName,
-          playerName: roles[0].playerName,
+          inGameLeader: roles[0].inGameLeader,
           tRole: roles[0].tRole,
-          ctRole: roles[0].ctRole
+          ctRole: roles[0].ctRole,
+          playerUsername: roles[0].playerUsername
         });
       }
       
-      return roles;
+      return roles as Role[];
     } catch (error) {
       console.error('Error getting roles data from Supabase:', error);
       throw error; // Don't return empty array, let the caller handle the error

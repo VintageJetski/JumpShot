@@ -36,33 +36,46 @@ export class RawSQLAdapter {
   }
   
   /**
-   * Get roles data from Supabase database
+   * Get roles data from Supabase database using proper joins
    */
   async getRolesData(): Promise<Role[]> {
     try {
-      console.log('Getting roles data from Supabase...');
+      console.log('Getting roles data from Supabase using steam_id matching...');
       
       const rolesQuery = `
         SELECT 
-          id,
-          steam_id,
-          team_name,
-          player_name,
-          is_igl,
-          t_role,
-          ct_role
-        FROM roles
-        ORDER BY team_name, player_name
+          r.id,
+          r.steam_id,
+          r.team_name,
+          r.player_name,
+          r.is_igl,
+          r.t_role,
+          r.ct_role,
+          p.user_name as player_username
+        FROM roles r
+        LEFT JOIN players p ON r.steam_id = p.steam_id
+        ORDER BY r.team_name, r.player_name
       `;
       
       const result = await db.execute(rolesQuery);
-      const roles = result.rows as Role[];
+      const roles = result.rows as (Role & { player_username?: string })[];
       
-      console.log(`Retrieved ${roles.length} role assignments from Supabase`);
+      console.log(`Retrieved ${roles.length} role assignments from Supabase with steam_id matching`);
+      
+      if (roles.length > 0) {
+        console.log(`Sample role data:`, {
+          steamId: roles[0].steamId,
+          teamName: roles[0].teamName,
+          playerName: roles[0].playerName,
+          tRole: roles[0].tRole,
+          ctRole: roles[0].ctRole
+        });
+      }
+      
       return roles;
     } catch (error) {
-      console.error('Error getting roles data:', error);
-      return [];
+      console.error('Error getting roles data from Supabase:', error);
+      throw error; // Don't return empty array, let the caller handle the error
     }
   }
 

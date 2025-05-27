@@ -44,37 +44,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const events = supabaseStorage.getEvents();
       let allPlayers: any[] = [];
       
-      // Get roles data from Supabase database instead of CSV files
+      // Get roles data from Supabase database using steam_id matching
       const rawSQLAdapter = dataRefreshManager.getRawSQLAdapter();
-      let roleMap = new Map();
+      const rolesData = await rawSQLAdapter.getRolesData();
+      console.log(`Loaded ${rolesData.length} role assignments from Supabase database`);
       
-      try {
-        const rolesData = await rawSQLAdapter.getRolesData();
-        console.log(`Loaded ${rolesData.length} role assignments from Supabase database`);
-        
-        // Convert roles data to Map format for compatibility with existing processing
-        rolesData.forEach(role => {
-          const roleInfo = {
-            team: role.teamName,
-            player: role.playerName,
-            isIGL: role.isIGL,
-            tRole: role.tRole,
-            ctRole: role.ctRole
-          };
-          // Set by player name for fuzzy matching
-          roleMap.set(role.playerName, roleInfo);
-          // Also set by steamId for exact matching
-          roleMap.set(role.steamId.toString(), roleInfo);
-        });
-      } catch (error) {
-        console.warn('Could not load roles from Supabase database:', error);
-        console.log('Falling back to CSV role data temporarily...');
-        
-        // Temporary fallback to CSV until Supabase roles table is properly set up
-        const { loadPlayerRoles } = await import('./loadRoleData');
-        roleMap = await loadPlayerRoles();
-        console.log(`Loaded ${roleMap.size} role assignments from CSV fallback`);
-      }
+      // Convert roles data to Map format using steam_id as primary key
+      const roleMap = new Map();
+      rolesData.forEach(role => {
+        const roleInfo = {
+          team: role.teamName,
+          player: role.playerName,
+          isIGL: role.isIGL,
+          tRole: role.tRole,
+          ctRole: role.ctRole
+        };
+        // Use steam_id as the primary key for exact matching
+        roleMap.set(role.steamId.toString(), roleInfo);
+        // Also set by player name for additional matching options
+        roleMap.set(role.playerName, roleInfo);
+      });
+      
+      console.log(`Created role map with ${roleMap.size} entries using steam_id matching`);
       
       for (const event of events) {
         try {

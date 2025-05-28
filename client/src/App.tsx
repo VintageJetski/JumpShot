@@ -18,6 +18,7 @@ import StatisticalAnalysisPage from "@/pages/StatisticalAnalysisPage";
 import DataVisualizationPage from "@/pages/DataVisualizationPage";
 import AdvancedAnalyticsPage from "@/pages/AdvancedAnalyticsPage";
 import DashboardPage from "@/pages/DashboardPage";
+import PRDPage from "@/pages/PRDPage";
 
 import LoginPage from "@/pages/auth/login-page";
 import AdminPage from "@/pages/admin/admin-page";
@@ -131,6 +132,13 @@ function Router() {
           {() => (
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/prd">
+          {() => (
+            <ProtectedRoute>
+              <PRDPage />
             </ProtectedRoute>
           )}
         </Route>

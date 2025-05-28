@@ -630,13 +630,18 @@ export default function ComprehensivePRDPage() {
             
             <div className="space-y-6">
               <div className="bg-red-50 p-6 rounded-lg border-l-4 border-red-500">
-                <h3 className="text-xl font-bold mb-4 text-red-800">MANDATORY DATA INTEGRITY REQUIREMENTS</h3>
+                <h3 className="text-xl font-bold mb-4 text-red-800">CRITICAL ARCHITECTURAL CORRECTION</h3>
+                <div className="bg-white p-4 rounded border mb-4">
+                  <h4 className="font-bold text-red-700 mb-2">FUNDAMENTAL DESIGN PRINCIPLE:</h4>
+                  <p className="text-sm"><strong>API serves RAW DATA ONLY. All PIV/TIR calculations happen CLIENT-SIDE.</strong></p>
+                </div>
                 <ul className="space-y-2 text-sm">
-                  <li>• <strong>Primary Key Usage:</strong> ALWAYS use steam_id as the primary identifier for player matching across all tables. Never use player names for joins or relationships.</li>
-                  <li>• <strong>Foreign Key Enforcement:</strong> All relationships must use proper PostgreSQL foreign key constraints with CASCADE options for data integrity.</li>
-                  <li>• <strong>Data Source Precedence:</strong> Supabase is the single source of truth. No CSV fallbacks, no mock data, no placeholder values in production code.</li>
-                  <li>• <strong>PIV Calculation Dependencies:</strong> PIV calculations require steam_id → players → roles table joins. Implement null checks and error handling for missing role data.</li>
-                  <li>• <strong>Role Assignment Logic:</strong> roles.t_role and roles.ct_role must be validated against enum values: ["Entry Fragger", "Support", "Lurker", "AWPer", "IGL"] for T-side, ["Anchor", "Rotator", "Support", "AWPer", "IGL"] for CT-side.</li>
+                  <li>• <strong>Data Flow:</strong> Supabase → Raw API Endpoints → Client-Side Calculations → UI Display</li>
+                  <li>• <strong>API Responsibility:</strong> Serve only raw match statistics and role assignments from Supabase</li>
+                  <li>• <strong>Client Responsibility:</strong> Calculate PIV, TIR, and all derived metrics from raw data</li>
+                  <li>• <strong>Primary Key Usage:</strong> ALWAYS use steam_id as the primary identifier for player matching across all tables</li>
+                  <li>• <strong>No Backend Calculations:</strong> Backend never calculates or stores PIV, TIR, or any derived performance metrics</li>
+                  <li>• <strong>Data Source Precedence:</strong> Supabase is the single source of truth for raw data only</li>
                 </ul>
               </div>
 
@@ -669,27 +674,32 @@ export default function ComprehensivePRDPage() {
               </div>
 
               <div className="bg-green-50 p-6 rounded-lg border-l-4 border-green-500">
-                <h3 className="text-xl font-bold mb-4 text-green-800">API ENDPOINT SPECIFICATIONS</h3>
+                <h3 className="text-xl font-bold mb-4 text-green-800">API ENDPOINT SPECIFICATIONS (RAW DATA ONLY)</h3>
                 <div className="space-y-3">
                   <div>
-                    <h4 className="font-semibold">GET /api/players</h4>
+                    <h4 className="font-semibold">GET /api/players/raw</h4>
                     <div className="text-sm bg-white p-3 rounded border">
-                      <div>Query Parameters: event_id, team_id, role, min_piv, max_piv, limit, offset</div>
-                      <div>Response: {JSON.stringify({ players: [{ steam_id: "string", user_name: "string", piv: "number", role: "string", team_name: "string" }], total: "number", pagination: {} }, null, 2)}</div>
+                      <div><strong>Purpose:</strong> Serve raw player statistics from Supabase - NO calculated metrics</div>
+                      <div><strong>Response:</strong> Raw match data (kills, deaths, assists, ADR, KAST, utility stats, etc.)</div>
+                      <div><strong>Note:</strong> Client calculates PIV/TIR from this raw data</div>
                     </div>
                   </div>
                   
                   <div>
-                    <h4 className="font-semibold">GET /api/players/:steam_id</h4>
+                    <h4 className="font-semibold">GET /api/roles/raw</h4>
                     <div className="text-sm bg-white p-3 rounded border">
-                      <div>Response: Complete player object with PIV breakdown, role details, team information, and historical performance</div>
+                      <div><strong>Purpose:</strong> Serve role assignments from Supabase roles table</div>
+                      <div><strong>Response:</strong> steam_id, in_game_leader, t_role, ct_role</div>
+                      <div><strong>Critical:</strong> Uses steam_id for player matching</div>
                     </div>
                   </div>
                   
                   <div>
-                    <h4 className="font-semibold">GET /api/teams/:team_id</h4>
+                    <h4 className="font-semibold">GET /api/teams/raw</h4>
                     <div className="text-sm bg-white p-3 rounded border">
-                      <div>Response: Team roster, TIR calculation, role distribution, recent match results</div>
+                      <div><strong>Purpose:</strong> Serve team information from Supabase</div>
+                      <div><strong>Response:</strong> Team roster, basic team info - NO TIR calculations</div>
+                      <div><strong>Note:</strong> Client calculates TIR from player PIV data</div>
                     </div>
                   </div>
                 </div>

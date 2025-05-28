@@ -28,21 +28,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Don't fail completely - the API endpoints will handle errors gracefully
   }
   
-  // API routes
+  // API routes - Serve RAW DATA ONLY, no calculated metrics
   app.get('/api/players', async (req: Request, res: Response) => {
     try {
-      // Prevent caching to ensure fresh data
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      
-      console.log('🚀 REAL-TIME PIV CALCULATION - API Entry Point');
+      console.log('📊 SERVING RAW PLAYER DATA FROM SUPABASE');
       const { dataRefreshManager } = await import('./dataRefreshManager');
       const supabaseStorage = dataRefreshManager.getStorage();
       
-      // Get fresh raw data from Supabase and calculate PIV in real-time
+      // Get raw player data from Supabase - NO PIV CALCULATIONS HERE
       const events = supabaseStorage.getEvents();
-      let allPlayers: any[] = [];
+      let rawPlayersData: any[] = [];
       
       // Get roles data from Supabase database using steam_id matching
       const rawSQLAdapter = dataRefreshManager.getRawSQLAdapter();
@@ -83,18 +78,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const event of events) {
         try {
           console.log(`DEBUG ROUTE - Processing event ${event.id}`);
-          // Get raw player stats (no PIV calculations)
+          // Get raw player stats only - NO PIV CALCULATIONS
           const rawPlayerStats = await supabaseStorage.getPlayerStatsForEvent(event.id);
-          console.log(`DEBUG ROUTE - Got ${rawPlayerStats.length} raw players for event ${event.id}`);
+          console.log(`RAW DATA - Got ${rawPlayerStats.length} raw players for event ${event.id}`);
           
-          // Run PIV calculations in real-time using Supabase role data
-          const { processPlayerStatsWithRoles } = await import('./newPlayerAnalytics');
+          // Combine raw stats with role data - NO CALCULATIONS
+          const rawPlayersWithRoles = rawPlayerStats.map(player => {
+            const roleInfo = roleMap.get(player.steamId?.toString()) || 
+                           roleMap.get(player.playerUsername) || 
+                           { isIGL: false, tRole: 'Support', ctRole: 'Support' };
+            
+            return {
+              // Raw player stats
+              steamId: player.steamId,
+              playerUsername: player.playerUsername,
+              teamName: player.teamName,
+              kills: player.kills,
+              deaths: player.deaths,
+              assists: player.assists,
+              adr: player.adr,
+              kast: player.kast,
+              rating: player.rating,
+              entryKills: player.entryKills,
+              entryDeaths: player.entryDeaths,
+              multiKills: player.multiKills,
+              clutchWins: player.clutchWins,
+              clutchAttempts: player.clutchAttempts,
+              flashAssists: player.flashAssists,
+              rounds: player.rounds,
+              maps: player.maps,
+              teamRounds: player.teamRounds,
+              // Role data
+              isIGL: roleInfo.isIGL,
+              tRole: roleInfo.tRole,
+              ctRole: roleInfo.ctRole
+            };
+          });
           
-          // Process raw stats through PIV algorithms using Supabase roles
-          const playersWithPIV = processPlayerStatsWithRoles(rawPlayerStats, roleMap);
-          console.log(`DEBUG ROUTE - Calculated PIV for ${playersWithPIV.length} players using Supabase roles`);
-          
-          allPlayers = allPlayers.concat(playersWithPIV);
+          rawPlayersData = rawPlayersData.concat(rawPlayersWithRoles);
         } catch (error) {
           console.warn(`Could not process players for event ${event.id}:`, error);
         }

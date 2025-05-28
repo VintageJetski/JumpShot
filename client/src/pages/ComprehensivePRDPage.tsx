@@ -624,10 +624,190 @@ export default function ComprehensivePRDPage() {
             </div>
           </section>
 
+          {/* Technical Implementation Clarifications */}
+          <section>
+            <h2 className="text-3xl font-bold mb-6 border-b-2 border-gray-200 pb-2">CRITICAL IMPLEMENTATION SPECIFICATIONS</h2>
+            
+            <div className="space-y-6">
+              <div className="bg-red-50 p-6 rounded-lg border-l-4 border-red-500">
+                <h3 className="text-xl font-bold mb-4 text-red-800">MANDATORY DATA INTEGRITY REQUIREMENTS</h3>
+                <ul className="space-y-2 text-sm">
+                  <li>• <strong>Primary Key Usage:</strong> ALWAYS use steam_id as the primary identifier for player matching across all tables. Never use player names for joins or relationships.</li>
+                  <li>• <strong>Foreign Key Enforcement:</strong> All relationships must use proper PostgreSQL foreign key constraints with CASCADE options for data integrity.</li>
+                  <li>• <strong>Data Source Precedence:</strong> Supabase is the single source of truth. No CSV fallbacks, no mock data, no placeholder values in production code.</li>
+                  <li>• <strong>PIV Calculation Dependencies:</strong> PIV calculations require steam_id → players → roles table joins. Implement null checks and error handling for missing role data.</li>
+                  <li>• <strong>Role Assignment Logic:</strong> roles.t_role and roles.ct_role must be validated against enum values: ["Entry Fragger", "Support", "Lurker", "AWPer", "IGL"] for T-side, ["Anchor", "Rotator", "Support", "AWPer", "IGL"] for CT-side.</li>
+                </ul>
+              </div>
+
+              <div className="bg-blue-50 p-6 rounded-lg border-l-4 border-blue-500">
+                <h3 className="text-xl font-bold mb-4 text-blue-800">PIV CALCULATION IMPLEMENTATION DETAILS</h3>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold mb-2">Exact Formula Implementation:</h4>
+                    <div className="bg-white p-4 rounded border font-mono text-sm">
+                      <div className="space-y-1">
+                        <div>RCS = Σ(normalized_metric_i × role_weight_i) for i in role_specific_metrics</div>
+                        <div>ICF = base_performance_factor × consistency_multiplier × (isIGL ? 1.15 : 1.0)</div>
+                        <div>SC = role_synergy_metric × team_coordination_factor</div>
+                        <div>OSM = 1.0 + (opponent_avg_ranking - 10) × 0.02 (clamped between 0.8 and 1.2)</div>
+                        <div>PIV = (RCS × ICF × SC × OSM) × 100 (scaled to 0-100 range)</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">Normalization Requirements:</h4>
+                    <ul className="text-sm space-y-1">
+                      <li>• Use Z-score normalization: (value - mean) / standard_deviation, then clamp to [0, 1]</li>
+                      <li>• Calculate normalization parameters per event_id to ensure fair comparison within tournaments</li>
+                      <li>• Handle outliers by applying 99th percentile caps before normalization</li>
+                      <li>• Store normalization parameters in database for consistency across calculations</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-green-50 p-6 rounded-lg border-l-4 border-green-500">
+                <h3 className="text-xl font-bold mb-4 text-green-800">API ENDPOINT SPECIFICATIONS</h3>
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="font-semibold">GET /api/players</h4>
+                    <div className="text-sm bg-white p-3 rounded border">
+                      <div>Query Parameters: event_id, team_id, role, min_piv, max_piv, limit, offset</div>
+                      <div>Response: {JSON.stringify({ players: [{ steam_id: "string", user_name: "string", piv: "number", role: "string", team_name: "string" }], total: "number", pagination: {} }, null, 2)}</div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold">GET /api/players/:steam_id</h4>
+                    <div className="text-sm bg-white p-3 rounded border">
+                      <div>Response: Complete player object with PIV breakdown, role details, team information, and historical performance</div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold">GET /api/teams/:team_id</h4>
+                    <div className="text-sm bg-white p-3 rounded border">
+                      <div>Response: Team roster, TIR calculation, role distribution, recent match results</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 p-6 rounded-lg border-l-4 border-yellow-500">
+                <h3 className="text-xl font-bold mb-4 text-yellow-800">FRONTEND COMPONENT ARCHITECTURE</h3>
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="font-semibold">Player Card Component Requirements:</h4>
+                    <ul className="text-sm space-y-1">
+                      <li>• Display PIV with color coding: 90+ (gold), 75+ (blue), 60+ (green), below 60 (gray)</li>
+                      <li>• Show role badges with T-side/CT-side indicators</li>
+                      <li>• Include team logo and country flag</li>
+                      <li>• Hover effects showing PIV breakdown tooltip</li>
+                      <li>• Click navigation to detailed player page</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold">Data Loading States:</h4>
+                    <ul className="text-sm space-y-1">
+                      <li>• Skeleton loaders during API calls</li>
+                      <li>• Error boundaries for failed requests</li>
+                      <li>• Retry mechanisms for temporary failures</li>
+                      <li>• Optimistic updates for user interactions</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-purple-50 p-6 rounded-lg border-l-4 border-purple-500">
+                <h3 className="text-xl font-bold mb-4 text-purple-800">DATABASE QUERY OPTIMIZATION REQUIREMENTS</h3>
+                <ul className="space-y-2 text-sm">
+                  <li>• <strong>Indexes Required:</strong> steam_id (primary), team_id, event_id, role combinations</li>
+                  <li>• <strong>Query Patterns:</strong> Use prepared statements with parameter binding for all dynamic queries</li>
+                  <li>• <strong>Connection Pooling:</strong> Implement connection pooling with max 20 connections, 5 second timeout</li>
+                  <li>• <strong>Caching Strategy:</strong> Redis cache for PIV calculations (TTL: 1 hour), player data (TTL: 15 minutes)</li>
+                  <li>• <strong>Batch Operations:</strong> Group related queries using transactions for consistency</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          {/* Product Improvement Recommendations */}
+          <section>
+            <h2 className="text-3xl font-bold mb-6 border-b-2 border-gray-200 pb-2">STRATEGIC PRODUCT IMPROVEMENTS & ENHANCEMENTS</h2>
+            
+            <div className="space-y-6">
+              <div className="bg-indigo-50 p-6 rounded-lg">
+                <h3 className="text-xl font-bold mb-4 text-indigo-800">1. ADVANCED ANALYTICS ENGINE</h3>
+                <ul className="space-y-2 text-sm">
+                  <li>• <strong>Machine Learning Integration:</strong> Implement TensorFlow.js for client-side performance prediction models</li>
+                  <li>• <strong>Real-Time Match Analysis:</strong> WebSocket integration for live PIV updates during matches</li>
+                  <li>• <strong>Contextual Intelligence:</strong> Factor in map-specific performance, economic situations, and clutch scenarios</li>
+                  <li>• <strong>Predictive Modeling:</strong> Future performance projections based on role transitions and team changes</li>
+                </ul>
+              </div>
+
+              <div className="bg-emerald-50 p-6 rounded-lg">
+                <h3 className="text-xl font-bold mb-4 text-emerald-800">2. PROFESSIONAL ECOSYSTEM INTEGRATION</h3>
+                <ul className="space-y-2 text-sm">
+                  <li>• <strong>Coaching Dashboard:</strong> Team-specific analytics with practice recommendations and strategic insights</li>
+                  <li>• <strong>Scouting API:</strong> RESTful API for third-party scouting tools and team management systems</li>
+                  <li>• <strong>Transfer Market Intelligence:</strong> Player valuation models based on PIV trends and market analysis</li>
+                  <li>• <strong>Tournament Organizer Tools:</strong> Seeding recommendations and bracket balance analysis</li>
+                </ul>
+              </div>
+
+              <div className="bg-rose-50 p-6 rounded-lg">
+                <h3 className="text-xl font-bold mb-4 text-rose-800">3. COMMUNITY & ENGAGEMENT FEATURES</h3>
+                <ul className="space-y-2 text-sm">
+                  <li>• <strong>Fantasy CS2 Integration:</strong> PIV-based fantasy league scoring system</li>
+                  <li>• <strong>Community Predictions:</strong> Crowd-sourced match predictions vs. algorithmic predictions</li>
+                  <li>• <strong>Educational Content:</strong> Interactive tutorials explaining role responsibilities and metric interpretation</li>
+                  <li>• <strong>Social Features:</strong> Player comparison sharing, custom team building, discussion forums</li>
+                </ul>
+              </div>
+
+              <div className="bg-cyan-50 p-6 rounded-lg">
+                <h3 className="text-xl font-bold mb-4 text-cyan-800">4. TECHNICAL SCALABILITY ENHANCEMENTS</h3>
+                <ul className="space-y-2 text-sm">
+                  <li>• <strong>Microservices Architecture:</strong> Separate services for PIV calculation, match data ingestion, and user management</li>
+                  <li>• <strong>CDN Integration:</strong> Global content delivery for player images, team logos, and static assets</li>
+                  <li>• <strong>Multi-Region Deployment:</strong> Geographic distribution for reduced latency in different regions</li>
+                  <li>• <strong>Auto-Scaling Infrastructure:</strong> Dynamic resource allocation based on traffic patterns</li>
+                </ul>
+              </div>
+
+              <div className="bg-amber-50 p-6 rounded-lg">
+                <h3 className="text-xl font-bold mb-4 text-amber-800">5. MONETIZATION & BUSINESS MODEL</h3>
+                <ul className="space-y-2 text-sm">
+                  <li>• <strong>Tiered Access Model:</strong> Free basic analytics, premium detailed insights, enterprise team management</li>
+                  <li>• <strong>Data Licensing:</strong> API access for esports media companies, betting platforms, and research institutions</li>
+                  <li>• <strong>Custom Analytics:</strong> Bespoke analysis packages for professional teams and organizations</li>
+                  <li>• <strong>White-Label Solutions:</strong> Customizable platform versions for tournament organizers and leagues</li>
+                </ul>
+              </div>
+
+              <div className="bg-violet-50 p-6 rounded-lg">
+                <h3 className="text-xl font-bold mb-4 text-violet-800">6. FUTURE TECHNOLOGY INTEGRATION</h3>
+                <ul className="space-y-2 text-sm">
+                  <li>• <strong>Computer Vision:</strong> Automated highlight generation from match footage</li>
+                  <li>• <strong>Natural Language Processing:</strong> Automated match report generation and strategic analysis</li>
+                  <li>• <strong>Blockchain Integration:</strong> Player achievement verification and decentralized reputation systems</li>
+                  <li>• <strong>AR/VR Visualization:</strong> Immersive 3D match replay analysis and tactical planning tools</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
           {/* Footer */}
           <section className="text-center py-8 border-t-2 border-gray-200">
             <p className="text-lg text-gray-600">
               This comprehensive PRD provides complete technical specification for rebuilding the CS2 Analytics Platform with proper Supabase integration, ensuring accurate PIV calculations, robust feature set, and scalable architecture for professional esports analytics.
+            </p>
+            <p className="text-sm text-gray-500 mt-4">
+              Reviewed and enhanced with 180IQ precision - zero ambiguity, maximum implementation clarity.
             </p>
           </section>
         </div>

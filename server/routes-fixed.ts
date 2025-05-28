@@ -22,7 +22,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const event of events) {
         try {
-          const rawPlayerStats = await supabaseStorage.getPlayerStatsForEvent(event.id);
+          // Use rawSQLAdapter directly since it's working successfully
+          const rawPlayerStats = await rawSQLAdapter.getPlayersForEvent(event.id);
           
           // Combine raw stats with role data - NO CALCULATIONS
           const playersWithRoles = rawPlayerStats.map(player => {

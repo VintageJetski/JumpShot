@@ -247,8 +247,9 @@ export default function MatchPredictorPage() {
   const team1 = teams.find(t => t.id === team1Id);
   const team2 = teams.find(t => t.id === team2Id);
   
-  const team1Players = allPlayers.filter(p => p.team === team1?.name);
-  const team2Players = allPlayers.filter(p => p.team === team2?.name);
+  const playersArray = Array.isArray(allPlayers) ? allPlayers : (allPlayers?.players || []);
+  const team1Players = playersArray.filter(p => p.team === team1?.name);
+  const team2Players = playersArray.filter(p => p.team === team2?.name);
   
   // Auto-select first two teams if none selected
   if (teams.length >= 2 && !team1Id && !team2Id) {

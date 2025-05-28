@@ -378,7 +378,7 @@ export default function PlayersPage() {
             metricColor="text-purple-400"
             bgGradient="from-purple-700 to-purple-500"
             icon={<Lightbulb className="h-6 w-6 text-purple-400" />}
-            subtext={`${topPlayersByRole.igl.primaryMetric.name}: ${topPlayersByRole.igl.primaryMetric.value.toFixed(2)}`}
+            subtext={`${topPlayersByRole.igl.primaryMetric.name}: ${typeof topPlayersByRole.igl.primaryMetric.value === 'number' ? topPlayersByRole.igl.primaryMetric.value.toFixed(2) : topPlayersByRole.igl.primaryMetric.value || 'N/A'}`}
             index={1}
           />
         )}
@@ -391,7 +391,7 @@ export default function PlayersPage() {
             metricColor="text-amber-400"
             bgGradient="from-amber-700 to-amber-500"
             icon={<Target className="h-6 w-6 text-amber-400" />}
-            subtext={`${topPlayersByRole.awper.primaryMetric.name}: ${topPlayersByRole.awper.primaryMetric.value.toFixed(2)}`}
+            subtext={`${topPlayersByRole.awper.primaryMetric.name}: ${typeof topPlayersByRole.awper.primaryMetric.value === 'number' ? topPlayersByRole.awper.primaryMetric.value.toFixed(2) : topPlayersByRole.awper.primaryMetric.value || 'N/A'}`}
             index={2}
           />
         )}
@@ -404,7 +404,7 @@ export default function PlayersPage() {
             metricColor="text-orange-400"
             bgGradient="from-orange-700 to-orange-500"
             icon={<User2 className="h-6 w-6 text-orange-400" />}
-            subtext={`${topPlayersByRole.spacetaker.primaryMetric.name}: ${topPlayersByRole.spacetaker.primaryMetric.value.toFixed(2)}`}
+            subtext={`${topPlayersByRole.spacetaker.primaryMetric.name}: ${typeof topPlayersByRole.spacetaker.primaryMetric.value === 'number' ? topPlayersByRole.spacetaker.primaryMetric.value.toFixed(2) : topPlayersByRole.spacetaker.primaryMetric.value || 'N/A'}`}
             index={3}
           />
         )}

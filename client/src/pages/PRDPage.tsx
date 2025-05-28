@@ -5,15 +5,15 @@ import { Separator } from '@/components/ui/separator';
 
 export default function PRDPage() {
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             CS2 Performance Analytics Platform
           </h1>
-          <p className="text-xl text-muted-foreground">Product Requirements Document</p>
-          <Badge variant="outline" className="text-sm">Version 2.0 - Supabase Architecture</Badge>
+          <p className="text-xl text-muted-foreground">Complete Product Requirements Document</p>
+          <Badge variant="outline" className="text-sm">Comprehensive Technical Specification</Badge>
         </div>
 
         {/* Overview */}

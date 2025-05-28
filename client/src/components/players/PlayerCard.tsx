@@ -287,8 +287,8 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
             <div className="text-xs text-blue-300 mb-1 flex items-center">
               <Gauge className="h-3 w-3 mr-1" /> K/D Ratio
             </div>
-            <div className={`text-base font-medium ${player.kd >= 1.0 ? 'text-green-400' : 'text-yellow-400'}`}>
-              {player.kd.toFixed(2)}
+            <div className={`text-base font-medium ${(player.kd || 0) >= 1.0 ? 'text-green-400' : 'text-yellow-400'}`}>
+              {player.kd ? player.kd.toFixed(2) : '0.00'}
             </div>
           </motion.div>
           

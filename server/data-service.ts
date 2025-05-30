@@ -31,56 +31,65 @@ export interface PlayerStats {
 
 /**
  * Get comprehensive player statistics using the exact schema from PRD
- * Joins players, kill_stats, general_stats, utility_stats, and teams tables
+ * Aggregates stats across all events for each unique player
  */
 export async function getPlayerStats(eventId?: number): Promise<PlayerStats[]> {
   try {
-    console.log(`Fetching player stats from Supabase for event: ${eventId || 'all events'}`);
+    console.log(`Fetching player stats from Supabase for event: ${eventId || 'all events - aggregated'}`);
     
-    // Use direct SQL query to join all stat tables as per PRD schema
+    // Aggregated query to get one record per player across all events
     const query = `
       SELECT 
         p.steam_id,
         p.user_name,
-        pms.event_id,
         
-        -- Kill stats
-        ks.kills,
-        ks.headshots,
-        ks.first_kills,
-        ks.first_deaths,
-        ks.awp_kills,
+        -- Aggregated kill stats
+        SUM(ks.kills) as kills,
+        SUM(ks.headshots) as headshots,
+        SUM(ks.first_kills) as first_kills,
+        SUM(ks.first_deaths) as first_deaths,
+        SUM(ks.awp_kills) as awp_kills,
         
-        -- General stats
-        gs.assists,
-        gs.deaths,
-        gs.kd,
-        gs.adr_total,
-        gs.kast_total,
+        -- Aggregated general stats
+        SUM(gs.assists) as assists,
+        SUM(gs.deaths) as deaths,
+        AVG(gs.kd) as kd,
+        AVG(gs.adr_total) as adr_total,
+        AVG(gs.kast_total) as kast_total,
         
-        -- Utility stats
-        us.assisted_flashes,
-        us.total_util_thrown,
-        us.total_util_dmg,
+        -- Aggregated utility stats
+        SUM(us.assisted_flashes) as assisted_flashes,
+        SUM(us.total_util_thrown) as total_util_thrown,
+        SUM(us.total_util_dmg) as total_util_dmg,
         
-        -- Team info
-        t.team_clan_name
+        -- Team info (most recent team)
+        (SELECT t.team_clan_name 
+         FROM player_match_summary pms2 
+         JOIN teams t ON pms2.team_id = t.id 
+         WHERE pms2.steam_id = p.steam_id 
+         ORDER BY pms2.event_id DESC 
+         LIMIT 1) as team_clan_name,
+         
+        -- Event info for reference
+        STRING_AGG(DISTINCT e.event_name, ', ' ORDER BY e.event_name) as events_played
         
       FROM players p
       LEFT JOIN player_match_summary pms ON p.steam_id = pms.steam_id
       LEFT JOIN kill_stats ks ON p.steam_id = ks.steam_id AND pms.event_id = ks.event_id
       LEFT JOIN general_stats gs ON p.steam_id = gs.steam_id AND pms.event_id = gs.event_id  
       LEFT JOIN utility_stats us ON p.steam_id = us.steam_id AND pms.event_id = us.event_id
-      LEFT JOIN teams t ON pms.team_id = t.id
+      LEFT JOIN events e ON pms.event_id = e.event_id
       ${eventId ? 'WHERE pms.event_id = $1' : ''}
-      ORDER BY gs.kd DESC NULLS LAST
+      GROUP BY p.steam_id, p.user_name
+      HAVING COUNT(pms.steam_id) > 0
+      ORDER BY AVG(gs.kd) DESC NULLS LAST
     `;
     
     const result = eventId 
       ? await sql.query(query, [eventId])
       : await sql.query(query);
     
-    console.log(`Retrieved ${result.rows.length} player records from Supabase`);
+    console.log(`Retrieved ${result.rows.length} unique players from Supabase (aggregated)`);
     return result.rows;
     
   } catch (error) {

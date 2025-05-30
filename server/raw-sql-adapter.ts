@@ -62,7 +62,7 @@ export class RawSQLAdapter {
       // Map the raw data to our Role interface format
       const roles = rawRoles.map(row => ({
         steamId: row.steam_id.toString(), // Ensure Steam ID is always a string
-        inGameLeader: Boolean(row.in_game_leader), // Ensure boolean type
+        inGameLeader: row.in_game_leader === 't' || row.in_game_leader === true, // Handle PostgreSQL boolean format
         tRole: row.t_role,
         ctRole: row.ct_role,
         playerUsername: row.player_username
@@ -72,10 +72,17 @@ export class RawSQLAdapter {
         console.log(`Sample role data:`, {
           steamId: roles[0].steamId,
           inGameLeader: roles[0].inGameLeader,
+          inGameLeaderType: typeof roles[0].inGameLeader,
           tRole: roles[0].tRole,
           ctRole: roles[0].ctRole,
           playerUsername: roles[0].playerUsername
         });
+        
+        // Find and log all IGL players
+        const iglPlayers = roles.filter(r => Boolean(r.inGameLeader));
+        console.log(`Found ${iglPlayers.length} IGL players in roles data:`, 
+          iglPlayers.map(p => ({ steamId: p.steamId, playerUsername: p.playerUsername, inGameLeader: p.inGameLeader }))
+        );
       }
       
       return roles as Role[];

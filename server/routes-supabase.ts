@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth } from "./auth";
+import { setupAuth } from "./auth-bypass";
 import { getPlayerStats, getEvents, getTeamStats } from "./data-service";
 import { testSupabaseConnection, testPostgresConnection } from "./supabase-client";
 

@@ -78,12 +78,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      console.log(`Starting to process ${events.length} tournaments...`);
+      
       for (const event of events) {
         try {
-          console.log(`DEBUG ROUTE - Processing event ${event.id}`);
+          console.log(`Processing tournament ${event.id} (${event.name})...`);
           // Get raw player stats only - NO PIV CALCULATIONS
           const rawPlayerStats = await supabaseStorage.getPlayerStatsForEvent(event.id);
-          console.log(`RAW DATA - Got ${rawPlayerStats.length} raw players for event ${event.id}`);
+          console.log(`Retrieved ${rawPlayerStats.length} players from tournament ${event.id}`);
           
           // Combine raw stats with role data - NO CALCULATIONS
           const rawPlayersWithRoles = rawPlayerStats.map(player => {
@@ -124,6 +126,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Use the accumulated data from both tournaments
+      let allPlayers = rawPlayersData;
+      
       // Apply role filter if specified
       const role = req.query.role as string | undefined;
       if (role && role !== 'All Roles') {
@@ -132,14 +137,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
       
-      console.log(`Returning ${allPlayers.length} players from Supabase data`);
+      console.log(`📊 Serving ${allPlayers.length} raw players from ${events.length} tournaments`);
       
-      // Show the actual structure we're returning
-      if (allPlayers.length > 0) {
-        console.log('ACTUAL PLAYER STRUCTURE:', JSON.stringify(allPlayers[0], null, 2));
-      }
-      
-      res.json(allPlayers);
+      res.json({
+        players: allPlayers,
+        count: allPlayers.length,
+        tournaments: events.length
+      });
     } catch (error) {
       console.error('Error fetching players from Supabase:', error);
       res.status(500).json({ message: 'Failed to fetch players from database' });

@@ -29,33 +29,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Don't fail completely - the API endpoints will handle errors gracefully
   }
   
-  // API routes - Serve RAW DATA ONLY, no calculated metrics
+  // API routes - Serve RAW DATA ONLY with simple role fetching
   app.get('/api/players', async (req: Request, res: Response) => {
     try {
-      console.log('📊 SERVING RAW PLAYER DATA FROM SUPABASE');
-      const { dataRefreshManager } = await import('./dataRefreshManager');
-      const supabaseStorage = dataRefreshManager.getStorage();
-      
-      // Force processing of both tournaments to get all 105+ players
-      const events = [
-        { id: 1, name: 'IEM_Katowice_2025' },
-        { id: 2, name: 'PGL_Bucharest_2025' }
-      ];
-      let rawPlayersData: any[] = [];
-      
-      // Get roles data from Supabase database using steam_id matching
-      const rawSQLAdapter = dataRefreshManager.getRawSQLAdapter();
-      const rolesData = await rawSQLAdapter.getRolesData();
-      console.log(`Loaded ${rolesData.length} role assignments from Supabase database`);
-      
-      // Debug: Show sample role entries from database
-      if (rolesData.length > 0) {
-        console.log('Sample role data from database:', rolesData[0]);
-        const iglCount = rolesData.filter(role => role.inGameLeader).length;
-        console.log(`Total IGL players in database: ${iglCount}`);
-      }
-      
-      console.log(`Fetching ALL players from BOTH tournaments using raw SQL adapter...`);
+      console.log('📊 SERVING PLAYER DATA WITH SIMPLE ROLE FETCHING');
       
       // Use simple player fetcher with separate queries  
       const allPlayersFromBothTournaments = await getPlayersWithRoles();

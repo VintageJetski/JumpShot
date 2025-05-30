@@ -133,6 +133,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           role.steamId?.toString() === steamIdStr
         );
         
+        // Debug for Aleksib specifically
+        if (steamIdStr === '76561198013243326') {
+          console.log(`🔍 ALEKSIB DEBUG - Player Steam ID: "${steamIdStr}"`);
+          console.log(`🔍 ALEKSIB DEBUG - Found matching role:`, matchingRole ? 'YES' : 'NO');
+          if (matchingRole) {
+            console.log(`🔍 ALEKSIB DEBUG - Role data:`, {
+              steamId: matchingRole.steamId,
+              inGameLeader: matchingRole.inGameLeader,
+              tRole: matchingRole.tRole,
+              ctRole: matchingRole.ctRole
+            });
+          }
+          
+          // Check all role Steam IDs for debugging
+          const allRoleSteamIds = rolesData.map(r => r.steamId?.toString()).filter(Boolean);
+          console.log(`🔍 ALEKSIB DEBUG - All role Steam IDs:`, allRoleSteamIds.slice(0, 5));
+          console.log(`🔍 ALEKSIB DEBUG - Aleksib in roles?`, allRoleSteamIds.includes(steamIdStr));
+        }
+        
         let isIGL = false;
         let tRole = 'Support';
         let ctRole = 'Support';

@@ -19,9 +19,15 @@ function PlayerCard({ player }: { player: ClientPlayer }) {
   const { name, team, isIGL, tRole, ctRole, kills, deaths, adr, kast, rating } = player;
   const initials = name.split(' ').map((n: string) => n[0]).join('');
   
-  // Calculate metrics
-  const kd = deaths > 0 ? kills / deaths : kills;
-  const piv = (kd * 0.4 + adr * 0.002 + kast * 0.006 + rating * 0.2) * (isIGL ? 1.1 : 1.0);
+  // Calculate metrics with safety checks
+  const safeKills = kills || 0;
+  const safeDeaths = deaths || 1;
+  const safeAdr = adr || 0;
+  const safeKast = kast || 0;
+  const safeRating = rating || 0;
+  
+  const kd = safeDeaths > 0 ? safeKills / safeDeaths : safeKills;
+  const piv = (kd * 0.4 + safeAdr * 0.002 + safeKast * 0.006 + safeRating * 0.2) * (isIGL ? 1.1 : 1.0);
   const primaryRole = isIGL ? 'IGL' : tRole;
 
   const roleColors: Record<string, string> = {
@@ -126,8 +132,13 @@ export default function PlayersPageClean() {
     // Statistical outlier filtering
     if (outlierFilter !== 'All Players') {
       const pivValues = filtered.map(p => {
-        const kd = p.deaths > 0 ? p.kills / p.deaths : p.kills;
-        return (kd * 0.4 + p.adr * 0.002 + p.kast * 0.006 + p.rating * 0.2) * (p.isIGL ? 1.1 : 1.0);
+        const safeKills = p.kills || 0;
+        const safeDeaths = p.deaths || 1;
+        const safeAdr = p.adr || 0;
+        const safeKast = p.kast || 0;
+        const safeRating = p.rating || 0;
+        const kd = safeDeaths > 0 ? safeKills / safeDeaths : safeKills;
+        return (kd * 0.4 + safeAdr * 0.002 + safeKast * 0.006 + safeRating * 0.2) * (p.isIGL ? 1.1 : 1.0);
       });
       
       const sorted = pivValues.slice().sort((a, b) => a - b);

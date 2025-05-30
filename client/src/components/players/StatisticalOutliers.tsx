@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation } from 'wouter';
 import { motion } from 'framer-motion';
-import { PlayerWithPIV } from '@shared/schema';
+import { PlayerWithPIV, PlayerRole } from '@shared/schema';
 import { Target, Shield, CircleDot, Gauge, ZapIcon, Brain, FlameIcon, Users, Zap, Crosshair, Award } from 'lucide-react';
 
 interface StatisticalOutliersProps {
@@ -20,125 +20,135 @@ interface OutlierCard {
 const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players }) => {
   const [, setLocation] = useLocation();
   
-  // Find outliers based on specific metrics using tournament data
+  // Find outliers based on specific metrics
   const findOutliers = (): OutlierCard[] => {
     if (!players || players.length === 0) return [];
     
+    // Results array
     const outliers: OutlierCard[] = [];
     
-    // Find highest headshot player using tournament metrics
+    // Find highest headshot player
     const headshotPlayer = [...players].sort((a, b) => 
-      (b.metrics?.headshots || 0) - (a.metrics?.headshots || 0)
+      b.rawStats.headshots / Math.max(b.rawStats.kills, 1) - 
+      a.rawStats.headshots / Math.max(a.rawStats.kills, 1)
     )[0];
     
-    if (headshotPlayer?.metrics?.headshots) {
+    if (headshotPlayer) {
+      const headshotRatio = (headshotPlayer.rawStats.headshots / Math.max(headshotPlayer.rawStats.kills, 1)) * 100;
       outliers.push({
         title: "Headshot King",
         player: headshotPlayer,
-        statValue: headshotPlayer.metrics.headshots,
+        statValue: headshotRatio,
         bgGradient: "from-red-700 to-orange-500",
         icon: <Crosshair className="h-5 w-5 text-orange-300" />,
-        description: `${headshotPlayer.metrics.headshots} headshots`
+        description: `${headshotRatio.toFixed(1)}% headshot ratio`
       });
     }
     
-    // Find top flash assist player using utility damage as proxy
+    // Find top flash assist player
     const flashPlayer = [...players].sort((a, b) => 
-      (b.metrics?.utilityDamage || 0) - (a.metrics?.utilityDamage || 0)
+      b.rawStats.assistedFlashes / Math.max(b.rawStats.flashesThrown, 1) - 
+      a.rawStats.assistedFlashes / Math.max(a.rawStats.flashesThrown, 1)
     )[0];
     
-    if (flashPlayer?.metrics?.utilityDamage) {
+    if (flashPlayer) {
+      const flashRatio = (flashPlayer.rawStats.assistedFlashes / Math.max(flashPlayer.rawStats.flashesThrown, 1)) * 100;
       outliers.push({
         title: "Flash Master",
         player: flashPlayer,
-        statValue: flashPlayer.metrics.utilityDamage,
+        statValue: flashRatio,
         bgGradient: "from-blue-700 to-cyan-500",
         icon: <Zap className="h-5 w-5 text-cyan-300" />,
-        description: `${flashPlayer.metrics.utilityDamage} utility damage`
+        description: `${flashRatio.toFixed(1)}% flash effectiveness`
       });
     }
     
     // Find best opening kill player
     const openingKillPlayer = [...players].sort((a, b) => 
-      (b.metrics?.firstKills || 0) - (a.metrics?.firstKills || 0)
+      (b.rawStats.firstKills / Math.max(b.rawStats.firstKills + b.rawStats.firstDeaths, 1)) - 
+      (a.rawStats.firstKills / Math.max(a.rawStats.firstKills + a.rawStats.firstDeaths, 1))
     )[0];
     
-    if (openingKillPlayer?.metrics?.firstKills) {
+    if (openingKillPlayer) {
+      const openingRatio = (openingKillPlayer.rawStats.firstKills / Math.max(openingKillPlayer.rawStats.firstKills + openingKillPlayer.rawStats.firstDeaths, 1)) * 100;
       outliers.push({
         title: "Opening Kill Specialist",
         player: openingKillPlayer,
-        statValue: openingKillPlayer.metrics.firstKills,
+        statValue: openingRatio,
         bgGradient: "from-emerald-700 to-emerald-500",
         icon: <ZapIcon className="h-5 w-5 text-emerald-300" />,
-        description: `${openingKillPlayer.metrics.firstKills} first kills`
+        description: `${openingRatio.toFixed(1)}% opening duel winrate`
       });
     }
     
-    // Find smoke specialist (highest KAST as proxy for utility effectiveness)
+    // Find smoke specialist
     const smokePlayer = [...players].sort((a, b) => 
-      (b.metrics?.kast || 0) - (a.metrics?.kast || 0)
+      b.rawStats.smokesThrown - a.rawStats.smokesThrown
     )[0];
     
-    if (smokePlayer?.metrics?.kast) {
+    if (smokePlayer) {
       outliers.push({
         title: "Smoke Specialist",
         player: smokePlayer,
-        statValue: smokePlayer.metrics.kast,
+        statValue: smokePlayer.rawStats.smokesThrown,
         bgGradient: "from-indigo-700 to-indigo-500",
         icon: <CircleDot className="h-5 w-5 text-indigo-300" />,
-        description: `${smokePlayer.metrics.kast}% KAST`
+        description: `${smokePlayer.rawStats.smokesThrown} smokes thrown`
       });
     }
     
-    // Find through smoke killer (highest K/D player as proxy)
+    // Find through smoke killer
     const throughSmokePlayer = [...players].sort((a, b) => 
-      (b.metrics?.kd || 0) - (a.metrics?.kd || 0)
+      b.rawStats.throughSmoke / Math.max(b.rawStats.kills, 1) - 
+      a.rawStats.throughSmoke / Math.max(a.rawStats.kills, 1)
     )[0];
     
-    if (throughSmokePlayer?.metrics?.kd) {
+    if (throughSmokePlayer) {
+      const throughSmokeRatio = (throughSmokePlayer.rawStats.throughSmoke / Math.max(throughSmokePlayer.rawStats.kills, 1)) * 100;
       outliers.push({
         title: "Smoke Criminal",
         player: throughSmokePlayer,
-        statValue: throughSmokePlayer.metrics.kd,
+        statValue: throughSmokeRatio,
         bgGradient: "from-purple-700 to-purple-500",
         icon: <FlameIcon className="h-5 w-5 text-purple-300" />,
-        description: `${throughSmokePlayer.metrics.kd.toFixed(2)} K/D ratio`
+        description: `${throughSmokeRatio.toFixed(1)}% kills through smoke`
       });
     }
     
-    // Find highest impact CT player based on PIV
+    // Find highest impact CT player based on CT PIV
     const ctPlayer = [...players]
-      .filter(p => p.ctPIV !== undefined && p.ctPIV > 0)
+      .filter(p => p.ctPIV !== undefined)
       .sort((a, b) => (b.ctPIV || 0) - (a.ctPIV || 0))[0];
       
-    if (ctPlayer?.ctPIV) {
+    if (ctPlayer && ctPlayer.ctPIV) {
       outliers.push({
         title: "CT Side Monster",
         player: ctPlayer,
         statValue: ctPlayer.ctPIV * 100,
         bgGradient: "from-blue-700 to-blue-400",
         icon: <Shield className="h-5 w-5 text-blue-300" />,
-        description: `${Math.round(ctPlayer.ctPIV * 100)} CT PIV`
+        description: `${Math.round(ctPlayer.ctPIV * 100)} CT side PIV`
       });
     }
     
     // Find highest T side impact player
     const tPlayer = [...players]
-      .filter(p => p.tPIV !== undefined && p.tPIV > 0)
+      .filter(p => p.tPIV !== undefined)
       .sort((a, b) => (b.tPIV || 0) - (a.tPIV || 0))[0];
       
-    if (tPlayer?.tPIV) {
+    if (tPlayer && tPlayer.tPIV) {
       outliers.push({
         title: "T Side Dominator",
         player: tPlayer,
         statValue: tPlayer.tPIV * 100,
         bgGradient: "from-amber-700 to-amber-400",
         icon: <Award className="h-5 w-5 text-amber-300" />,
-        description: `${Math.round(tPlayer.tPIV * 100)} T PIV`
+        description: `${Math.round(tPlayer.tPIV * 100)} T side PIV`
       });
     }
     
-    return outliers.slice(0, 8); // Limit to 8 outliers
+    // Return all outliers
+    return outliers;
   };
   
   const outliersData = findOutliers();
@@ -201,7 +211,7 @@ const StatisticalOutliers: React.FC<StatisticalOutliersProps> = ({ players }) =>
             variants={cardVariants}
             whileHover="hover"
             whileTap={{ scale: 0.98 }}
-            onClick={() => setLocation(`/players/${outlier.player.steamId}`)}
+            onClick={() => setLocation(`/players/${outlier.player.id}`)}
             className="glassmorphism border-glow cursor-pointer rounded-lg overflow-hidden relative"
           >
             {/* Background gradient line */}

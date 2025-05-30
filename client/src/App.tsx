@@ -3,7 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
-import PlayersPageClean from "@/pages/PlayersPageClean";
+import PlayersPage from "@/pages/PlayersPage";
 import TeamsPage from "@/pages/TeamsPage";
 import PlayerDetailPage from "@/pages/PlayerDetailPage";
 import TeamDetailPage from "@/pages/TeamDetailPage";
@@ -18,7 +18,6 @@ import StatisticalAnalysisPage from "@/pages/StatisticalAnalysisPage";
 import DataVisualizationPage from "@/pages/DataVisualizationPage";
 import AdvancedAnalyticsPage from "@/pages/AdvancedAnalyticsPage";
 import DashboardPage from "@/pages/DashboardPage";
-import ComprehensivePRDPage from "@/pages/ComprehensivePRDPage";
 
 import LoginPage from "@/pages/auth/login-page";
 import AdminPage from "@/pages/admin/admin-page";
@@ -40,14 +39,14 @@ function Router() {
         <Route path="/">
           {() => (
             <ProtectedRoute>
-              <PlayersPageClean />
+              <PlayersPage />
             </ProtectedRoute>
           )}
         </Route>
         <Route path="/players">
           {() => (
             <ProtectedRoute>
-              <PlayersPageClean />
+              <PlayersPage />
             </ProtectedRoute>
           )}
         </Route>
@@ -132,13 +131,6 @@ function Router() {
           {() => (
             <ProtectedRoute>
               <DashboardPage />
-            </ProtectedRoute>
-          )}
-        </Route>
-        <Route path="/prd">
-          {() => (
-            <ProtectedRoute>
-              <ComprehensivePRDPage />
             </ProtectedRoute>
           )}
         </Route>

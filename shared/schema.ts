@@ -2,9 +2,9 @@ import { pgTable, text, serial, integer, boolean, real, bigint, foreignKey, uniq
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Supabase schema definitions matching the actual database structure
+// Supabase schema definitions
 export const supaEvents = pgTable("events", {
-  eventId: integer("event_id").notNull().primaryKey(),
+  eventId: integer("event_id").primaryKey(),
   eventName: text("event_name").notNull(),
 });
 
@@ -203,37 +203,29 @@ export const playerStats = pgTable("player_stats", {
   piv: real("piv"),
 });
 
-// Player with calculated PIV metrics - matches tournament data structure
+// Player with calculated PIV metrics
 export interface PlayerWithPIV {
-  steamId: string;
-  id?: string; // For backward compatibility
+  id: string;
   name: string;
   team: string;
-  role: string;
-  piv: number;
-  metrics: {
-    kd: number;
-    adr: number;
-    kast: number;
-    firstKills: number;
-    utilityDamage: number;
-    headshots: number;
-  };
-  event: string;
-  // Legacy properties for component compatibility
-  secondaryRole?: PlayerRole;
-  tRole?: string;
-  ctRole?: string;
-  isIGL?: boolean;
-  isMainAwper?: boolean;
-  ctPIV?: number;
-  tPIV?: number;
-  kd?: number;
-  primaryMetric?: {
+  role: PlayerRole;        // Primary role (determined from CT and T roles)
+  secondaryRole?: PlayerRole; // Secondary role
+  tRole?: PlayerRole;      // T side role
+  ctRole?: PlayerRole;     // CT side role
+  isIGL?: boolean;         // Is in-game leader
+  isMainAwper?: boolean;   // Is the team's main AWPer
+  piv: number;             // Player Impact Value
+  ctPIV?: number;          // CT side PIV
+  tPIV?: number;           // T side PIV
+  kd: number;
+  primaryMetric: {
     name: string;
     value: number;
   };
-  rawStats?: PlayerRawStats;
+  rawStats: PlayerRawStats;
+  metrics: PlayerMetrics;
+  ctMetrics?: PlayerMetrics; // CT side metrics
+  tMetrics?: PlayerMetrics;  // T side metrics
 }
 
 // Team with calculated TIR metrics

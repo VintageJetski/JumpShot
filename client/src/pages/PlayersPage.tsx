@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
@@ -6,34 +6,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Search, Filter, Users, Medal, User2, Target, Lightbulb, Shield, CircleDot } from "lucide-react";
-import { PlayerRole } from "@shared/schema";
+import { PlayerWithPIV, PlayerRole } from "@shared/schema";
 import { DataTable } from "@/components/ui/data-table";
 import PlayerCard from "@/components/players/PlayerCard";
 import TeamGroup from "@/components/players/TeamGroup";
 import RoleFilterChips from "@/components/players/RoleFilterChips";
 import EnhancedStatsCard from "@/components/stats/EnhancedStatsCard";
 import StatisticalOutliers from "@/components/players/StatisticalOutliers";
-import { processRawPlayerData, RawPlayerData, ClientPlayerWithPIV } from "@/lib/metrics-calculator";
 
 export default function PlayersPage() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState<string>("All");
+  const [roleFilter, setRoleFilter] = useState<string>("All Roles");
   const [viewMode, setViewMode] = useState<"cards" | "table" | "teams">("cards");
   
-  // Fetch raw player data from both tournaments
-  const { data: apiResponse, isLoading, isError } = useQuery({
+  // Fetch all players data (we'll filter client-side for more flexibility)
+  const { data: players, isLoading, isError } = useQuery<PlayerWithPIV[]>({
     queryKey: ["/api/players"],
   });
 
-  // Process raw data into PIV calculations client-side
-  const players = useMemo(() => {
-    if (!apiResponse?.players) return [];
-    return processRawPlayerData(apiResponse.players as RawPlayerData[]);
-  }, [apiResponse]);
-
   // Generate teams data from players
-  const [teams, setTeams] = useState<{[key: string]: ClientPlayerWithPIV[]}>({});
+  const [teams, setTeams] = useState<{[key: string]: PlayerWithPIV[]}>({});
   
   useEffect(() => {
     if (players) {
@@ -57,17 +50,17 @@ export default function PlayersPage() {
       player.role === role ||
       player.ctRole === role ||
       player.tRole === role ||
-      (role === "IGL" && player.isIGL === true)
+      (role === PlayerRole.IGL && player.isIGL === true)
     );
   };
   
   // Apply search and role filters
   const filteredPlayers = players ? players
     .filter(player => {
-      // Text search filter with null safety
+      // Text search filter
       const matchesSearch = 
-        (player.name && player.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (player.team && player.team.toLowerCase().includes(searchQuery.toLowerCase()));
+        player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        player.team.toLowerCase().includes(searchQuery.toLowerCase());
       
       // Role filter
       const matchesRole = hasRole(player, roleFilter);
@@ -77,24 +70,23 @@ export default function PlayersPage() {
     .sort((a, b) => b.piv - a.piv) : [];
 
   // Extract top players by role with comprehensive role checking
-  const findTopPlayerByRole = (role: string) => {
+  const findTopPlayerByRole = (role: PlayerRole) => {
     return filteredPlayers.find(p => 
       p.role === role || 
       p.ctRole === role || 
-      p.tRole === role ||
-      (role === "IGL" && p.isIGL === true)
+      p.tRole === role
     ) || null;
   };
   
   const topPlayersByRole = {
     highest: filteredPlayers[0] || null,
-    awper: findTopPlayerByRole("AWPer"),
-    lurker: findTopPlayerByRole("Lurker"),
-    igl: findTopPlayerByRole("IGL"),
-    spacetaker: findTopPlayerByRole("Entry"),
-    anchor: findTopPlayerByRole("Anchor"),
-    support: findTopPlayerByRole("Support"),
-    rotator: findTopPlayerByRole("Rifler"),
+    awper: findTopPlayerByRole(PlayerRole.AWP),
+    lurker: findTopPlayerByRole(PlayerRole.Lurker),
+    igl: findTopPlayerByRole(PlayerRole.IGL),
+    spacetaker: findTopPlayerByRole(PlayerRole.Spacetaker),
+    anchor: findTopPlayerByRole(PlayerRole.Anchor),
+    support: findTopPlayerByRole(PlayerRole.Support),
+    rotator: findTopPlayerByRole(PlayerRole.Rotator),
   };
 
   // Table columns definition
@@ -205,14 +197,15 @@ export default function PlayersPage() {
       }
     },
     {
-      header: "ADR",
-      accessorKey: "metrics.adr",
+      header: "Primary Metric",
+      accessorKey: "primaryMetric",
       cell: ({ row }: any) => {
-        const adr = row.original.metrics?.adr || 0;
+        const { name, value } = row.original.primaryMetric;
         
         return (
-          <div className="text-sm font-medium text-blue-300">
-            {adr.toFixed(1)}
+          <div className="flex items-center">
+            <span className="text-sm text-blue-300/60 mr-2">{name}:</span>
+            <span className="text-sm font-medium">{value.toFixed(2)}</span>
           </div>
         );
       }
@@ -385,7 +378,7 @@ export default function PlayersPage() {
             metricColor="text-purple-400"
             bgGradient="from-purple-700 to-purple-500"
             icon={<Lightbulb className="h-6 w-6 text-purple-400" />}
-            subtext={`K/D: ${topPlayersByRole.igl.metrics?.kd?.toFixed(2) || 'N/A'}`}
+            subtext={`${topPlayersByRole.igl.primaryMetric.name}: ${topPlayersByRole.igl.primaryMetric.value.toFixed(2)}`}
             index={1}
           />
         )}
@@ -398,20 +391,20 @@ export default function PlayersPage() {
             metricColor="text-amber-400"
             bgGradient="from-amber-700 to-amber-500"
             icon={<Target className="h-6 w-6 text-amber-400" />}
-            subtext={`ADR: ${topPlayersByRole.awper.metrics?.adr?.toFixed(1) || 'N/A'}`}
+            subtext={`${topPlayersByRole.awper.primaryMetric.name}: ${topPlayersByRole.awper.primaryMetric.value.toFixed(2)}`}
             index={2}
           />
         )}
         
         {topPlayersByRole.spacetaker && (
           <EnhancedStatsCard
-            title="Best Entry"
+            title="Best Spacetaker"
             value={topPlayersByRole.spacetaker.name}
             metric={`${Math.round(topPlayersByRole.spacetaker.piv * 100)} PIV`}
             metricColor="text-orange-400"
             bgGradient="from-orange-700 to-orange-500"
             icon={<User2 className="h-6 w-6 text-orange-400" />}
-            subtext={`First Kills: ${topPlayersByRole.spacetaker.metrics?.firstKills || 'N/A'}`}
+            subtext={`${topPlayersByRole.spacetaker.primaryMetric.name}: ${topPlayersByRole.spacetaker.primaryMetric.value.toFixed(2)}`}
             index={3}
           />
         )}
@@ -465,7 +458,7 @@ export default function PlayersPage() {
                   layout
                 >
                   {filteredPlayers.map((player, index) => (
-                    <PlayerCard key={`${player.steamId}-${player.eventId}`} player={player} index={index} />
+                    <PlayerCard key={player.id} player={player} index={index} />
                   ))}
                 </motion.div>
               )}

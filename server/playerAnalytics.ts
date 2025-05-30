@@ -252,20 +252,6 @@ function calculatePIV(rcs: number, icf: number, sc: number, osm: number): number
  * Process player statistics and calculate PIV with improved role assignment
  */
 export function processPlayerStats(rawStats: PlayerRawStats[], teamStatsMap: Map<string, PlayerRawStats[]>): PlayerWithPIV[] {
-  console.log('DEBUG - Event 2 processing:', {
-    total_players: rawStats.length,
-    sample_player: rawStats[0] ? {
-      available_fields: Object.keys(rawStats[0]),
-      userName: rawStats[0].userName,
-      name: rawStats[0].name,
-      teamName: rawStats[0].teamName,
-      team: rawStats[0].team,
-      kills: rawStats[0].kills,
-      deaths: rawStats[0].deaths,
-      kd: rawStats[0].kd,
-      adr: rawStats[0].adr
-    } : 'No players'
-  });
   // Group metrics by type for normalization
   const metricsByType: Record<string, number[]> = {};
   
@@ -483,8 +469,8 @@ export function processPlayerStats(rawStats: PlayerRawStats[], teamStatsMap: Map
       secondaryRole,
       isMainAwper,
       isIGL,
-      piv: Number((piv || 0).toFixed(2)),
-      kd: Number((stats.kd || 0).toFixed(2)),
+      piv: Number(piv.toFixed(2)),
+      kd: Number(stats.kd.toFixed(2)),
       primaryMetric: {
         name: primaryMetricKey,
         value: Number(detailedRoleMetrics[primaryMetricKey as keyof RoleMetrics]?.toFixed(2) || "0")

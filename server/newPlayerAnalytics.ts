@@ -13,82 +13,52 @@ import { PlayerRoleInfo } from './roleParser';
 export function evaluateTSideMetrics(stats: PlayerRawStats, role: PlayerRole): Record<string, number> {
   const metrics: Record<string, number> = {};
   
-  // Helper function to safely access fields with different possible names
-  const getField = (fieldName: string, fallbackValue: number = 0): number => {
-    // Field could be in original CSV name format or mapped format
-    if (fieldName in stats && typeof stats[fieldName as keyof PlayerRawStats] === 'number') {
-      return stats[fieldName as keyof PlayerRawStats] as number;
-    }
-    // Fallback value if field not found
-    return fallbackValue;
-  };
-
-  // Map field names for backwards compatibility
-  const tFirstKills = getField('t_first_kills') || getField('tFirstKills');
-  const tFirstDeaths = getField('t_first_deaths') || getField('tFirstDeaths');
-  const firstKills = getField('first_kills') || getField('firstKills');
-  const noScope = getField('no_scope') || getField('noScope');
-  const assistedFlashes = getField('assisted_flashes') || getField('assistedFlashes');
-  const tFlashesThrown = getField('t_flahes_thrown') || getField('tFlashesThrown');
-  const throughSmoke = getField('through_smoke') || getField('throughSmoke');
-  const tRoundsWon = getField('t_rounds_won') || getField('tRoundsWon');
-  const totalRoundsWon = getField('total_rounds_won') || getField('totalRoundsWon');
-  const blindKills = getField('blind_kills') || getField('blindKills');
-  const headshots = getField('headshots') || getField('hsKills');
-  const tSmokesThrown = getField('t_smokes_thrown') || getField('tSmokesThrown');
-  const smokesThrown = getField('smokes_thrown') || getField('smokesThrown');
-  const flashesThrown = getField('flahes_thrown') || getField('flashesThrown');
-  const tHeThrown = getField('t_he_thrown') || getField('tHeThrown');
-  const heThrown = getField('he_thrown') || getField('heThrown');
-  const tInfernosThrown = getField('t_infernos_thrown') || getField('tInfernosThrown');
-  const infernosThrown = getField('infernos_thrown') || getField('infernosThrown');
-
   switch (role) {
     case PlayerRole.AWP:
-      metrics["Opening Pick Success Rate"] = tFirstKills / Math.max(tFirstKills + tFirstDeaths, 1);
-      metrics["Multi Kill Conversion"] = noScope / Math.max(stats.kills, 1);
-      metrics["AWPer Flash Assistance"] = assistedFlashes / Math.max(tFlashesThrown, 1);
-      metrics["Utility Punish Rate"] = throughSmoke / Math.max(stats.kills, 1);
+      metrics["Opening Pick Success Rate"] = stats.tFirstKills / Math.max(stats.tFirstKills + stats.tFirstDeaths, 1);
+      metrics["Multi Kill Conversion"] = stats.noScope / Math.max(stats.kills, 1);
+      metrics["AWPer Flash Assistance"] = stats.assistedFlashes / Math.max(stats.tFlashesThrown, 1);
+      metrics["Utility Punish Rate"] = stats.throughSmoke / Math.max(stats.kills, 1);
       break;
       
     case PlayerRole.Spacetaker:
-      metrics["Opening Duel Success Rate"] = tFirstKills / Math.max(tFirstKills + tFirstDeaths, 1);
-      metrics["Aggression Efficiency Index"] = stats.kd * (tFirstKills / Math.max(firstKills, 1));
-      metrics["First Blood Impact"] = tFirstKills / Math.max(stats.kills, 1);
-      metrics["Trade Conversion Rate"] = (stats.kills - tFirstKills) / Math.max(stats.kills, 1);
-      metrics["Space Creation Index"] = tRoundsWon / Math.max(totalRoundsWon, 1);
+      metrics["Opening Duel Success Rate"] = stats.tFirstKills / Math.max(stats.tFirstKills + stats.tFirstDeaths, 1);
+      metrics["Aggression Efficiency Index"] = stats.kd * (stats.tFirstKills / Math.max(stats.firstKills, 1));
+      metrics["First Blood Impact"] = stats.tFirstKills / Math.max(stats.kills, 1);
+      metrics["Trade Conversion Rate"] = (stats.kills - stats.tFirstKills) / Math.max(stats.kills, 1);
+      metrics["Space Creation Index"] = stats.tRoundsWon / Math.max(stats.totalRoundsWon, 1);
       break;
       
     case PlayerRole.Lurker:
-      metrics["Zone Influence Stability"] = (stats.kills - tFirstKills) / Math.max(stats.kills, 1);
-      metrics["Flank Success Rate"] = throughSmoke / Math.max(stats.kills, 1);
-      metrics["Information Gathering Efficiency"] = 1 - (tFirstDeaths / Math.max(stats.deaths, 1));
-      metrics["Clutch Conversion Rate"] = blindKills / Math.max(stats.kills, 1);
-      metrics["Delayed Timing Effectiveness"] = headshots / Math.max(stats.kills, 1);
+      metrics["Zone Influence Stability"] = (stats.kills - stats.tFirstKills) / Math.max(stats.kills, 1);
+      metrics["Flank Success Rate"] = stats.throughSmoke / Math.max(stats.kills, 1);
+      metrics["Information Gathering Efficiency"] = 1 - (stats.tFirstDeaths / Math.max(stats.deaths, 1));
+      metrics["Clutch Conversion Rate"] = stats.blindKills / Math.max(stats.kills, 1);
+      metrics["Delayed Timing Effectiveness"] = stats.headshots / Math.max(stats.kills, 1);
       break;
       
     case PlayerRole.Support:
-      metrics["Utility Setup Efficiency"] = tSmokesThrown / Math.max(smokesThrown, 1);
-      metrics["Support Flash Assist"] = assistedFlashes / Math.max(flashesThrown, 1);
-      metrics["Bomb Plant Utility Coverage"] = tHeThrown / Math.max(heThrown, 1);
+      metrics["Utility Setup Efficiency"] = stats.tSmokesThrown / Math.max(stats.smokesThrown, 1);
+      metrics["Support Flash Assist"] = stats.assistedFlashes / Math.max(stats.flashesThrown, 1);
+      metrics["Bomb Plant Utility Coverage"] = stats.tHeThrown / Math.max(stats.heThrown, 1);
       metrics["Post-Plant Aid Ratio"] = stats.assists / Math.max(stats.kills, 1);
-      metrics["Teammate Save Ratio"] = tInfernosThrown / Math.max(infernosThrown, 1);
+      metrics["Teammate Save Ratio"] = stats.tInfernosThrown / Math.max(stats.infernosThrown, 1);
       break;
       
     case PlayerRole.IGL:
-      metrics["Tactical Timeout Success"] = tRoundsWon / Math.max(totalRoundsWon, 1);
+      metrics["Tactical Timeout Success"] = stats.tRoundsWon / Math.max(stats.totalRoundsWon, 1);
       metrics["Team Economy Preservation"] = 1 - (stats.deaths / Math.max(stats.kills, 1));
       metrics["Kill Participation Index"] = (stats.kills + stats.assists) / Math.max(stats.kills, 1);
-      metrics["Opening Play Success Rate"] = tFirstKills / Math.max(tFirstKills + tFirstDeaths, 1);
-      metrics["Utility Setup Optimization"] = tSmokesThrown / Math.max(smokesThrown, 1);
+      metrics["Opening Play Success Rate"] = stats.tFirstKills / Math.max(stats.tFirstKills + stats.tFirstDeaths, 1);
+      metrics["Utility Setup Optimization"] = stats.tSmokesThrown / Math.max(stats.smokesThrown, 1);
       break;
       
     default:
       // Fallback to basic metrics for any other role (e.g., Rotator)
-      metrics["Utility Usage"] = tSmokesThrown / Math.max(smokesThrown, 1);
+      metrics["Utility Usage"] = stats.tSmokesThrown / Math.max(stats.smokesThrown, 1);
       metrics["Kill Efficiency"] = stats.kd;
-      metrics["Flash Effectiveness"] = assistedFlashes / Math.max(flashesThrown, 1);
-      metrics["Opening Duel Rate"] = tFirstKills / Math.max(tFirstKills + tFirstDeaths, 1);
+      metrics["Flash Effectiveness"] = stats.assistedFlashes / Math.max(stats.flashesThrown, 1);
+      metrics["Opening Duel Rate"] = stats.tFirstKills / Math.max(stats.tFirstKills + stats.tFirstDeaths, 1);
   }
   
   return metrics;
@@ -100,60 +70,34 @@ export function evaluateTSideMetrics(stats: PlayerRawStats, role: PlayerRole): R
 export function evaluateCTSideMetrics(stats: PlayerRawStats, role: PlayerRole): Record<string, number> {
   const metrics: Record<string, number> = {};
   
-  // Helper function to safely access fields with different possible names
-  const getField = (fieldName: string, fallbackValue: number = 0): number => {
-    // Field could be in original CSV name format or mapped format
-    if (fieldName in stats && typeof stats[fieldName as keyof PlayerRawStats] === 'number') {
-      return stats[fieldName as keyof PlayerRawStats] as number;
-    }
-    // Fallback value if field not found
-    return fallbackValue;
-  };
-
-  // Map field names for backwards compatibility
-  const ctFirstKills = getField('ct_first_kills') || getField('ctFirstKills');
-  const ctFirstDeaths = getField('ct_first_deaths') || getField('ctFirstDeaths');
-  const firstKills = getField('first_kills') || getField('firstKills');
-  const noScope = getField('no_scope') || getField('noScope');
-  const assistedFlashes = getField('assisted_flashes') || getField('assistedFlashes');
-  const ctRoundsWon = getField('ct_rounds_won') || getField('ctRoundsWon');
-  const totalRoundsWon = getField('total_rounds_won') || getField('totalRoundsWon');
-  const ctSmokesThrown = getField('ct_smokes_thrown') || getField('ctSmokesThrown');
-  const smokesThrown = getField('smokes_thrown') || getField('smokesThrown');
-  const flashesThrown = getField('flahes_thrown') || getField('flashesThrown');
-  const ctHeThrown = getField('ct_he_thrown') || getField('ctHeThrown');
-  const heThrown = getField('he_thrown') || getField('heThrown');
-  const ctInfernosThrown = getField('ct_infernos_thrown') || getField('ctInfernosThrown');
-  const infernosThrown = getField('infernos_thrown') || getField('infernosThrown');
-  
   switch (role) {
     case PlayerRole.AWP:
-      metrics["Site Lockdown Rate"] = ctFirstKills / Math.max(ctFirstKills + ctFirstDeaths, 1);
-      metrics["Entry Denial Efficiency"] = ctFirstKills / Math.max(firstKills, 1);
-      metrics["Angle Hold Success"] = 1 - (ctFirstDeaths / Math.max(stats.deaths, 1));
-      metrics["Retake Contribution Index"] = noScope / Math.max(stats.kills, 1);
+      metrics["Site Lockdown Rate"] = stats.ctFirstKills / Math.max(stats.ctFirstKills + stats.ctFirstDeaths, 1);
+      metrics["Entry Denial Efficiency"] = stats.ctFirstKills / Math.max(stats.firstKills, 1);
+      metrics["Angle Hold Success"] = 1 - (stats.ctFirstDeaths / Math.max(stats.deaths, 1));
+      metrics["Retake Contribution Index"] = stats.noScope / Math.max(stats.kills, 1);
       break;
       
     case PlayerRole.Anchor:
-      metrics["Site Hold Success Rate"] = ctRoundsWon / Math.max(totalRoundsWon, 1);
-      metrics["Survival Rate Post-Engagement"] = 1 - (ctFirstDeaths / Math.max(stats.deaths, 1));
-      metrics["Multi-Kill Defense Ratio"] = ctFirstKills / Math.max(firstKills, 1);
-      metrics["Opponent Entry Denial Rate"] = ctFirstKills / Math.max(ctFirstKills + ctFirstDeaths, 1);
-      metrics["Defensive Efficiency Rating"] = ctRoundsWon / Math.max(totalRoundsWon, 1);
+      metrics["Site Hold Success Rate"] = stats.ctRoundsWon / Math.max(stats.totalRoundsWon, 1);
+      metrics["Survival Rate Post-Engagement"] = 1 - (stats.ctFirstDeaths / Math.max(stats.deaths, 1));
+      metrics["Multi-Kill Defense Ratio"] = stats.ctFirstKills / Math.max(stats.firstKills, 1);
+      metrics["Opponent Entry Denial Rate"] = stats.ctFirstKills / Math.max(stats.ctFirstKills + stats.ctFirstDeaths, 1);
+      metrics["Defensive Efficiency Rating"] = stats.ctRoundsWon / Math.max(stats.totalRoundsWon, 1);
       break;
       
     case PlayerRole.Rotator:
-      metrics["Rotation Efficiency Index"] = ctRoundsWon / Math.max(totalRoundsWon, 1);
-      metrics["Adaptive Defense Score"] = 1 - (ctFirstDeaths / Math.max(stats.deaths, 1));
-      metrics["Retake Utility Coordination"] = ctSmokesThrown / Math.max(smokesThrown, 1);
-      metrics["Anti-Exec Utility Success"] = ctHeThrown / Math.max(heThrown, 1);
+      metrics["Rotation Efficiency Index"] = stats.ctRoundsWon / Math.max(stats.totalRoundsWon, 1);
+      metrics["Adaptive Defense Score"] = 1 - (stats.ctFirstDeaths / Math.max(stats.deaths, 1));
+      metrics["Retake Utility Coordination"] = stats.ctSmokesThrown / Math.max(stats.smokesThrown, 1);
+      metrics["Anti-Exec Utility Success"] = stats.ctHeThrown / Math.max(stats.heThrown, 1);
       break;
       
     case PlayerRole.Support:
-      metrics["Utility Setup Efficiency"] = ctSmokesThrown / Math.max(smokesThrown, 1);
-      metrics["Support Flash Assist"] = assistedFlashes / Math.max(flashesThrown, 1);
-      metrics["Anti-Exec Utility Success"] = ctHeThrown / Math.max(heThrown, 1);
-      metrics["Teammate Save Ratio"] = ctInfernosThrown / Math.max(infernosThrown, 1);
+      metrics["Utility Setup Efficiency"] = stats.ctSmokesThrown / Math.max(stats.smokesThrown, 1);
+      metrics["Support Flash Assist"] = stats.assistedFlashes / Math.max(stats.flashesThrown, 1);
+      metrics["Anti-Exec Utility Success"] = stats.ctHeThrown / Math.max(stats.heThrown, 1);
+      metrics["Teammate Save Ratio"] = stats.ctInfernosThrown / Math.max(stats.infernosThrown, 1);
       metrics["Retake Utility Coordination"] = stats.ctSmokesThrown / Math.max(stats.smokesThrown, 1);
       break;
       
@@ -268,57 +212,44 @@ function calculateRCS(normalizedMetrics: Record<string, number>): number {
  * Redesigned to better reward high-performing players
  */
 function calculateICF(stats: PlayerRawStats, isIGL: boolean = false): { value: number, sigma: number } {
-  // Helper function to safely access fields with different naming conventions
-  const getField = (fieldName: string, fallbackValue: number = 0): number => {
-    if (fieldName in stats && typeof stats[fieldName as keyof PlayerRawStats] === 'number') {
-      return stats[fieldName as keyof PlayerRawStats] as number;
-    }
-    return fallbackValue;
-  };
-
-  // Get KD from Supabase data - supports both snake_case and camelCase
-  const kd = getField('kd', getField('k_d_diff', 1.0) / 10 + 1.0);
-  
   // Calculate base sigma - lower values = better consistency
   let sigma = 0;
   
-  if (kd >= 1.4) {
+  if (stats.kd >= 1.4) {
     // For star players with high K/D, give a much lower sigma (high consistency)
     sigma = 0.3;
-  } else if (kd >= 1.2) {
+  } else if (stats.kd >= 1.2) {
     // For good players, give a moderately low sigma
     sigma = 0.5;
-  } else if (kd >= 1.0) {
+  } else if (stats.kd >= 1.0) {
     // For average players, standard sigma
-    sigma = Math.abs(1 - kd) * 1.2;
+    sigma = Math.abs(1 - stats.kd) * 1.2;
   } else {
     // For below average players, higher sigma
-    sigma = Math.abs(1 - kd) * 1.8;
+    sigma = Math.abs(1 - stats.kd) * 1.8;
   }
   
   // Calculate ICF - normalize to 0-1 range
   let icf = 1 / (1 + sigma);
   
   // Boost for high-performing players
-  if (kd > 1.3) {
+  if (stats.kd > 1.3) {
     // Apply a multiplier based on how much above 1.3 the K/D is
-    const boostFactor = 1 + ((kd - 1.3) * 0.5);
+    const boostFactor = 1 + ((stats.kd - 1.3) * 0.5);
     icf = Math.min(icf * boostFactor, 1.0); // Cap at 1.0
   }
   
   // Adjust for IGL role
   if (isIGL) {
     // Less aggressive reduction for IGLs with good K/D
-    const reductionFactor = (kd >= 1.2) ? 0.85 : 0.75;
+    const reductionFactor = (stats.kd >= 1.2) ? 0.85 : 0.75;
     icf = icf * reductionFactor;
   }
-  else if (kd > 1.2) { // Lower threshold to 1.2 (previously 1.3)
+  else if (stats.kd > 1.2) { // Lower threshold to 1.2 (previously 1.3)
     // Provide a scaling bonus based on how high the K/D is
-    const kdBonus = (kd - 1.2) * 0.25; // Increased bonus multiplier from 0.2 to 0.25
+    const kdBonus = (stats.kd - 1.2) * 0.25; // Increased bonus multiplier from 0.2 to 0.25
     icf = Math.min(icf + kdBonus, 0.92); // Cap at 0.92 (previously 0.9)
   }
-  
-  console.log(`Calculated ICF: ${icf.toFixed(3)}, sigma: ${sigma.toFixed(3)} based on KD: ${kd.toFixed(2)}`);
   
   return { value: icf, sigma };
 }
@@ -327,110 +258,59 @@ function calculateICF(stats: PlayerRawStats, isIGL: boolean = false): { value: n
  * Calculate SC (Synergy Contribution) based on role
  */
 function calculateSC(stats: PlayerRawStats, role: PlayerRole): { value: number, metric: string } {
-  // Helper function to safely access fields with different naming conventions
-  const getField = (fieldName: string, fallbackValue: number = 0): number => {
-    if (fieldName in stats && typeof stats[fieldName as keyof PlayerRawStats] === 'number') {
-      return stats[fieldName as keyof PlayerRawStats] as number;
-    }
-    return fallbackValue;
-  };
-  
-  // Get primary metrics with fallbacks for different naming conventions
-  const kd = getField('kd', getField('k_d_diff', 1.0) / 10 + 1.0);
-  const kills = getField('kills', 1);
-  const assists = getField('assists', 0);
-  const firstKills = getField('first_kills') || getField('firstKills', 0);
-  const tFirstKills = getField('t_first_kills') || getField('tFirstKills', 0);
-  const ctFirstKills = getField('ct_first_kills') || getField('ctFirstKills', 0);
-  const tFirstDeaths = getField('t_first_deaths') || getField('tFirstDeaths', 0);
-  const assistedFlashes = getField('assisted_flashes') || getField('assistedFlashes', 0);
-  const throughSmoke = getField('through_smoke') || getField('throughSmoke', 0);
-  
-  // Get CT/T rounds data
-  const ctRoundsWon = getField('ct_rounds_won') || getField('ctRoundsWon', 0);
-  const totalRoundsWon = getField('total_rounds_won') || getField('totalRoundsWon', 1);
-  
-  // Calculate total utility metrics
-  const flashesThrown = getField('flahes_thrown') || getField('flashesThrown', 1);
-  const smokesThrown = getField('smokes_thrown') || getField('smokesThrown', 0);
-  const heThrown = getField('he_thrown') || getField('heThrown', 0);
-  const infernosThrown = getField('infernos_thrown') || getField('infernosThrown', 0);
-  const totalUtilityThrown = flashesThrown + smokesThrown + heThrown + infernosThrown;
-  
   // For all roles, introduce a small K/D component to ensure consistency
   // between fragging ability and role performance
-  const kdFactor = Math.min(kd / 2, 0.6); // K/D contribution, capped at 0.6
+  const kdFactor = Math.min(stats.kd / 2, 0.6); // K/D contribution, capped at 0.6
   
   switch (role) {
     case PlayerRole.AWP:
       // Rebalanced AWP impact to prevent AWP dominance
       // Reduced weighting of K/D ratio and added utility component
-      const awpOpeningKills = firstKills / Math.max(tFirstKills + ctFirstKills, 1);
-      const awpKDRating = Math.min(kd / 1.8, 0.85); // Lower cap and normalizing factor
-      const awpUtilityImpact = assistedFlashes / Math.max(totalUtilityThrown, 1);
-      
-      const awpValue = (awpOpeningKills * 0.35) + (awpKDRating * 0.35) + (awpUtilityImpact * 0.15) + (kdFactor * 0.15);
-      console.log(`AWP SC: ${awpValue.toFixed(3)}`);
-      
+      const awpOpeningKills = stats.firstKills / Math.max(stats.tFirstKills + stats.ctFirstKills, 1);
+      const awpKDRating = Math.min(stats.kd / 1.8, 0.85); // Lower cap and normalizing factor
+      const awpUtilityImpact = stats.assistedFlashes / Math.max(stats.totalUtilityThrown, 1);
       return { 
-        value: awpValue,
+        value: (awpOpeningKills * 0.35) + (awpKDRating * 0.35) + (awpUtilityImpact * 0.15) + (kdFactor * 0.15),
         metric: "AWP Impact Rating"
       };
     case PlayerRole.IGL:
       // For IGLs, maintain assist focus but reduce weighting, increase K/D importance
-      const iglValue = (assists / (kills || 1) * 0.4) + (kdFactor * 0.2);
-      console.log(`IGL SC: ${iglValue.toFixed(3)}`);
-      
       return { 
-        value: iglValue,
+        value: (stats.assists / (stats.kills || 1) * 0.4) + (kdFactor * 0.2),
         metric: "In-game Impact Rating"
       };
     case PlayerRole.Spacetaker:
       // For Spacetakers (entry fraggers), heavily reward opening duels and high K/D
-      const entrySuccess = tFirstKills / Math.max(tFirstKills + tFirstDeaths, 1);
-      const entryKDRating = Math.min(kd / 1.3, 1); // Normalize to 0-1
-      
-      const spacetakerValue = (entrySuccess * 0.5) + (entryKDRating * 0.4) + (kdFactor * 0.1);
-      console.log(`Spacetaker SC: ${spacetakerValue.toFixed(3)}`);
-      
+      const entrySuccess = stats.tFirstKills / Math.max(stats.tFirstKills + stats.tFirstDeaths, 1);
+      const entryKDRating = Math.min(stats.kd / 1.3, 1); // Normalize to 0-1
       return { 
-        value: spacetakerValue,
+        value: (entrySuccess * 0.5) + (entryKDRating * 0.4) + (kdFactor * 0.1),
         metric: "Entry Impact Rating"
       };
     case PlayerRole.Lurker:
       // For lurkers, reward clutch situations (using K/D as proxy) and smoke kills
-      const clutchRating = Math.min(kd / 1.3, 1);
-      const smokeImpact = throughSmoke / Math.max(kills, 1);
-      
-      const lurkerValue = (clutchRating * 0.45) + (smokeImpact * 0.35) + (kdFactor * 0.2);
-      console.log(`Lurker SC: ${lurkerValue.toFixed(3)}`);
-      
+      const clutchRating = Math.min(stats.kd / 1.3, 1);
+      const smokeImpact = stats.throughSmoke / Math.max(stats.kills, 1);
       return { 
-        value: lurkerValue,
+        value: (clutchRating * 0.45) + (smokeImpact * 0.35) + (kdFactor * 0.2),
         metric: "Clutch & Information Rating"
       };
     case PlayerRole.Anchor:
-      const anchorValue = (ctRoundsWon / (totalRoundsWon || 1) * 0.45) + (kdFactor * 0.25);
-      console.log(`Anchor SC: ${anchorValue.toFixed(3)}`);
-      
+      // For anchors, emphasize CT rounds
       return { 
-        value: anchorValue,
+        value: (stats.ctRoundsWon / (stats.totalRoundsWon || 1) * 0.45) + (kdFactor * 0.25),
         metric: "Site Hold Effectiveness"
       };
     case PlayerRole.Rotator:
-      const rotatorValue = (ctRoundsWon / (totalRoundsWon || 1) * 0.4) + (kdFactor * 0.25);
-      console.log(`Rotator SC: ${rotatorValue.toFixed(3)}`);
-      
+      // For rotators, balance CT performance with K/D
       return {
-        value: rotatorValue,
+        value: (stats.ctRoundsWon / (stats.totalRoundsWon || 1) * 0.4) + (kdFactor * 0.25),
         metric: "Rotation Efficiency"
       };
     case PlayerRole.Support:
-      const supportValue = (assistedFlashes / (totalUtilityThrown || 1) * 0.65) + (kdFactor * 0.15);
-      console.log(`Support SC: ${supportValue.toFixed(3)}`);
-      
+      // For support, maintain flash-centric measure but add small K/D component
       return { 
-        value: supportValue,
+        value: (stats.assistedFlashes / (stats.totalUtilityThrown || 1) * 0.65) + (kdFactor * 0.15),
         metric: "Utility Contribution Score"
       };
     default:
@@ -644,27 +524,6 @@ function calculateOSM(): number {
  * Calculate PIV (Player Impact Value)
  */
 function calculatePIV(rcs: number, icf: number, sc: number, osm: number, kd: number = 1.0, basicScore: number = 0.5, role: PlayerRole = PlayerRole.Support): number {
-  // Handle situation where any values are null or NaN - this is what's causing our issue
-  if (sc === null || sc === undefined || isNaN(sc)) {
-    console.log(`WARNING: SC value is null/NaN for role ${role}, using default value 0.4`);
-    sc = 0.4; // Default value to prevent null PIV
-  }
-  
-  if (icf === null || icf === undefined || isNaN(icf)) {
-    console.log(`WARNING: ICF value is null/NaN for role ${role}, using default value 0.6`);
-    icf = 0.6; // Default value to prevent null PIV
-  }
-  
-  if (rcs === null || rcs === undefined || isNaN(rcs)) {
-    console.log(`WARNING: RCS value is null/NaN for role ${role}, using default value 0.4`);
-    rcs = 0.4; // Default value to prevent null PIV
-  }
-  
-  if (osm === null || osm === undefined || isNaN(osm)) {
-    console.log(`WARNING: OSM value is null/NaN for role ${role}, using default value 1.0`);
-    osm = 1.0; // Default value to prevent null PIV
-  }
-
   // New calculation with basic metrics integration
   // Reduce advanced metrics (RCS) to 50% weight
   const reducedRCS = rcs * 0.5;
@@ -707,17 +566,7 @@ function calculatePIV(rcs: number, icf: number, sc: number, osm: number, kd: num
       roleModifier = 1.0;
   }
   
-  let finalPIV = basePIV * (1 + kdFactor + starBonus) * roleModifier;
-  
-  // Final safety check to ensure we never return null/NaN/undefined
-  if (finalPIV === null || finalPIV === undefined || isNaN(finalPIV)) {
-    console.log(`WARNING: Final PIV calculation resulted in invalid value, using fallback value 0.5`);
-    finalPIV = 0.5;
-  }
-  
-  console.log(`PIV calculation: RCS=${rcs.toFixed(2)}, ICF=${icf.toFixed(2)}, SC=${sc.toFixed(2)}, Final PIV=${finalPIV.toFixed(2)}`);
-  
-  return finalPIV;
+  return basePIV * (1 + kdFactor + starBonus) * roleModifier;
 }
 
 /**
@@ -734,37 +583,14 @@ export function processPlayerStatsWithRoles(
   const processedPlayers: PlayerWithPIV[] = [];
   
   for (const stats of rawStats) {
-    // Debug: Log the actual data structure we're receiving
-    console.log('DEBUG - Processing player data:', {
-      available_fields: Object.keys(stats),
-      userName: stats.userName,
-      name: stats.name,
-      teamName: stats.teamName,
-      team: stats.team,
-      kills: stats.kills,
-      deaths: stats.deaths,
-      adr: stats.adr,
-      kd: stats.kd
-    });
-    
-    // Get player name from available fields (handle different field names from Supabase)
-    const playerName = String(stats.userName || stats.name || 'Unknown');
-    
-    console.log(`DEBUG - Player name from Supabase: "${playerName}"`);
-    console.log(`DEBUG - Available role players: ${Array.from(roleMap.keys()).slice(0, 5).join(', ')}...`);
-    
     // Try to find player in role map
-    const roleInfo = findPlayerRoleInfo(playerName, roleMap);
+    const roleInfo = findPlayerRoleInfo(stats.userName, roleMap);
     
     if (!roleInfo) {
-      console.warn(`No role information found for player "${playerName}", skipping`);
+      console.warn(`No role information found for player ${stats.userName}, skipping`);
       // Skip players that are not in the role dataset (per user request)
       continue;
-    } else {
-      console.log(`DEBUG - Found role info for player "${playerName}": ${roleInfo.tRole}/${roleInfo.ctRole}`);
     }
-    
-    console.log(`DEBUG - Found role info for ${playerName}:`, roleInfo);
     
     // Get roles from CSV data
     const tRole = roleInfo.tRole;
@@ -1054,9 +880,9 @@ function calculatePlayerWithPIV(
   };
   
   return {
-    id: stats.steamId || stats.id,
-    name: stats.userName || stats.name,
-    team: stats.teamName || stats.team,
+    id: stats.steamId,
+    name: stats.userName,
+    team: stats.teamName,
     role: primaryRole,
     tRole,
     ctRole,
@@ -1079,12 +905,7 @@ function calculatePlayerWithPIV(
 /**
  * Find a player in the role map by fuzzy name matching
  */
-function findPlayerRoleInfo(playerName: string | undefined, roleMap: Map<string, PlayerRoleInfo>): PlayerRoleInfo | undefined {
-  // Null safety check
-  if (!playerName || typeof playerName !== 'string' || !roleMap) {
-    return undefined;
-  }
-  
+function findPlayerRoleInfo(playerName: string, roleMap: Map<string, PlayerRoleInfo>): PlayerRoleInfo | undefined {
   // Try direct match
   if (roleMap.has(playerName)) {
     return roleMap.get(playerName);
@@ -1096,7 +917,7 @@ function findPlayerRoleInfo(playerName: string | undefined, roleMap: Map<string,
   // Try case-insensitive match
   const lowerPlayerName = playerName.toLowerCase();
   for (const [name, info] of entries) {
-    if (name && name.toLowerCase() === lowerPlayerName) {
+    if (name.toLowerCase() === lowerPlayerName) {
       return info;
     }
   }

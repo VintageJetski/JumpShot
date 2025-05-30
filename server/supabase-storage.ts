@@ -1,465 +1,623 @@
-import { PlayerRawStats, PlayerWithPIV, PlayerRole, TeamWithTIR } from '../shared/schema';
-import { parseCSVData, loadPlayerData } from './csvParser';
-import { parsePlayerStatsCSV, loadNewPlayerStats } from './newDataParser';
+import { IStorage } from './storage';
+import { 
+  PlayerRawStats, 
+  RoundData, 
+  PlayerWithPIV, 
+  TeamWithTIR,
+  PlayerRole,
+  TeamRoundMetrics,
+  User,
+  InsertUser,
+  users
+} from '@shared/schema';
+import { SupabaseAdapter } from './supabase-adapter';
 import { processPlayerStats } from './playerAnalytics';
-import { processPlayerStatsWithRoles } from './newPlayerAnalytics';
-import * as fs from 'fs';
-import * as path from 'path';
-import { testDatabaseConnection, getAvailableEvents, getPlayerCountForEvent } from './supabase-db';
-import { SupabaseAdapter, TeamRawStats } from './supabase-adapter-new';
+import { supaDb } from './supabase-db';
+import { testSupabaseConnection } from './supabase-db';
+import { eq } from 'drizzle-orm';
+import { db } from './db';
+import { loadNewPlayerStats } from './newDataParser';
+import { loadRoundData } from './roundAnalytics';
+import { loadPlayerRoles } from './roleParser';
 
 /**
- * SupabaseStorage class that fetches data from Supabase database
- * with CSV fallback if database connection fails
+ * Implementation of the storage interface that uses Supabase as the primary data source
+ * with fallback to CSV files
  */
-export class SupabaseStorage {
-  private adapter: SupabaseAdapter;
-  private isConnected: boolean = false;
-  private availableEvents: number[] = [];
-  private cachedPlayerStats: Map<number, PlayerRawStats[]> = new Map();
-  private cachedTeamStats: Map<number, TeamRawStats[]> = new Map();
-  private cachedPlayerPIV: Map<number, PlayerWithPIV[]> = new Map();
-  private cachedTeamTIR: Map<number, TeamWithTIR[]> = new Map();
-  private eventNames: Map<number, string> = new Map();
+export class SupabaseStorage implements IStorage {
+  private cachedPlayerData: PlayerRawStats[] | null = null;
+  private cachedPlayerWithPIVData: PlayerWithPIV[] | null = null;
+  private cachedTeamData: TeamWithTIR[] | null = null;
+  private cachedRoundData: RoundData[] | null = null;
+  private roundMetricsCache: Map<string, TeamRoundMetrics> = new Map();
+  private lastDataRefresh: Date | null = null;
+  private refreshIntervalMs = 24 * 60 * 60 * 1000; // 24 hours
+  
+  private roleMap: Map<string, { isIGL: boolean; tRole: PlayerRole; ctRole: PlayerRole }> | null = null;
   
   constructor() {
-    this.adapter = new SupabaseAdapter();
+    // Initialize with a first data load
+    this.refreshData();
+    
+    // Schedule periodic refreshes
+    setInterval(() => this.refreshData(), this.refreshIntervalMs);
   }
   
   /**
-   * Initialize the storage by testing database connection
-   * and fetching available events
+   * Refresh the data from Supabase
    */
-  async initialize(): Promise<void> {
+  async refreshData(): Promise<void> {
     try {
-      console.log('Initializing Supabase storage...');
-      this.isConnected = await testDatabaseConnection();
+      console.log('Refreshing data from Supabase...');
+      const isConnected = await testSupabaseConnection();
       
-      if (this.isConnected) {
-        console.log('Connected to Supabase database');
-        await this.fetchAvailableEvents();
+      if (isConnected) {
+        await this.loadFromSupabase();
       } else {
-        throw new Error('Failed to connect to Supabase database - no fallback available');
+        console.warn('Supabase connection failed, falling back to CSV data');
+        await this.loadFromCSV();
       }
+      
+      this.lastDataRefresh = new Date();
+      console.log(`Data refresh completed at ${this.lastDataRefresh.toISOString()}`);
     } catch (error) {
-      console.error('Error initializing Supabase storage:', error);
-      this.isConnected = false;
+      console.error('Error refreshing data:', error);
+      // If we failed to refresh, try to load from CSV as a fallback
+      if (!this.cachedPlayerData) {
+        await this.loadFromCSV();
+      }
+    }
+  }
+  
+  /**
+   * Load data from Supabase database
+   */
+  private async loadFromSupabase(): Promise<void> {
+    try {
+      // Load player data from Supabase
+      const playerDataList = await SupabaseAdapter.fetchAllPlayersData();
+      this.cachedPlayerData = playerDataList.map(SupabaseAdapter.mapToPlayerRawStats);
+      
+      // Load role information from CSV (until available in Supabase)
+      this.roleMap = await this.loadRoleInfo();
+      
+      // Process player stats to calculate PIV
+      const teamStatsMap = this.getPlayerTeamsMap(this.cachedPlayerData);
+      this.cachedPlayerWithPIVData = processPlayerStats(this.cachedPlayerData, teamStatsMap);
+      
+      // Transform into teams with TIR
+      this.cachedTeamData = this.calculateTeamDataWithTIR();
+      
+      // Load round data - this may need a CSV fallback for now
+      // Until we have the round data in Supabase with the right format
+      this.cachedRoundData = await loadRoundData();
+      
+      console.log('Successfully loaded data from Supabase');
+    } catch (error) {
+      console.error('Error loading from Supabase:', error);
       throw error;
     }
   }
   
   /**
-   * Fetch available events from database
+   * Fallback mechanism to load data from CSV files
    */
-  private async fetchAvailableEvents(): Promise<void> {
+  private async loadFromCSV(): Promise<void> {
+    console.log('Loading from CSV fallback...');
     try {
-      const events = await getAvailableEvents();
-      if (events && events.length > 0) {
-        this.availableEvents = events.map(event => event.eventId);
-        events.forEach(event => this.eventNames.set(event.eventId, event.eventName));
-        console.log(`Found ${events.length} events in database:`, events.map(e => e.eventName).join(', '));
-      } else {
-        console.warn('No events found in database');
-      }
+      // Load player data from CSV
+      this.cachedPlayerData = await loadNewPlayerStats();
+      
+      // Load role information
+      this.roleMap = await this.loadRoleInfo();
+      
+      // Process player stats to calculate PIV
+      const teamStatsMap = this.getPlayerTeamsMap(this.cachedPlayerData);
+      this.cachedPlayerWithPIVData = processPlayerStats(this.cachedPlayerData, teamStatsMap);
+      
+      // Transform into teams with TIR
+      this.cachedTeamData = this.calculateTeamDataWithTIR();
+      
+      // Load round data
+      this.cachedRoundData = await loadRoundData();
+      
+      console.log('Successfully loaded data from CSV');
     } catch (error) {
-      console.error('Error fetching available events:', error);
-    }
-  }
-  
-  /**
-   * Get player stats from database for a specific event
-   * @param eventId Event ID to fetch player stats for
-   */
-  async getPlayerStatsForEvent(eventId: number): Promise<PlayerRawStats[]> {
-    // Check if we have cached data
-    if (this.cachedPlayerStats.has(eventId)) {
-      return this.cachedPlayerStats.get(eventId) || [];
-    }
-    
-    // Only use Supabase database - no CSV fallback
-    if (!this.isConnected) {
-      throw new Error('Database not connected - cannot retrieve player stats');
-    }
-    
-    if (!this.availableEvents.includes(eventId)) {
-      throw new Error(`Event ${eventId} not found in available events`);
-    }
-    
-    try {
-      console.log(`Fetching player stats for event ${eventId} from Supabase...`);
-      const playerCount = await getPlayerCountForEvent(eventId);
-      console.log(`Found ${playerCount} players for event ${eventId}`);
-      
-      const playerStats = await this.adapter.getPlayersForEvent(eventId);
-      
-      if (!playerStats || playerStats.length === 0) {
-        throw new Error(`No player stats found in Supabase for event ${eventId}`);
-      }
-      
-      console.log(`Successfully fetched ${playerStats.length} player stats from Supabase for event ${eventId}`);
-      this.cachedPlayerStats.set(eventId, playerStats);
-      return playerStats;
-    } catch (error) {
-      console.error(`Error fetching player stats from Supabase for event ${eventId}:`, error);
+      console.error('Error loading from CSV:', error);
       throw error;
     }
   }
   
   /**
-   * Get team stats from database for a specific event
-   * @param eventId Event ID to fetch team stats for
+   * Load role information for players
    */
-  async getTeamStatsForEvent(eventId: number): Promise<TeamRawStats[]> {
-    // Check if we have cached data
-    if (this.cachedTeamStats.has(eventId)) {
-      return this.cachedTeamStats.get(eventId) || [];
-    }
-    
-    // If connected to Supabase, fetch from database
-    if (this.isConnected && this.availableEvents.includes(eventId)) {
-      try {
-        console.log(`Fetching team stats for event ${eventId} from Supabase...`);
-        const teamStats = await this.adapter.getTeamsForEvent(eventId);
-        
-        if (teamStats && teamStats.length > 0) {
-          console.log(`Successfully fetched ${teamStats.length} team stats from Supabase for event ${eventId}`);
-          this.cachedTeamStats.set(eventId, teamStats);
-          return teamStats;
-        } else {
-          console.warn(`No team stats found in Supabase for event ${eventId}, falling back to CSV data`);
-        }
-      } catch (error) {
-        console.error(`Error fetching team stats from Supabase for event ${eventId}:`, error);
-        console.log('Falling back to CSV data');
-      }
-    }
-    
-    // Fall back to calculating teams from player data (CSV fallback)
-    return this.getTeamsFromPlayerStats(eventId);
-  }
-  
-  /**
-   * Calculate teams from player stats
-   * @param eventId Event ID to calculate teams for
-   */
-  private async getTeamsFromPlayerStats(eventId: number): Promise<TeamRawStats[]> {
+  private async loadRoleInfo(): Promise<Map<string, { isIGL: boolean; tRole: PlayerRole; ctRole: PlayerRole }>> {
     try {
-      const playerStats = await this.getPlayerStatsForEvent(eventId);
-      if (!playerStats || playerStats.length === 0) {
-        return [];
-      }
+      const roleInfoMap = new Map<string, { isIGL: boolean; tRole: PlayerRole; ctRole: PlayerRole }>();
+      const roleMap = await loadPlayerRoles();
       
-      // Group players by team
-      const teamMap = new Map<string, PlayerRawStats[]>();
-      for (const player of playerStats) {
-        if (player.team) {
-          if (!teamMap.has(player.team)) {
-            teamMap.set(player.team, []);
-          }
-          teamMap.get(player.team)?.push(player);
-        }
-      }
-      
-      // Create team stats
-      const teamStats: TeamRawStats[] = [];
-      for (const [teamName, players] of teamMap.entries()) {
-        teamStats.push({
-          name: teamName,
-          players: players.length,
-          logo: '',
-          wins: 0,
-          losses: 0,
-          eventId
+      for (const [name, info] of Object.entries(roleMap)) {
+        roleInfoMap.set(name, {
+          isIGL: info.isIGL,
+          tRole: info.tRole,
+          ctRole: info.ctRole
         });
       }
       
-      this.cachedTeamStats.set(eventId, teamStats);
-      return teamStats;
+      return roleInfoMap;
     } catch (error) {
-      console.error(`Error calculating teams from player stats for event ${eventId}:`, error);
-      return [];
+      console.error('Error loading role information:', error);
+      return new Map();
     }
   }
   
   /**
-   * Get player stats with PIV (Player Impact Value) for a specific event
-   * @param eventId Event ID to fetch player stats with PIV for
+   * Get players grouped by team
    */
-  async getPlayerStatsWithPIV(eventId: number): Promise<PlayerWithPIV[]> {
-    try {
-      // Get raw player stats first
-      const playerStats = await this.getPlayerStatsForEvent(eventId);
-      if (!playerStats || playerStats.length === 0) {
-        return [];
+  private getPlayerTeamsMap(players: PlayerRawStats[]): Map<string, PlayerRawStats[]> {
+    const teamMap = new Map<string, PlayerRawStats[]>();
+    
+    for (const player of players) {
+      if (!teamMap.has(player.teamName)) {
+        teamMap.set(player.teamName, []);
       }
       
-      // Group players by team for team stats
-      const teamMap = new Map<string, PlayerRawStats[]>();
-      for (const player of playerStats) {
-        if (player.team) {
-          if (!teamMap.has(player.team)) {
-            teamMap.set(player.team, []);
-          }
-          teamMap.get(player.team)?.push(player);
+      teamMap.get(player.teamName)!.push(player);
+    }
+    
+    return teamMap;
+  }
+  
+  /**
+   * Calculate team data with TIR metrics
+   */
+  private calculateTeamDataWithTIR(): TeamWithTIR[] {
+    if (!this.cachedPlayerWithPIVData) return [];
+    
+    const teamMap = new Map<string, PlayerWithPIV[]>();
+    
+    // Group players by team
+    for (const player of this.cachedPlayerWithPIVData) {
+      if (!teamMap.has(player.team)) {
+        teamMap.set(player.team, []);
+      }
+      teamMap.get(player.team)!.push(player);
+    }
+    
+    // Calculate team metrics
+    return Array.from(teamMap.entries()).map(([teamName, players]) => {
+      // Calculate team metrics
+      const sumPIV = players.reduce((sum, player) => sum + player.piv, 0);
+      const avgPIV = sumPIV / players.length;
+      
+      // Find top player
+      const topPlayer = players.reduce((highest, player) => 
+        player.piv > highest.piv ? player : highest, 
+        players[0]
+      );
+      
+      // Calculate synergy factor 
+      // This is a simplified version, should be enhanced with role-based synergy
+      const roleBalance = this.calculateRoleBalance(players);
+      const synergy = roleBalance * (Math.min(5, players.length) / 5);
+      
+      // Calculate team impact rating (TIR)
+      const tir = avgPIV * (1 + synergy);
+      
+      // Generate team ID
+      const id = `team-${teamName.toLowerCase().replace(/\s+/g, '-')}`;
+      
+      return {
+        id,
+        name: teamName,
+        tir,
+        sumPIV,
+        synergy,
+        avgPIV,
+        topPlayer: {
+          name: topPlayer.name,
+          piv: topPlayer.piv
+        },
+        players
+      };
+    });
+  }
+  
+  /**
+   * Calculate role balance factor for a team
+   */
+  private calculateRoleBalance(players: PlayerWithPIV[]): number {
+    // Count occurrences of each role
+    const roleCounts = new Map<PlayerRole, number>();
+    
+    for (const player of players) {
+      const role = player.role;
+      roleCounts.set(role, (roleCounts.get(role) || 0) + 1);
+    }
+    
+    // Check if we have at least one of each critical role
+    const hasIGL = roleCounts.get(PlayerRole.IGL) && roleCounts.get(PlayerRole.IGL)! > 0;
+    const hasAWP = roleCounts.get(PlayerRole.AWP) && roleCounts.get(PlayerRole.AWP)! > 0;
+    const hasSpacetaker = roleCounts.get(PlayerRole.Spacetaker) && roleCounts.get(PlayerRole.Spacetaker)! > 0;
+    const hasSupport = roleCounts.get(PlayerRole.Support) && roleCounts.get(PlayerRole.Support)! > 0;
+    
+    // Calculate a simple role balance score
+    let balanceScore = 0.5;  // Default
+    
+    if (hasIGL) balanceScore += 0.1;
+    if (hasAWP) balanceScore += 0.1;
+    if (hasSpacetaker) balanceScore += 0.1;
+    if (hasSupport) balanceScore += 0.1;
+    
+    // Penalize for multiple of the same role (except Support)
+    for (const [role, count] of Array.from(roleCounts.entries())) {
+      if (role !== PlayerRole.Support && count > 1) {
+        balanceScore -= 0.05 * (count - 1);
+      }
+    }
+    
+    return Math.max(0.3, Math.min(balanceScore, 1.0));
+  }
+  
+  /**
+   * Calculate team round metrics based on round data
+   */
+  private calculateTeamRoundMetrics(teamName: string, rounds: RoundData[]): TeamRoundMetrics {
+    // Filter rounds for this team
+    const teamRounds = rounds.filter(round => 
+      round.ctTeam === teamName || round.tTeam === teamName
+    );
+    
+    if (teamRounds.length === 0) {
+      return {
+        id: `team-${teamName.toLowerCase().replace(/\s+/g, '-')}`,
+        name: teamName,
+        econEfficiencyRatio: 0,
+        forceRoundWinRate: 0,
+        ecoRoundWinRate: 0,
+        fullBuyWinRate: 0,
+        economicRecoveryIndex: 0,
+        aPreference: 0.5,
+        bPreference: 0.5,
+        bombPlantRate: 0,
+        postPlantWinRate: 0,
+        retakeSuccessRate: 0,
+        pistolRoundWinRate: 0,
+        followUpRoundWinRate: 0,
+        comebackFactor: 0,
+        closingFactor: 0,
+        mapPerformance: {}
+      };
+    }
+    
+    // Extract CT and T side rounds
+    const ctRounds = teamRounds.filter(round => round.ctTeam === teamName);
+    const tRounds = teamRounds.filter(round => round.tTeam === teamName);
+    
+    // Calculate basic round win rates
+    const ctWins = ctRounds.filter(round => round.winner === 'ct' && round.winnerTeam === teamName).length;
+    const tWins = tRounds.filter(round => round.winner === 't' && round.winnerTeam === teamName).length;
+    
+    const ctWinRate = ctRounds.length > 0 ? ctWins / ctRounds.length : 0;
+    const tWinRate = tRounds.length > 0 ? tWins / tRounds.length : 0;
+    
+    // Calculate economy metrics
+    const ecoRounds = teamRounds.filter(round => {
+      const buyType = round.ctTeam === teamName ? round.ctBuyType : round.tBuyType;
+      return buyType === 'Eco';
+    });
+    
+    const forceRounds = teamRounds.filter(round => {
+      const buyType = round.ctTeam === teamName ? round.ctBuyType : round.tBuyType;
+      return buyType === 'Semi-Buy';
+    });
+    
+    const fullBuyRounds = teamRounds.filter(round => {
+      const buyType = round.ctTeam === teamName ? round.ctBuyType : round.tBuyType;
+      return buyType === 'Full Buy';
+    });
+    
+    const ecoWins = ecoRounds.filter(round => round.winnerTeam === teamName).length;
+    const forceWins = forceRounds.filter(round => round.winnerTeam === teamName).length;
+    const fullBuyWins = fullBuyRounds.filter(round => round.winnerTeam === teamName).length;
+    
+    const ecoRoundWinRate = ecoRounds.length > 0 ? ecoWins / ecoRounds.length : 0;
+    const forceRoundWinRate = forceRounds.length > 0 ? forceWins / forceRounds.length : 0;
+    const fullBuyWinRate = fullBuyRounds.length > 0 ? fullBuyWins / fullBuyRounds.length : 0;
+    
+    // Calculate site preference (T side)
+    const aPlants = tRounds.filter(round => round.bombSite === 'bombsite_a').length;
+    const bPlants = tRounds.filter(round => round.bombSite === 'bombsite_b').length;
+    const totalPlants = aPlants + bPlants;
+    
+    const aPreference = totalPlants > 0 ? aPlants / totalPlants : 0.5;
+    const bPreference = totalPlants > 0 ? bPlants / totalPlants : 0.5;
+    
+    // Calculate bomb plant and retake metrics
+    const tRoundsWithPlant = tRounds.filter(round => round.bombPlant).length;
+    const bombPlantRate = tRounds.length > 0 ? tRoundsWithPlant / tRounds.length : 0;
+    
+    const tRoundsWithPlantWin = tRounds.filter(round => round.bombPlant && round.winnerTeam === teamName).length;
+    const postPlantWinRate = tRoundsWithPlant > 0 ? tRoundsWithPlantWin / tRoundsWithPlant : 0;
+    
+    const ctRoundsWithPlant = ctRounds.filter(round => round.bombPlant).length;
+    const ctRoundsWithPlantWin = ctRounds.filter(round => round.bombPlant && round.winnerTeam === teamName).length;
+    const retakeSuccessRate = ctRoundsWithPlant > 0 ? ctRoundsWithPlantWin / ctRoundsWithPlant : 0;
+    
+    // Organize map data
+    const maps = new Set(teamRounds.map(round => round.map));
+    const mapPerformance: Record<string, any> = {};
+    
+    for (const map of maps) {
+      const mapRounds = teamRounds.filter(round => round.map === map);
+      const mapCtRounds = mapRounds.filter(round => round.ctTeam === teamName);
+      const mapTRounds = mapRounds.filter(round => round.tTeam === teamName);
+      
+      const mapCtWins = mapCtRounds.filter(round => round.winner === 'ct' && round.winnerTeam === teamName).length;
+      const mapTWins = mapTRounds.filter(round => round.winner === 't' && round.winnerTeam === teamName).length;
+      
+      const mapCtWinRate = mapCtRounds.length > 0 ? mapCtWins / mapCtRounds.length : 0;
+      const mapTWinRate = mapTRounds.length > 0 ? mapTWins / mapTRounds.length : 0;
+      
+      const mapAPlants = mapTRounds.filter(round => round.bombSite === 'bombsite_a').length;
+      const mapBPlants = mapTRounds.filter(round => round.bombSite === 'bombsite_b').length;
+      const mapTotalPlants = mapAPlants + mapBPlants;
+      
+      mapPerformance[map] = {
+        ctWinRate: mapCtWinRate,
+        tWinRate: mapTWinRate,
+        bombsitesPreference: {
+          a: mapTotalPlants > 0 ? mapAPlants / mapTotalPlants : 0.5,
+          b: mapTotalPlants > 0 ? mapBPlants / mapTotalPlants : 0.5
         }
-      }
-      
-      // Process player stats with PIV
-      console.log(`Processing PIV for ${playerStats.length} players in event ${eventId}...`);
-      console.log('DEBUG - Sample player data before processing:', playerStats[0] ? {
-        fields: Object.keys(playerStats[0]),
-        steamId: playerStats[0].steamId,
-        userName: playerStats[0].userName,
-        teamName: playerStats[0].teamName,
-        kills: playerStats[0].kills,
-        deaths: playerStats[0].deaths
-      } : 'No player data');
-      
-      let playersWithPIV: PlayerWithPIV[];
-      
-      if (eventId === 1) {
-        // For IEM Katowice, load role information and process
-        const { loadPlayerRoles } = await import('./loadRoleData');
-        const roleMap = await loadPlayerRoles();
-        console.log(`DEBUG - Role map loaded with ${roleMap.size} entries`);
-        playersWithPIV = processPlayerStatsWithRoles(playerStats, roleMap);
-      } else {
-        // For other events, use general role assignment
-        console.log('DEBUG - Using general role assignment for event', eventId);
-        playersWithPIV = processPlayerStats(playerStats, teamMap);
-      }
-      
-      console.log(`Processed PIV for ${playersWithPIV.length} players`);
-      this.cachedPlayerPIV.set(eventId, playersWithPIV);
-      return playersWithPIV;
-    } catch (error) {
-      console.error(`Error processing player stats with PIV for event ${eventId}:`, error);
-      return [];
+      };
     }
+    
+    // Create team ID from name
+    const id = `team-${teamName.toLowerCase().replace(/\s+/g, '-')}`;
+    
+    return {
+      id,
+      name: teamName,
+      
+      // Economy metrics
+      econEfficiencyRatio: (ecoRoundWinRate * 3 + forceRoundWinRate * 2 + fullBuyWinRate) / 6,
+      forceRoundWinRate,
+      ecoRoundWinRate,
+      fullBuyWinRate,
+      economicRecoveryIndex: 0.5, // Would need round by round analysis to calculate properly
+      
+      // Strategic metrics
+      aPreference,
+      bPreference,
+      bombPlantRate,
+      postPlantWinRate,
+      retakeSuccessRate,
+      
+      // Momentum metrics
+      pistolRoundWinRate: 0.5, // Need to identify pistol rounds
+      followUpRoundWinRate: 0.5, // Need round by round analysis
+      comebackFactor: 0.5, // Need more detailed round analysis
+      closingFactor: 0.5, // Need detailed advantage data
+      
+      // Map-specific metrics
+      mapPerformance
+    };
+  }
+  
+  // IStorage interface implementation
+  
+  /**
+   * Get all players with their calculated PIV
+   */
+  async getAllPlayers(): Promise<PlayerWithPIV[]> {
+    if (!this.cachedPlayerWithPIVData) {
+      await this.refreshData();
+    }
+    return this.cachedPlayerWithPIVData || [];
   }
   
   /**
-   * Get team stats with TIR (Team Impact Rating) for a specific event
-   * @param eventId Event ID to fetch team stats with TIR for
+   * Get a player by ID
    */
-  async getTeamStatsWithTIR(eventId: number): Promise<TeamWithTIR[]> {
-    // Check if we have cached data
-    if (this.cachedTeamTIR.has(eventId)) {
-      return this.cachedTeamTIR.get(eventId) || [];
+  async getPlayerById(id: string): Promise<PlayerWithPIV | undefined> {
+    if (!this.cachedPlayerWithPIVData) {
+      await this.refreshData();
     }
     
+    return this.cachedPlayerWithPIVData?.find(p => p.id === id);
+  }
+  
+  /**
+   * Get players by role
+   */
+  async getPlayersByRole(role: string): Promise<PlayerWithPIV[]> {
+    if (!this.cachedPlayerWithPIVData) {
+      await this.refreshData();
+    }
+    
+    return (this.cachedPlayerWithPIVData || []).filter(p => 
+      p.role === role || p.secondaryRole === role || p.tRole === role || p.ctRole === role
+    );
+  }
+  
+  /**
+   * Get all teams with their calculated TIR
+   */
+  async getAllTeams(): Promise<TeamWithTIR[]> {
+    if (!this.cachedTeamData) {
+      await this.refreshData();
+    }
+    return this.cachedTeamData || [];
+  }
+  
+  /**
+   * Get a team by name
+   */
+  async getTeamByName(name: string): Promise<TeamWithTIR | undefined> {
+    if (!this.cachedTeamData) {
+      await this.refreshData();
+    }
+    
+    return this.cachedTeamData?.find(t => t.name === name);
+  }
+  
+  /**
+   * Get a team by ID
+   */
+  async getTeamById(id: string): Promise<TeamWithTIR | undefined> {
+    if (!this.cachedTeamData) {
+      await this.refreshData();
+    }
+    
+    return this.cachedTeamData?.find(t => t.id === id);
+  }
+  
+  /**
+   * Get detailed team round metrics
+   */
+  async getTeamRoundMetrics(teamId: string): Promise<TeamRoundMetrics | undefined> {
+    // Check cache first
+    const cachedMetrics = this.roundMetricsCache.get(teamId);
+    if (cachedMetrics) {
+      return cachedMetrics;
+    }
+    
+    // Get team name from ID
+    const team = await this.getTeamById(teamId);
+    if (!team) return undefined;
+    
+    // Get rounds for this team
+    if (!this.cachedRoundData) {
+      await this.refreshData();
+    }
+    
+    const rounds = (this.cachedRoundData || []).filter(round => 
+      round.ctTeam === team.name || round.tTeam === team.name
+    );
+    
+    // Calculate and cache metrics
+    const metrics = this.calculateTeamRoundMetrics(team.name, rounds);
+    this.roundMetricsCache.set(teamId, metrics);
+    
+    return metrics;
+  }
+  
+  /**
+   * Set team round metrics
+   */
+  async setTeamRoundMetrics(metrics: TeamRoundMetrics): Promise<void> {
+    this.roundMetricsCache.set(metrics.id, metrics);
+  }
+  
+  /**
+   * Set players data (update cache)
+   */
+  async setPlayers(players: PlayerWithPIV[]): Promise<void> {
+    this.cachedPlayerWithPIVData = players;
+  }
+  
+  /**
+   * Set teams data (update cache)
+   */
+  async setTeams(teams: TeamWithTIR[]): Promise<void> {
+    this.cachedTeamData = teams;
+  }
+  
+  /**
+   * Get all player statistics
+   */
+  async getAllPlayerStats(): Promise<PlayerRawStats[]> {
+    if (!this.cachedPlayerData) {
+      await this.refreshData();
+    }
+    return this.cachedPlayerData || [];
+  }
+  
+  /**
+   * Get all rounds
+   */
+  async getAllRounds(): Promise<RoundData[]> {
+    if (!this.cachedRoundData) {
+      await this.refreshData();
+    }
+    return this.cachedRoundData || [];
+  }
+  
+  /**
+   * Get rounds for a specific team
+   */
+  async getRoundsByTeam(teamName: string): Promise<RoundData[]> {
+    if (!this.cachedRoundData) {
+      await this.refreshData();
+    }
+    
+    return (this.cachedRoundData || []).filter(round => 
+      round.ctTeam === teamName || round.tTeam === teamName
+    );
+  }
+  
+  /**
+   * Get a user by username (for authentication)
+   */
+  async getUserByUsername(username: string): Promise<User | undefined> {
     try {
-      // Get players with PIV first
-      const playersWithPIV = await this.getPlayerStatsWithPIV(eventId);
-      if (!playersWithPIV || playersWithPIV.length === 0) {
-        return [];
-      }
-      
-      // Group players by team
-      const teamMap = new Map<string, PlayerWithPIV[]>();
-      for (const player of playersWithPIV) {
-        if (player.stats.team) {
-          if (!teamMap.has(player.stats.team)) {
-            teamMap.set(player.stats.team, []);
-          }
-          teamMap.get(player.stats.team)?.push(player);
-        }
-      }
-      
-      // Calculate team TIR scores
-      const teamsWithTIR: TeamWithTIR[] = [];
-      
-      for (const [teamName, players] of teamMap.entries()) {
-        // Calculate average PIV for the team
-        const totalPIV = players.reduce((sum, player) => sum + player.piv, 0);
-        const avgPIV = totalPIV / players.length;
-        
-        // Calculate role balance score (better if each role is represented)
-        const roles = new Set<PlayerRole>();
-        players.forEach(player => {
-          roles.add(player.stats.ct_role);
-          roles.add(player.stats.t_role);
-        });
-        const roleBalanceScore = roles.size / 6; // 6 possible roles
-        
-        // Calculate synergy score based on complementary roles
-        const hasIGL = players.some(player => player.stats.is_igl);
-        const hasCTAWP = players.some(player => player.stats.ct_role === PlayerRole.AWPCT);
-        const hasTAWP = players.some(player => player.stats.t_role === PlayerRole.AWPT);
-        
-        // Better synergy with IGL and balanced AWP roles
-        let synergyScore = 0.5;
-        if (hasIGL) synergyScore += 0.2;
-        if (hasCTAWP && hasTAWP) synergyScore += 0.2;
-        else if (hasCTAWP || hasTAWP) synergyScore += 0.1;
-        
-        // Team Impact Rating = Average PIV * Role Balance * Synergy Score
-        const tir = avgPIV * roleBalanceScore * synergyScore;
-        
-        // Find team stats
-        const teamStats = await this.getTeamStatsForEvent(eventId);
-        const team = teamStats.find(t => t.name === teamName);
-        
-        if (team) {
-          teamsWithTIR.push({
-            ...team,
-            avgPIV: avgPIV,
-            roleBalance: roleBalanceScore,
-            synergyScore: synergyScore,
-            tir: tir,
-            players: players.map(p => ({
-              id: p.stats.name,
-              name: p.stats.name,
-              piv: p.piv,
-              role: p.primaryRole
-            }))
-          });
-        }
-      }
-      
-      // Sort by TIR
-      teamsWithTIR.sort((a, b) => b.tir - a.tir);
-      
-      this.cachedTeamTIR.set(eventId, teamsWithTIR);
-      return teamsWithTIR;
+      const [user] = await db.select().from(users).where(eq(users.username, username));
+      return user;
     } catch (error) {
-      console.error(`Error calculating team TIR for event ${eventId}:`, error);
-      return [];
+      console.error(`Error getting user by username ${username}:`, error);
+      return undefined;
     }
   }
   
   /**
-   * Get available events
+   * Get a user by ID (for authentication)
    */
-  getEvents(): { id: number; name: string }[] {
-    const events: { id: number; name: string }[] = [];
-    
-    // Add database events
-    for (const [id, name] of this.eventNames.entries()) {
-      events.push({ id, name });
-    }
-    
-    // If no database events, add both tournaments
-    if (events.length === 0) {
-      events.push({ id: 1, name: 'IEM_Katowice_2025' });
-      events.push({ id: 2, name: 'PGL_Bucharest_2025' });
-    }
-    
-    console.log('📅 Available events:', events);
-    return events;
-  }
-  
-  /**
-   * Load player data from CSV files (fallback method)
-   */
-  private async loadCSVData(): Promise<PlayerRawStats[]> {
-    // Try new CSV format first
+  async getUser(id: number): Promise<User | undefined> {
     try {
-      const newPlayerStats = await loadNewPlayerStats();
-      if (newPlayerStats && newPlayerStats.length > 0) {
-        console.log(`Loaded ${newPlayerStats.length} players from new CSV format`);
-        return newPlayerStats;
-      }
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user;
     } catch (error) {
-      console.error('Error loading new CSV format:', error);
+      console.error(`Error getting user by ID ${id}:`, error);
+      return undefined;
     }
+  }
+  
+  /**
+   * Create a new user (for authentication)
+   */
+  async createUser(userData: InsertUser): Promise<User> {
+    try {
+      const [user] = await db
+        .insert(users)
+        .values(userData)
+        .returning();
+      return user;
+    } catch (error) {
+      console.error(`Error creating user ${userData.username}:`, error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Check if data needs to be refreshed
+   */
+  needsRefresh(): boolean {
+    if (!this.lastDataRefresh) return true;
     
-    // Fall back to old CSV format
-    try {
-      const oldPlayerStats = await loadPlayerData();
-      console.log(`Loaded ${oldPlayerStats.length} players from old CSV format`);
-      return oldPlayerStats;
-    } catch (error) {
-      console.error('Error loading old CSV format:', error);
-      return [];
-    }
+    const now = new Date();
+    const timeSinceLastRefresh = now.getTime() - this.lastDataRefresh.getTime();
+    
+    return timeSinceLastRefresh > this.refreshIntervalMs;
   }
   
   /**
-   * Check if database connection is available
+   * Get the timestamp of the last data refresh
    */
-  isSupabaseConnected(): boolean {
-    return this.isConnected;
-  }
-  
-  /**
-   * Get the number of available events
-   */
-  getEventCount(): number {
-    return this.availableEvents.length;
-  }
-  
-  /**
-   * Update event data from raw SQL adapter
-   * This method allows the data refresh manager to inject fresh Supabase data
-   */
-  updateEventData(eventId: number, data: {
-    players: any[];
-    teams: any[];
-    event: { id: number; name: string };
-  }): void {
-    try {
-      console.log(`Updating cached data for event ${eventId} (${data.event.name})`);
-      
-      // Update event name
-      this.eventNames.set(eventId, data.event.name);
-      
-      // Convert and cache player data
-      if (data.players && data.players.length > 0) {
-        // Convert raw player data to PlayerRawStats format
-        const playerStats: PlayerRawStats[] = data.players.map(p => ({
-          name: p.name || 'Unknown',
-          team: p.team_name || 'Unknown',
-          kills: p.kills || 0,
-          deaths: p.deaths || 0,
-          assists: p.assists || 0,
-          adr: p.adr || 0,
-          kast: p.kast || 0,
-          rating: p.rating || 0,
-          entryKills: p.entry_kills || 0,
-          entryDeaths: p.entry_deaths || 0,
-          multiKills: p.multi_kills || 0,
-          clutchWins: p.clutch_wins || 0,
-          clutchAttempts: p.clutch_attempts || 0,
-          flashAssists: p.flash_assists || 0,
-          rounds: p.rounds || 1,
-          maps: p.maps || 1,
-          teamRounds: p.team_rounds || 1
-        }));
-        
-        this.cachedPlayerStats.set(eventId, playerStats);
-        console.log(`  - Cached ${playerStats.length} players`);
-      }
-      
-      // Convert and cache team data
-      if (data.teams && data.teams.length > 0) {
-        const teamStats: TeamRawStats[] = data.teams.map(t => ({
-          id: t.id || 0,
-          name: t.name || 'Unknown',
-          eventId: eventId,
-          kills: t.total_kills || 0,
-          deaths: t.total_deaths || 0,
-          assists: t.total_assists || 0,
-          adr: t.avg_adr || 0,
-          kast: t.avg_kast || 0,
-          rating: t.avg_rating || 0,
-          roundsWon: t.rounds_won || 0,
-          roundsTotal: t.rounds_total || 0,
-          mapsWon: t.maps_won || 0,
-          mapsTotal: t.maps_total || 0
-        }));
-        
-        this.cachedTeamStats.set(eventId, teamStats);
-        console.log(`  - Cached ${teamStats.length} teams`);
-      }
-      
-      // Clear dependent caches to force recalculation with fresh data
-      this.cachedPlayerPIV.delete(eventId);
-      this.cachedTeamTIR.delete(eventId);
-      
-      console.log(`Successfully updated cached data for event ${eventId}`);
-    } catch (error) {
-      console.error(`Error updating event data for event ${eventId}:`, error);
-    }
+  getLastRefreshTime(): Date | null {
+    return this.lastDataRefresh;
   }
 }
+
+// Create and export a singleton instance
+export const supabaseStorage = new SupabaseStorage();

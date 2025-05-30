@@ -37,7 +37,7 @@ export default function RoleFilterChips({
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0 }
   };
-  // Define role options with colors and icons for tournament data
+  // Define role options with colors and icons
   const roleOptions: RoleOption[] = [
     { 
       value: "All Roles", 
@@ -48,7 +48,7 @@ export default function RoleFilterChips({
       activeColor: "bg-blue-600/70"
     },
     { 
-      value: "IGL", 
+      value: PlayerRole.IGL, 
       label: "IGL", 
       icon: <Lightbulb className="h-4 w-4" />,
       color: "bg-purple-800/40",
@@ -56,7 +56,7 @@ export default function RoleFilterChips({
       activeColor: "bg-purple-600/70"
     },
     { 
-      value: "AWPer", 
+      value: PlayerRole.AWP, 
       label: "AWP", 
       icon: <Target className="h-4 w-4" />,
       color: "bg-amber-800/40",
@@ -64,7 +64,7 @@ export default function RoleFilterChips({
       activeColor: "bg-amber-600/70"
     },
     { 
-      value: "Entry", 
+      value: PlayerRole.Spacetaker, 
       label: "Spacetaker", 
       icon: <Users className="h-4 w-4" />,
       color: "bg-green-800/40",
@@ -72,7 +72,7 @@ export default function RoleFilterChips({
       activeColor: "bg-green-600/70"
     },
     { 
-      value: "Lurker", 
+      value: PlayerRole.Lurker, 
       label: "Lurker", 
       icon: <Shield className="h-4 w-4" />,
       color: "bg-blue-800/40",
@@ -80,7 +80,7 @@ export default function RoleFilterChips({
       activeColor: "bg-blue-600/70"
     },
     { 
-      value: "Anchor", 
+      value: PlayerRole.Anchor, 
       label: "Anchor", 
       icon: <Shield className="h-4 w-4" />,
       color: "bg-sky-800/40",
@@ -88,7 +88,7 @@ export default function RoleFilterChips({
       activeColor: "bg-sky-600/70"
     },
     { 
-      value: "Support", 
+      value: PlayerRole.Support, 
       label: "Support", 
       icon: <CircleDot className="h-4 w-4" />,
       color: "bg-indigo-800/40",
@@ -96,7 +96,7 @@ export default function RoleFilterChips({
       activeColor: "bg-indigo-600/70"
     },
     { 
-      value: "Rifler", 
+      value: PlayerRole.Rotator, 
       label: "Rotator", 
       icon: <CircleDot className="h-4 w-4" />,
       color: "bg-cyan-800/40",

@@ -318,26 +318,13 @@ export class RawSQLAdapter {
     try {
       console.log(`Getting ALL players from BOTH tournaments (overriding single event filter)...`);
       
-      // Use a SQL query that normalizes steam IDs by dividing and multiplying by 100
-      // This effectively truncates the last 2 digits for matching
+      // Simplified query that directly joins players with stats and roles
       const query = `
-        WITH event_players AS (
-          SELECT DISTINCT pms.steam_id, pms.team_id, pms.event_id
-          FROM player_match_summary pms
-          WHERE pms.event_id IN (1, 2)
-        ),
-        
-        player_teams AS (
-          SELECT ep.steam_id, ep.event_id, t.team_clan_name as team_name
-          FROM event_players ep
-          LEFT JOIN teams t ON ep.team_id = t.id
-        )
-        
-        SELECT 
+        SELECT DISTINCT
           p.steam_id,
           p.user_name,
-          pt.team_name,
-          pt.event_id,
+          t.team_clan_name as team_name,
+          pms.event_id,
           ks.kills,
           ks.headshots,
           ks.wallbang_kills,
@@ -387,18 +374,32 @@ export class RawSQLAdapter {
           r.t_role,
           r.ct_role
         FROM 
-          player_teams pt
-          LEFT JOIN players p ON (p.steam_id / 100) = (pt.steam_id / 100)
+          player_match_summary pms
+          LEFT JOIN players p ON (p.steam_id / 100) = (pms.steam_id / 100)
+          LEFT JOIN teams t ON pms.team_id = t.id
           LEFT JOIN roles r ON CAST(r.steam_id AS TEXT) = CAST(p.steam_id AS TEXT)
-          LEFT JOIN kill_stats ks ON (ks.steam_id / 100) = (pt.steam_id / 100) AND ks.event_id = pt.event_id
-          LEFT JOIN general_stats gs ON (gs.steam_id / 100) = (pt.steam_id / 100) AND gs.event_id = pt.event_id
-          LEFT JOIN utility_stats us ON (us.steam_id / 100) = (pt.steam_id / 100) AND us.event_id = pt.event_id
+          LEFT JOIN kill_stats ks ON (ks.steam_id / 100) = (pms.steam_id / 100) AND ks.event_id = pms.event_id
+          LEFT JOIN general_stats gs ON (gs.steam_id / 100) = (pms.steam_id / 100) AND gs.event_id = pms.event_id
+          LEFT JOIN utility_stats us ON (us.steam_id / 100) = (pms.steam_id / 100) AND us.event_id = pms.event_id
         WHERE 
-          p.steam_id IS NOT NULL
+          pms.event_id IN (1, 2)
+          AND p.steam_id IS NOT NULL
       `;
       
       const result = await db.execute(query);
       console.log(`Raw SQL query returned ${result.rows.length} rows`);
+      
+      // Debug: Check a few rows to see what role data we're getting
+      const aleksibRow = result.rows.find(row => row.user_name === 'Aleksib');
+      if (aleksibRow) {
+        console.log('DEBUG - Aleksib row data:', {
+          user_name: aleksibRow.user_name,
+          is_igl: aleksibRow.is_igl,
+          is_igl_type: typeof aleksibRow.is_igl,
+          t_role: aleksibRow.t_role,
+          ct_role: aleksibRow.ct_role
+        });
+      }
       
       // Convert to PlayerRawStats format
       const playerStats: PlayerRawStats[] = result.rows.map(row => {

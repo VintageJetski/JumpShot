@@ -465,7 +465,7 @@ export default function PlayersPage() {
                   layout
                 >
                   {filteredPlayers.map((player, index) => (
-                    <PlayerCard key={player.id} player={player} index={index} />
+                    <PlayerCard key={`${player.steamId}-${player.eventId}`} player={player} index={index} />
                   ))}
                 </motion.div>
               )}

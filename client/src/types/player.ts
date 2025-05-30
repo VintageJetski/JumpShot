@@ -22,6 +22,7 @@ export interface ClientPlayer {
   flashAssists: number;
   rounds: number;
   maps: number;
+  teamRounds: number;
   // Calculated metrics
   piv?: number;
   kd?: number;

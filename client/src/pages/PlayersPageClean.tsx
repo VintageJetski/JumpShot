@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ClientPlayer } from '@/types/player';
 import { motion, AnimatePresence } from 'framer-motion';
+import { calculatePIV, RawPlayerData } from '@/lib/metrics-calculator';
 
 interface ApiResponse {
   players: ClientPlayer[];
@@ -16,18 +17,38 @@ interface ApiResponse {
 
 // Simple player card component
 function PlayerCard({ player }: { player: ClientPlayer }) {
-  const { name, team, isIGL, tRole, ctRole, kills, deaths, adr, kast, rating } = player;
+  const { name, team, isIGL, tRole, ctRole, kills, deaths, adr, kast, rating, assists, entryKills, entryDeaths, multiKills, clutchWins, clutchAttempts, flashAssists, rounds, maps, teamRounds, eventId, steamId } = player;
   const initials = name.split(' ').map((n: string) => n[0]).join('');
   
-  // Calculate metrics with safety checks
-  const safeKills = kills || 0;
-  const safeDeaths = deaths || 1;
-  const safeAdr = adr || 0;
-  const safeKast = kast || 0;
-  const safeRating = rating || 0;
+  // Convert ClientPlayer to RawPlayerData for PIV calculation
+  const rawPlayerData: RawPlayerData = {
+    steamId,
+    userName: name,
+    teamName: team,
+    kills: kills || 0,
+    deaths: deaths || 1,
+    assists: assists || 0,
+    adr: adr || 0,
+    kast: kast || 0,
+    rating: rating || 0,
+    entryKills: entryKills || 0,
+    entryDeaths: entryDeaths || 0,
+    multiKills: multiKills || 0,
+    clutchWins: clutchWins || 0,
+    clutchAttempts: clutchAttempts || 0,
+    flashAssists: flashAssists || 0,
+    rounds: rounds || 1,
+    maps: maps || 1,
+    teamRounds: teamRounds || 1,
+    isIGL,
+    tRole,
+    ctRole,
+    eventId
+  };
   
-  const kd = safeDeaths > 0 ? safeKills / safeDeaths : safeKills;
-  const piv = (kd * 0.4 + safeAdr * 0.002 + safeKast * 0.006 + safeRating * 0.2) * (isIGL ? 1.1 : 1.0);
+  // Calculate proper PIV using the official formula
+  const piv = calculatePIV(rawPlayerData);
+  const kd = deaths > 0 ? kills / deaths : kills;
   const primaryRole = isIGL ? 'IGL' : tRole;
 
   const roleColors: Record<string, string> = {
@@ -132,13 +153,31 @@ export default function PlayersPageClean() {
     // Statistical outlier filtering
     if (outlierFilter !== 'All Players') {
       const pivValues = filtered.map(p => {
-        const safeKills = p.kills || 0;
-        const safeDeaths = p.deaths || 1;
-        const safeAdr = p.adr || 0;
-        const safeKast = p.kast || 0;
-        const safeRating = p.rating || 0;
-        const kd = safeDeaths > 0 ? safeKills / safeDeaths : safeKills;
-        return (kd * 0.4 + safeAdr * 0.002 + safeKast * 0.006 + safeRating * 0.2) * (p.isIGL ? 1.1 : 1.0);
+        const rawPlayerData: RawPlayerData = {
+          steamId: p.steamId,
+          userName: p.name,
+          teamName: p.team,
+          kills: p.kills || 0,
+          deaths: p.deaths || 1,
+          assists: p.assists || 0,
+          adr: p.adr || 0,
+          kast: p.kast || 0,
+          rating: p.rating || 0,
+          entryKills: p.entryKills || 0,
+          entryDeaths: p.entryDeaths || 0,
+          multiKills: p.multiKills || 0,
+          clutchWins: p.clutchWins || 0,
+          clutchAttempts: p.clutchAttempts || 0,
+          flashAssists: p.flashAssists || 0,
+          rounds: p.rounds || 1,
+          maps: p.maps || 1,
+          teamRounds: p.teamRounds || 1,
+          isIGL: p.isIGL,
+          tRole: p.tRole,
+          ctRole: p.ctRole,
+          eventId: p.eventId
+        };
+        return calculatePIV(rawPlayerData);
       });
       
       const sorted = pivValues.slice().sort((a, b) => a - b);

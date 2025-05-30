@@ -1,4 +1,3 @@
-import { PlayerWithPIV, PlayerRole } from '@shared/schema';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';

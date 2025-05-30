@@ -31,31 +31,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allPlayersFromBothTournaments = await getPlayersWithRoles();
       console.log(`Simple fetcher retrieved ${allPlayersFromBothTournaments.length} total players`);
       
-      // Convert to client format
-      const playersWithRoles = allPlayersFromBothTournaments.map(player => ({
+      // Convert to client format using correct field names from simple fetcher
+      const playersWithRoles = allPlayersFromBothTournaments.map((player: any) => ({
         steamId: player.steamId,
         name: player.userName,
         team: player.teamName,
         kills: player.kills,
         deaths: player.deaths,
         assists: player.assists,
-        adr: player.averageDamagePerRound,
-        kast: player.kastPercent,
-        rating: player.rating20,
+        adr: player.adr,
+        kast: player.kast,
+        rating: player.rating,
         isIGL: player.isIGL || false,
         tRole: player.tRole,
         ctRole: player.ctRole,
-        tournament: player.eventName,
+        tournament: 'Tournament',
         eventId: player.eventId,
         // Include all raw stats for PIV calculation client-side
         entryKills: player.firstKills || 0,
         entryDeaths: player.firstDeaths || 0,
-        multiKills: player.multiKillRounds || 0,
-        clutchWins: player.clutchesWon || 0,
-        clutchAttempts: player.clutchesPlayed || 0,
-        flashAssists: player.assistedFlashes || 0,
-        rounds: player.roundsPlayed || 1,
-        maps: player.mapsPlayed || 1
+        multiKills: player.multiKills || 0,
+        clutchWins: player.clutchWins || 0,
+        clutchAttempts: player.clutchAttempts || 0,
+        flashAssists: player.flashAssists || 0,
+        rounds: player.rounds || 1,
+        maps: player.maps || 1
       }));
       
       console.log(`📊 Serving ${playersWithRoles.length} raw players`);

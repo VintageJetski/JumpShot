@@ -50,7 +50,7 @@ export default function PlayersPage() {
       player.role === role ||
       player.ctRole === role ||
       player.tRole === role ||
-      (role === PlayerRole.IGL && player.isIGL === true)
+      (role === "IGL" && player.isIGL === true)
     );
   };
   
@@ -70,23 +70,24 @@ export default function PlayersPage() {
     .sort((a, b) => b.piv - a.piv) : [];
 
   // Extract top players by role with comprehensive role checking
-  const findTopPlayerByRole = (role: PlayerRole) => {
+  const findTopPlayerByRole = (role: string) => {
     return filteredPlayers.find(p => 
       p.role === role || 
       p.ctRole === role || 
-      p.tRole === role
+      p.tRole === role ||
+      (role === "IGL" && p.isIGL === true)
     ) || null;
   };
   
   const topPlayersByRole = {
     highest: filteredPlayers[0] || null,
-    awper: findTopPlayerByRole(PlayerRole.AWP),
-    lurker: findTopPlayerByRole(PlayerRole.Lurker),
-    igl: findTopPlayerByRole(PlayerRole.IGL),
-    spacetaker: findTopPlayerByRole(PlayerRole.Spacetaker),
-    anchor: findTopPlayerByRole(PlayerRole.Anchor),
-    support: findTopPlayerByRole(PlayerRole.Support),
-    rotator: findTopPlayerByRole(PlayerRole.Rotator),
+    awper: findTopPlayerByRole("AWPer"),
+    lurker: findTopPlayerByRole("Lurker"),
+    igl: findTopPlayerByRole("IGL"),
+    spacetaker: findTopPlayerByRole("Entry"),
+    anchor: findTopPlayerByRole("Anchor"),
+    support: findTopPlayerByRole("Support"),
+    rotator: findTopPlayerByRole("Rifler"),
   };
 
   // Table columns definition
@@ -197,15 +198,14 @@ export default function PlayersPage() {
       }
     },
     {
-      header: "Primary Metric",
-      accessorKey: "primaryMetric",
+      header: "ADR",
+      accessorKey: "metrics.adr",
       cell: ({ row }: any) => {
-        const { name, value } = row.original.primaryMetric;
+        const adr = row.original.metrics?.adr || 0;
         
         return (
-          <div className="flex items-center">
-            <span className="text-sm text-blue-300/60 mr-2">{name}:</span>
-            <span className="text-sm font-medium">{value.toFixed(2)}</span>
+          <div className="text-sm font-medium text-blue-300">
+            {adr.toFixed(1)}
           </div>
         );
       }
@@ -378,7 +378,7 @@ export default function PlayersPage() {
             metricColor="text-purple-400"
             bgGradient="from-purple-700 to-purple-500"
             icon={<Lightbulb className="h-6 w-6 text-purple-400" />}
-            subtext={`${topPlayersByRole.igl.primaryMetric.name}: ${typeof topPlayersByRole.igl.primaryMetric.value === 'number' ? topPlayersByRole.igl.primaryMetric.value.toFixed(2) : topPlayersByRole.igl.primaryMetric.value || 'N/A'}`}
+            subtext={`K/D: ${topPlayersByRole.igl.metrics?.kd?.toFixed(2) || 'N/A'}`}
             index={1}
           />
         )}
@@ -391,20 +391,20 @@ export default function PlayersPage() {
             metricColor="text-amber-400"
             bgGradient="from-amber-700 to-amber-500"
             icon={<Target className="h-6 w-6 text-amber-400" />}
-            subtext={`${topPlayersByRole.awper.primaryMetric.name}: ${typeof topPlayersByRole.awper.primaryMetric.value === 'number' ? topPlayersByRole.awper.primaryMetric.value.toFixed(2) : topPlayersByRole.awper.primaryMetric.value || 'N/A'}`}
+            subtext={`ADR: ${topPlayersByRole.awper.metrics?.adr?.toFixed(1) || 'N/A'}`}
             index={2}
           />
         )}
         
         {topPlayersByRole.spacetaker && (
           <EnhancedStatsCard
-            title="Best Spacetaker"
+            title="Best Entry"
             value={topPlayersByRole.spacetaker.name}
             metric={`${Math.round(topPlayersByRole.spacetaker.piv * 100)} PIV`}
             metricColor="text-orange-400"
             bgGradient="from-orange-700 to-orange-500"
             icon={<User2 className="h-6 w-6 text-orange-400" />}
-            subtext={`${topPlayersByRole.spacetaker.primaryMetric.name}: ${typeof topPlayersByRole.spacetaker.primaryMetric.value === 'number' ? topPlayersByRole.spacetaker.primaryMetric.value.toFixed(2) : topPlayersByRole.spacetaker.primaryMetric.value || 'N/A'}`}
+            subtext={`First Kills: ${topPlayersByRole.spacetaker.metrics?.firstKills || 'N/A'}`}
             index={3}
           />
         )}

@@ -124,24 +124,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const aleksibInPlayerData = allPlayersFromBothTournaments.find(p => p.steamId === '76561198013243326' || p.userName === 'Aleksib');
       console.log(`🔍 Aleksib found in player data:`, aleksibInPlayerData ? `Yes - Steam ID: ${aleksibInPlayerData.steamId}, Name: ${aleksibInPlayerData.userName}` : 'No');
       
-      // Direct role assignment using rolesData array (bypassing the broken roleMap logic)
+      // Use authentic database role assignments
       const rawPlayersWithRoles = allPlayersFromBothTournaments.map(player => {
         const steamIdStr = player.steamId?.toString();
         
-        // Find direct match in rolesData array
+        // Find exact match in rolesData using authentic database values
         const roleMatch = rolesData.find(role => role.steamId?.toString() === steamIdStr);
         
+        // Debug for cadiaN specifically
+        if (player.userName === 'cadiaN') {
+          console.log(`🔍 cadiaN DEBUG:`, {
+            playerSteamId: steamIdStr,
+            roleMatchFound: !!roleMatch,
+            roleMatchData: roleMatch,
+            rolesDataCount: rolesData.length,
+            firstFewRolesSteamIds: rolesData.slice(0, 3).map(r => r.steamId?.toString())
+          });
+        }
+        
         let isIGL = false;
-        let tRole = 'Support';
-        let ctRole = 'Support';
-        let primaryRole = 'Support';
+        let tRole = 'Unassigned';
+        let ctRole = 'Unassigned';
+        let primaryRole = 'Unassigned';
         
         if (roleMatch) {
+          // Use authentic database boolean value
           isIGL = roleMatch.inGameLeader === true;
-          tRole = roleMatch.tRole || 'Support';
-          ctRole = roleMatch.ctRole || 'Support';
+          tRole = roleMatch.tRole || 'Unassigned';
+          ctRole = roleMatch.ctRole || 'Unassigned';
           
-          // Set primary role for filtering
+          // Determine primary role using authentic database role values
           if (isIGL) {
             primaryRole = 'IGL';
           } else if (tRole === 'AWP' || ctRole === 'AWP') {
@@ -149,9 +161,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else if (tRole === 'Lurker') {
             primaryRole = 'Lurker';
           } else if (tRole === 'Spacetaker') {
-            primaryRole = 'Entry Fragger';
-          } else {
+            primaryRole = 'Spacetaker';
+          } else if (ctRole === 'Anchor') {
+            primaryRole = 'Anchor';
+          } else if (ctRole === 'Rotator') {
+            primaryRole = 'Rotator';
+          } else if (tRole === 'Support') {
             primaryRole = 'Support';
+          } else {
+            primaryRole = 'Unassigned';
           }
         }
 

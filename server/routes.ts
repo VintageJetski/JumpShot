@@ -50,10 +50,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert roles data to Map format using steam_id as primary key
       const roleMap = new Map();
       rolesData.forEach(role => {
+        // Use direct boolean value instead of Boolean() conversion
+        const isIGLValue = role.inGameLeader === true || role.inGameLeader === 't' || role.inGameLeader === 'true';
+        
         const roleInfo = {
           team: 'Unknown', // Team info will come from players table join
           player: role.playerUsername || 'Unknown',
-          isIGL: Boolean(role.inGameLeader), // Ensure boolean conversion
+          isIGL: isIGLValue, // Direct boolean assignment
           tRole: role.tRole,
           ctRole: role.ctRole
         };
@@ -65,6 +68,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Also set by player username for additional matching options
         if (role.playerUsername) {
           roleMap.set(role.playerUsername, roleInfo);
+        }
+        
+        // Debug specific IGL players
+        if (isIGLValue) {
+          console.log(`🔍 Added IGL to roleMap: ${role.playerUsername} (${steamIdStr}) -> isIGL: ${isIGLValue}`);
         }
       });
       
@@ -102,6 +110,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allPlayersFromBothTournaments = await rawSQLAdapter.getAllPlayersFromBothTournaments();
       console.log(`Raw SQL retrieved ${allPlayersFromBothTournaments.length} total players from both tournaments`);
       
+      // Check if Aleksib exists in the player data
+      const aleksibInPlayerData = allPlayersFromBothTournaments.find(p => p.steamId === '76561198013243326' || p.userName === 'Aleksib');
+      console.log(`🔍 Aleksib found in player data:`, aleksibInPlayerData ? `Yes - Steam ID: ${aleksibInPlayerData.steamId}, Name: ${aleksibInPlayerData.userName}` : 'No');
+      
       // Combine raw stats with role data - NO PIV CALCULATIONS  
       const rawPlayersWithRoles = allPlayersFromBothTournaments.map(player => {
         // Try multiple matching strategies for Steam ID
@@ -110,14 +122,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                        roleMap.get(player.userName) || 
                        { isIGL: false, tRole: 'Support', ctRole: 'Support' };
         
+        // Special debug for Aleksib to track the exact issue
+        if (steamIdStr === '76561198013243326' || player.userName === 'Aleksib') {
+          console.log(`🔍 ALEKSIB MAPPING - Steam ID: ${steamIdStr}, Found in roleMap: ${roleMap.has(steamIdStr)}`);
+          console.log(`🔍 ALEKSIB roleInfo:`, roleInfo);
+          console.log(`🔍 ALEKSIB final isIGL will be:`, roleInfo.isIGL);
+        }
+        
         // Debug logging for first few players
         if (allPlayersFromBothTournaments.indexOf(player) < 3) {
           console.log(`Player ${player.userName} (${steamIdStr}): Role match found = ${roleMap.has(steamIdStr)}, isIGL = ${roleInfo.isIGL}`);
-        }
-        
-        // Debug first few players to see what's happening
-        if (allPlayersFromBothTournaments.indexOf(player) < 2) {
-          console.log(`🔍 PLAYER DEBUG - Steam ID: ${steamIdStr}, Has role mapping: ${roleMap.has(steamIdStr)}, Role Info:`, roleInfo);
         }
         
         return {

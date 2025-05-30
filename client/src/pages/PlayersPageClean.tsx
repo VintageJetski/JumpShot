@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ClientPlayer } from '@/types/player';
 import { motion, AnimatePresence } from 'framer-motion';
 import { calculatePIV, RawPlayerData } from '@/lib/metrics-calculator';
+import { useLocation } from 'wouter';
 
 interface ApiResponse {
   players: ClientPlayer[];
@@ -16,7 +17,7 @@ interface ApiResponse {
 }
 
 // Simple player card component
-function PlayerCard({ player }: { player: ClientPlayer }) {
+function PlayerCard({ player, setLocation }: { player: ClientPlayer, setLocation: (path: string) => void }) {
   const { name, team, isIGL, tRole, ctRole, kills, deaths, adr, kast, rating, assists, entryKills, entryDeaths, multiKills, clutchWins, clutchAttempts, flashAssists, rounds, maps, teamRounds, eventId, steamId } = player;
   const initials = name.split(' ').map((n: string) => n[0]).join('');
   
@@ -70,7 +71,10 @@ function PlayerCard({ player }: { player: ClientPlayer }) {
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.2 }}
     >
-      <Card className="overflow-hidden">
+      <Card 
+        className="overflow-hidden cursor-pointer hover:bg-gray-800/30 transition-colors"
+        onClick={() => setLocation(`/players/${player.steamId}`)}
+      >
         <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center space-x-3">
             <Avatar>
@@ -131,6 +135,7 @@ function PlayerCard({ player }: { player: ClientPlayer }) {
 export default function PlayersPageClean() {
   const [selectedRole, setSelectedRole] = useState<string>('All');
   const [outlierFilter, setOutlierFilter] = useState<string>('All Players');
+  const [, setLocation] = useLocation();
 
   const { data, isLoading, error } = useQuery<ApiResponse>({
     queryKey: ['/api/players'],
@@ -298,6 +303,7 @@ export default function PlayersPageClean() {
             <PlayerCard 
               key={`${player.steamId}-${player.eventId}`} 
               player={player} 
+              setLocation={setLocation}
             />
           ))}
         </AnimatePresence>

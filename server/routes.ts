@@ -104,6 +104,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Player ${player.userName} (${steamIdStr}): Role match found = ${roleMap.has(steamIdStr)}, isIGL = ${roleInfo.isIGL}`);
         }
         
+        // Debug specific player (Aleksib) to track IGL mapping
+        if (player.steamId === '76561198013243326') {
+          console.log(`🔍 ALEKSIB DEBUG - Steam ID: ${steamIdStr}, Role Info:`, roleInfo);
+        }
+        
         return {
           ...player,
           isIGL: roleInfo.isIGL,

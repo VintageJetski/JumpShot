@@ -78,53 +78,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      console.log(`Starting to process ${events.length} tournaments...`);
+      console.log(`Fetching ALL players from BOTH tournaments using raw SQL adapter...`);
       
-      for (const event of events) {
-        try {
-          console.log(`Processing tournament ${event.id} (${event.name})...`);
-          // Get raw player stats only - NO PIV CALCULATIONS
-          const rawPlayerStats = await supabaseStorage.getPlayerStatsForEvent(event.id);
-          console.log(`Retrieved ${rawPlayerStats.length} players from tournament ${event.id}`);
-          
-          // Combine raw stats with role data - NO CALCULATIONS
-          const rawPlayersWithRoles = rawPlayerStats.map(player => {
-            const roleInfo = roleMap.get(player.steamId?.toString()) || 
-                           roleMap.get(player.playerUsername) || 
-                           { isIGL: false, tRole: 'Support', ctRole: 'Support' };
-            
-            return {
-              // Raw player stats
-              steamId: player.steamId,
-              playerUsername: player.playerUsername,
-              teamName: player.teamName,
-              kills: player.kills,
-              deaths: player.deaths,
-              assists: player.assists,
-              adr: player.adr,
-              kast: player.kast,
-              rating: player.rating,
-              entryKills: player.entryKills,
-              entryDeaths: player.entryDeaths,
-              multiKills: player.multiKills,
-              clutchWins: player.clutchWins,
-              clutchAttempts: player.clutchAttempts,
-              flashAssists: player.flashAssists,
-              rounds: player.rounds,
-              maps: player.maps,
-              teamRounds: player.teamRounds,
-              // Role data
-              isIGL: roleInfo.isIGL,
-              tRole: roleInfo.tRole,
-              ctRole: roleInfo.ctRole
-            };
-          });
-          
-          rawPlayersData = rawPlayersData.concat(rawPlayersWithRoles);
-        } catch (error) {
-          console.warn(`Could not process players for event ${event.id}:`, error);
-        }
-      }
+      // Bypass storage limitations and get all players directly using raw SQL
+      const allPlayersFromBothTournaments = await rawSQLAdapter.getAllPlayersFromBothTournaments();
+      console.log(`Raw SQL retrieved ${allPlayersFromBothTournaments.length} total players from both tournaments`);
+      
+      // Combine raw stats with role data - NO PIV CALCULATIONS  
+      const rawPlayersWithRoles = allPlayersFromBothTournaments.map(player => {
+        const roleInfo = roleMap.get(player.steamId?.toString()) || 
+                       roleMap.get(player.userName) || 
+                       { isIGL: false, tRole: 'Support', ctRole: 'Support' };
+        
+        return {
+          ...player,
+          isIGL: roleInfo.isIGL,
+          tRole: roleInfo.tRole,
+          ctRole: roleInfo.ctRole
+        };
+      });
+      
+      rawPlayersData = rawPlayersWithRoles;
       
       // Use the accumulated data from both tournaments
       let allPlayers = rawPlayersData;

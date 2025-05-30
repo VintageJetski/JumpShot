@@ -471,8 +471,10 @@ export class RawSQLAdapter {
           t_rounds_won: row.t_rounds_won || 0,
           ct_rounds_won: row.ct_rounds_won || 0,
           
-          // Role assignments will be populated from database in routes.ts
-          // Remove hardcoded defaults to allow authentic database values
+          // Use authentic role data from database
+          isIGL: Boolean(row.is_igl),
+          tRole: row.t_role || 'Unassigned',
+          ctRole: row.ct_role || 'Unassigned',
           
           // Store event ID
           eventId

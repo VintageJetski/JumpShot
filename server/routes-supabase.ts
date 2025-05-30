@@ -34,30 +34,38 @@ export function registerRoutes(app: Express): Server {
       
       // Transform to match frontend expectations while preserving raw data
       const players = playerStats.map(player => ({
-        // Core identifiers
-        steam_id: player.steam_id,
+        // Core identifiers mapped to frontend field names
+        steamId: player.steam_id,
+        name: player.user_name,
         player_name: player.user_name,
+        team: player.team_clan_name,
         team_name: player.team_clan_name,
-        event_id: player.event_id,
         
         // Raw statistics for PIV calculation
-        kills: player.kills || 0,
-        deaths: player.deaths || 0,
-        assists: player.assists || 0,
-        kd: player.kd || 0,
-        adr: player.adr_total || 0,
-        kast: player.kast_total || 0,
+        kills: parseInt(player.kills) || 0,
+        deaths: parseInt(player.deaths) || 0,
+        assists: parseInt(player.assists) || 0,
+        kd: parseFloat(player.kd) || 0,
+        adr: parseFloat(player.adr_total) || 0,
+        kast: parseFloat(player.kast_total) || 0,
         
         // Advanced stats
-        headshots: player.headshots || 0,
-        first_kills: player.first_kills || 0,
-        first_deaths: player.first_deaths || 0,
-        awp_kills: player.awp_kills || 0,
+        headshots: parseInt(player.headshots) || 0,
+        firstKills: parseInt(player.first_kills) || 0,
+        entryKills: parseInt(player.first_kills) || 0,
+        firstDeaths: parseInt(player.first_deaths) || 0,
+        entryDeaths: parseInt(player.first_deaths) || 0,
+        awpKills: parseInt(player.awp_kills) || 0,
         
         // Utility stats
-        flash_assists: player.assisted_flashes || 0,
-        util_thrown: player.total_util_thrown || 0,
-        util_damage: player.total_util_dmg || 0
+        flashAssists: parseInt(player.assisted_flashes) || 0,
+        utilThrown: parseInt(player.total_util_thrown) || 0,
+        utilDamage: parseInt(player.total_util_dmg) || 0,
+        
+        // Role assignments (defaults for now)
+        isIGL: false,
+        tRole: 'Support',
+        ctRole: 'Support'
       }));
       
       console.log(`📊 Serving ${players.length} players from Supabase`);

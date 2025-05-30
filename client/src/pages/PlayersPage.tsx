@@ -13,7 +13,7 @@ import TeamGroup from "@/components/players/TeamGroup";
 import RoleFilterChips from "@/components/players/RoleFilterChips";
 import EnhancedStatsCard from "@/components/stats/EnhancedStatsCard";
 import StatisticalOutliers from "@/components/players/StatisticalOutliers";
-import { processRawPlayerData, RawPlayerData, PlayerWithPIV } from "@/lib/metrics-calculator";
+import { processRawPlayerData, RawPlayerData, ClientPlayerWithPIV } from "@/lib/metrics-calculator";
 
 export default function PlayersPage() {
   const [, setLocation] = useLocation();
@@ -33,7 +33,7 @@ export default function PlayersPage() {
   }, [apiResponse]);
 
   // Generate teams data from players
-  const [teams, setTeams] = useState<{[key: string]: PlayerWithPIV[]}>({});
+  const [teams, setTeams] = useState<{[key: string]: ClientPlayerWithPIV[]}>({});
   
   useEffect(() => {
     if (players) {

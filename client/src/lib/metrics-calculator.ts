@@ -25,7 +25,7 @@ export interface RawPlayerData {
   eventId: number;
 }
 
-export interface PlayerWithPIV {
+export interface ClientPlayerWithPIV {
   id: string;
   name: string;
   team: string;
@@ -206,7 +206,7 @@ function calculatePrimaryMetric(player: RawPlayerData, role: string): { value: n
 /**
  * Convert raw player data to PlayerWithPIV
  */
-export function processRawPlayerData(players: RawPlayerData[]): PlayerWithPIV[] {
+export function processRawPlayerData(players: RawPlayerData[]): ClientPlayerWithPIV[] {
   return players.map(player => {
     const primaryRole = determinePrimaryRole(player);
     const piv = calculatePIV(player);

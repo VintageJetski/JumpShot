@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
@@ -6,24 +6,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Search, Filter, Users, Medal, User2, Target, Lightbulb, Shield, CircleDot } from "lucide-react";
-import { PlayerWithPIV, PlayerRole } from "@shared/schema";
+import { PlayerRole } from "@shared/schema";
 import { DataTable } from "@/components/ui/data-table";
 import PlayerCard from "@/components/players/PlayerCard";
 import TeamGroup from "@/components/players/TeamGroup";
 import RoleFilterChips from "@/components/players/RoleFilterChips";
 import EnhancedStatsCard from "@/components/stats/EnhancedStatsCard";
 import StatisticalOutliers from "@/components/players/StatisticalOutliers";
+import { processRawPlayerData, RawPlayerData, PlayerWithPIV } from "@/lib/metrics-calculator";
 
 export default function PlayersPage() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState<string>("All Roles");
+  const [roleFilter, setRoleFilter] = useState<string>("All");
   const [viewMode, setViewMode] = useState<"cards" | "table" | "teams">("cards");
   
-  // Fetch all players data (we'll filter client-side for more flexibility)
-  const { data: players, isLoading, isError } = useQuery<PlayerWithPIV[]>({
+  // Fetch raw player data from both tournaments
+  const { data: apiResponse, isLoading, isError } = useQuery({
     queryKey: ["/api/players"],
   });
+
+  // Process raw data into PIV calculations client-side
+  const players = useMemo(() => {
+    if (!apiResponse?.players) return [];
+    return processRawPlayerData(apiResponse.players as RawPlayerData[]);
+  }, [apiResponse]);
 
   // Generate teams data from players
   const [teams, setTeams] = useState<{[key: string]: PlayerWithPIV[]}>({});

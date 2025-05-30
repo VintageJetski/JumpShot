@@ -1,171 +1,250 @@
-import { PlayerWithPIV } from '@shared/schema';
+import { PlayerRole } from '@shared/schema';
 
-/**
- * Client-side metrics calculator for tournament data
- * Calculates RCS, ICF, SC, and OSM from authentic tournament statistics
- */
-
-export interface CalculatedMetrics {
-  rcs: {
-    value: number;
-    metrics: {
-      [key: string]: number;
-    };
-  };
-  icf: {
-    value: number;
-    sigma: number;
-  };
-  sc: {
-    value: number;
-    metric: string;
-  };
-  osm: number;
+export interface RawPlayerData {
+  steamId: string;
+  userName: string;
+  teamName: string;
+  kills: number;
+  deaths: number;
+  assists: number;
+  adr: number;
+  kast: number;
+  rating: number;
+  entryKills: number;
+  entryDeaths: number;
+  multiKills: number;
+  clutchWins: number;
+  clutchAttempts: number;
+  flashAssists: number;
+  rounds: number;
+  maps: number;
+  teamRounds: number;
+  isIGL: boolean;
+  tRole: string;
+  ctRole: string;
+  eventId: number;
 }
 
-export function calculatePlayerMetrics(player: PlayerWithPIV): CalculatedMetrics {
-  const metrics = player.metrics;
+export interface PlayerWithPIV {
+  id: string;
+  name: string;
+  team: string;
+  steamId: string;
+  role: string;
+  tRole: string;
+  ctRole: string;
+  isIGL: boolean;
+  piv: number;
+  kills: number;
+  deaths: number;
+  assists: number;
+  adr: number;
+  kast: number;
+  rating: number;
+  kd: number;
+  entryKills: number;
+  entryDeaths: number;
+  multiKills: number;
+  clutchWins: number;
+  clutchAttempts: number;
+  flashAssists: number;
+  rounds: number;
+  maps: number;
+  teamRounds: number;
+  eventId: number;
+  tournament: string;
+  primaryMetric?: {
+    value: number;
+    label: string;
+  };
+}
+
+/**
+ * Calculate PIV (Player Impact Value) from raw player statistics
+ */
+export function calculatePIV(player: RawPlayerData): number {
+  const kd = player.deaths > 0 ? player.kills / player.deaths : player.kills;
+  const entrySuccess = player.entryKills + player.entryDeaths > 0 ? 
+    player.entryKills / (player.entryKills + player.entryDeaths) : 0.5;
+  const clutchSuccess = player.clutchAttempts > 0 ? 
+    player.clutchWins / player.clutchAttempts : 0;
+
+  // Base impact calculation
+  const killImpact = (player.kills * 1.0) + (player.entryKills * 1.5) + (player.multiKills * 0.5);
+  const survivalImpact = kd * 15 + (player.kast / 100) * 20;
+  const utilityImpact = (player.flashAssists * 2) + (player.assists * 1.2);
+  const clutchImpact = clutchSuccess * 25 + player.clutchWins * 3;
   
-  // Role Core Score (RCS) - based on role-specific performance
-  const calculateRCS = (): { value: number; metrics: { [key: string]: number; } } => {
-    const roleMetrics: { [key: string]: number } = {};
+  // Role-specific multipliers
+  const roleMultiplier = getRoleMultiplier(player);
+  
+  // Consistency factor based on rating and ADR
+  const consistencyFactor = Math.min(1.2, (player.rating / 1.0) * 0.3 + (player.adr / 80) * 0.2 + 0.5);
+  
+  // Final PIV calculation
+  const basePIV = (killImpact + survivalImpact + utilityImpact + clutchImpact) * roleMultiplier * consistencyFactor;
+  
+  return Math.round(basePIV);
+}
+
+/**
+ * Get role-specific multiplier for PIV calculation
+ */
+function getRoleMultiplier(player: RawPlayerData): number {
+  const primaryRole = determinePrimaryRole(player);
+  
+  switch (primaryRole) {
+    case 'Spacetaker':
+      return 1.1 + (player.entryKills > 0 ? 0.1 : 0);
+    case 'AWPer':
+      return 1.05 + (player.kills > player.deaths ? 0.1 : 0);
+    case 'IGL':
+      return 0.95 + (player.assists > player.kills * 0.6 ? 0.15 : 0);
+    case 'Support':
+      return 1.0 + (player.flashAssists > 5 ? 0.1 : 0);
+    case 'Lurker':
+      return 1.05 + (player.clutchWins > 0 ? 0.1 : 0);
+    case 'Anchor':
+      return 1.0 + (player.kast > 70 ? 0.1 : 0);
+    default:
+      return 1.0;
+  }
+}
+
+/**
+ * Determine primary role from T and CT roles
+ */
+function determinePrimaryRole(player: RawPlayerData): string {
+  if (player.isIGL) return 'IGL';
+  
+  // Priority system for role determination
+  const tRole = parseRole(player.tRole);
+  const ctRole = parseRole(player.ctRole);
+  
+  // If both roles are the same, use that
+  if (tRole === ctRole) return tRole;
+  
+  // Priority: Spacetaker > AWPer > Lurker > Anchor > Support > Rotator
+  const rolePriority = [
+    'Spacetaker',
+    'AWPer', 
+    'Lurker',
+    'Anchor',
+    'Support',
+    'Rotator'
+  ];
+  
+  for (const role of rolePriority) {
+    if (tRole === role || ctRole === role) return role;
+  }
+  
+  return 'Support'; // Default fallback
+}
+
+/**
+ * Parse role string to string
+ */
+function parseRole(roleStr: string): string {
+  const normalized = roleStr?.toLowerCase().trim();
+  
+  switch (normalized) {
+    case 'entry':
+    case 'spacetaker':
+      return 'Spacetaker';
+    case 'awp':
+    case 'awper':
+      return 'AWPer';
+    case 'lurker':
+      return 'Lurker';
+    case 'anchor':
+      return 'Anchor';
+    case 'support':
+      return 'Support';
+    case 'igl':
+      return 'IGL';
+    case 'rifler':
+    case 'rotator':
+      return 'Rotator';
+    default:
+      return 'Support';
+  }
+}
+
+/**
+ * Calculate primary metric for player display
+ */
+function calculatePrimaryMetric(player: RawPlayerData, role: string): { value: number; label: string } {
+  switch (role) {
+    case 'Spacetaker':
+      const entrySuccess = player.entryKills + player.entryDeaths > 0 ? 
+        (player.entryKills / (player.entryKills + player.entryDeaths)) * 100 : 0;
+      return { value: Math.round(entrySuccess), label: 'Opening Success %' };
     
-    // Base metrics available from tournament data
-    const kdRatio = metrics?.kd || 0;
-    const adr = metrics?.adr || 0;
-    const kast = metrics?.kast || 0;
-    const firstKills = metrics?.firstKills || 0;
-    const headshots = metrics?.headshots || 0;
-    const utilityDamage = metrics?.utilityDamage || 0;
+    case 'AWPer':
+      const kdRatio = player.deaths > 0 ? player.kills / player.deaths : player.kills;
+      return { value: Math.round(kdRatio * 100) / 100, label: 'K/D Ratio' };
     
-    // Role-specific calculations based on player role
-    switch (player.role?.toLowerCase()) {
-      case 'igl':
-        roleMetrics['Tactical Leadership'] = Math.min(kast / 100, 1.0);
-        roleMetrics['Team Coordination'] = Math.min((adr / 80) * 0.8, 1.0);
-        roleMetrics['Strategic Impact'] = Math.min(kdRatio / 1.2, 1.0);
-        break;
-        
-      case 'awper':
-        roleMetrics['Opening Pick Success'] = Math.min(firstKills / 20, 1.0);
-        roleMetrics['Impact Rating'] = Math.min(adr / 90, 1.0);
-        roleMetrics['Precision'] = Math.min(headshots / 50, 1.0);
-        break;
-        
-      case 'entry':
-        roleMetrics['Opening Duel Success'] = Math.min(firstKills / 25, 1.0);
-        roleMetrics['Aggression Efficiency'] = Math.min(kdRatio / 1.1, 1.0);
-        roleMetrics['First Blood Impact'] = Math.min((firstKills / 15) * 0.9, 1.0);
-        break;
-        
-      case 'lurker':
-        roleMetrics['Independent Performance'] = Math.min(kdRatio / 1.15, 1.0);
-        roleMetrics['Clutch Potential'] = Math.min(kast / 90, 1.0);
-        roleMetrics['Tactical Awareness'] = Math.min((adr / 75) * 0.8, 1.0);
-        break;
-        
-      case 'anchor':
-        roleMetrics['Site Hold Success'] = Math.min(kast / 85, 1.0);
-        roleMetrics['Defensive Rating'] = Math.min((adr / 70) * 0.9, 1.0);
-        roleMetrics['Multi-Kill Defense'] = Math.min(kdRatio / 1.05, 1.0);
-        break;
-        
-      case 'support':
-        roleMetrics['Utility Effectiveness'] = Math.min(utilityDamage / 100, 1.0);
-        roleMetrics['Team Support'] = Math.min(kast / 95, 1.0);
-        roleMetrics['Assist Impact'] = Math.min((adr / 65) * 0.8, 1.0);
-        break;
-        
-      default:
-        roleMetrics['Overall Performance'] = Math.min(kdRatio / 1.1, 1.0);
-        roleMetrics['Consistency'] = Math.min(kast / 85, 1.0);
-        roleMetrics['Impact'] = Math.min(adr / 80, 1.0);
-    }
+    case 'Lurker':
+      const clutchSuccess = player.clutchAttempts > 0 ? 
+        (player.clutchWins / player.clutchAttempts) * 100 : 0;
+      return { value: Math.round(clutchSuccess), label: 'Clutch Success %' };
     
-    // Calculate weighted average
-    const values = Object.values(roleMetrics);
-    const rcsValue = values.reduce((sum, val) => sum + val, 0) / values.length;
+    case 'Support':
+      return { value: player.flashAssists, label: 'Flash Assists' };
+    
+    case 'IGL':
+      return { value: Math.round(player.rating * 100) / 100, label: 'Team Rating' };
+    
+    case 'Anchor':
+      return { value: Math.round(player.kast), label: 'KAST %' };
+    
+    default:
+      return { value: Math.round(player.adr), label: 'ADR' };
+  }
+}
+
+/**
+ * Convert raw player data to PlayerWithPIV
+ */
+export function processRawPlayerData(players: RawPlayerData[]): PlayerWithPIV[] {
+  return players.map(player => {
+    const primaryRole = determinePrimaryRole(player);
+    const piv = calculatePIV(player);
+    const kd = player.deaths > 0 ? player.kills / player.deaths : player.kills;
+    const primaryMetric = calculatePrimaryMetric(player, primaryRole);
+    
+    // Determine tournament name from eventId
+    const tournament = player.eventId === 1 ? 'IEM Katowice 2025' : 'PGL Bucharest 2025';
     
     return {
-      value: Math.round(rcsValue * 1000) / 1000,
-      metrics: roleMetrics
+      id: player.steamId,
+      name: player.userName || `Player_${player.steamId}`,
+      team: player.teamName,
+      steamId: player.steamId,
+      role: primaryRole,
+      tRole: parseRole(player.tRole),
+      ctRole: parseRole(player.ctRole),
+      isIGL: player.isIGL,
+      piv,
+      kills: player.kills,
+      deaths: player.deaths,
+      assists: player.assists,
+      adr: player.adr,
+      kast: player.kast,
+      rating: player.rating,
+      kd: Math.round(kd * 100) / 100,
+      entryKills: player.entryKills,
+      entryDeaths: player.entryDeaths,
+      multiKills: player.multiKills,
+      clutchWins: player.clutchWins,
+      clutchAttempts: player.clutchAttempts,
+      flashAssists: player.flashAssists,
+      rounds: player.rounds,
+      maps: player.maps,
+      teamRounds: player.teamRounds,
+      eventId: player.eventId,
+      tournament,
+      primaryMetric
     };
-  };
-  
-  // Individual Consistency Factor (ICF) - measures performance stability
-  const calculateICF = (): { value: number; sigma: number } => {
-    const kdRatio = metrics?.kd || 0;
-    const adr = metrics?.adr || 0;
-    const kast = metrics?.kast || 0;
-    
-    // Normalize metrics to 0-1 scale
-    const normalizedKD = Math.min(kdRatio / 2.0, 1.0);
-    const normalizedADR = Math.min(adr / 100, 1.0);
-    const normalizedKAST = Math.min(kast / 100, 1.0);
-    
-    // Calculate consistency based on how close metrics are to expected values
-    const expectedKD = 1.0;
-    const expectedADR = 75;
-    const expectedKAST = 70;
-    
-    const kdVariance = Math.abs(kdRatio - expectedKD) / expectedKD;
-    const adrVariance = Math.abs(adr - expectedADR) / expectedADR;
-    const kastVariance = Math.abs(kast - expectedKAST) / expectedKAST;
-    
-    const averageVariance = (kdVariance + adrVariance + kastVariance) / 3;
-    const icfValue = Math.max(0, 1 - averageVariance);
-    
-    return {
-      value: Math.round(icfValue * 1000) / 1000,
-      sigma: Math.round(averageVariance * 1000) / 1000
-    };
-  };
-  
-  // Synergy Contribution (SC) - team chemistry impact
-  const calculateSC = (): { value: number; metric: string } => {
-    const kast = metrics?.kast || 0;
-    const utilityDamage = metrics?.utilityDamage || 0;
-    const firstKills = metrics?.firstKills || 0;
-    
-    // Calculate synergy based on team-oriented metrics
-    const teamPlay = (kast / 100) * 0.4;
-    const utility = Math.min(utilityDamage / 150, 1.0) * 0.3;
-    const opening = Math.min(firstKills / 20, 1.0) * 0.3;
-    
-    const scValue = teamPlay + utility + opening;
-    
-    // Determine primary synergy metric
-    let primaryMetric = 'Team Play';
-    if (utility > teamPlay && utility > opening) {
-      primaryMetric = 'Utility Usage';
-    } else if (opening > teamPlay && opening > utility) {
-      primaryMetric = 'Opening Impact';
-    }
-    
-    return {
-      value: Math.round(scValue * 1000) / 1000,
-      metric: primaryMetric
-    };
-  };
-  
-  // Opponent Strength Multiplier (OSM) - performance against competition
-  const calculateOSM = (): number => {
-    // Base OSM on tournament level (all players are from major tournaments)
-    const baseOSM = 1.0; // Major tournament baseline
-    
-    // Adjust based on performance metrics
-    const kdRatio = metrics?.kd || 0;
-    const adr = metrics?.adr || 0;
-    
-    const performanceMultiplier = Math.min((kdRatio + (adr / 100)) / 2, 1.2);
-    
-    return Math.round(baseOSM * performanceMultiplier * 1000) / 1000;
-  };
-  
-  return {
-    rcs: calculateRCS(),
-    icf: calculateICF(),
-    sc: calculateSC(),
-    osm: calculateOSM()
-  };
+  });
 }

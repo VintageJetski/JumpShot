@@ -65,17 +65,11 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-          // Check if admin user exists in database
-          let adminUser = await storage.getUserByUsername(ADMIN_USERNAME);
-          
-          // If admin doesn't exist, create it
-          if (!adminUser) {
-            const hashedPassword = await hashPassword(ADMIN_PASSWORD);
-            adminUser = await storage.createUser({
-              username: ADMIN_USERNAME,
-              password: hashedPassword,
-            });
-          }
+          // Create a simple admin user object without database storage
+          const adminUser = {
+            id: 1,
+            username: ADMIN_USERNAME
+          };
           
           return done(null, adminUser);
         }
@@ -91,8 +85,16 @@ export function setupAuth(app: Express) {
   
   passport.deserializeUser(async (id: number, done) => {
     try {
-      const user = await storage.getUser(id);
-      done(null, user || undefined);
+      // Return the admin user object without database lookup
+      if (id === 1) {
+        const adminUser = {
+          id: 1,
+          username: ADMIN_USERNAME
+        };
+        done(null, adminUser);
+      } else {
+        done(null, undefined);
+      }
     } catch (err) {
       done(err, undefined);
     }

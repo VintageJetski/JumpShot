@@ -124,47 +124,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const aleksibInPlayerData = allPlayersFromBothTournaments.find(p => p.steamId === '76561198013243326' || p.userName === 'Aleksib');
       console.log(`🔍 Aleksib found in player data:`, aleksibInPlayerData ? `Yes - Steam ID: ${aleksibInPlayerData.steamId}, Name: ${aleksibInPlayerData.userName}` : 'No');
       
-      // Direct approach: Find role data for each player by Steam ID
+      // Simple brute force approach - create a lookup map first
+      const steamIdToRole = new Map();
+      rolesData.forEach(role => {
+        if (role.steamId) {
+          steamIdToRole.set(role.steamId.toString(), role);
+        }
+      });
+      
+      console.log(`🔍 Created steamIdToRole map with ${steamIdToRole.size} entries`);
+      console.log(`🔍 Sample entries:`, Array.from(steamIdToRole.entries()).slice(0, 3));
+      
+      // Apply roles to players
       const rawPlayersWithRoles = allPlayersFromBothTournaments.map(player => {
         const steamIdStr = player.steamId?.toString();
-        
-        // Find matching role data directly from rolesData array
-        const matchingRole = rolesData.find(role => 
-          role.steamId?.toString() === steamIdStr
-        );
-        
-        // Debug for Aleksib specifically
-        if (steamIdStr === '76561198013243326') {
-          console.log(`🔍 ALEKSIB DEBUG - Player Steam ID: "${steamIdStr}"`);
-          console.log(`🔍 ALEKSIB DEBUG - Found matching role:`, matchingRole ? 'YES' : 'NO');
-          if (matchingRole) {
-            console.log(`🔍 ALEKSIB DEBUG - Role data:`, {
-              steamId: matchingRole.steamId,
-              inGameLeader: matchingRole.inGameLeader,
-              tRole: matchingRole.tRole,
-              ctRole: matchingRole.ctRole
-            });
-          }
-          
-          // Check all role Steam IDs for debugging
-          const allRoleSteamIds = rolesData.map(r => r.steamId?.toString()).filter(Boolean);
-          console.log(`🔍 ALEKSIB DEBUG - All role Steam IDs:`, allRoleSteamIds.slice(0, 5));
-          console.log(`🔍 ALEKSIB DEBUG - Aleksib in roles?`, allRoleSteamIds.includes(steamIdStr));
-        }
+        const roleData = steamIdToRole.get(steamIdStr);
         
         let isIGL = false;
         let tRole = 'Support';
         let ctRole = 'Support';
         
-        if (matchingRole) {
-          // Direct boolean check for in_game_leader
-          isIGL = matchingRole.inGameLeader === true;
-          tRole = matchingRole.tRole || 'Support';
-          ctRole = matchingRole.ctRole || 'Support';
+        if (roleData) {
+          isIGL = roleData.inGameLeader === true;
+          tRole = roleData.tRole || 'Support';
+          ctRole = roleData.ctRole || 'Support';
+          
+          // Debug for first match
+          if (steamIdStr === '76561198013243326') {
+            console.log(`🔍 ALEKSIB FOUND - isIGL: ${isIGL}, tRole: ${tRole}, ctRole: ${ctRole}`);
+          }
         }
         
-        // Determine primary role for filtering
-        let primaryRole = 'Support'; // default
+        // Determine primary role
+        let primaryRole = 'Support';
         if (isIGL) {
           primaryRole = 'IGL';
         } else if (tRole === 'AWP' || ctRole === 'AWP') {
@@ -173,8 +165,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           primaryRole = 'Lurker';
         } else if (tRole === 'Spacetaker') {
           primaryRole = 'Entry Fragger';
-        } else {
-          primaryRole = 'Support';
         }
 
         return {

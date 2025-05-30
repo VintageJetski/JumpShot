@@ -389,7 +389,7 @@ export class RawSQLAdapter {
         FROM 
           player_teams pt
           LEFT JOIN players p ON (p.steam_id / 100) = (pt.steam_id / 100)
-          LEFT JOIN roles r ON r.steam_id = p.steam_id
+          LEFT JOIN roles r ON CAST(r.steam_id AS TEXT) = CAST(p.steam_id AS TEXT)
           LEFT JOIN kill_stats ks ON (ks.steam_id / 100) = (pt.steam_id / 100) AND ks.event_id = pt.event_id
           LEFT JOIN general_stats gs ON (gs.steam_id / 100) = (pt.steam_id / 100) AND gs.event_id = pt.event_id
           LEFT JOIN utility_stats us ON (us.steam_id / 100) = (pt.steam_id / 100) AND us.event_id = pt.event_id
@@ -476,7 +476,7 @@ export class RawSQLAdapter {
           ct_rounds_won: row.ct_rounds_won || 0,
           
           // Use authentic role data from database
-          isIGL: Boolean(row.is_igl),
+          isIGL: row.is_igl === 't' || row.is_igl === true,
           tRole: row.t_role || 'Unassigned',
           ctRole: row.ct_role || 'Unassigned',
           

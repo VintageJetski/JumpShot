@@ -471,10 +471,8 @@ export class RawSQLAdapter {
           t_rounds_won: row.t_rounds_won || 0,
           ct_rounds_won: row.ct_rounds_won || 0,
           
-          // Default role assignments (will be calculated by role system)
-          ct_role: PlayerRole.Anchor,
-          t_role: PlayerRole.Support,
-          is_igl: false,
+          // Role assignments will be populated from database in routes.ts
+          // Remove hardcoded defaults to allow authentic database values
           
           // Store event ID
           eventId

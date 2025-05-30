@@ -1,53 +1,45 @@
 import React from 'react';
-import { PlayerWithPIV, PlayerRole } from "@shared/schema";
 import { motion } from 'framer-motion';
 import { useLocation } from 'wouter';
-import RoleBadge from '@/components/ui/role-badge';
-import { Shield, Target, Lightbulb, CircleDot, Users, Gauge, ArrowRight } from 'lucide-react';
+import { Users, ArrowRight, Target, Shield, Lightbulb, CircleDot } from 'lucide-react';
+import { ClientPlayerWithPIV } from '@/lib/metrics-calculator';
 
 interface PlayerCardProps {
-  player: PlayerWithPIV;
+  player: ClientPlayerWithPIV;
   index: number;
 }
 
-const roleIcons: Record<PlayerRole, React.ReactNode> = {
-  [PlayerRole.IGL]: <Lightbulb className="h-4 w-4" />,
-  [PlayerRole.AWP]: <Target className="h-4 w-4" />,
-  [PlayerRole.Lurker]: <Shield className="h-4 w-4" />,
-  [PlayerRole.Spacetaker]: <Users className="h-4 w-4" />,
-  [PlayerRole.Support]: <CircleDot className="h-4 w-4" />,
-  [PlayerRole.Anchor]: <Shield className="h-4 w-4" />,
-  [PlayerRole.Rotator]: <CircleDot className="h-4 w-4" />
-};
-
-const roleColors: Record<PlayerRole, string> = {
-  [PlayerRole.IGL]: 'from-purple-700 to-purple-500',
-  [PlayerRole.AWP]: 'from-amber-700 to-amber-500',
-  [PlayerRole.Lurker]: 'from-blue-700 to-blue-500',
-  [PlayerRole.Spacetaker]: 'from-green-700 to-green-500',
-  [PlayerRole.Support]: 'from-indigo-700 to-indigo-500',
-  [PlayerRole.Anchor]: 'from-blue-800 to-blue-600',
-  [PlayerRole.Rotator]: 'from-sky-700 to-sky-500'
+// Team color mapping
+const teamColors: Record<string, string> = {
+  'Team Spirit': 'from-green-600 to-green-500',
+  'NAVI': 'from-yellow-600 to-yellow-500', 
+  'G2': 'from-gray-600 to-gray-500',
+  'Virtus.pro': 'from-orange-600 to-orange-500',
+  'FaZe': 'from-red-600 to-red-500',
+  'Astralis': 'from-blue-600 to-blue-500',
+  'Vitality': 'from-yellow-600 to-yellow-400',
+  'Liquid': 'from-blue-700 to-blue-600',
+  'Cloud9': 'from-blue-500 to-cyan-500',
+  'MOUZ': 'from-purple-600 to-purple-500',
+  'Heroic': 'from-orange-500 to-red-500',
+  'NIP': 'from-yellow-500 to-orange-500',
+  'Complexity': 'from-red-700 to-red-600',
+  'ENCE': 'from-blue-600 to-blue-700',
+  'Eternal Fire': 'from-orange-600 to-red-600',
+  'FORZE': 'from-green-500 to-green-600',
+  'Apeks': 'from-blue-500 to-blue-600',
+  'Imperial': 'from-yellow-600 to-yellow-700',
+  'paiN': 'from-green-600 to-green-700',
+  'Legacy': 'from-purple-500 to-purple-600',
+  'FURIA': 'from-blue-500 to-purple-500',
+  'BIG': 'from-red-600 to-red-700'
 };
 
 export default function PlayerCard({ player, index }: PlayerCardProps) {
   const [, setLocation] = useLocation();
   
-  // Determine primary role for styling
-  const primaryRole = player.role;
-  const roleGradient = roleColors[primaryRole] || 'from-blue-700 to-blue-500';
-  
-  // Collect all unique roles to display
-  const rolesToDisplay = new Set<PlayerRole>();
-  
-  // If player is IGL, add it first
-  if (player.isIGL) {
-    rolesToDisplay.add(PlayerRole.IGL);
-  }
-  
-  // Add primary role if it's not IGL
-  if (player.role !== PlayerRole.IGL) {
-    rolesToDisplay.add(player.role);
+  const teamGradient = teamColors[player.team] || 'from-gray-600 to-gray-500';
+  const pivValue = Math.round(player.piv * 100);
   }
   
   // Add T role if it's different from primary role

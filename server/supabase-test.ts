@@ -1,94 +1,62 @@
-import { testDatabaseConnection, getAvailableEvents } from './supabase-db';
-import { SupabaseAdapter } from './supabase-adapter-new';
+import { createClient } from '@supabase/supabase-js';
 
-async function testSupabaseIntegration() {
-  console.log('Testing Supabase integration...');
-  
-  // Test connection
-  const isConnected = await testDatabaseConnection();
-  console.log(`Database connection: ${isConnected ? 'Success ✅' : 'Failed ❌'}`);
-  
-  if (!isConnected) {
-    console.log('Cannot proceed with tests - no database connection');
-    return;
-  }
-  
-  // Get available events
-  const events = await getAvailableEvents();
-  console.log(`Found ${events.length} events:`, events.map(e => `${e.eventId}: ${e.eventName}`).join(', '));
-  
-  if (events.length === 0) {
-    console.log('No events found, cannot proceed with tests');
-    return;
-  }
-  
-  // Create adapter
-  const adapter = new SupabaseAdapter();
-  
-  // Test first event
-  const firstEvent = events[0];
-  console.log(`\nTesting event ${firstEvent.eventName} (ID: ${firstEvent.eventId})...`);
-  
-  // Get players for first event
-  console.log('Getting players...');
-  const startTime = Date.now();
-  const players = await adapter.getPlayersForEvent(firstEvent.eventId);
-  const endTime = Date.now();
-  
-  console.log(`Found ${players.length} players in ${endTime - startTime}ms`);
-  
-  // Show sample player data
-  if (players.length > 0) {
-    console.log('\nSample player data:');
-    console.log(players[0]);
-  }
-  
-  // Get teams for first event
-  console.log('\nGetting teams...');
-  const teamsStartTime = Date.now();
-  const teams = await adapter.getTeamsForEvent(firstEvent.eventId);
-  const teamsEndTime = Date.now();
-  
-  console.log(`Found ${teams.length} teams in ${teamsEndTime - teamsStartTime}ms`);
-  
-  // Show sample team data
-  if (teams.length > 0) {
-    console.log('\nSample team data:');
-    console.log(teams[0]);
-  }
-  
-  // If there are multiple events, test the second one too
-  if (events.length > 1) {
-    const secondEvent = events[1];
-    console.log(`\nTesting event ${secondEvent.eventName} (ID: ${secondEvent.eventId})...`);
+// Simple test to verify Supabase connection and data structure
+export async function testSupabaseConnection() {
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
     
-    // Get player count for second event
-    console.log('Getting players...');
-    const startTime2 = Date.now();
-    const players2 = await adapter.getPlayersForEvent(secondEvent.eventId);
-    const endTime2 = Date.now();
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase configuration missing');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Test basic connection
+    console.log('🔍 Testing Supabase connection...');
     
-    console.log(`Found ${players2.length} players in ${endTime2 - startTime2}ms`);
+    // Get events
+    const { data: events, error: eventsError } = await supabase
+      .from('events')
+      .select('*')
+      .limit(5);
     
-    // Get team count for second event
-    console.log('\nGetting teams...');
-    const teamsStartTime2 = Date.now();
-    const teams2 = await adapter.getTeamsForEvent(secondEvent.eventId);
-    const teamsEndTime2 = Date.now();
+    if (eventsError) throw eventsError;
+    console.log('✅ Events table accessible:', events?.length || 0, 'records');
+
+    // Get sample player data with joined stats
+    const { data: samplePlayers, error: playersError } = await supabase
+      .from('players')
+      .select(`
+        steam_id,
+        user_name,
+        general_stats (
+          kd,
+          adr_total,
+          event_id
+        ),
+        kill_stats (
+          kills,
+          headshots,
+          event_id
+        )
+      `)
+      .limit(3);
     
-    console.log(`Found ${teams2.length} teams in ${teamsEndTime2 - teamsStartTime2}ms`);
+    if (playersError) throw playersError;
+    console.log('✅ Player data accessible:', samplePlayers?.length || 0, 'records');
+
+    return {
+      success: true,
+      events: events || [],
+      samplePlayers: samplePlayers || []
+    };
+    
+  } catch (error) {
+    console.error('❌ Supabase connection test failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
   }
-  
-  console.log('\nTest completed.');
 }
-
-// Run the test
-testSupabaseIntegration()
-  .then(() => {
-    console.log('All tests completed');
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error('Error running tests:', error);
-    process.exit(1);
-  });

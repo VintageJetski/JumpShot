@@ -47,71 +47,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rolesData = await rawSQLAdapter.getRolesData();
       console.log(`Loaded ${rolesData.length} role assignments from Supabase database`);
       
-      // Convert roles data to Map format using steam_id as primary key
-      const roleMap = new Map();
-      rolesData.forEach(role => {
-        // Direct boolean check - role.inGameLeader is already boolean from database
-        const isIGLValue = role.inGameLeader === true;
-        
-        const roleInfo = {
-          team: 'Unknown', // Team info will come from players table join
-          player: role.playerUsername || 'Unknown',
-          isIGL: isIGLValue, // Direct boolean assignment
-          tRole: role.tRole,
-          ctRole: role.ctRole
-        };
-        // Use steam_id as the primary key for exact matching with multiple formats
-        const steamIdStr = role.steamId.toString();
-        roleMap.set(steamIdStr, roleInfo);
-        // Also try without leading/trailing whitespace
-        roleMap.set(steamIdStr.trim(), roleInfo);
-        // Also set by player username for additional matching options
-        if (role.playerUsername) {
-          roleMap.set(role.playerUsername, roleInfo);
-        }
-        
-        // Debug specific IGL players
-        if (isIGLValue) {
-          console.log(`🔍 Added IGL to roleMap: ${role.playerUsername} (${steamIdStr}) -> isIGL: ${isIGLValue}`);
-        }
-      });
-      
-      console.log(`Created role map with ${roleMap.size} entries using steam_id matching`);
-      
-      // Debug: Show first few entries in roleMap
-      let count = 0;
-      for (const [key, value] of roleMap.entries()) {
-        if (count < 3) {
-          console.log(`RoleMap entry ${count + 1}: "${key}" -> isIGL: ${value.isIGL}, tRole: ${value.tRole}`);
-        }
-        count++;
-        if (count >= 3) break;
-      }
-      
-      // Debug: Check if Aleksib is in the roleMap
-      const aleksibSteamId = '76561198013243326';
-      console.log(`🔍 RoleMap has Aleksib (${aleksibSteamId}): ${roleMap.has(aleksibSteamId)}`);
-      if (roleMap.has(aleksibSteamId)) {
-        console.log(`🔍 Aleksib role data from roleMap:`, roleMap.get(aleksibSteamId));
-      } else {
-        console.log(`🔍 Aleksib NOT found in roleMap. Checking all Steam IDs in roleMap...`);
-        const roleMapKeys = Array.from(roleMap.keys()).filter(key => key.includes('765611980132'));
-        console.log(`🔍 Similar Steam IDs in roleMap:`, roleMapKeys);
-      }
-      
-      // Debug: Show sample role entries and roleMap contents
+      // Debug: Show sample role entries from database
       if (rolesData.length > 0) {
-        console.log('DEBUG - Sample role data from Supabase:', {
-          steamId: rolesData[0].steamId,
-          steamIdType: typeof rolesData[0].steamId,
-          inGameLeader: rolesData[0].inGameLeader,
-          tRole: rolesData[0].tRole,
-          ctRole: rolesData[0].ctRole
-        });
-        
-        // Count IGL players in roles data
+        console.log('Sample role data from database:', rolesData[0]);
         const iglCount = rolesData.filter(role => role.inGameLeader).length;
-        console.log(`DEBUG - Total IGL players in roles data: ${iglCount}`);
+        console.log(`Total IGL players in database: ${iglCount}`);
       }
       
       console.log(`Fetching ALL players from BOTH tournaments using raw SQL adapter...`);
@@ -131,14 +71,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Find exact match in rolesData using authentic database values
         const roleMatch = rolesData.find(role => role.steamId?.toString() === steamIdStr);
         
-        // Debug for cadiaN specifically
-        if (player.userName === 'cadiaN') {
+        // Fixed property name: use .name not .userName
+        if (player.name === 'cadiaN') {
           console.log(`🔍 cadiaN DEBUG:`, {
             playerSteamId: steamIdStr,
             roleMatchFound: !!roleMatch,
-            roleMatchData: roleMatch,
-            rolesDataCount: rolesData.length,
-            firstFewRolesSteamIds: rolesData.slice(0, 3).map(r => r.steamId?.toString())
+            roleMatchData: roleMatch
           });
         }
         

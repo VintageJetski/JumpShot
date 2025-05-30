@@ -536,7 +536,7 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
         </CardHeader>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-          {teams?.map((team) => (
+          {teams && Array.isArray(teams) ? teams.map((team) => (
             <Card 
               key={team.name} 
               className="cursor-pointer hover:border-primary transition-colors"
@@ -562,7 +562,9 @@ export default function TeamChemistrySimulator({ selectedPlayerId = null }: Team
                 </Button>
               </CardFooter>
             </Card>
-          ))}
+          )) : (
+            <div>No teams available</div>
+          )}
         </div>
       </div>
     );

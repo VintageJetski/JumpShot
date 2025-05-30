@@ -36,18 +36,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let rawPlayersData: any[] = [];
       
+      // Get all unique players from both tournaments
+      const allRawPlayerStats: any[] = [];
+      const processedPlayerIds = new Set<string>();
+      
       for (const event of events) {
         try {
           // Use rawSQLAdapter directly since it's working successfully
           const rawPlayerStats = await rawSQLAdapter.getPlayersForEvent(event.id);
           
-          // Combine raw stats with role data - NO CALCULATIONS
-          const playersWithRoles = rawPlayerStats.map(player => {
-            const roleInfo = rolesData.find(role => 
-              role.steamId?.toString() === player.steamId?.toString()
-            ) || { isIGL: false, tRole: 'Support', ctRole: 'Support' };
-            
-            return {
+          // Add only unique players (avoid duplicates across tournaments)
+          for (const player of rawPlayerStats) {
+            const playerId = `${player.steamId}_${event.id}`;
+            if (!processedPlayerIds.has(playerId)) {
+              processedPlayerIds.add(playerId);
+              allRawPlayerStats.push(player);
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching players for event ${event.id}:`, error);
+        }
+      }
+      
+      console.log(`📊 Total raw players from all tournaments: ${allRawPlayerStats.length}`);
+      
+      // Combine raw stats with role data - NO CALCULATIONS
+      const playersWithRoles = allRawPlayerStats.map(player => {
+        const roleInfo = rolesData.find(role => 
+          role.steamId?.toString() === player.steamId?.toString()
+        ) || { isIGL: false, tRole: 'Support', ctRole: 'Support' };
+        
+        return {
               steamId: player.steamId,
               name: player.user_name || player.userName,
               team: player.team_name || player.teamName,

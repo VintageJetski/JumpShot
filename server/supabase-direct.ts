@@ -56,10 +56,10 @@ export function setupSupabaseDirectRoutes(app: Express) {
             )
           )
         `)
-        .eq('general_stats.event_id', 1)
-        .eq('kill_stats.event_id', 1)
-        .eq('utility_stats.event_id', 1)
-        .eq('player_match_summary.event_id', 1);
+        .in('general_stats.event_id', [1, 2])
+        .in('kill_stats.event_id', [1, 2])
+        .in('utility_stats.event_id', [1, 2])
+        .in('player_match_summary.event_id', [1, 2]);
 
       if (error) {
         throw new Error(`Supabase query failed: ${error.message}`);

@@ -339,11 +339,13 @@ export class SupabaseStorage {
       events.push({ id, name });
     }
     
-    // If no database events, add CSV event
+    // If no database events, add both tournaments
     if (events.length === 0) {
       events.push({ id: 1, name: 'IEM_Katowice_2025' });
+      events.push({ id: 2, name: 'PGL_Bucharest_2025' });
     }
     
+    console.log('📅 Available events:', events);
     return events;
   }
   

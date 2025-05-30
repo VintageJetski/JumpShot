@@ -311,19 +311,19 @@ export class RawSQLAdapter {
    */
   async getPlayersForEvent(eventId: number): Promise<PlayerRawStats[]> {
     try {
-      console.log(`Getting players for event ${eventId} using raw SQL approach...`);
+      console.log(`Getting ALL players from BOTH tournaments (overriding single event filter)...`);
       
       // Use a SQL query that normalizes steam IDs by dividing and multiplying by 100
       // This effectively truncates the last 2 digits for matching
       const query = `
         WITH event_players AS (
-          SELECT DISTINCT pms.steam_id, pms.team_id
+          SELECT DISTINCT pms.steam_id, pms.team_id, pms.event_id
           FROM player_match_summary pms
-          WHERE pms.event_id = ${eventId}
+          WHERE pms.event_id IN (1, 2)
         ),
         
         player_teams AS (
-          SELECT ep.steam_id, t.team_clan_name as team_name
+          SELECT ep.steam_id, ep.event_id, t.team_clan_name as team_name
           FROM event_players ep
           LEFT JOIN teams t ON ep.team_id = t.id
         )
@@ -332,6 +332,7 @@ export class RawSQLAdapter {
           p.steam_id,
           p.user_name,
           pt.team_name,
+          pt.event_id,
           ks.kills,
           ks.headshots,
           ks.wallbang_kills,
@@ -380,9 +381,9 @@ export class RawSQLAdapter {
         FROM 
           player_teams pt
           LEFT JOIN players p ON (p.steam_id / 100) = (pt.steam_id / 100)
-          LEFT JOIN kill_stats ks ON (ks.steam_id / 100) = (pt.steam_id / 100) AND ks.event_id = ${eventId}
-          LEFT JOIN general_stats gs ON (gs.steam_id / 100) = (pt.steam_id / 100) AND gs.event_id = ${eventId}
-          LEFT JOIN utility_stats us ON (us.steam_id / 100) = (pt.steam_id / 100) AND us.event_id = ${eventId}
+          LEFT JOIN kill_stats ks ON (ks.steam_id / 100) = (pt.steam_id / 100) AND ks.event_id = pt.event_id
+          LEFT JOIN general_stats gs ON (gs.steam_id / 100) = (pt.steam_id / 100) AND gs.event_id = pt.event_id
+          LEFT JOIN utility_stats us ON (us.steam_id / 100) = (pt.steam_id / 100) AND us.event_id = pt.event_id
         WHERE 
           p.steam_id IS NOT NULL
       `;
@@ -400,6 +401,7 @@ export class RawSQLAdapter {
           id: String(row.steam_id || ''),
           name: String(row.user_name || ''),
           team: String(row.team_name || 'Unknown'),
+          eventId: Number(row.event_id) || 1,
           kills: Number(row.kills) || 0,
           deaths: Number(row.deaths) || 0,
           roundsPlayed: (Number(row.ct_rounds_won) || 0) + (Number(row.t_rounds_won) || 0) + (Number(row.deaths) || 0) * 0.7,

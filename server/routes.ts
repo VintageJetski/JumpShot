@@ -70,6 +70,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Created role map with ${roleMap.size} entries using steam_id matching`);
       
+      // Debug: Check if Aleksib is in the roleMap
+      const aleksibSteamId = '76561198013243326';
+      console.log(`🔍 RoleMap has Aleksib (${aleksibSteamId}): ${roleMap.has(aleksibSteamId)}`);
+      if (roleMap.has(aleksibSteamId)) {
+        console.log(`🔍 Aleksib role data from roleMap:`, roleMap.get(aleksibSteamId));
+      } else {
+        console.log(`🔍 Aleksib NOT found in roleMap. Checking all Steam IDs in roleMap...`);
+        const roleMapKeys = Array.from(roleMap.keys()).filter(key => key.includes('765611980132'));
+        console.log(`🔍 Similar Steam IDs in roleMap:`, roleMapKeys);
+      }
+      
       // Debug: Show sample role entries and roleMap contents
       if (rolesData.length > 0) {
         console.log('DEBUG - Sample role data from Supabase:', {
@@ -104,9 +115,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Player ${player.userName} (${steamIdStr}): Role match found = ${roleMap.has(steamIdStr)}, isIGL = ${roleInfo.isIGL}`);
         }
         
-        // Debug specific player (Aleksib) to track IGL mapping
-        if (player.steamId === '76561198013243326') {
-          console.log(`🔍 ALEKSIB DEBUG - Steam ID: ${steamIdStr}, Role Info:`, roleInfo);
+        // Debug first few players to see what's happening
+        if (allPlayersFromBothTournaments.indexOf(player) < 2) {
+          console.log(`🔍 PLAYER DEBUG - Steam ID: ${steamIdStr}, Has role mapping: ${roleMap.has(steamIdStr)}, Role Info:`, roleInfo);
         }
         
         return {

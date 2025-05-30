@@ -27,7 +27,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('📊 SERVING RAW PLAYER DATA FROM SUPABASE');
       const { dataRefreshManager } = await import('./dataRefreshManager');
-      const supabaseStorage = dataRefreshManager.getStorage();
       const rawSQLAdapter = dataRefreshManager.getRawSQLAdapter();
       
       // Force processing of both tournaments to get all 105 players
@@ -38,20 +37,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🏆 Processing both tournaments:', events);
       const rolesData = await rawSQLAdapter.getRolesData();
       
-      let rawPlayersData: any[] = [];
-      
-      // Get all unique players from both tournaments
+      // Get all players from both tournaments
       const allRawPlayerStats: any[] = [];
-      const processedPlayerIds = new Set<string>();
       
       for (const event of events) {
         try {
-          // Use rawSQLAdapter directly since it's working successfully
+          console.log(`🔍 Fetching players for tournament ${event.id}: ${event.name}`);
           const rawPlayerStats = await rawSQLAdapter.getPlayersForEvent(event.id);
+          console.log(`✅ Got ${rawPlayerStats.length} players from ${event.name}`);
           
-          // Add players from each tournament (keep tournament-specific entries)
+          // Add players from each tournament
           for (const player of rawPlayerStats) {
-            // Include all players from each tournament to get the full 105 count
             allRawPlayerStats.push({
               ...player,
               tournament: event.name,
@@ -59,7 +55,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
         } catch (error) {
-          console.error(`Error fetching players for event ${event.id}:`, error);
+          console.error(`❌ Error fetching players for event ${event.id}:`, error);
         }
       }
       
@@ -72,41 +68,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ) || { isIGL: false, tRole: 'Support', ctRole: 'Support' };
         
         return {
-              steamId: player.steamId,
-              name: player.user_name || player.userName,
-              team: player.team_name || player.teamName,
-              kills: player.kills,
-              deaths: player.deaths,
-              assists: player.assists,
-              adr: player.adr,
-              kast: player.kast,
-              rating: player.rating,
-              isIGL: roleInfo.inGameLeader || false,
-              tRole: roleInfo.tRole,
-              ctRole: roleInfo.ctRole,
-              // Include all raw stats for PIV calculation client-side
-              entryKills: player.entryKills || 0,
-              entryDeaths: player.entryDeaths || 0,
-              multiKills: player.multiKills || 0,
-              clutchWins: player.clutchWins || 0,
-              clutchAttempts: player.clutchAttempts || 0,
-              flashAssists: player.flashAssists || 0,
-              rounds: player.rounds || 1,
-              maps: player.maps || 1
-            };
-          });
-          
-          rawPlayersData = rawPlayersData.concat(playersWithRoles);
-        } catch (error) {
-          console.warn(`Could not process players for event ${event.id}:`, error);
-        }
-      }
+          steamId: player.steamId,
+          name: player.user_name || player.userName,
+          team: player.team_name || player.teamName,
+          kills: player.kills,
+          deaths: player.deaths,
+          assists: player.assists,
+          adr: player.adr,
+          kast: player.kast,
+          rating: player.rating,
+          isIGL: roleInfo.isIGL || false,
+          tRole: roleInfo.tRole,
+          ctRole: roleInfo.ctRole,
+          tournament: player.tournament,
+          eventId: player.eventId,
+          // Include all raw stats for PIV calculation client-side
+          entryKills: player.entryKills || 0,
+          entryDeaths: player.entryDeaths || 0,
+          multiKills: player.multiKills || 0,
+          clutchWins: player.clutchWins || 0,
+          clutchAttempts: player.clutchAttempts || 0,
+          flashAssists: player.flashAssists || 0,
+          rounds: player.rounds || 1,
+          maps: player.maps || 1
+        };
+      });
       
-      console.log(`📊 Serving ${rawPlayersData.length} raw players`);
+      console.log(`📊 Serving ${playersWithRoles.length} raw players`);
       
       res.json({
-        players: rawPlayersData,
-        count: rawPlayersData.length,
+        players: playersWithRoles,
+        count: playersWithRoles.length,
         timestamp: new Date().toISOString(),
         note: "Raw data only - calculate PIV/TIR client-side"
       });

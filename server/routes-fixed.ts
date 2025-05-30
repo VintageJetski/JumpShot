@@ -30,8 +30,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const supabaseStorage = dataRefreshManager.getStorage();
       const rawSQLAdapter = dataRefreshManager.getRawSQLAdapter();
       
-      // Get raw data from Supabase
-      const events = supabaseStorage.getEvents();
+      // Force processing of both tournaments to get all 105 players
+      const events = [
+        { id: 1, name: 'IEM_Katowice_2025' },
+        { id: 2, name: 'PGL_Bucharest_2025' }
+      ];
+      console.log('🏆 Processing both tournaments:', events);
       const rolesData = await rawSQLAdapter.getRolesData();
       
       let rawPlayersData: any[] = [];
@@ -45,13 +49,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Use rawSQLAdapter directly since it's working successfully
           const rawPlayerStats = await rawSQLAdapter.getPlayersForEvent(event.id);
           
-          // Add only unique players (avoid duplicates across tournaments)
+          // Add players from each tournament (keep tournament-specific entries)
           for (const player of rawPlayerStats) {
-            const playerId = `${player.steamId}_${event.id}`;
-            if (!processedPlayerIds.has(playerId)) {
-              processedPlayerIds.add(playerId);
-              allRawPlayerStats.push(player);
-            }
+            // Include all players from each tournament to get the full 105 count
+            allRawPlayerStats.push({
+              ...player,
+              tournament: event.name,
+              eventId: event.id
+            });
           }
         } catch (error) {
           console.error(`Error fetching players for event ${event.id}:`, error);

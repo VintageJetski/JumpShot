@@ -57,8 +57,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tRole: role.tRole,
           ctRole: role.ctRole
         };
-        // Use steam_id as the primary key for exact matching
-        roleMap.set(role.steamId.toString(), roleInfo);
+        // Use steam_id as the primary key for exact matching with multiple formats
+        const steamIdStr = role.steamId.toString();
+        roleMap.set(steamIdStr, roleInfo);
+        // Also try without leading/trailing whitespace
+        roleMap.set(steamIdStr.trim(), roleInfo);
         // Also set by player username for additional matching options
         if (role.playerUsername) {
           roleMap.set(role.playerUsername, roleInfo);
@@ -67,14 +70,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Created role map with ${roleMap.size} entries using steam_id matching`);
       
-      // Debug: Show sample role entries
+      // Debug: Show sample role entries and roleMap contents
       if (rolesData.length > 0) {
         console.log('DEBUG - Sample role data from Supabase:', {
           steamId: rolesData[0].steamId,
-          playerUsername: rolesData[0].playerUsername,
           inGameLeader: rolesData[0].inGameLeader,
           tRole: rolesData[0].tRole,
           ctRole: rolesData[0].ctRole
+        });
+        
+        // Show what keys are actually in the roleMap
+        const roleMapKeys = Array.from(roleMap.keys()).slice(0, 5);
+        console.log('DEBUG - First 5 roleMap keys:', roleMapKeys);
+        
+        // Check specific Aleksib case
+        const aleksibSteamId = '76561198013243326';
+        console.log('DEBUG - Aleksib roleMap check:', {
+          steamIdExists: roleMap.has(aleksibSteamId),
+          roleInfo: roleMap.get(aleksibSteamId)
         });
       }
       
@@ -86,9 +99,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Combine raw stats with role data - NO PIV CALCULATIONS  
       const rawPlayersWithRoles = allPlayersFromBothTournaments.map(player => {
-        const roleInfo = roleMap.get(player.steamId?.toString()) || 
+        // Try multiple matching strategies for Steam ID
+        const steamIdStr = player.steamId?.toString();
+        const roleInfo = roleMap.get(steamIdStr) || 
                        roleMap.get(player.userName) || 
+                       roleMap.get(player.name) ||
                        { isIGL: false, tRole: 'Support', ctRole: 'Support' };
+        
+        // Debug logging for first few players
+        if (allPlayersFromBothTournaments.indexOf(player) < 3) {
+          console.log(`Player ${player.name} (${steamIdStr}): Role match found = ${roleMap.has(steamIdStr)}, isIGL = ${roleInfo.isIGL}`);
+        }
         
         return {
           ...player,

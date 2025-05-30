@@ -8,6 +8,7 @@ import { loadPlayerRoles } from "./roleParser";
 import { initializeRoundData } from "./roundDataLoader";
 import { setupAuth, ensureAuthenticated } from "./auth";
 import { processXYZDataFromFile, RoundPositionalMetrics, PlayerMovementAnalysis } from "./xyz-data-parser";
+import { getPlayersWithRoles } from "./simple-player-fetcher.js";
 import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -56,9 +57,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Fetching ALL players from BOTH tournaments using raw SQL adapter...`);
       
-      // Bypass storage limitations and get all players directly using raw SQL
-      const allPlayersFromBothTournaments = await rawSQLAdapter.getAllPlayersFromBothTournaments();
-      console.log(`Raw SQL retrieved ${allPlayersFromBothTournaments.length} total players from both tournaments`);
+      // Use simple player fetcher with separate queries  
+      const allPlayersFromBothTournaments = await getPlayersWithRoles();
+      console.log(`Simple fetcher retrieved ${allPlayersFromBothTournaments.length} total players`);
       
       // Check if Aleksib exists in the player data
       const aleksibInPlayerData = allPlayersFromBothTournaments.find(p => p.steamId === '76561198013243326' || p.userName === 'Aleksib');

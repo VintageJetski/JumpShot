@@ -74,21 +74,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (rolesData.length > 0) {
         console.log('DEBUG - Sample role data from Supabase:', {
           steamId: rolesData[0].steamId,
+          steamIdType: typeof rolesData[0].steamId,
           inGameLeader: rolesData[0].inGameLeader,
           tRole: rolesData[0].tRole,
           ctRole: rolesData[0].ctRole
         });
         
-        // Show what keys are actually in the roleMap
-        const roleMapKeys = Array.from(roleMap.keys()).slice(0, 5);
-        console.log('DEBUG - First 5 roleMap keys:', roleMapKeys);
-        
-        // Check specific Aleksib case
-        const aleksibSteamId = '76561198013243326';
-        console.log('DEBUG - Aleksib roleMap check:', {
-          steamIdExists: roleMap.has(aleksibSteamId),
-          roleInfo: roleMap.get(aleksibSteamId)
-        });
+        // Count IGL players in roles data
+        const iglCount = rolesData.filter(role => role.inGameLeader).length;
+        console.log(`DEBUG - Total IGL players in roles data: ${iglCount}`);
       }
       
       console.log(`Fetching ALL players from BOTH tournaments using raw SQL adapter...`);
@@ -103,12 +97,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const steamIdStr = player.steamId?.toString();
         const roleInfo = roleMap.get(steamIdStr) || 
                        roleMap.get(player.userName) || 
-                       roleMap.get(player.name) ||
                        { isIGL: false, tRole: 'Support', ctRole: 'Support' };
         
         // Debug logging for first few players
         if (allPlayersFromBothTournaments.indexOf(player) < 3) {
-          console.log(`Player ${player.name} (${steamIdStr}): Role match found = ${roleMap.has(steamIdStr)}, isIGL = ${roleInfo.isIGL}`);
+          console.log(`Player ${player.userName} (${steamIdStr}): Role match found = ${roleMap.has(steamIdStr)}, isIGL = ${roleInfo.isIGL}`);
         }
         
         return {

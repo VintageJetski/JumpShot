@@ -61,8 +61,8 @@ export class RawSQLAdapter {
       
       // Map the raw data to our Role interface format
       const roles = rawRoles.map(row => ({
-        steamId: row.steam_id,
-        inGameLeader: row.in_game_leader,
+        steamId: row.steam_id.toString(), // Ensure Steam ID is always a string
+        inGameLeader: Boolean(row.in_game_leader), // Ensure boolean type
         tRole: row.t_role,
         ctRole: row.ct_role,
         playerUsername: row.player_username

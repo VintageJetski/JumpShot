@@ -10,6 +10,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up direct Supabase routes (bypasses auth for testing)
   setupSupabaseDirectRoutes(app);
 
+  // Simple test route to verify API is working
+  app.get('/api/health', (req: Request, res: Response) => {
+    res.json({ 
+      status: 'API working',
+      timestamp: new Date().toISOString(),
+      supabase: {
+        url: !!process.env.SUPABASE_URL,
+        key: !!process.env.SUPABASE_SERVICE_KEY
+      }
+    });
+  });
+
   // RAW DATA API - No calculations, just serve Supabase data
   app.get('/api/players', async (req: Request, res: Response) => {
     try {

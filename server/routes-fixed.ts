@@ -29,35 +29,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { dataRefreshManager } = await import('./dataRefreshManager');
       const rawSQLAdapter = dataRefreshManager.getRawSQLAdapter();
       
-      // Force processing of both tournaments to get all 105 players
-      const events = [
-        { id: 1, name: 'IEM_Katowice_2025' },
-        { id: 2, name: 'PGL_Bucharest_2025' }
-      ];
-      console.log('🏆 Processing both tournaments:', events);
+      console.log('🏆 Fetching all players from both tournaments');
       const rolesData = await rawSQLAdapter.getRolesData();
       
-      // Get all players from both tournaments
-      const allRawPlayerStats: any[] = [];
-      
-      for (const event of events) {
-        try {
-          console.log(`🔍 Fetching players for tournament ${event.id}: ${event.name}`);
-          const rawPlayerStats = await rawSQLAdapter.getPlayersForEvent(event.id);
-          console.log(`✅ Got ${rawPlayerStats.length} players from ${event.name}`);
-          
-          // Add players from each tournament
-          for (const player of rawPlayerStats) {
-            allRawPlayerStats.push({
-              ...player,
-              tournament: event.name,
-              eventId: event.id
-            });
-          }
-        } catch (error) {
-          console.error(`❌ Error fetching players for event ${event.id}:`, error);
-        }
-      }
+      // Get all players from both tournaments using the new optimized method
+      const allRawPlayerStats = await rawSQLAdapter.getAllPlayersFromBothTournaments();
       
       console.log(`📊 Total raw players from all tournaments: ${allRawPlayerStats.length}`);
       

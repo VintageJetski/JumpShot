@@ -139,6 +139,173 @@ export class RawSQLAdapter {
   }
   
   /**
+   * Get all players from both tournaments using optimized raw SQL
+   */
+  async getAllPlayersFromBothTournaments(): Promise<PlayerRawStats[]> {
+    try {
+      console.log('Getting all players from both tournaments using raw SQL approach...');
+      
+      const query = `
+        WITH all_event_players AS (
+          SELECT DISTINCT pms.steam_id, pms.team_id, pms.event_id
+          FROM player_match_summary pms
+          WHERE pms.event_id IN (1, 2)
+        ),
+        
+        player_teams AS (
+          SELECT aep.steam_id, aep.event_id, t.team_clan_name as team_name
+          FROM all_event_players aep
+          LEFT JOIN teams t ON aep.team_id = t.id
+        )
+        
+        SELECT 
+          p.steam_id,
+          p.user_name,
+          pt.team_name,
+          pt.event_id,
+          ks.kills,
+          ks.headshots,
+          ks.wallbang_kills,
+          ks.no_scope,
+          ks.through_smoke,
+          ks.blind_kills,
+          ks.awp_kills,
+          ks.pistol_kills,
+          ks.first_kills,
+          ks.ct_first_kills,
+          ks.t_first_kills,
+          ks.first_deaths,
+          ks.ct_first_deaths,
+          ks.t_first_deaths,
+          gs.assists,
+          gs.deaths,
+          gs.trade_kills,
+          gs.trade_deaths,
+          gs.kd,
+          gs.k_d_diff,
+          gs.adr_total,
+          gs.adr_ct_side,
+          gs.adr_t_side,
+          gs.kast_total,
+          gs.kast_ct_side,
+          gs.kast_t_side,
+          gs.total_rounds_won,
+          gs.t_rounds_won,
+          gs.ct_rounds_won,
+          us.assisted_flashes,
+          us.flahes_thrown,
+          us.ct_flahes_thrown,
+          us.t_flahes_thrown,
+          us.he_thrown,
+          us.ct_he_thrown,
+          us.t_he_thrown,
+          us.infernos_thrown,
+          us.ct_infernos_thrown,
+          us.t_infernos_thrown,
+          us.smokes_thrown,
+          us.ct_smokes_thrown,
+          us.t_smokes_thrown,
+          us.total_util_dmg,
+          us.ct_total_util_dmg,
+          us.t_total_util_dmg
+        FROM 
+          player_teams pt
+          LEFT JOIN players p ON (p.steam_id / 100) = (pt.steam_id / 100)
+          LEFT JOIN kill_stats ks ON (ks.steam_id / 100) = (pt.steam_id / 100) AND ks.event_id = pt.event_id
+          LEFT JOIN general_stats gs ON (gs.steam_id / 100) = (pt.steam_id / 100) AND gs.event_id = pt.event_id
+          LEFT JOIN utility_stats us ON (us.steam_id / 100) = (pt.steam_id / 100) AND us.event_id = pt.event_id
+        WHERE 
+          p.steam_id IS NOT NULL
+        ORDER BY pt.event_id, p.user_name
+      `;
+      
+      const result = await db.execute(query);
+      console.log(`Raw SQL query returned ${result.rows.length} rows from both tournaments`);
+      
+      // Convert to PlayerRawStats format
+      const playerStats: PlayerRawStats[] = result.rows.map(row => ({
+        steamId: String(row.steam_id || ''),
+        userName: String(row.user_name || ''),
+        teamName: String(row.team_name || 'Unknown'),
+        id: String(row.steam_id || ''),
+        name: String(row.user_name || ''),
+        team: String(row.team_name || 'Unknown'),
+        kills: Number(row.kills) || 0,
+        deaths: Number(row.deaths) || 0,
+        roundsPlayed: (Number(row.ct_rounds_won) || 0) + (Number(row.t_rounds_won) || 0) + (Number(row.deaths) || 0) * 0.7,
+        assists: Number(row.assists) || 0,
+        adr: Number(row.adr_total) || 0,
+        hsKills: Number(row.headshots) || 0,
+        ctRoundsPlayed: Math.floor(Number(row.kast_ct_side) / (Number(row.kast_total) || 1) * 30) || 15,
+        tRoundsPlayed: Math.floor(Number(row.kast_t_side) / (Number(row.kast_total) || 1) * 30) || 15,
+        flashAssists: Number(row.assisted_flashes) || 0,
+        utilityDamage: Number(row.total_util_dmg) || 0,
+        enemiesFlashed: 0,
+        flashDuration: 0,
+        kast: Number(row.kast_total) || 0,
+        impact: 0,
+        awtKills: Number(row.awp_kills) || 0,
+        clutchKills: 0,
+        openingKills: Number(row.first_kills) || 0,
+        openingDeaths: Number(row.first_deaths) || 0,
+        multiKills: 0,
+        tradedDeaths: Number(row.trade_deaths) || 0,
+        tradingKills: Number(row.trade_kills) || 0,
+        rating: Number(row.rating) || 0,
+        kd: Number(row.kd) || (Number(row.kills) / Math.max(Number(row.deaths), 1)),
+        kddiff: row.k_d_diff || 0,
+        adr_ct: row.adr_ct_side || 0,
+        adr_t: row.adr_t_side || 0,
+        kast_ct: row.kast_ct_side || 0,
+        kast_t: row.kast_t_side || 0,
+        firstkills: row.first_kills || 0,
+        firstkills_ct: row.ct_first_kills || 0, 
+        firstkills_t: row.t_first_kills || 0,
+        firstdeaths: row.first_deaths || 0,
+        firstdeaths_ct: row.ct_first_deaths || 0,
+        firstdeaths_t: row.t_first_deaths || 0,
+        flash_assists: row.assisted_flashes || 0,
+        flashes_thrown: row.flahes_thrown || 0,
+        flashes_thrown_ct: row.ct_flahes_thrown || 0,
+        flashes_thrown_t: row.t_flahes_thrown || 0,
+        he_thrown: row.he_thrown || 0,
+        he_thrown_ct: row.ct_he_thrown || 0,
+        he_thrown_t: row.t_he_thrown || 0,
+        molotovs_thrown: row.infernos_thrown || 0,
+        molotovs_thrown_ct: row.ct_infernos_thrown || 0,
+        molotovs_thrown_t: row.t_infernos_thrown || 0,
+        smokes_thrown: row.smokes_thrown || 0,
+        smokes_thrown_ct: row.ct_smokes_thrown || 0,
+        smokes_thrown_t: row.t_smokes_thrown || 0,
+        total_utility_damage: row.total_util_dmg || 0,
+        utility_damage_ct: row.ct_total_util_dmg || 0,
+        utility_damage_t: row.t_total_util_dmg || 0,
+        awp_kills: row.awp_kills || 0,
+        pistol_kills: row.pistol_kills || 0,
+        wallbang_kills: row.wallbang_kills || 0,
+        noscope_kills: row.no_scope || 0,
+        blind_kills: row.blind_kills || 0,
+        smoke_kills: row.through_smoke || 0,
+        traded_kills: row.trade_kills || 0,
+        traded_deaths: row.trade_deaths || 0,
+        total_rounds_won: row.total_rounds_won || 0,
+        t_rounds_won: row.t_rounds_won || 0,
+        ct_rounds_won: row.ct_rounds_won || 0,
+        ct_role: PlayerRole.Anchor,
+        t_role: PlayerRole.Support,
+        is_igl: false,
+        eventId: Number(row.event_id) || 1
+      }));
+      
+      console.log(`Successfully processed ${playerStats.length} players from both tournaments`);
+      return playerStats;
+    } catch (error) {
+      console.error('Error getting players from both tournaments:', error);
+      return [];
+    }
+  }
+
+  /**
    * Get players for a specific event using optimized raw SQL
    * This handles steam ID variations between tables using integer division
    */

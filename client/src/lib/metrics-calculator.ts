@@ -60,32 +60,263 @@ export interface ClientPlayerWithPIV {
 }
 
 /**
- * Calculate PIV (Player Impact Value) using the complete PRD formula:
- * PIV = (RCS × ICF × SC × OSM) + Basic_Metrics_Bonus + Situational_Modifiers + Map_Specific_Adjustments
+ * Calculate PIV using Role Weightings page implementation:
+ * 50% Basic Role Metrics + 50% Advanced Role Metrics + Consistency Factor
  */
 export function calculatePIV(player: RawPlayerData): number {
+  const role = determinePrimaryRole(player);
+  
+  // Calculate basic and advanced scores based on Role Weightings page
+  const basicScore = calculateBasicRoleScore(player, role);
+  const advancedScore = calculateAdvancedRoleScore(player, role);
+  const consistencyScore = calculateBasicConsistencyScore(player, role);
+  
+  // Combine scores: 50% basic + 50% advanced, modified by consistency
+  const combinedScore = (basicScore * 0.5 + advancedScore * 0.5) * consistencyScore;
+  
+  // Scale to 0-100 range
+  return Math.max(0, Math.min(100, combinedScore * 100));
+}
+
+/**
+ * Calculate Basic Role Score using Role Weightings page metrics (50% weighting)
+ */
+function calculateBasicRoleScore(player: RawPlayerData, role: string): number {
   const kd = player.deaths > 0 ? player.kills / player.deaths : player.kills;
   
-  // Calculate PIV components per PRD specifications
-  const rcs = calculateRCS(player);
-  const icf = calculateICF(player);
-  const sc = calculateSC(player);
-  const osm = calculateOSM(player);
+  switch (role) {
+    case 'IGL':
+      return (
+        0.245 * 0.5 * 0.7 + // Round Win Rate in Rifle Rounds (team metric approximation)
+        0.21 * 0.5 * Math.min(1, player.flashAssists / Math.max(1, player.rounds * 0.3)) + // Utility Usage Efficiency
+        0.14 * 0.5 * 0.6 + // Timeout Conversion Rate (approximation)
+        0.105 * 0.5 * Math.min(1, player.kast / 75) + // Basic Consistency
+        0.15 * 0.5 * 0.65 + // Eco/Force Round Conversion (approximation)
+        0.15 * 0.5 * 0.7 // 5v4 Conversion Rate (approximation)
+      );
+      
+    case 'AWP':
+      const entryRate = (player.entryKills + player.entryDeaths) > 0 ? player.entryKills / (player.entryKills + player.entryDeaths) : 0;
+      const awpKillShare = Math.min(1, player.kills * 0.4 / Math.max(1, player.kills)); // Assume 40% AWP kills
+      return (
+        0.28 * 0.5 * entryRate + // Opening Kill Ratio
+        0.205 * 0.5 * Math.min(1, player.kast / 75) + // Basic Consistency
+        0.175 * 0.5 * awpKillShare + // AWP Kill Share
+        0.14 * 0.5 * Math.min(1, player.multiKills / Math.max(1, player.rounds)) + // Multi-Kill Conversion
+        0.15 * 0.5 * 0.6 + // Save + Rebuy Efficiency (approximation)
+        0.05 * 0.5 * 0.7 // Weapon Survival Rate (approximation)
+      );
+      
+    case 'Spacetaker':
+      const openingRate = (player.entryKills + player.entryDeaths) > 0 ? player.entryKills / (player.entryKills + player.entryDeaths) : 0;
+      return (
+        0.28 * 0.5 * openingRate + // Opening Duel Success Rate
+        0.175 * 0.5 * Math.min(1, player.assists / Math.max(1, player.rounds * 0.4)) + // Trade Kill Involvement
+        0.14 * 0.5 * Math.min(1, player.adr / 80) + // Average Damage per Round
+        0.105 * 0.5 * Math.min(1, player.kast / 75) + // Basic Consistency
+        0.15 * 0.5 * 0.5 + // Headshot Percentage (approximation)
+        0.15 * 0.5 * Math.min(1, player.kast / 100) // T-Side KAST
+      );
+      
+    case 'Lurker':
+      const clutchRate = player.clutchAttempts > 0 ? player.clutchWins / player.clutchAttempts : 0;
+      return (
+        0.21 * 0.5 * clutchRate + // 1vX Conversion Rate
+        0.21 * 0.5 * Math.min(1, player.kast / 80) + // Late-Round Survival Rate
+        0.175 * 0.5 * Math.min(1, player.kast / 100) + // KAST
+        0.105 * 0.5 * Math.min(1, player.kast / 75) + // Basic Consistency
+        0.15 * 0.5 * Math.min(1, player.clutchAttempts / Math.max(1, player.rounds) * 5) + // Clutch Rounds Entered
+        0.15 * 0.5 * Math.min(2, kd) / 2 // T-Side K/D Ratio
+      );
+      
+    case 'Anchor':
+      return (
+        0.245 * 0.5 * 0.7 + // Site Hold Success Rate (approximation)
+        0.175 * 0.5 * Math.min(1, player.multiKills / Math.max(1, player.rounds)) + // Multi-Kills on CT
+        0.175 * 0.5 * Math.min(1, player.adr / 75) + // CT-Side ADR
+        0.105 * 0.5 * Math.min(1, player.kast / 75) + // Basic Consistency
+        0.15 * 0.5 * Math.min(1, player.kast / 100) + // CT-Side KAST
+        0.15 * 0.5 * Math.min(1, player.flashAssists / Math.max(1, player.rounds * 0.2)) // CT Utility Efficiency
+      );
+      
+    case 'Support':
+      return (
+        0.21 * 0.5 * Math.min(1, player.flashAssists / Math.max(1, player.rounds * 0.3)) + // Flash Assist Ratio
+        0.175 * 0.5 * Math.min(1, player.kast / 80) + // Save Rounds / Economy Preservation
+        0.175 * 0.5 * Math.min(1, player.assists / Math.max(1, player.rounds * 0.4)) + // Bomb Plant/Defuse Count
+        0.14 * 0.5 * Math.min(1, player.kast / 75) + // Basic Consistency
+        0.15 * 0.5 * Math.min(1, player.assists / Math.max(1, player.rounds * 0.3)) + // Non-Flash Utility Impact
+        0.15 * 0.5 * 0.4 // T-Side Plant Conversion (approximation)
+      );
+      
+    case 'Rotator':
+      return (
+        0.25 * 0.5 * 0.6 + // Rotation Speed (approximation)
+        0.20 * 0.5 * Math.min(1, player.adr / 75) + // CT-Side ADR
+        0.15 * 0.5 * Math.min(1, player.multiKills / Math.max(1, player.rounds)) + // Multi-Kills After Rotation
+        0.15 * 0.5 * Math.min(1, player.kast / 75) + // Basic Consistency
+        0.15 * 0.5 * Math.min(1, player.flashAssists / Math.max(1, player.rounds * 0.3)) + // Flash Assist Ratio
+        0.10 * 0.5 * Math.min(1, player.kast / 100) // CT-Side KAST
+      );
+      
+    default:
+      return Math.min(1, (kd * 0.3 + Math.min(1, player.adr / 80) * 0.3 + Math.min(1, player.kast / 100) * 0.4));
+  }
+}
+
+/**
+ * Calculate Advanced Role Score using Role Weightings page metrics (50% weighting)
+ */
+function calculateAdvancedRoleScore(player: RawPlayerData, role: string): number {
+  const kd = player.deaths > 0 ? player.kills / player.deaths : player.kills;
   
-  // Basic metrics bonus (0.0 to 0.5)
-  const basicMetricsBonus = calculateBasicMetricsBonus(player);
-  
-  // Situational modifiers (-0.2 to +0.3)
-  const situationalModifiers = calculateSituationalModifiers(player);
-  
-  // Map-specific adjustments (-0.1 to +0.1)
-  const mapSpecificAdjustments = 0; // Placeholder for map-specific data
-  
-  // Master PIV formula
-  const pivScore = (rcs * icf * sc * osm) + basicMetricsBonus + situationalModifiers + mapSpecificAdjustments;
-  
-  // Ensure reasonable bounds and convert to 0-100 scale
-  return Math.max(0, Math.min(100, pivScore * 100));
+  switch (role) {
+    case 'AWP':
+      const entryRate = (player.entryKills + player.entryDeaths) > 0 ? player.entryKills / (player.entryKills + player.entryDeaths) : 0;
+      return (
+        0.25 * 0.5 * entryRate + // Opening Pick Success Rate
+        0.20 * 0.5 * Math.min(1, player.kast / 70) + // Angle Hold Success
+        0.15 * 0.5 * Math.min(1, player.multiKills / Math.max(1, player.rounds)) + // Multi Kill Conversion
+        0.10 * 0.5 * Math.min(1, player.clutchWins / Math.max(1, player.clutchAttempts)) + // Retake Contribution Index
+        0.15 * 0.5 * Math.min(2, kd) / 2 // K/D Ratio
+      );
+      
+    case 'IGL':
+      return (
+        0.20 * 0.5 * 0.6 + // Tactical Timeout Success (approximation)
+        0.20 * 0.5 * Math.min(1, player.adr / 75) + // Team Economy Preservation
+        0.15 * 0.5 * 0.65 + // Opening Play Success Rate (approximation)
+        0.10 * 0.5 * Math.min(1, player.assists / Math.max(1, player.rounds * 0.4)) + // Kill Participation Index
+        0.10 * 0.5 * Math.min(2, kd) / 2 // K/D Ratio (reduced by 25%)
+      );
+      
+    case 'Spacetaker':
+      const openingRate = (player.entryKills + player.entryDeaths) > 0 ? player.entryKills / (player.entryKills + player.entryDeaths) : 0;
+      return (
+        0.25 * 0.5 * openingRate + // Opening Duel Success Rate
+        0.20 * 0.5 * Math.min(1, player.rating / 1.1) + // Aggression Efficiency Index
+        0.15 * 0.5 * Math.min(1, player.assists / Math.max(1, player.rounds * 0.3)) + // Trade Conversion Rate
+        0.15 * 0.5 * Math.min(1, player.entryKills / Math.max(1, player.rounds)) + // First Blood Impact
+        0.20 * 0.5 * Math.min(2, kd) / 2 // K/D Ratio
+      );
+      
+    case 'Lurker':
+      const clutchRate = player.clutchAttempts > 0 ? player.clutchWins / player.clutchAttempts : 0;
+      return (
+        0.20 * 0.5 * Math.min(1, player.adr / 60) + // Zone Influence Stability
+        0.20 * 0.5 * 0.6 + // Rotation Disruption Impact (approximation)
+        0.20 * 0.5 * clutchRate + // Flank Success Rate
+        0.15 * 0.5 * clutchRate + // Clutch Conversion Rate
+        0.15 * 0.5 * Math.min(2, kd) / 2 // K/D Ratio
+      );
+      
+    case 'Anchor':
+      return (
+        0.25 * 0.5 * Math.min(1, player.kast / 70) + // Site Hold Success Rate
+        0.20 * 0.5 * Math.min(1, player.kast / 75) + // Survival Rate Post-Engagement
+        0.15 * 0.5 * Math.min(1, player.multiKills / Math.max(1, player.rounds)) + // Multi-Kill Defense Ratio
+        0.15 * 0.5 * 0.65 + // Opponent Entry Denial Rate (approximation)
+        0.15 * 0.5 * Math.min(2, kd) / 2 // K/D Ratio
+      );
+      
+    case 'Support':
+      return (
+        0.25 * 0.5 * Math.min(1, player.flashAssists / Math.max(1, player.rounds * 0.3)) + // Utility Setup Efficiency
+        0.20 * 0.5 * Math.min(1, player.flashAssists / Math.max(1, player.rounds * 0.2)) + // Support Flash Assist
+        0.15 * 0.5 * Math.min(1, player.assists / Math.max(1, player.rounds * 0.3)) + // Anti-Exec Utility Success
+        0.15 * 0.5 * Math.min(1, player.assists / Math.max(1, player.rounds * 0.4)) + // Retake Utility Coordination
+        0.10 * 0.5 * Math.min(2, kd) / 2 // K/D Ratio
+      );
+      
+    case 'Rotator':
+      return (
+        0.25 * 0.5 * 0.6 + // Rotation Efficiency Index (approximation)
+        0.20 * 0.5 * Math.min(1, player.rating / 1.0) + // Adaptive Defense Score
+        0.15 * 0.5 * Math.min(1, player.kast / 75) + // Site Lockdown Rate
+        0.15 * 0.5 * 0.65 + // Entry Denial Efficiency (approximation)
+        0.15 * 0.5 * Math.min(2, kd) / 2 // K/D Ratio
+      );
+      
+    default:
+      return Math.min(1, (kd * 0.4 + Math.min(1, player.adr / 80) * 0.3 + Math.min(1, player.kast / 100) * 0.3));
+  }
+}
+
+/**
+ * Calculate Basic Consistency Score using Role Weightings page metrics
+ */
+function calculateBasicConsistencyScore(player: RawPlayerData, role: string): number {
+  switch (role) {
+    case 'IGL':
+      return (
+        0.2 * Math.min(1, player.flashAssists / Math.max(1, player.rounds * 0.2)) + // Flash Assists
+        0.2 * 0.5 + // Smokes thrown (approximation)
+        0.1 * 0.6 + // Rounds won after timeout (approximation)
+        0.1 * 0.6 + // Pistol rounds won (approximation)
+        0.3 * 0.7 + // T Rounds won (approximation)
+        0.1 * Math.min(1, player.kast / 100) // KAST
+      );
+      
+    case 'AWP':
+      const entryRate = (player.entryKills + player.entryDeaths) > 0 ? player.entryKills / (player.entryKills + player.entryDeaths) : 0;
+      return (
+        0.3 * Math.min(1, player.kast / 100) + // KAST
+        0.2 * entryRate + // Opening duels
+        0.2 * Math.min(1, player.adr / 80) + // ADR
+        0.1 * Math.min(1, player.assists / Math.max(1, player.rounds * 0.3)) + // Trade %
+        0.1 * Math.min(1, player.clutchWins / Math.max(1, player.clutchAttempts)) + // Clutch rounds won
+        0.1 * Math.min(1, player.flashAssists / Math.max(1, player.rounds * 0.2)) // Flash Assists
+      );
+      
+    case 'Support':
+      return (
+        0.5 * Math.min(1, player.kast / 100) + // KAST
+        0.2 * Math.min(1, player.assists / Math.max(1, player.rounds * 0.3)) + // Trade %
+        0.1 * Math.min(1, player.flashAssists / Math.max(1, player.rounds * 0.2)) + // Flash Assists
+        0.1 * Math.min(1, player.clutchWins / Math.max(1, player.clutchAttempts)) + // Clutch rounds won
+        0.1 * 0.5 // Smokes thrown (approximation)
+      );
+      
+    case 'Spacetaker':
+      const openingRate = (player.entryKills + player.entryDeaths) > 0 ? player.entryKills / (player.entryKills + player.entryDeaths) : 0;
+      return (
+        0.3 * openingRate + // Opening duels
+        0.2 * Math.min(1, player.multiKills / Math.max(1, player.rounds)) + // Multi-kill rounds
+        0.1 * 0.6 + // Traded % (approximation)
+        0.1 * Math.min(1, player.kills / Math.max(1, player.rounds)) + // Kills
+        0.2 * Math.min(1, player.adr / 80) + // ADR
+        0.1 * Math.min(1, player.kast / 100) // KAST
+      );
+      
+    case 'Lurker':
+      return (
+        0.3 * Math.min(1, player.kills / Math.max(1, player.rounds)) + // Kills
+        0.2 * openingRate + // Opening duels
+        0.2 * Math.min(1, player.clutchWins / Math.max(1, player.clutchAttempts)) + // Clutch rounds won
+        0.1 * Math.min(1, player.adr / 80) + // ADR
+        0.2 * Math.min(1, player.kast / 100) // KAST
+      );
+      
+    case 'Anchor':
+      return (
+        0.3 * Math.min(1, player.multiKills / Math.max(1, player.rounds)) + // Multi-kill rounds
+        0.2 * 0.5 + // Utility damage (approximation)
+        0.2 * Math.min(1, player.clutchWins / Math.max(1, player.clutchAttempts)) + // Clutch rounds won
+        0.3 * Math.min(1, player.kast / 100) // KAST
+      );
+      
+    case 'Rotator':
+      return (
+        0.2 * Math.min(1, player.flashAssists / Math.max(1, player.rounds * 0.2)) + // Flash Assists
+        0.2 * Math.min(1, player.assists / Math.max(1, player.rounds * 0.3)) + // Trade %
+        0.1 * 0.5 + // Smokes thrown (approximation)
+        0.2 * Math.min(1, player.adr / 80) + // ADR
+        0.3 * Math.min(1, player.kast / 100) // KAST
+      );
+      
+    default:
+      return Math.min(1, player.kast / 100);
+  }
 }
 
 /**

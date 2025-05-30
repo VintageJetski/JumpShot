@@ -35,8 +35,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { dataRefreshManager } = await import('./dataRefreshManager');
       const supabaseStorage = dataRefreshManager.getStorage();
       
-      // Get raw player data from Supabase - NO PIV CALCULATIONS HERE
-      const events = supabaseStorage.getEvents();
+      // Force processing of both tournaments to get all 105+ players
+      const events = [
+        { id: 1, name: 'IEM_Katowice_2025' },
+        { id: 2, name: 'PGL_Bucharest_2025' }
+      ];
       let rawPlayersData: any[] = [];
       
       // Get roles data from Supabase database using steam_id matching

@@ -53,7 +53,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const roleInfo = {
           team: 'Unknown', // Team info will come from players table join
           player: role.playerUsername || 'Unknown',
-          isIGL: role.inGameLeader,
+          isIGL: Boolean(role.inGameLeader), // Ensure boolean conversion
           tRole: role.tRole,
           ctRole: role.ctRole
         };
@@ -124,6 +124,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           player.role === role || player.tRole === role || player.ctRole === role
         );
       }
+      
+      // Count IGL players in final result
+      const iglPlayersCount = allPlayers.filter(p => p.isIGL === true).length;
+      console.log(`📊 Final IGL players count: ${iglPlayersCount} out of ${allPlayers.length} total players`);
       
       console.log(`📊 Serving ${allPlayers.length} raw players from ${events.length} tournaments`);
       

@@ -78,6 +78,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Created role map with ${roleMap.size} entries using steam_id matching`);
       
+      // Debug: Show first few entries in roleMap
+      let count = 0;
+      for (const [key, value] of roleMap.entries()) {
+        if (count < 3) {
+          console.log(`RoleMap entry ${count + 1}: "${key}" -> isIGL: ${value.isIGL}, tRole: ${value.tRole}`);
+        }
+        count++;
+        if (count >= 3) break;
+      }
+      
       // Debug: Check if Aleksib is in the roleMap
       const aleksibSteamId = '76561198013243326';
       console.log(`🔍 RoleMap has Aleksib (${aleksibSteamId}): ${roleMap.has(aleksibSteamId)}`);
@@ -114,31 +124,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const aleksibInPlayerData = allPlayersFromBothTournaments.find(p => p.steamId === '76561198013243326' || p.userName === 'Aleksib');
       console.log(`🔍 Aleksib found in player data:`, aleksibInPlayerData ? `Yes - Steam ID: ${aleksibInPlayerData.steamId}, Name: ${aleksibInPlayerData.userName}` : 'No');
       
-      // Combine raw stats with role data - NO PIV CALCULATIONS  
+      // Direct approach: Find role data for each player by Steam ID
       const rawPlayersWithRoles = allPlayersFromBothTournaments.map(player => {
-        // Try multiple matching strategies for Steam ID
         const steamIdStr = player.steamId?.toString();
-        const roleInfo = roleMap.get(steamIdStr) || 
-                       roleMap.get(player.userName) || 
-                       { isIGL: false, tRole: 'Support', ctRole: 'Support' };
         
-        // Special debug for Aleksib to track the exact issue
-        if (steamIdStr === '76561198013243326' || player.userName === 'Aleksib') {
-          console.log(`🔍 ALEKSIB MAPPING - Steam ID: ${steamIdStr}, Found in roleMap: ${roleMap.has(steamIdStr)}`);
-          console.log(`🔍 ALEKSIB roleInfo:`, roleInfo);
-          console.log(`🔍 ALEKSIB final isIGL will be:`, roleInfo.isIGL);
+        // Find matching role data directly from rolesData array
+        const matchingRole = rolesData.find(role => 
+          role.steamId?.toString() === steamIdStr
+        );
+        
+        let isIGL = false;
+        let tRole = 'Support';
+        let ctRole = 'Support';
+        
+        if (matchingRole) {
+          // Direct boolean check for in_game_leader
+          isIGL = matchingRole.inGameLeader === true;
+          tRole = matchingRole.tRole || 'Support';
+          ctRole = matchingRole.ctRole || 'Support';
         }
         
-        // Debug logging for first few players
-        if (allPlayersFromBothTournaments.indexOf(player) < 3) {
-          console.log(`Player ${player.userName} (${steamIdStr}): Role match found = ${roleMap.has(steamIdStr)}, isIGL = ${roleInfo.isIGL}`);
+        // Determine primary role for filtering
+        let primaryRole = 'Support'; // default
+        if (isIGL) {
+          primaryRole = 'IGL';
+        } else if (tRole === 'AWP' || ctRole === 'AWP') {
+          primaryRole = 'AWP';
+        } else if (tRole === 'Lurker') {
+          primaryRole = 'Lurker';
+        } else if (tRole === 'Spacetaker') {
+          primaryRole = 'Entry Fragger';
+        } else {
+          primaryRole = 'Support';
         }
-        
+
         return {
           ...player,
-          isIGL: roleInfo.isIGL,
-          tRole: roleInfo.tRole,
-          ctRole: roleInfo.ctRole
+          isIGL,
+          role: primaryRole,
+          tRole,
+          ctRole
         };
       });
       

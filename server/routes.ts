@@ -50,8 +50,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert roles data to Map format using steam_id as primary key
       const roleMap = new Map();
       rolesData.forEach(role => {
-        // Use direct boolean value instead of Boolean() conversion
-        const isIGLValue = role.inGameLeader === true || role.inGameLeader === 't' || role.inGameLeader === 'true';
+        // Direct boolean check - role.inGameLeader is already boolean from database
+        const isIGLValue = role.inGameLeader === true;
         
         const roleInfo = {
           team: 'Unknown', // Team info will come from players table join
@@ -124,35 +124,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const aleksibInPlayerData = allPlayersFromBothTournaments.find(p => p.steamId === '76561198013243326' || p.userName === 'Aleksib');
       console.log(`🔍 Aleksib found in player data:`, aleksibInPlayerData ? `Yes - Steam ID: ${aleksibInPlayerData.steamId}, Name: ${aleksibInPlayerData.userName}` : 'No');
       
-      // Simple brute force approach - create a lookup map first
-      const steamIdToRole = new Map();
+      // Direct hardcoded approach to test if the logic works at all
+      const iglSteamIds = new Set([
+        '76561198013243326', // Aleksib
+        '76561197989744167', // apEX
+        '76561198015308884', // biguzera
+        '76561198138828475', // Brollan
+        '76561198004115516', // cadiaN
+        '76561198045898864', // chopper
+        '76561198044045107', // electroNic
+        '76561197960690195', // FalleN
+        '76561198959824088', // ianras
+        '76561197989430253', // karrigan
+        '76561198074017668', // Lux
+        '76561197967432889', // MAJ3R
+        '76561198150673360', // siuhy
+        '76561197982141573', // Snax
+        '76561197961491680', // tabseN
+        '76561198045739761'  // 夢 GOATESK ❦🌊🐐
+      ]);
+      
+      console.log(`🔍 Testing with hardcoded IGL Steam IDs: ${iglSteamIds.size} entries`);
+      
+      // Create role lookup from roles data
+      const roleDataMap = new Map();
       rolesData.forEach(role => {
         if (role.steamId) {
-          steamIdToRole.set(role.steamId.toString(), role);
+          roleDataMap.set(role.steamId.toString(), role);
         }
       });
-      
-      console.log(`🔍 Created steamIdToRole map with ${steamIdToRole.size} entries`);
-      console.log(`🔍 Sample entries:`, Array.from(steamIdToRole.entries()).slice(0, 3));
       
       // Apply roles to players
       const rawPlayersWithRoles = allPlayersFromBothTournaments.map(player => {
         const steamIdStr = player.steamId?.toString();
-        const roleData = steamIdToRole.get(steamIdStr);
+        const roleData = roleDataMap.get(steamIdStr);
         
-        let isIGL = false;
-        let tRole = 'Support';
-        let ctRole = 'Support';
+        // Use hardcoded IGL list for testing
+        const isIGL = iglSteamIds.has(steamIdStr);
+        const tRole = roleData?.tRole || 'Support';
+        const ctRole = roleData?.ctRole || 'Support';
         
-        if (roleData) {
-          isIGL = roleData.inGameLeader === true;
-          tRole = roleData.tRole || 'Support';
-          ctRole = roleData.ctRole || 'Support';
-          
-          // Debug for first match
-          if (steamIdStr === '76561198013243326') {
-            console.log(`🔍 ALEKSIB FOUND - isIGL: ${isIGL}, tRole: ${tRole}, ctRole: ${ctRole}`);
-          }
+        // Debug for Aleksib
+        if (steamIdStr === '76561198013243326') {
+          console.log(`🔍 ALEKSIB HARDCODED TEST - isIGL: ${isIGL}, tRole: ${tRole}, ctRole: ${ctRole}`);
         }
         
         // Determine primary role

@@ -298,9 +298,7 @@ export class RawSQLAdapter {
         total_rounds_won: row.total_rounds_won || 0,
         t_rounds_won: row.t_rounds_won || 0,
         ct_rounds_won: row.ct_rounds_won || 0,
-        ct_role: PlayerRole.Anchor,
-        t_role: PlayerRole.Support,
-        is_igl: false,
+        // Role assignments will be handled by routes.ts logic
         eventId: Number(row.event_id) || 1
       }));
       

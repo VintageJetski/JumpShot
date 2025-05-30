@@ -335,7 +335,7 @@ export default function PlayerCard({ player, index }: PlayerCardProps) {
         
         {/* Action Button */}
         <motion.button 
-          onClick={() => setLocation(`/players/${player.id}`)}
+          onClick={() => setLocation(`/players/${player.id || player.steamId}`)}
           className="w-full flex items-center justify-center bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 hover:text-blue-100 p-2 rounded-lg border border-blue-500/30 mt-2"
           variants={buttonVariants}
           whileTap="tap"

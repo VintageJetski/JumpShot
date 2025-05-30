@@ -46,10 +46,18 @@ export default function PlayerDetailPage() {
     );
   }
 
-  // Get the metrics for each side
-  const overallMetricsKeys = Object.keys(player.metrics.rcs.metrics);
-  const tMetricsKeys = player.tMetrics ? Object.keys(player.tMetrics.roleMetrics) : [];
-  const ctMetricsKeys = player.ctMetrics ? Object.keys(player.ctMetrics.roleMetrics) : [];
+  // Get the available metrics from the tournament data
+  const availableMetrics = player.metrics ? Object.keys(player.metrics) : [];
+  
+  // Create metric display data from the real tournament stats
+  const displayMetrics = {
+    'K/D': player.metrics?.kd || 0,
+    'ADR': player.metrics?.adr || 0,
+    'KAST': player.metrics?.kast || 0,
+    'First Kills': player.metrics?.firstKills || 0,
+    'Headshots': player.metrics?.headshots || 0,
+    'Utility Damage': player.metrics?.utilityDamage || 0
+  };
   
   return (
     <div className="space-y-6">

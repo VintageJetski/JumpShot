@@ -382,10 +382,14 @@ export class RawSQLAdapter {
           us.t_smokes_thrown,
           us.total_util_dmg,
           us.ct_total_util_dmg,
-          us.t_total_util_dmg
+          us.t_total_util_dmg,
+          r.in_game_leader as is_igl,
+          r.t_role,
+          r.ct_role
         FROM 
           player_teams pt
           LEFT JOIN players p ON (p.steam_id / 100) = (pt.steam_id / 100)
+          LEFT JOIN roles r ON r.steam_id = p.steam_id
           LEFT JOIN kill_stats ks ON (ks.steam_id / 100) = (pt.steam_id / 100) AND ks.event_id = pt.event_id
           LEFT JOIN general_stats gs ON (gs.steam_id / 100) = (pt.steam_id / 100) AND gs.event_id = pt.event_id
           LEFT JOIN utility_stats us ON (us.steam_id / 100) = (pt.steam_id / 100) AND us.event_id = pt.event_id

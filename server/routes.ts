@@ -64,17 +64,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const aleksibInPlayerData = allPlayersFromBothTournaments.find(p => p.steamId === '76561198013243326' || p.userName === 'Aleksib');
       console.log(`🔍 Aleksib found in player data:`, aleksibInPlayerData ? `Yes - Steam ID: ${aleksibInPlayerData.steamId}, Name: ${aleksibInPlayerData.userName}` : 'No');
       
+      // Debug role matching for Aleksib specifically
+      const aleksibRoleData = rolesData.find(role => role.steamId?.toString() === '76561198013243326');
+      console.log(`🔍 Aleksib role data match:`, aleksibRoleData);
+      
       // Use authentic database role assignments
+      console.log(`🔍 Starting role assignment for ${allPlayersFromBothTournaments.length} players`);
       const rawPlayersWithRoles = allPlayersFromBothTournaments.map(player => {
         const steamIdStr = player.steamId?.toString();
         
         // Find exact match in rolesData using authentic database values
         const roleMatch = rolesData.find(role => role.steamId?.toString() === steamIdStr);
         
-        // Debug for cadiaN - check both possible property names
-        if (player.name === 'cadiaN' || player.userName === 'cadiaN') {
-          console.log(`🔍 cadiaN DEBUG:`, {
-            playerName: player.name,
+        // Debug first few players to understand the data structure
+        const playerIndex = allPlayersFromBothTournaments.indexOf(player);
+        if (playerIndex < 3) {
+          console.log(`🔍 Player ${playerIndex + 1} DEBUG:`, {
+            playerUserName: player.userName,
+            playerSteamId: steamIdStr,
+            roleMatchFound: !!roleMatch,
+            roleMatchData: roleMatch
+          });
+        }
+        
+        // Debug for cadiaN specifically
+        if (player.userName === 'cadiaN') {
+          console.log(`🔍 cadiaN FOUND:`, {
             playerUserName: player.userName,
             playerSteamId: steamIdStr,
             roleMatchFound: !!roleMatch,

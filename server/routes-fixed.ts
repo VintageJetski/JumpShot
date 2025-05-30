@@ -1,10 +1,14 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
+import { setupSupabaseDirectRoutes } from "./supabase-direct";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
   setupAuth(app);
+
+  // Set up direct Supabase routes (bypasses auth for testing)
+  setupSupabaseDirectRoutes(app);
 
   // RAW DATA API - No calculations, just serve Supabase data
   app.get('/api/players', async (req: Request, res: Response) => {

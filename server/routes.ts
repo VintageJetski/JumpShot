@@ -71,9 +71,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Find exact match in rolesData using authentic database values
         const roleMatch = rolesData.find(role => role.steamId?.toString() === steamIdStr);
         
-        // Fixed property name: use .name not .userName
-        if (player.name === 'cadiaN') {
+        // Debug for cadiaN - check both possible property names
+        if (player.name === 'cadiaN' || player.userName === 'cadiaN') {
           console.log(`🔍 cadiaN DEBUG:`, {
+            playerName: player.name,
+            playerUserName: player.userName,
             playerSteamId: steamIdStr,
             roleMatchFound: !!roleMatch,
             roleMatchData: roleMatch

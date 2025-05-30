@@ -203,29 +203,37 @@ export const playerStats = pgTable("player_stats", {
   piv: real("piv"),
 });
 
-// Player with calculated PIV metrics
+// Player with calculated PIV metrics - matches tournament data structure
 export interface PlayerWithPIV {
-  id: string;
+  steamId: string;
+  id?: string; // For backward compatibility
   name: string;
   team: string;
-  role: PlayerRole;        // Primary role (determined from CT and T roles)
-  secondaryRole?: PlayerRole; // Secondary role
-  tRole?: PlayerRole;      // T side role
-  ctRole?: PlayerRole;     // CT side role
-  isIGL?: boolean;         // Is in-game leader
-  isMainAwper?: boolean;   // Is the team's main AWPer
-  piv: number;             // Player Impact Value
-  ctPIV?: number;          // CT side PIV
-  tPIV?: number;           // T side PIV
-  kd: number;
-  primaryMetric: {
+  role: string;
+  piv: number;
+  metrics: {
+    kd: number;
+    adr: number;
+    kast: number;
+    firstKills: number;
+    utilityDamage: number;
+    headshots: number;
+  };
+  event: string;
+  // Legacy properties for component compatibility
+  secondaryRole?: PlayerRole;
+  tRole?: string;
+  ctRole?: string;
+  isIGL?: boolean;
+  isMainAwper?: boolean;
+  ctPIV?: number;
+  tPIV?: number;
+  kd?: number;
+  primaryMetric?: {
     name: string;
     value: number;
   };
-  rawStats: PlayerRawStats;
-  metrics: PlayerMetrics;
-  ctMetrics?: PlayerMetrics; // CT side metrics
-  tMetrics?: PlayerMetrics;  // T side metrics
+  rawStats?: PlayerRawStats;
 }
 
 // Team with calculated TIR metrics

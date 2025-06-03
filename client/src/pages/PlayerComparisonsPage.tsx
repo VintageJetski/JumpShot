@@ -8,35 +8,35 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "../components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
+} from "../components/ui/select";
+import { Input } from "../components/ui/input";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/components/ui/tabs";
+} from "../components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+} from "../components/ui/tooltip";
+import { Button } from "../components/ui/button";
+import { Separator } from "../components/ui/separator";
+import { Progress } from "../components/ui/progress";
+import { Badge } from "../components/ui/badge";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Scatter, ScatterChart, ZAxis, Legend, XAxis, YAxis, CartesianGrid, BarChart, Bar, Cell, Tooltip as RechartsTooltip } from "recharts";
 import { ArrowRightLeft, Zap, Target, Crosshair, ShieldAlert, Sparkles, Brain, Lightbulb, Info, BarChart2, PieChart, BadgeInfo } from "lucide-react";
-import RoleBadge from "@/components/ui/role-badge";
-import PerformanceComparisonSlider from "@/components/player-comparison/PerformanceComparisonSlider";
+import RoleBadge from "../components/ui/role-badge";
+import PerformanceComparisonSlider from "../components/player-comparison/PerformanceComparisonSlider";
 
 export default function PlayerComparisonsPage() {
   const [player1Id, setPlayer1Id] = useState<string>("");

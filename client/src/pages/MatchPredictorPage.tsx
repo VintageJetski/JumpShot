@@ -7,32 +7,32 @@ import {
   CardHeader, 
   CardTitle,
   CardFooter
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+} from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Skeleton } from "../components/ui/skeleton";
+import { Separator } from "../components/ui/separator";
+import { Badge } from "../components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "../components/ui/select";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/components/ui/tabs";
+} from "../components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Progress } from "@/components/ui/progress";
+} from "../components/ui/tooltip";
+import { Progress } from "../components/ui/progress";
 import { 
   Box, 
   TrendingUp, 
@@ -50,8 +50,8 @@ import {
   Eye
 } from "lucide-react";
 import { PlayerWithPIV, TeamWithTIR } from "@shared/schema";
-import ConfidenceRatingSystem from "@/components/match-predictor/ConfidenceRatingSystem";
-import { cn } from "@/lib/utils";
+import ConfidenceRatingSystem from "../components/match-predictor/ConfidenceRatingSystem";
+import { cn } from "../lib/utils";
 
 // Helper component for toggle options
 function ToggleOption({ 

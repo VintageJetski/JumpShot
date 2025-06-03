@@ -2,10 +2,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { TeamWithTIR } from "@shared/schema";
-import { DataTable } from "@/components/ui/data-table";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import StatsCard from "@/components/stats/StatsCard";
+import { DataTable } from "../components/ui/data-table";
+import { Input } from "../components/ui/input";
+import { Card, CardContent } from "../components/ui/card";
+import StatsCard from "../components/stats/StatsCard";
 import { Search, BarChart3, Users, Zap, Rocket } from "lucide-react";
 
 export default function TeamsPage() {

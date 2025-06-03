@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { PlayerWithPIV, PlayerRole } from "@shared/schema";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import RoleBadge from "@/components/ui/role-badge";
-import ProgressMetric from "@/components/stats/ProgressMetric";
-import PlayerStatsRadarChart from "@/components/charts/PlayerStatsRadarChart";
-import PlayerHistoryTab from "@/components/player-history/PlayerHistoryTab";
+import { Card, CardContent } from "../components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import RoleBadge from "../components/ui/role-badge";
+import ProgressMetric from "../components/stats/ProgressMetric";
+import PlayerStatsRadarChart from "../components/charts/PlayerStatsRadarChart";
+import PlayerHistoryTab from "../components/player-history/PlayerHistoryTab";
 import { ArrowLeft, Rocket, Shield, Skull, History } from "lucide-react";
 import { useState } from "react";
 

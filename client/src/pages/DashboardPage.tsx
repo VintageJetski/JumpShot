@@ -25,13 +25,13 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '../ui/dialog';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { toast } from '../hooks/use-toast';
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from '@/hooks/use-toast';
 import { Loader2, Grid, Plus, Save, Trash2 } from 'lucide-react';
-import { PlayerCombobox } from '../ui/player-combobox';
-import { TeamCombobox } from '../ui/team-combobox';
+import { PlayerCombobox } from '@/components/ui/player-combobox';
+import { TeamCombobox } from '@/components/ui/team-combobox';
 
 // Import widget components
 import TopPlayersByPIVIncrease from '../components/dashboard/widgets/TopPlayersByPIVIncrease';

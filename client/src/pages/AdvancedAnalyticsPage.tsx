@@ -7,21 +7,21 @@ import {
   CardDescription, 
   CardHeader, 
   CardTitle 
-} from '../ui/card';
+} from '@/components/ui/card';
 import { 
   Tabs, 
   TabsContent, 
   TabsList, 
   TabsTrigger 
-} from '../ui/tabs';
-import { Button } from '../ui/button';
+} from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '../ui/select';
+} from '@/components/ui/select';
 import { 
   ArrowLeft, 
   BarChart4,
@@ -35,7 +35,7 @@ import AdvancedStatsTable from '../components/data-visualization/AdvancedStatsTa
 import CorrelationAnalysis from '../components/data-visualization/CorrelationAnalysis';
 import TrendAnalysis from '../components/data-visualization/TrendAnalysis';
 import PositionalHeatmap from '../components/data-visualization/PositionalHeatmap';
-import { Separator } from '../ui/separator';
+import { Separator } from '@/components/ui/separator';
 
 // Define tabs for the advanced analytics page
 enum AnalyticsTab {

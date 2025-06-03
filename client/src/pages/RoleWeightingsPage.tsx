@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlayerRole } from '../../shared/schema';
-import { Progress } from '../ui/progress';
+import { Progress } from '@/components/ui/progress';
 import { useQuery } from '@tanstack/react-query';
-import { Button } from '../ui/button';
-import { Slider } from '../ui/slider';
-import { Switch } from '../ui/switch';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts';
 import { RotateCcw as ResetIcon, Save as SaveIcon, FileDown } from 'lucide-react';
 import exportToPDF from '../lib/pdfExport';

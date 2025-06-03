@@ -1,91 +1,80 @@
 import * as React from "react"
-import { Search } from "lucide-react"
-import { Input } from "./input"
-import { Label } from "./label"
-import { ScrollArea } from "./scroll-area"
-import { PlayerWithPIV } from "@/../../shared/schema"
+import { Check, ChevronsUpDown } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+
+interface Player {
+  name: string
+  team: string
+  role: string
+}
 
 interface PlayerComboboxProps {
-  players: PlayerWithPIV[]
-  selectedPlayerId: string | null
-  onSelect: (value: string) => void
+  players: Player[]
+  value?: string
+  onValueChange: (value: string) => void
   placeholder?: string
 }
 
-export function PlayerCombobox({ 
-  players, 
-  selectedPlayerId, 
-  onSelect,
-  placeholder = "Select a player"
-}: PlayerComboboxProps) {
-  const [search, setSearch] = React.useState("")
-  
-  // Get the selected player's name
-  const selectedPlayer = React.useMemo(() => {
-    return players.find(player => player.id === selectedPlayerId)
-  }, [players, selectedPlayerId])
-
-  // Filter players based on search
-  const filteredPlayers = React.useMemo(() => {
-    if (!search) return players
-    
-    const searchTerms = search.toLowerCase()
-    return players.filter((player) => 
-      player.name.toLowerCase().includes(searchTerms) || 
-      player.team.toLowerCase().includes(searchTerms) ||
-      player.role.toLowerCase().includes(searchTerms)
-    )
-  }, [players, search])
+export function PlayerCombobox({ players, value, onValueChange, placeholder = "Select player..." }: PlayerComboboxProps) {
+  const [open, setOpen] = React.useState(false)
 
   return (
-    <div className="space-y-2">
-      <div className="relative">
-        <Input
-          placeholder={placeholder}
-          value={selectedPlayer ? `${selectedPlayer.name} (${selectedPlayer.team})` : search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-      </div>
-      
-      {search && !selectedPlayer && (
-        <div className="rounded-md border border-border mt-1">
-          <ScrollArea className="h-[220px]">
-            <div className="p-1">
-              {filteredPlayers.length === 0 ? (
-                <div className="py-6 text-center text-sm text-muted-foreground">
-                  No players found
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between"
+        >
+          {value
+            ? players.find((player) => player.name === value)?.name
+            : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-full p-0">
+        <Command>
+          <CommandInput placeholder="Search players..." />
+          <CommandEmpty>No player found.</CommandEmpty>
+          <CommandGroup>
+            {players.map((player) => (
+              <CommandItem
+                key={player.name}
+                value={player.name}
+                onSelect={(currentValue) => {
+                  onValueChange(currentValue === value ? "" : currentValue)
+                  setOpen(false)
+                }}
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    value === player.name ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                <div className="flex flex-col">
+                  <span>{player.name}</span>
+                  <span className="text-xs text-muted-foreground">{player.team} • {player.role}</span>
                 </div>
-              ) : (
-                filteredPlayers.map((player) => (
-                  <div
-                    key={player.id}
-                    onClick={() => {
-                      onSelect(player.id)
-                      setSearch("")
-                    }}
-                    className="flex items-center justify-between px-3 py-2 text-sm rounded-sm hover:bg-accent cursor-pointer"
-                  >
-                    <div>
-                      <span className="font-medium">{player.name}</span>
-                      <span className="ml-2 text-muted-foreground">({player.team})</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500">
-                        {player.role}
-                      </span>
-                      <span className="text-xs px-1.5 py-0.5 rounded bg-slate-200/10 text-slate-300">
-                        {player.piv.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </ScrollArea>
-        </div>
-      )}
-    </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </Command>
+      </PopoverContent>
+    </Popover>
   )
 }

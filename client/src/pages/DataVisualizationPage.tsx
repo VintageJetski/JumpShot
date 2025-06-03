@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Button } from '../ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { 
   Select, 
   SelectContent, 
   SelectItem, 
   SelectTrigger, 
   SelectValue 
-} from '../ui/select';
-import { Input } from '../ui/input';
-import { Separator } from '../ui/separator';
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 import { 
   BarChart3, 
   Search, 
@@ -25,7 +25,7 @@ import {
 import PlayerPerformanceChart from '../components/data-visualization/PlayerPerformanceChart';
 import TeamPerformanceChart from '../components/data-visualization/TeamPerformanceChart';
 import { PlayerWithPIV, TeamWithTIR, PlayerRole, TeamRoundMetrics } from '../../shared/types';
-import RoleBadge from '../ui/role-badge';
+import RoleBadge from '@/components/ui/role-badge';
 
 // Define visualization tabs
 enum VisualizationTab {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ export default function PlayersPage() {
   const [teams, setTeams] = useState<{[key: string]: PlayerWithPIV[]}>({});
   
   useEffect(() => {
-    if (players) {
+    if (players && players.length > 0) {
       // Group players by team
       const teamGroups: {[key: string]: PlayerWithPIV[]} = {};
       players.forEach(player => {
@@ -39,7 +39,7 @@ export default function PlayersPage() {
       });
       setTeams(teamGroups);
     }
-  }, [players]);
+  }, [players.length]);
 
   // Helper function to check if a player has a specific role
   const hasRole = (player: PlayerWithPIV, role: string): boolean => {
@@ -53,20 +53,24 @@ export default function PlayersPage() {
     );
   };
   
-  // Apply search and role filters
-  const filteredPlayers = players ? players
-    .filter(player => {
-      // Text search filter
-      const matchesSearch = 
-        player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        player.team.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      // Role filter
-      const matchesRole = hasRole(player, roleFilter);
-      
-      return matchesSearch && matchesRole;
-    })
-    .sort((a, b) => b.piv - a.piv) : [];
+  // Apply search and role filters with memoization to prevent infinite renders
+  const filteredPlayers = useMemo(() => {
+    if (!players || players.length === 0) return [];
+    
+    return players
+      .filter(player => {
+        // Text search filter
+        const matchesSearch = 
+          player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          player.team.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        // Role filter
+        const matchesRole = hasRole(player, roleFilter);
+        
+        return matchesSearch && matchesRole;
+      })
+      .sort((a, b) => b.piv - a.piv);
+  }, [players, searchQuery, roleFilter]);
 
   // Extract top players by role with comprehensive role checking
   const findTopPlayerByRole = (role: PlayerRole) => {

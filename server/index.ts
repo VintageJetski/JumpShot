@@ -35,8 +35,8 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
   
-  // Serve static files from the built React app
-  app.use(express.static(path.join(process.cwd(), 'dist', 'public')));
+  // Serve static assets only
+  app.use('/assets', express.static(path.join(process.cwd(), 'client', 'public')));
   
   // Serve your working advanced dashboard for all non-API routes
   app.get('*', (req, res) => {

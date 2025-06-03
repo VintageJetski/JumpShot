@@ -1,0 +1,77 @@
+All fields in italics are exact column names from your two CSVs; anything that must be derived is shown in bold with its expression.
+Normalise every raw metric with Min-Max across the current data set (0 → worst, 100 → best) before applying weights.
+
+1 Universal housekeeping
+
+Symbol	Definition	Formula
+R	rounds played by the player in the data slice	R = t_rounds_won + ct_rounds_won + (rounds_lost)
+(rounds_lost = total rows in rounds where player’s team ≠ winner)
+KAST%	involvement per round	kast_total ⚠ already a percentage
+ADR	damage per round	adr_total
+OKR	opening-kill ratio	OKR = first_kills ÷ (first_kills + first_deaths)
+FlashEff	flash assists per util	FlashEff = assisted_flashes ÷ total_util_thrown
+UtilityDmgEff	util damage per util	UtilityDmgEff = total_util_dmg ÷ total_util_thrown
+Headshot%	raw mechanical proxy	headshots ÷ kills
+AWPShare	reliance on AWP	awp_kills ÷ kills
+TradeRatio	trading effectiveness	trade_kills ÷ trade_deaths
+Clutch%	clutch win rate	(if clutch rows are tagged elsewhere; otherwise leave 0 until added)
+Sample-size guard If R < 200, flag “Low sample” and freeze the player’s Min-Max score at the data-set median to avoid volatility.
+
+2 Role-specific scorecards
+Use the weight matrix in Roles Metrics Weights.csv.
+Where the role sheet references variables you don’t yet track (e.g., “Timeout conversion”), substitute the fallback shown.
+
+
+Role	Metric (weight from sheet)	Concrete calculation with current data
+IGL	Round-win rate rifle v rifle (0.245)	Filter rounds where CT_buy_type == Full Buy and T_buy_type == Full Buy → rifle_rounds_won ÷ rifle_rounds_played
+Utility-usage efficiency (0.210)	FlashEff
+Timeout conversion (0.140)	fallback → team Win% in the five rounds after any tactical timeout (needs only start-time stamp in rounds)
+Basic consistency (0.105)	1 ÷ stdev(adr_total , kast_total , kd) over the maps in slice
+Eco/force conversion (0.150)	Win% where own buy_type ∈ {Semi-Buy, Semi-Eco, Full Eco}
+5v4 conversion (0.150)	Rounds won after team got first_kill • from rounds 5v4_advantage == team_clan_name
+| AWPer | Opening kill ratio (0.280) | OKR (only AWP rounds if you later split by weapon) | | | Basic consistency (0.205) | map-to-map stdev of awp_kills inverted | | | AWP kill share (0.175) | AWPShare | | | CT-side ADR (0.165) | adr_ct_side | | | Multi-kill rate (0.175) | (not yet in CSV) • fallback → kills ÷ R |
+
+| Spacetaker (Entry) | First-duel success (0.28) | OKR | | | Impact rating (0.21) | (first_kills + trade_kills + util_dmg_contrib) ÷ R | | | Utility-front-load (0.14) | (t_flahes_thrown + t_smokes_thrown) ÷ R | | | Space-gain damage (0.105) | adr_t_side | | | Consistency (0.105) | stdev(kills per map) inverted | | | CT retake assists (0.15) | assisted_flashes on CT •
+
+| Lurker | Late-round conversion (0.245) | kills in rounds with ≤ 2 players alive per team ÷ such rounds | | | Trade ratio (0.175) | TradeRatio | | | T-side ADR (0.175) | adr_t_side | | | Map pressure (0.150) | total flanks (≥ 50 m rotation before first contact) ÷ R (needs path tracking – keep placeholder 50) | | | Consistency (0.105) | stdev(adr_t_side) inverted | | | Post-plant survival (0.15) | survive% when bomb planted |
+
+| Anchor | Site-hold success (0.245) | CT rounds where bomb not planted at own site ÷ CT rounds at that site (until site logs exist, use kills_per_CT_round as proxy) | | | Multi-kills on CT (0.175) | kills where side == CT and round_kills ≥ 2 ÷ CT rounds | | | CT ADR (0.175) | adr_ct_side | | | CT KAST (0.150) | kast_ct_side | | | CT utility eff (0.150) | ct_total_util_dmg ÷ ct_total_util_thrown | | | Consistency (0.105) | stdev(kast_ct_side) inverted |
+
+| Support | Flash-assist per round (0.245) | assisted_flashes ÷ R | | | Utility damage eff (0.175) | UtilityDmgEff | | | Trade assists (0.175) | trade_kills ÷ R | | | Survival rate (0.150) | 1 – (deaths ÷ R) | | | Pistol influence (0.105) | (kills + assists in pistol rounds) ÷ pistol rounds | | | Smoke usage (0.15) | total_smokes_thrown ÷ R |
+
+For every role score_role = Σ( normalised_metric × weight )
+The white circle in the UI shows this role score (0-100).
+
+3 Team-fit layer (the coloured bar)
+No historical decay; use only what exists in the slice.
+
+
+Component	Formula	Weight
+Role similarity	100 if candidate’s top-score role == open slot, else 65 if secondary role match, else 0	0.45
+Map-pool overlap	Extract map name from demo_file_name.
+For each map calculate player’s average ADR percentile. Mark “Comfort” if percentile ≥ 60.
+Score = (# shared comfort maps with team) ÷ 7 × 100	0.30
+Chemistry proxy	+20 if same team_clan_name history, +10 if same primary language, +10 if played ≥50 rounds together in data slice	0.15
+Momentum delta	(player_form – team_average_form) × 1.5 (positive over-performance plugs gaps)	0.10
+synergy = Σ(component × weight)
+
+Bucket for bar: <60 = bad · 60-69 = fine · 70-79 = good · ≥80 = very good
+
+4 Risk dot (keep simple with limited data)
+
+Risk factor	Expression	Weight
+Low-sample risk	100 – min(R,200)/200×100	0.6
+Tilt proxy	“complaint” words per 100 voice lines (placeholder until voice processed)	0.4
+risk = Σ(weighted) → dot colour green ≤ 25, amber 26-50, red > 50.
+
+5 Overall match score (for sorting lists)
+overall = (role_score × 0.55) + (synergy × 0.35) – (risk × 0.10)
+
+6 Implementation notes
+Normalisation – run metric_value through (x – min)/(max – min) per event slice before weighting.
+
+Missing columns – keep stubs that return the dataset median so engine doesn’t break; swap them once the parser delivers richer logs.
+
+Extending sample – as soon as you ingest another tournament just append rows; no decay logic required because all metrics continually re-normalise.
+
+Drop these formulas into your processing script and pipe the three composite numbers (role_score, synergy, risk) back to the front-end widgets already mocked in the Scout 1.0 screens.

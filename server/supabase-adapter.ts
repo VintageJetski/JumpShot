@@ -8,14 +8,7 @@ import {
   SupaPlayerData,
   SupaTeam,
   SupaUtilityStats,
-  TeamWithTIR,
-  // Import schema tables directly
-  supaPlayers,
-  supaPlayerMatchSummary,
-  supaKillStats,
-  supaGeneralStats,
-  supaUtilityStats,
-  supaTeams
+  TeamWithTIR
 } from '@shared/schema';
 import { supaDb } from './supabase-db';
 import { and, eq } from 'drizzle-orm';
@@ -142,8 +135,9 @@ export class SupabaseAdapter {
     
     try {
       // Fetch player record
-      const players = await supaDb.select().from(supaPlayers).where(eq(supaPlayers.steamId, steamIdNum));
-      const player = players.length > 0 ? players[0] : null;
+      const player = await supaDb.query.supaPlayers.findFirst({
+        where: eq(supaDb.schema.supaPlayers.steamId, steamIdNum)
+      });
       
       if (!player) {
         console.error(`Player with steam ID ${steamIdNum} not found`);
@@ -151,12 +145,10 @@ export class SupabaseAdapter {
       }
       
       // Fetch most recent event ID for this player
-      const playerMatchSummaries = await supaDb.select()
-        .from(supaPlayerMatchSummary)
-        .where(eq(supaPlayerMatchSummary.steamId, steamIdNum))
-        .orderBy(supaPlayerMatchSummary.eventId);
-      
-      const playerMatchSummary = playerMatchSummaries.length > 0 ? playerMatchSummaries[0] : null;
+      const playerMatchSummary = await supaDb.query.supaPlayerMatchSummary.findFirst({
+        where: eq(supaDb.schema.supaPlayerMatchSummary.steamId, steamIdNum),
+        orderBy: (fields, { desc }) => [desc(fields.eventId)]
+      });
       
       if (!playerMatchSummary) {
         console.error(`No match summary found for player ${steamIdNum}`);
@@ -164,43 +156,41 @@ export class SupabaseAdapter {
       }
       
       // Now fetch stats using the event ID
-      const [killStats] = await supaDb.select()
-        .from(supaKillStats)
-        .where(and(
-          eq(supaKillStats.steamId, steamIdNum),
-          eq(supaKillStats.eventId, playerMatchSummary.eventId)
-        ));
+      const killStats = await supaDb.query.supaKillStats.findFirst({
+        where: and(
+          eq(supaDb.schema.supaKillStats.steamId, steamIdNum),
+          eq(supaDb.schema.supaKillStats.eventId, playerMatchSummary.eventId)
+        )
+      });
       
-      const [generalStats] = await supaDb.select()
-        .from(supaGeneralStats)
-        .where(and(
-          eq(supaGeneralStats.steamId, steamIdNum),
-          eq(supaGeneralStats.eventId, playerMatchSummary.eventId)
-        ));
+      const generalStats = await supaDb.query.supaGeneralStats.findFirst({
+        where: and(
+          eq(supaDb.schema.supaGeneralStats.steamId, steamIdNum),
+          eq(supaDb.schema.supaGeneralStats.eventId, playerMatchSummary.eventId)
+        )
+      });
       
-      const [utilityStats] = await supaDb.select()
-        .from(supaUtilityStats)
-        .where(and(
-          eq(supaUtilityStats.steamId, steamIdNum),
-          eq(supaUtilityStats.eventId, playerMatchSummary.eventId)
-        ));
+      const utilityStats = await supaDb.query.supaUtilityStats.findFirst({
+        where: and(
+          eq(supaDb.schema.supaUtilityStats.steamId, steamIdNum),
+          eq(supaDb.schema.supaUtilityStats.eventId, playerMatchSummary.eventId)
+        )
+      });
       
       // Fetch team info if team ID is available
       let teamInfo = null;
       if (playerMatchSummary.teamId) {
-        const teams = await supaDb.select()
-          .from(supaTeams)
-          .where(eq(supaTeams.id, playerMatchSummary.teamId));
-        
-        teamInfo = teams.length > 0 ? teams[0] : null;
+        teamInfo = await supaDb.query.supaTeams.findFirst({
+          where: eq(supaDb.schema.supaTeams.id, playerMatchSummary.teamId)
+        });
       }
       
       return {
         player,
-        killStats,
-        generalStats,
-        utilityStats,
-        teamInfo
+        killStats: killStats || undefined,
+        generalStats: generalStats || undefined,
+        utilityStats: utilityStats || undefined,
+        teamInfo: teamInfo || undefined
       };
     } catch (error) {
       console.error(`Error fetching player data for ${steamIdNum}:`, error);
@@ -214,7 +204,7 @@ export class SupabaseAdapter {
   static async fetchAllPlayersData(): Promise<SupaPlayerData[]> {
     try {
       // Get all players
-      const players = await supaDb.select().from(supaPlayers);
+      const players = await supaDb.query.supaPlayers.findMany();
       
       // Fetch detailed data for each player
       const playerDataPromises = players.map(player => 
@@ -234,7 +224,7 @@ export class SupabaseAdapter {
    */
   static async fetchAllTeams(): Promise<SupaTeam[]> {
     try {
-      return await supaDb.select().from(supaTeams);
+      return await supaDb.query.supaTeams.findMany();
     } catch (error) {
       console.error('Error fetching teams:', error);
       return [];

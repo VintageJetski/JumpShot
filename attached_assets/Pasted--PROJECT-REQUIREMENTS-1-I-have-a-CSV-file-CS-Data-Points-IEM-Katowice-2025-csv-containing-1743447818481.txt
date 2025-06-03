@@ -1,0 +1,51 @@
+**PROJECT REQUIREMENTS**:
+1. I have a CSV file: "CS Data Points (IEM_Katowice_2025).csv" containing match/player data. 
+2. I also have a PDF called "CSDK MVP & Player Rating System (1).pdf," which defines a formula for computing:
+   - Player Impact Value (PIV)
+   - Team Impact Rating (TIR)
+   - Role-specific metrics (IGL, T-Side AWPer, Lurker, etc.)
+   - Synergy contribution (SC)
+   - Opponent Strength Multiplier (OSM)
+3. I need a **full-stack** app with:
+   - A **Node/Express backend** that:
+     - Parses the CSV into memory.
+     - Computes each player's PIV using the document’s formulas (or a simplified version if you prefer).
+     - Computes each team's TIR by summing PIV + synergy layer (again, from the doc).
+     - Provides REST endpoints to fetch players and teams in JSON.
+   - A **React frontend** that:
+     - Fetches from the backend endpoints.
+     - Displays a simple table/list of players (with columns: Name, Role, PIV, etc.).
+     - Displays a simple table/list of teams (with TIR or an example synergy stat).
+     - Uses React Router (or minimal routing) so I can click “Players” or “Teams” pages.
+
+**IMPLEMENTATION DETAILS**:
+- Put everything in one Replit workspace or a monorepo structure (one folder for backend, one for frontend).
+- The backend:
+  - Install "csv-parse" (or a similar library) to read the CSV.
+  - Convert relevant string fields (kills, deaths, etc.) into numbers.
+  - Use the formulas from "CSDK MVP & Player Rating System" to compute role-based stats:
+    - RCS (role-core score),
+    - ICF (individual consistency),
+    - synergy (SC),
+    - OSM,
+    - and final PIV = [(RCS × ICF) + SC] × OSM.
+  - Then sum up the 5 players on a team plus synergy layer to get TIR.
+- Provide at least two main endpoints:
+  - GET "/players" -> returns an array of players with computed PIV.
+  - GET "/teams"   -> returns an array of teams with computed TIR.
+- The frontend:
+  - A minimal React app. 
+  - Page “/players”: fetch "/players" and show data in a table.
+  - Page “/teams”: fetch "/teams" and show data in a table.
+  - If time allows, let me click on a specific player to see a breakdown of how their PIV was computed.
+
+**DELIVERABLE**:
+- A functioning Replit project that runs both backend and frontend:
+  - `npm start` or similar command.
+  - I should be able to open the web preview and see the React interface for players/teams.
+  - The backend automatically reads my CSV file "CS Data Points (IEM_Katowice_2025).csv" on startup, computes the ratings, and exposes them to the frontend.
+
+**GOAL**:
+- A simple prototype to confirm the PIV/TIR logic works, letting me visually check the results in a browser.
+
+Please create all necessary files (server code, React code) and explain how to run it in Replit. 

@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useContext, useState, useEffect } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "./use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 type User = {
   id: number;

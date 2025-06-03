@@ -31,10 +31,10 @@ import {
   TrendingDown
 } from 'lucide-react';
 import { PlayerWithPIV, TeamWithTIR, PlayerRole, RawStats } from '@shared/types';
-import AdvancedStatsTable from '../components/data-visualization/AdvancedStatsTable';
-import CorrelationAnalysis from '../components/data-visualization/CorrelationAnalysis';
-import TrendAnalysis from '../components/data-visualization/TrendAnalysis';
-import PositionalHeatmap from '../components/data-visualization/PositionalHeatmap';
+import AdvancedStatsTable from '@/components/data-visualization/AdvancedStatsTable';
+import CorrelationAnalysis from '@/components/data-visualization/CorrelationAnalysis';
+import TrendAnalysis from '@/components/data-visualization/TrendAnalysis';
+import PositionalHeatmap from '@/components/data-visualization/PositionalHeatmap';
 import { Separator } from '@/components/ui/separator';
 
 // Define tabs for the advanced analytics page

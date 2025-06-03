@@ -1,35 +1,38 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { HybridDataLoader } from "./hybrid-data-loader";
+import { loadNewPlayerStats } from "./newDataParser";
+import { processPlayerStatsWithRoles } from "./newPlayerAnalytics";
 import { calculateTeamImpactRatings } from "./teamAnalytics";
+import { loadPlayerRoles } from "./roleParser";
 import { initializeRoundData } from "./roundDataLoader";
 import { setupAuth, ensureAuthenticated } from "./auth";
-import { processXYZDataFromFile, RoundPositionalMetrics, PlayerMovementAnalysis } from "./xyz-data-parser";
 import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize data on server start
   try {
     console.log('Loading and processing player data...');
+    const rawPlayerStats = await loadNewPlayerStats();
     
-    // Use hybrid data loader (Supabase first, then CSV fallback)
-    const playersWithPIV = await HybridDataLoader.loadPlayerData();
+    // Load player roles from CSV
+    console.log('Loading player roles from CSV...');
+    const roleMap = await loadPlayerRoles();
+    
+    // Process player stats with roles and calculate PIV
+    const playersWithPIV = processPlayerStatsWithRoles(rawPlayerStats, roleMap);
     
     // Calculate team TIR
     const teamsWithTIR = calculateTeamImpactRatings(playersWithPIV);
     
-    // Store processed data (in-memory only to avoid database connection issues)
-    // Temporarily disabled database writes - using cache only
-    playersWithPIV.forEach(p => (storage as any).playersCache.set(p.id, p));
-    teamsWithTIR.forEach(t => (storage as any).teamsCache.set(t.name, t));
+    // Store processed data
+    await storage.setPlayers(playersWithPIV);
+    await storage.setTeams(teamsWithTIR);
     
     console.log(`Processed ${playersWithPIV.length} players and ${teamsWithTIR.length} teams`);
     
-    // Load and process round data (non-blocking)
-    initializeRoundData().catch(error => {
-      console.error('Error initializing round data:', error);
-    });
+    // Load and process round data
+    await initializeRoundData();
   } catch (error) {
     console.error('Error initializing data:', error);
   }
@@ -125,56 +128,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       teamCount: 16,
       lastUpdated: new Date().toISOString()
     });
-  });
-  
-  // XYZ Positional data analysis endpoints
-  app.get('/api/admin/xyz-analysis', ensureAuthenticated, async (req: Request, res: Response) => {
-    try {
-      console.log('Processing sample XYZ data...');
-      
-      // Set a higher timeout for this API endpoint
-      req.setTimeout(120000); // 2-minute timeout
-      res.setTimeout(120000);
-      
-      // Process the data asynchronously
-      const roundNumber = 4; // Analyzing specific round data
-      const filePath = './attached_assets/round_4_mapping.csv'; // Using relative path from project root
-      
-      // Log the file path for debugging
-      console.log(`Attempting to process XYZ data from: ${filePath}`);
-      
-      console.log(`Found XYZ data file at ${filePath}, processing...`);
-      const xyzAnalysis = await processXYZDataFromFile(filePath, roundNumber);
-      
-      // Send a more compact response for better performance
-      // Simplify the position heatmap data to reduce response size
-      const compactAnalysis = {
-        ...xyzAnalysis,
-        playerMetrics: Object.entries(xyzAnalysis.playerMetrics).reduce<Record<string, PlayerMovementAnalysis>>((acc, [key, player]) => {
-          // Limit the number of heatmap points to reduce payload size
-          const typedPlayer = player as PlayerMovementAnalysis;
-          const sampledHeatmap = typedPlayer.positionHeatmap.filter((_: any, i: number) => i % 3 === 0);
-          
-          acc[key] = {
-            ...typedPlayer,
-            positionHeatmap: sampledHeatmap
-          };
-          return acc;
-        }, {})
-      };
-      
-      res.json({
-        message: 'XYZ data analysis completed successfully',
-        roundNum: xyzAnalysis.round_num,
-        analysis: compactAnalysis
-      });
-    } catch (error) {
-      console.error('Error processing XYZ data:', error);
-      res.status(500).json({ 
-        message: 'Failed to process XYZ data',
-        error: error instanceof Error ? error.message : String(error) 
-      });
-    }
   });
   
   const httpServer = createServer(app);

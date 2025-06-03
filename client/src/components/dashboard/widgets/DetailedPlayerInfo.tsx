@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayerWithPIV } from '../../../../shared/schema';
+import { PlayerWithPIV } from '@shared/schema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, User, Activity, Crosshair, Bomb, Shield } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';

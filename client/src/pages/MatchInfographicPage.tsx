@@ -4,8 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { TeamWithTIR, TeamRoundMetrics, PlayerWithPIV } from '@shared/schema';
 import { Loader2, Download, Share2, Check } from 'lucide-react';
-import TeamSelect from '../components/infographic/TeamSelect';
-import MatchInfographicGenerator from '../components/infographic/MatchInfographicGenerator';
+import TeamSelect from '@/components/infographic/TeamSelect';
+import MatchInfographicGenerator from '@/components/infographic/MatchInfographicGenerator';
 import { toPng } from 'html-to-image';
 import { useToast } from '@/hooks/use-toast';
 

@@ -1,68 +1,185 @@
 import { Switch, Route } from "wouter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-
-// Import your original sophisticated pages
-import DashboardPage from "@/pages/DashboardPage";
+import NotFound from "@/pages/not-found";
 import PlayersPage from "@/pages/PlayersPage";
 import TeamsPage from "@/pages/TeamsPage";
 import PlayerDetailPage from "@/pages/PlayerDetailPage";
 import TeamDetailPage from "@/pages/TeamDetailPage";
-import PlayerComparisonsPage from "@/pages/PlayerComparisonsPage";
-import MatchPredictorPage from "@/pages/MatchPredictorPage";
-import ScoutPage from "@/pages/ScoutPage";
-import AdvancedAnalyticsPage from "@/pages/AdvancedAnalyticsPage";
-import DataVisualizationPage from "@/pages/DataVisualizationPage";
-import StatisticalAnalysisPage from "@/pages/StatisticalAnalysisPage";
-import AdvancedVisualizationPage from "@/pages/AdvancedVisualizationPage";
-import SearchPlayersPage from "@/pages/SearchPlayersPage";
 import RoleWeightingsPage from "@/pages/RoleWeightingsPage";
 import DocumentationPage from "@/pages/DocumentationPage";
+import PlayerComparisonsPage from "@/pages/PlayerComparisonsPage";
+import MatchPredictorPage from "@/pages/MatchPredictorPage";
 import MatchInfographicPage from "@/pages/MatchInfographicPage";
-import NotFound from "@/pages/not-found";
+import ScoutPage from "@/pages/ScoutPage";
+import SearchPlayersPage from "@/pages/SearchPlayersPage";
+import StatisticalAnalysisPage from "@/pages/StatisticalAnalysisPage";
+import DataVisualizationPage from "@/pages/DataVisualizationPage";
+import AdvancedAnalyticsPage from "@/pages/AdvancedAnalyticsPage";
+import DashboardPage from "@/pages/DashboardPage";
+import VentionStyleMockup from "@/pages/VentionStyleMockup";
+import LoginPage from "@/pages/auth/login-page";
+import AdminPage from "@/pages/admin/admin-page";
+import Layout from "@/components/layout/Layout";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/components/auth/protected-route";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+function Router() {
+  const { isLoggedIn } = useAuth();
+
+  return (
+    <Layout>
+      <Switch>
+        {/* Auth page is public */}
+        <Route path="/auth/login" component={LoginPage} />
+
+        {/* Protected routes - require authentication */}
+        <Route path="/">
+          {() => (
+            <ProtectedRoute>
+              <PlayersPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/players">
+          {() => (
+            <ProtectedRoute>
+              <PlayersPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/teams">
+          {() => (
+            <ProtectedRoute>
+              <TeamsPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/role-weightings">
+          {() => (
+            <ProtectedRoute>
+              <RoleWeightingsPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/documentation">
+          {() => (
+            <ProtectedRoute>
+              <DocumentationPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/player-comparisons">
+          {() => (
+            <ProtectedRoute>
+              <PlayerComparisonsPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/match-predictor">
+          {() => (
+            <ProtectedRoute>
+              <MatchPredictorPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/match-infographic">
+          {() => (
+            <ProtectedRoute>
+              <MatchInfographicPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/scout">
+          {() => (
+            <ProtectedRoute>
+              <ScoutPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/scout/search-players">
+          {() => (
+            <ProtectedRoute>
+              <SearchPlayersPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/statistical-analysis">
+          {() => (
+            <ProtectedRoute>
+              <StatisticalAnalysisPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/data-visualization">
+          {() => (
+            <ProtectedRoute>
+              <DataVisualizationPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/advanced-analytics">
+          {() => (
+            <ProtectedRoute>
+              <AdvancedAnalyticsPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/dashboard">
+          {() => (
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/vention-mockup">
+          {() => (
+            <ProtectedRoute>
+              <VentionStyleMockup />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/players/:id">
+          {() => (
+            <ProtectedRoute>
+              <PlayerDetailPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/teams/:name">
+          {() => (
+            <ProtectedRoute>
+              <TeamDetailPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/admin">
+          {() => (
+            <ProtectedRoute adminOnly={true}>
+              <AdminPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route>
+          {() => (
+            <ProtectedRoute>
+              <NotFound />
+            </ProtectedRoute>
+          )}
+        </Route>
+      </Switch>
+    </Layout>
+  );
+}
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-gray-50">
-        <Switch>
-          {/* Main Pages */}
-          <Route path="/" component={DashboardPage} />
-          <Route path="/dashboard" component={DashboardPage} />
-          <Route path="/players" component={PlayersPage} />
-          <Route path="/teams" component={TeamsPage} />
-          
-          {/* Detail Pages */}
-          <Route path="/player/:playerName" component={PlayerDetailPage} />
-          <Route path="/team/:teamName" component={TeamDetailPage} />
-          
-          {/* Advanced Features */}
-          <Route path="/compare" component={PlayerComparisonsPage} />
-          <Route path="/predictions" component={MatchPredictorPage} />
-          <Route path="/scout" component={ScoutPage} />
-          <Route path="/analytics" component={AdvancedAnalyticsPage} />
-          <Route path="/visualization" component={DataVisualizationPage} />
-          <Route path="/advanced-visualization" component={AdvancedVisualizationPage} />
-          <Route path="/statistical-analysis" component={StatisticalAnalysisPage} />
-          <Route path="/search" component={SearchPlayersPage} />
-          <Route path="/role-weightings" component={RoleWeightingsPage} />
-          <Route path="/documentation" component={DocumentationPage} />
-          <Route path="/infographic" component={MatchInfographicPage} />
-          
-          {/* Fallback */}
-          <Route component={NotFound} />
-        </Switch>
-      </div>
-      <Toaster />
+      <AuthProvider>
+        <Router />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

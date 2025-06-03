@@ -1,8 +1,8 @@
 import { useAuth } from "@/hooks/use-auth";
-import { Button } from "@/../components/ui/button";
-import { Input } from "@/../components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Card } from "@/../components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Redirect } from "wouter";
 import { LockIcon, LogIn, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";

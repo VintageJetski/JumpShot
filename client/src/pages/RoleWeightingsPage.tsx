@@ -9,7 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts';
 import { RotateCcw as ResetIcon, Save as SaveIcon, FileDown } from 'lucide-react';
-import exportToPDF from '../lib/pdfExport';
+import exportToPDF from '@/lib/pdfExport';
 
 export default function RoleWeightingsPage() {
   const [activeTab, setActiveTab] = useState<string>(PlayerRole.AWP);
@@ -25,7 +25,7 @@ export default function RoleWeightingsPage() {
   const handleExportToPDF = () => {
     const filename = `CS2_Role_Weightings_Complete.pdf`;
     // Use the new function to export all roles
-    import('../lib/pdfExport').then(module => {
+    import('@/lib/pdfExport').then(module => {
       module.exportAllRolesToPDF(roleInfo, filename);
     });
   };

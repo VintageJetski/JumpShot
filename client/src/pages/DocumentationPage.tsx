@@ -40,7 +40,7 @@ export default function DocumentationPage() {
     const filename = `CS2_Analytics_Documentation_Complete.pdf`;
     
     // Use the exportDocumentationToPDF function to generate a complete documentation PDF
-    import('../lib/pdfExport').then(module => {
+    import('@/lib/pdfExport').then(module => {
       module.exportDocumentationToPDF(filename);
     });
   };

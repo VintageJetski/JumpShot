@@ -1,4 +1,4 @@
-import { PlayerRole, PlayerWithPIV, TeamWithTIR } from "../../shared/types";
+import { PlayerRole, PlayerWithPIV, TeamWithTIR } from "@shared/types";
 
 /**
  * Interface for player scout data with metrics relevant to team chemistry

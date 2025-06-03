@@ -34,11 +34,11 @@ import { PlayerCombobox } from '@/components/ui/player-combobox';
 import { TeamCombobox } from '@/components/ui/team-combobox';
 
 // Import widget components
-import TopPlayersByPIVIncrease from '../components/dashboard/widgets/TopPlayersByPIVIncrease';
-import DetailedPlayerInfo from '../components/dashboard/widgets/DetailedPlayerInfo';
-import TopPlayersByRole from '../components/dashboard/widgets/TopPlayersByRole';
-import TeamUpcomingMatches from '../components/dashboard/widgets/TeamUpcomingMatches';
-import DetailedTeamInfo from '../components/dashboard/widgets/DetailedTeamInfo';
+import TopPlayersByPIVIncrease from '@/components/dashboard/widgets/TopPlayersByPIVIncrease';
+import DetailedPlayerInfo from '@/components/dashboard/widgets/DetailedPlayerInfo';
+import TopPlayersByRole from '@/components/dashboard/widgets/TopPlayersByRole';
+import TeamUpcomingMatches from '@/components/dashboard/widgets/TeamUpcomingMatches';
+import DetailedTeamInfo from '@/components/dashboard/widgets/DetailedTeamInfo';
 
 // Widget types
 const WIDGET_TYPES = {

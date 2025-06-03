@@ -40,7 +40,7 @@ export interface PlayerRawStats {
   tSmokesThrown: number;
   smokesThrownInPistolRound: number;
   totalUtilityThrown: number;
-  awpKills: number;
+  awp_kills: number;
   pistolKills: number;
   tradeKills: number;
   tradeDeaths: number;

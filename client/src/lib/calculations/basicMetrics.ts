@@ -2,10 +2,12 @@ import { PlayerRawStats, PlayerRole, RoundData } from './types';
 import { calculateEcoForceConversion, calculate5v4Conversion, calculateRifleRoundWinRate } from './economicMetrics';
 
 /**
- * Calculate AWP Kill Share for a player
+ * Calculate AWP Kill Share for a player using authentic CSV data
  */
 export function calculateAWPKillShare(stats: PlayerRawStats): number {
-  return stats.kills > 0 ? stats.awpKills / stats.kills : 0;
+  // Use awp_kills from CSV, handle missing data gracefully
+  const awpKills = stats.awp_kills || 0;
+  return stats.kills > 0 ? awpKills / stats.kills : 0;
 }
 
 /**
@@ -16,74 +18,51 @@ export function calculateBasicMetricsScore(
   role: PlayerRole, 
   rounds: RoundData[]
 ): number {
-  console.log('DEBUG BasicMetrics - Input:', { player: stats.userName, role, teamName: stats.teamName, roundsCount: rounds.length });
-  
   let score = 0;
   
   switch(role) {
     case PlayerRole.IGL:
       // Rifle Round Win Rate (from rounds data)
       const rifleRoundWinRate = calculateRifleRoundWinRate(rounds, stats.teamName);
-      console.log('DEBUG BasicMetrics - Rifle round win rate:', rifleRoundWinRate);
-      score += (rifleRoundWinRate || 0) * 0.35; // Fallback to 0 if null
+      score += (rifleRoundWinRate || 0) * 0.35;
       
       // Utility Usage Efficiency
       const utilEfficiency = stats.assistedFlashes / Math.max(stats.totalUtilityThrown, 1);
-      console.log('DEBUG BasicMetrics - Utility efficiency:', utilEfficiency);
       score += utilEfficiency * 0.30;
       
       // Eco/Force Round Conversion (from rounds data)
       const ecoForceConversion = calculateEcoForceConversion(rounds, stats.teamName);
-      console.log('DEBUG BasicMetrics - Eco/Force conversion:', ecoForceConversion);
-      score += (ecoForceConversion || 0) * 0.21; // Fallback to 0 if null
+      score += (ecoForceConversion || 0) * 0.21;
       
       // 5v4 Conversion Rate (from rounds data)
       const manAdvantageConversion = calculate5v4Conversion(rounds, stats.teamName);
-      console.log('DEBUG BasicMetrics - 5v4 conversion:', manAdvantageConversion);
-      score += (manAdvantageConversion || 0) * 0.14; // Fallback to 0 if null
-      
-      console.log('DEBUG BasicMetrics - IGL final score:', score);
+      score += (manAdvantageConversion || 0) * 0.14;
       break;
       
     case PlayerRole.AWP:
-      console.log('DEBUG BasicMetrics - Processing AWP role');
-      
       // Opening Kill Ratio
       const openingKillRatio = stats.firstKills / Math.max(stats.firstKills + stats.firstDeaths, 1);
-      console.log('DEBUG BasicMetrics - Opening kill ratio:', openingKillRatio);
       score += openingKillRatio * 0.26;
       
-      // AWP Kill Share (authentic calculation)
+      // AWP Kill Share (authentic calculation using awp_kills from CSV)
       const awpKillShare = calculateAWPKillShare(stats);
-      console.log('DEBUG BasicMetrics - AWP kill share:', awpKillShare);
       score += awpKillShare * 0.19;
       
       // Multi-Kill Conversion (using K/D as proxy)
       const multiKillConversion = Math.min(stats.kd, 2) / 2;
-      console.log('DEBUG BasicMetrics - Multi-kill conversion:', multiKillConversion);
       score += multiKillConversion * 0.15;
       
       // Weapon Survival Rate
       const weaponSurvival = (stats.kills - stats.deaths + stats.assists) / Math.max(stats.kills + stats.assists, 1);
-      console.log('DEBUG BasicMetrics - Weapon survival:', weaponSurvival);
       score += Math.max(0, weaponSurvival) * 0.06;
       
       // Team Utility Support
       const teamUtilSupport = stats.assistedFlashes / Math.max(stats.totalUtilityThrown, 1);
-      console.log('DEBUG BasicMetrics - Team utility support:', teamUtilSupport);
       score += teamUtilSupport * 0.12;
       
-      // 5v4 Advantage Conversion - with error handling
-      try {
-        const awp5v4Conversion = calculate5v4Conversion(rounds, stats.teamName);
-        console.log('DEBUG BasicMetrics - 5v4 conversion:', awp5v4Conversion);
-        score += (awp5v4Conversion || 0) * 0.22;
-      } catch (error) {
-        console.log('DEBUG BasicMetrics - Error in 5v4 calculation:', error);
-        score += 0; // Skip this metric if it fails
-      }
-      
-      console.log('DEBUG BasicMetrics - AWP final score:', score);
+      // 5v4 Advantage Conversion (from rounds data)
+      const awp5v4Conversion = calculate5v4Conversion(rounds, stats.teamName);
+      score += (awp5v4Conversion || 0) * 0.22;
       break;
       
     case PlayerRole.Spacetaker:
@@ -178,12 +157,8 @@ export function calculateBasicMetricsScore(
       break;
       
     default:
-      console.log('DEBUG BasicMetrics - Unknown role, using fallback');
       score = 0.5; // Fallback for unknown roles
   }
   
-  console.log('DEBUG BasicMetrics - Final score before return:', score);
-  const finalScore = Math.max(0, Math.min(1, score));
-  console.log('DEBUG BasicMetrics - Clamped final score:', finalScore);
-  return finalScore;
+  return Math.max(0, Math.min(1, score)); // Clamp between 0 and 1
 }

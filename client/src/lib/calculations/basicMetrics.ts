@@ -46,32 +46,44 @@ export function calculateBasicMetricsScore(
       break;
       
     case PlayerRole.AWP:
+      console.log('DEBUG BasicMetrics - Processing AWP role');
+      
       // Opening Kill Ratio
       const openingKillRatio = stats.firstKills / Math.max(stats.firstKills + stats.firstDeaths, 1);
-      score += openingKillRatio * 0.26; // Increased weight (was 0.22)
+      console.log('DEBUG BasicMetrics - Opening kill ratio:', openingKillRatio);
+      score += openingKillRatio * 0.26;
       
       // AWP Kill Share (authentic calculation)
       const awpKillShare = calculateAWPKillShare(stats);
-      score += awpKillShare * 0.19; // Increased weight (was 0.16)
+      console.log('DEBUG BasicMetrics - AWP kill share:', awpKillShare);
+      score += awpKillShare * 0.19;
       
       // Multi-Kill Conversion (using K/D as proxy)
       const multiKillConversion = Math.min(stats.kd, 2) / 2;
-      score += multiKillConversion * 0.15; // Increased weight (was 0.13)
+      console.log('DEBUG BasicMetrics - Multi-kill conversion:', multiKillConversion);
+      score += multiKillConversion * 0.15;
       
       // Weapon Survival Rate
       const weaponSurvival = (stats.kills - stats.deaths + stats.assists) / Math.max(stats.kills + stats.assists, 1);
-      score += Math.max(0, weaponSurvival) * 0.06; // Increased weight (was 0.05)
+      console.log('DEBUG BasicMetrics - Weapon survival:', weaponSurvival);
+      score += Math.max(0, weaponSurvival) * 0.06;
       
       // Team Utility Support
       const teamUtilSupport = stats.assistedFlashes / Math.max(stats.totalUtilityThrown, 1);
-      score += teamUtilSupport * 0.12; // Increased weight (was 0.11)
+      console.log('DEBUG BasicMetrics - Team utility support:', teamUtilSupport);
+      score += teamUtilSupport * 0.12;
       
-      // 5v4 Advantage Conversion
-      const awp5v4Conversion = calculate5v4Conversion(rounds, stats.teamName);
-      score += awp5v4Conversion * 0.22; // Increased weight (was 0.15)
+      // 5v4 Advantage Conversion - with error handling
+      try {
+        const awp5v4Conversion = calculate5v4Conversion(rounds, stats.teamName);
+        console.log('DEBUG BasicMetrics - 5v4 conversion:', awp5v4Conversion);
+        score += (awp5v4Conversion || 0) * 0.22;
+      } catch (error) {
+        console.log('DEBUG BasicMetrics - Error in 5v4 calculation:', error);
+        score += 0; // Skip this metric if it fails
+      }
       
-      // Note: Removed Basic Consistency (0.18) and Save+Rebuy (0.15)
-      // Weights redistributed proportionally
+      console.log('DEBUG BasicMetrics - AWP final score:', score);
       break;
       
     case PlayerRole.Spacetaker:

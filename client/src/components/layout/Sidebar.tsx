@@ -3,6 +3,7 @@ import {
   Users, 
   UsersRound, 
   BarChart2, 
+  BarChart3,
   LineChart, 
   FileText, 
   ArrowRightLeft,

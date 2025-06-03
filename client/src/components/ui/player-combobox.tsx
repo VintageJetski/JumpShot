@@ -3,7 +3,7 @@ import { Search } from "lucide-react"
 import { Input } from "./input"
 import { Label } from "./label"
 import { ScrollArea } from "./scroll-area"
-import { PlayerWithPIV } from "../../../shared/schema"
+import { PlayerWithPIV } from "@/../../shared/schema"
 
 interface PlayerComboboxProps {
   players: PlayerWithPIV[]

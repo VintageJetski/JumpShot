@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { PlayerWithPIV } from "../../../../shared/schema";
-import { Slider } from "../../components/ui/slider";
-import { Card, CardContent } from "../../components/ui/card";
-import RoleBadge from "../../components/ui/role-badge";
-import { Badge } from "../../components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { PlayerWithPIV } from "@/../../../shared/schema";
+import { Slider } from "@/../components/ui/slider";
+import { Card, CardContent } from "@/../components/ui/card";
+import RoleBadge from "@/../components/ui/role-badge";
+import { Badge } from "@/../components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/../components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
 import { Info, ArrowLeftRight } from "lucide-react";
 import {
@@ -12,7 +12,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "../../components/ui/tooltip";
+} from "@/../components/ui/tooltip";
 
 interface PerformanceComparisonSliderProps {
   player1: PlayerWithPIV | undefined;

@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Search, Users, GitMerge, ArrowRight } from "lucide-react";
-import { Button } from "../components/ui/button";
-import TeamChemistrySimulator from "../components/scout/TeamChemistrySimulator";
+import { Button } from "@/components/ui/button";
+import TeamChemistrySimulator from "@/components/scout/TeamChemistrySimulator";
 
 // Define the tabs for the Scout page
 enum ScoutTab {

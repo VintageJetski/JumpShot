@@ -9,16 +9,16 @@ import {
   CardTitle,
   CardDescription,
   CardFooter
-} from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
+} from "@/../components/ui/card";
+import { Button } from "@/../components/ui/button";
+import { Input } from "@/../components/ui/input";
 import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from "../../components/ui/select";
+} from "@/../components/ui/select";
 import { 
   Dialog,
   DialogContent,
@@ -27,15 +27,15 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter
-} from "../../components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
-import { Slider } from "../../components/ui/slider";
-import { Badge } from "../../components/ui/badge";
-import { useToast } from "../hooks/use-toast";
+} from "@/../components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/../components/ui/tabs";
+import { Slider } from "@/../components/ui/slider";
+import { Badge } from "@/../components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import { Search, Users, Trash2, RefreshCw, PlusCircle, UserSearch } from "lucide-react";
-import RoleBadge from "../../components/ui/role-badge";
-import { PlayerRole, PlayerWithPIV, TeamWithTIR } from "../../../../shared/types";
-import { calculatePlayerScoutData, PlayerScoutData } from "../lib/scoutCalculator";
+import RoleBadge from "@/../components/ui/role-badge";
+import { PlayerRole, PlayerWithPIV, TeamWithTIR } from "@/../../../shared/types";
+import { calculatePlayerScoutData, PlayerScoutData } from "@/lib/scoutCalculator";
 
 // Define player with scout data interface
 interface PlayerWithScout extends PlayerWithPIV, PlayerScoutData {}

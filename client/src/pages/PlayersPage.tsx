@@ -2,17 +2,17 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Card } from "../components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 import { Search, Filter, Users, Medal, User2, Target, Lightbulb, Shield, CircleDot } from "lucide-react";
-import { PlayerWithPIV, PlayerRole } from "../../shared/schema";
-import { DataTable } from "../components/ui/data-table";
-import PlayerCard from "../components/players/PlayerCard";
-import TeamGroup from "../components/players/TeamGroup";
-import RoleFilterChips from "../components/players/RoleFilterChips";
-import EnhancedStatsCard from "../components/stats/EnhancedStatsCard";
-import StatisticalOutliers from "../components/players/StatisticalOutliers";
+import { PlayerWithPIV, PlayerRole } from "@shared/schema";
+import { DataTable } from "@/components/ui/data-table";
+import PlayerCard from "@/components/players/PlayerCard";
+import TeamGroup from "@/components/players/TeamGroup";
+import RoleFilterChips from "@/components/players/RoleFilterChips";
+import EnhancedStatsCard from "@/components/stats/EnhancedStatsCard";
+import StatisticalOutliers from "@/components/players/StatisticalOutliers";
 
 export default function PlayersPage() {
   const [, setLocation] = useLocation();

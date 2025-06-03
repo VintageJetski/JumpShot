@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { PlayerWithPIV, PlayerRole } from "../../shared/schema";
-import { RawStats } from "../../shared/types";
+import { PlayerWithPIV, PlayerRole } from "@shared/schema";
+import { RawStats } from "@/../shared/types";
 import {
   Card,
   CardContent,
@@ -9,31 +9,31 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select";
-import { Input } from "../components/ui/input";
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "../components/ui/tabs";
+} from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "../components/ui/tooltip";
-import { Button } from "../components/ui/button";
-import { Separator } from "../components/ui/separator";
-import { Badge } from "../components/ui/badge";
-import RoleBadge from "../components/ui/role-badge";
+} from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import RoleBadge from "@/components/ui/role-badge";
 import { 
   BarChart, 
   LineChart,

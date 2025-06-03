@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
-import { TeamWithTIR, PlayerRole, TeamRoundMetrics } from "../../shared/schema";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import RoleBadge from "../components/ui/role-badge";
-import ProgressMetric from "../components/stats/ProgressMetric";
-import RoleDistributionChart from "../components/charts/RoleDistributionChart";
-import TeamPIVBarChart from "../components/charts/TeamPIVBarChart";
+import { TeamWithTIR, PlayerRole, TeamRoundMetrics } from "@shared/schema";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import RoleBadge from "@/components/ui/role-badge";
+import ProgressMetric from "@/components/stats/ProgressMetric";
+import RoleDistributionChart from "@/components/charts/RoleDistributionChart";
+import TeamPIVBarChart from "@/components/charts/TeamPIVBarChart";
 import { ArrowLeft, Rocket, Users, ShieldCheck, Star, Activity, Zap, BarChart } from "lucide-react";
-import { DataTable } from "../components/ui/data-table";
-import RoundMetricsCard from "../components/team-detail/RoundMetricsCard";
+import { DataTable } from "@/components/ui/data-table";
+import RoundMetricsCard from "@/components/team-detail/RoundMetricsCard";
 
 export default function TeamDetailPage() {
   const { name } = useParams();

@@ -1,22 +1,22 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useLocalStorage } from '../hooks/use-local-storage';
-import { PlayerWithPIV, TeamWithTIR } from '../../shared/schema';
-import { Button } from '../ui/button';
+import { useLocalStorage } from '@/hooks/use-local-storage';
+import { PlayerWithPIV, TeamWithTIR } from '@shared/schema';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '../ui/card';
+} from '@/components/ui/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../ui/select';
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogTrigger,

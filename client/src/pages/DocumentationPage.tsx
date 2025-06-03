@@ -6,9 +6,9 @@ import {
   CardFooter, 
   CardHeader, 
   CardTitle 
-} from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Calculator, 
   Users, 
@@ -28,8 +28,8 @@ import {
   Download,
   FileDown
 } from "lucide-react";
-import { ScoutDocumentation } from "../components/documentation/ScoutDocumentation";
-import exportToPDF from "../lib/pdfExport";
+import { ScoutDocumentation } from "@/components/documentation/ScoutDocumentation";
+import exportToPDF from "@/lib/pdfExport";
 
 export default function DocumentationPage() {
   const [activeTab, setActiveTab] = useState("piv");

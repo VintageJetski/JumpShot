@@ -11,46 +11,12 @@ import { testSupabaseConnection } from './supabase-db';
 export class HybridDataLoader {
   
   /**
-   * Load player data from Supabase first, then CSV as fallback
+   * Load player data from CSV (Supabase integration disabled per user request)
    */
   static async loadPlayerData(): Promise<PlayerWithPIV[]> {
-    console.log('Attempting to load data from Supabase...');
+    console.log('Loading data from CSV files (Supabase disabled)...');
     
-    // Test Supabase connection first
-    const supabaseConnected = await testSupabaseConnection();
-    
-    if (supabaseConnected) {
-      try {
-        // Try to load data from Supabase
-        const supaPlayerData = await SupabaseAdapter.fetchAllPlayersData();
-        
-        if (supaPlayerData.length > 0) {
-          console.log(`Found ${supaPlayerData.length} players in Supabase`);
-          
-          // Convert Supabase data to PlayerRawStats format
-          const rawStats: PlayerRawStats[] = supaPlayerData.map(playerData => 
-            SupabaseAdapter.mapToPlayerRawStats(playerData)
-          );
-          
-          // Load roles from CSV (we still need this for role assignments)
-          const roleMap = await loadPlayerRoles();
-          
-          // Process with PIV calculations
-          const playersWithPIV = processPlayerStatsWithRoles(rawStats, roleMap);
-          
-          console.log(`Successfully processed ${playersWithPIV.length} players from Supabase`);
-          return playersWithPIV;
-        } else {
-          console.log('No players found in Supabase, falling back to CSV...');
-        }
-      } catch (error) {
-        console.error('Error loading from Supabase, falling back to CSV:', error);
-      }
-    } else {
-      console.log('Supabase connection failed, using CSV data...');
-    }
-    
-    // Fallback to CSV processing
+    // Use CSV processing directly
     return await this.loadFromCSV();
   }
   

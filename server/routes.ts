@@ -19,14 +19,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Calculate team TIR
     const teamsWithTIR = calculateTeamImpactRatings(playersWithPIV);
     
-    // Store processed data
-    await storage.setPlayers(playersWithPIV);
-    await storage.setTeams(teamsWithTIR);
+    // Store processed data (in-memory only to avoid database connection issues)
+    // Temporarily disabled database writes - using cache only
+    playersWithPIV.forEach(p => (storage as any).playersCache.set(p.id, p));
+    teamsWithTIR.forEach(t => (storage as any).teamsCache.set(t.name, t));
     
     console.log(`Processed ${playersWithPIV.length} players and ${teamsWithTIR.length} teams`);
     
-    // Load and process round data
-    await initializeRoundData();
+    // Load and process round data (non-blocking)
+    initializeRoundData().catch(error => {
+      console.error('Error initializing round data:', error);
+    });
   } catch (error) {
     console.error('Error initializing data:', error);
   }

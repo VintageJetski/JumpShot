@@ -6,8 +6,13 @@ import { calculateBasicMetricsScore } from './basicMetrics';
  * Calculate RCS (Role Core Score) using normalized metrics
  */
 export function calculateRCS(normalizedMetrics: Record<string, number>): number {
+  console.log('DEBUG RCS - Input metrics:', normalizedMetrics);
+  
   const keys = Object.keys(normalizedMetrics);
-  if (keys.length === 0) return 0;
+  if (keys.length === 0) {
+    console.log('DEBUG RCS - No metrics, returning 0');
+    return 0;
+  }
   
   // Equal weighting for all metrics within the role
   const weights: Record<string, number> = {};
@@ -16,15 +21,28 @@ export function calculateRCS(normalizedMetrics: Record<string, number>): number 
   });
   
   // Calculate weighted sum
-  return Object.keys(normalizedMetrics).reduce((sum, key) => {
-    return sum + normalizedMetrics[key] * weights[key];
+  const rcs = Object.keys(normalizedMetrics).reduce((sum, key) => {
+    const value = normalizedMetrics[key] * weights[key];
+    console.log(`DEBUG RCS - Metric ${key}: ${normalizedMetrics[key]} * ${weights[key]} = ${value}`);
+    return sum + value;
   }, 0);
+  
+  console.log('DEBUG RCS - Final RCS value:', rcs);
+  return rcs;
 }
 
 /**
  * Calculate Individual Consistency Factor (ICF)
  */
 export function calculateICF(stats: PlayerRawStats, isIGL: boolean = false): { value: number, sigma: number } {
+  console.log('DEBUG ICF - Input stats:', { kd: stats.kd, isIGL });
+  
+  // Validate K/D ratio first
+  if (!stats.kd || isNaN(stats.kd) || stats.kd <= 0) {
+    console.log('DEBUG ICF - Invalid K/D ratio, using default');
+    return { value: 0.5, sigma: 1.0 };
+  }
+  
   // Calculate base sigma - lower values = better consistency
   let sigma = 0;
   
@@ -38,24 +56,31 @@ export function calculateICF(stats: PlayerRawStats, isIGL: boolean = false): { v
     sigma = Math.abs(1 - stats.kd) * 1.8;
   }
   
+  console.log('DEBUG ICF - Calculated sigma:', sigma);
+  
   // Calculate ICF - normalize to 0-1 range
   let icf = 1 / (1 + sigma);
+  console.log('DEBUG ICF - Base ICF:', icf);
   
   // Boost for high-performing players
   if (stats.kd > 1.3) {
     const boostFactor = 1 + ((stats.kd - 1.3) * 0.5);
     icf = Math.min(icf * boostFactor, 1.0);
+    console.log('DEBUG ICF - After star player boost:', icf);
   }
   
   // Adjust for IGL role
   if (isIGL) {
     const reductionFactor = (stats.kd >= 1.2) ? 0.85 : 0.75;
     icf = icf * reductionFactor;
+    console.log('DEBUG ICF - After IGL adjustment:', icf);
   } else if (stats.kd > 1.2) {
     const kdBonus = (stats.kd - 1.2) * 0.25;
     icf = Math.min(icf + kdBonus, 1.0);
+    console.log('DEBUG ICF - After K/D bonus:', icf);
   }
   
+  console.log('DEBUG ICF - Final ICF:', { value: icf, sigma });
   return { value: icf, sigma };
 }
 
@@ -63,15 +88,22 @@ export function calculateICF(stats: PlayerRawStats, isIGL: boolean = false): { v
  * Calculate SC (Synergy Contribution) based on role
  */
 export function calculateSC(stats: PlayerRawStats, role: PlayerRole): { value: number, metric: string } {
-  const kdFactor = Math.min(stats.kd / 2, 0.6);
+  console.log('DEBUG SC - Input:', { role, kd: stats.kd, player: stats.userName });
+  
+  // Validate K/D ratio
+  const validKD = stats.kd && !isNaN(stats.kd) ? stats.kd : 1.0;
+  const kdFactor = Math.min(validKD / 2, 0.6);
+  console.log('DEBUG SC - K/D factor:', kdFactor);
   
   switch (role) {
     case PlayerRole.AWP:
       const awpOpeningKills = stats.firstKills / Math.max(stats.tFirstKills + stats.ctFirstKills, 1);
-      const awpKDRating = Math.min(stats.kd / 1.8, 0.85);
+      const awpKDRating = Math.min(validKD / 1.8, 0.85);
       const awpUtilityImpact = stats.assistedFlashes / Math.max(stats.totalUtilityThrown, 1);
+      const awpValue = (awpOpeningKills * 0.35) + (awpKDRating * 0.35) + (awpUtilityImpact * 0.15) + (kdFactor * 0.15);
+      console.log('DEBUG SC - AWP calculation:', { awpOpeningKills, awpKDRating, awpUtilityImpact, awpValue });
       return { 
-        value: (awpOpeningKills * 0.35) + (awpKDRating * 0.35) + (awpUtilityImpact * 0.15) + (kdFactor * 0.15),
+        value: awpValue,
         metric: "AWP Impact Rating"
       };
       
@@ -131,6 +163,17 @@ export function calculatePIV(
   basicScore: number, 
   role: PlayerRole
 ): number {
+  console.log('DEBUG PIV - Input values:', { rcs, icf, sc, osm, basicScore, role });
+  
+  // Validate all inputs
+  const validRCS = rcs && !isNaN(rcs) ? rcs : 0.5;
+  const validICF = icf && !isNaN(icf) ? icf : 0.5;
+  const validSC = sc && !isNaN(sc) ? sc : 0.5;
+  const validOSM = osm && !isNaN(osm) ? osm : 1.0;
+  const validBasicScore = basicScore && !isNaN(basicScore) ? basicScore : 0.5;
+  
+  console.log('DEBUG PIV - Validated values:', { validRCS, validICF, validSC, validOSM, validBasicScore });
+  
   // Role-specific weights
   const roleWeights = {
     [PlayerRole.AWP]: 1.2,
@@ -143,9 +186,11 @@ export function calculatePIV(
   };
   
   const roleWeight = roleWeights[role] || 1.0;
+  console.log('DEBUG PIV - Role weight:', roleWeight);
   
   // PIV formula: (RCS × ICF × SC × OSM × BasicScore) × RoleWeight
-  const piv = rcs * icf * sc * osm * basicScore * roleWeight;
+  const piv = validRCS * validICF * validSC * validOSM * validBasicScore * roleWeight;
+  console.log('DEBUG PIV - Final PIV calculation:', piv);
   
   return Math.max(0, piv); // Ensure non-negative
 }
@@ -163,10 +208,15 @@ export function processPlayerWithPIV(
   rounds: RoundData[],
   allPlayersStats: PlayerRawStats[]
 ): any {
+  console.log('DEBUG processPlayerWithPIV - Starting calculation for:', stats.userName);
+  console.log('DEBUG processPlayerWithPIV - Role info:', { role, tRole, ctRole, isIGL, osm });
+  
   // Calculate role-specific metrics for T and CT sides
   const tSideMetrics = evaluateTSideMetrics(stats, tRole);
   const ctSideMetrics = evaluateCTSideMetrics(stats, ctRole);
   const overallMetrics = { ...tSideMetrics, ...ctSideMetrics };
+  
+  console.log('DEBUG processPlayerWithPIV - Raw metrics:', { tSideMetrics, ctSideMetrics, overallMetrics });
   
   // Normalize metrics across all players
   const allMetrics: Record<string, number[]> = {};
@@ -182,14 +232,19 @@ export function processPlayerWithPIV(
   const normalizedTMetrics = normalizeMetrics(tSideMetrics, allMetrics);
   const normalizedCTMetrics = normalizeMetrics(ctSideMetrics, allMetrics);
   
+  console.log('DEBUG processPlayerWithPIV - Normalized metrics:', { normalizedOverallMetrics, normalizedTMetrics, normalizedCTMetrics });
+  
   // Calculate components
   const rcs = calculateRCS(normalizedOverallMetrics);
   const icf = calculateICF(stats, isIGL);
   const sc = calculateSC(stats, role);
   const basicScore = calculateBasicMetricsScore(stats, role, rounds);
   
+  console.log('DEBUG processPlayerWithPIV - Component values:', { rcs, icf, sc, basicScore });
+  
   // Calculate PIV
   const piv = calculatePIV(rcs, icf.value, sc.value, osm, basicScore, role);
+  console.log('DEBUG processPlayerWithPIV - Final PIV:', piv);
   
   // Create metrics objects for each side
   const createMetrics = (sideMetrics: Record<string, number>, side: "Overall" | "T" | "CT") => ({

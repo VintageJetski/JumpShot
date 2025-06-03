@@ -45,13 +45,7 @@ export default function PlayersPage() {
   // Helper function to check if a player has a specific role
   const hasRole = (player: PlayerWithPIV, role: string): boolean => {
     if (role === "All Roles") return true;
-    
-    return (
-      player.role === role ||
-      player.ctRole === role ||
-      player.tRole === role ||
-      (role === PlayerRole.IGL && player.isIGL === true)
-    );
+    return player.role === role;
   };
   
   // Apply search and role filters
@@ -67,15 +61,11 @@ export default function PlayersPage() {
       
       return matchesSearch && matchesRole;
     })
-    .sort((a, b) => b.piv - a.piv) : [];
+    .sort((a, b) => b.metrics.piv - a.metrics.piv) : [];
 
-  // Extract top players by role with comprehensive role checking
+  // Extract top players by role
   const findTopPlayerByRole = (role: PlayerRole) => {
-    return filteredPlayers.find(p => 
-      p.role === role || 
-      p.ctRole === role || 
-      p.tRole === role
-    ) || null;
+    return filteredPlayers.find(p => p.role === role) || null;
   };
   
   const topPlayersByRole = {
@@ -361,7 +351,7 @@ export default function PlayersPage() {
           <EnhancedStatsCard
             title="Highest PIV"
             value={topPlayersByRole.highest.name}
-            metric={`${Math.round(topPlayersByRole.highest.piv * 100)} PIV`}
+            metric={`${Math.round(topPlayersByRole.highest.metrics.piv * 100)} PIV`}
             metricColor="text-green-400"
             bgGradient="from-green-700 to-green-500"
             icon={<User2 className="h-6 w-6 text-green-400" />}
@@ -374,11 +364,11 @@ export default function PlayersPage() {
           <EnhancedStatsCard
             title="Best IGL"
             value={topPlayersByRole.igl.name}
-            metric={`${Math.round(topPlayersByRole.igl.piv * 100)} PIV`}
+            metric={`${Math.round(topPlayersByRole.igl.metrics.piv * 100)} PIV`}
             metricColor="text-purple-400"
             bgGradient="from-purple-700 to-purple-500"
             icon={<Lightbulb className="h-6 w-6 text-purple-400" />}
-            subtext={`${topPlayersByRole.igl.primaryMetric.name}: ${topPlayersByRole.igl.primaryMetric.value.toFixed(2)}`}
+            subtext={`PIV: ${topPlayersByRole.igl.metrics.piv.toFixed(2)}`}
             index={1}
           />
         )}
@@ -387,11 +377,11 @@ export default function PlayersPage() {
           <EnhancedStatsCard
             title="Best AWPer"
             value={topPlayersByRole.awper.name}
-            metric={`${Math.round(topPlayersByRole.awper.piv * 100)} PIV`}
+            metric={`${Math.round(topPlayersByRole.awper.metrics.piv * 100)} PIV`}
             metricColor="text-amber-400"
             bgGradient="from-amber-700 to-amber-500"
             icon={<Target className="h-6 w-6 text-amber-400" />}
-            subtext={`${topPlayersByRole.awper.primaryMetric.name}: ${topPlayersByRole.awper.primaryMetric.value.toFixed(2)}`}
+            subtext={`RCS: ${topPlayersByRole.awper.metrics.rcs.value.toFixed(2)}`}
             index={2}
           />
         )}
@@ -400,11 +390,11 @@ export default function PlayersPage() {
           <EnhancedStatsCard
             title="Best Spacetaker"
             value={topPlayersByRole.spacetaker.name}
-            metric={`${Math.round(topPlayersByRole.spacetaker.piv * 100)} PIV`}
+            metric={`${Math.round(topPlayersByRole.spacetaker.metrics.piv * 100)} PIV`}
             metricColor="text-orange-400"
             bgGradient="from-orange-700 to-orange-500"
             icon={<User2 className="h-6 w-6 text-orange-400" />}
-            subtext={`${topPlayersByRole.spacetaker.primaryMetric.name}: ${topPlayersByRole.spacetaker.primaryMetric.value.toFixed(2)}`}
+            subtext={`RCS: ${topPlayersByRole.spacetaker.metrics.rcs.value.toFixed(2)}`}
             index={3}
           />
         )}

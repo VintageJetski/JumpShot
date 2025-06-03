@@ -34,7 +34,7 @@ import { Badge } from "../components/ui/badge";
 import { useToast } from "../hooks/use-toast";
 import { Search, Users, Trash2, RefreshCw, PlusCircle, UserSearch } from "lucide-react";
 import RoleBadge from "../components/ui/role-badge";
-import { PlayerRole, PlayerWithPIV, TeamWithTIR } from "@shared/types";
+import { PlayerRole, PlayerWithPIV, TeamWithTIR } from "../../../shared/types";
 import { calculatePlayerScoutData, PlayerScoutData } from "../lib/scoutCalculator";
 
 // Define player with scout data interface

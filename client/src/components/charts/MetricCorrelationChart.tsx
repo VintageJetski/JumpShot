@@ -2,7 +2,7 @@ import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
-import { PlayerWithPIV } from '@shared/schema';
+import { PlayerWithPIV } from '../../../shared/schema';
 
 interface MetricCorrelationChartProps {
   players: PlayerWithPIV[];

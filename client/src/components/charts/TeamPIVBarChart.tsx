@@ -1,5 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { PlayerWithPIV, PlayerRole } from '@shared/schema';
+import { PlayerWithPIV, PlayerRole } from '../../../shared/schema';
 
 interface TeamPIVBarChartProps {
   players: PlayerWithPIV[];

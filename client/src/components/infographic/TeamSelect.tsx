@@ -7,7 +7,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { TeamWithTIR } from '@shared/schema';
+import { TeamWithTIR } from '../../../shared/schema';
 import { Loader2 } from 'lucide-react';
 
 interface TeamSelectProps {

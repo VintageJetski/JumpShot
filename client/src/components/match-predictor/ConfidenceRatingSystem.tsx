@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/tooltip';
 import { Progress } from '@/components/ui/progress';
 import { InfoIcon, TrendingUp, Activity, Users, Shield } from 'lucide-react';
-import { PlayerWithPIV, TeamWithTIR } from '@shared/schema';
+import { PlayerWithPIV, TeamWithTIR } from '../../../shared/schema';
 
 export interface ConfidenceRating {
   teamA: TeamConfidenceRating;

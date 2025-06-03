@@ -1,5 +1,5 @@
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { PlayerWithPIV } from '@shared/schema';
+import { PlayerWithPIV } from '../../../shared/schema';
 
 interface PlayerStatsRadarChartProps {
   player: PlayerWithPIV;

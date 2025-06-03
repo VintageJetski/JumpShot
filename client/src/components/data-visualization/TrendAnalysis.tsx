@@ -13,7 +13,7 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { PlayerWithPIV } from '@shared/types';
+import { PlayerWithPIV } from '../../../shared/types';
 import {
   LineChart,
   Line,

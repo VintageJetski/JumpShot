@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { PlayerWithPIV, PlayerRole } from '@shared/types';
+import { PlayerWithPIV, PlayerRole } from '../../shared/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import RoleBadge from '@/components/ui/role-badge';
 import { BadgeInfo, Search, SlidersHorizontal, ArrowLeft, ArrowUpRight, ChevronRight } from 'lucide-react';

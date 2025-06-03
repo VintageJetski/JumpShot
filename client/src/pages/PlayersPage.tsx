@@ -6,7 +6,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card } from "../components/ui/card";
 import { Search, Filter, Users, Medal, User2, Target, Lightbulb, Shield, CircleDot } from "lucide-react";
-import { PlayerWithPIV, PlayerRole } from "@shared/schema";
+import { PlayerWithPIV, PlayerRole } from "../../shared/schema";
 import { DataTable } from "../components/ui/data-table";
 import PlayerCard from "../components/players/PlayerCard";
 import TeamGroup from "../components/players/TeamGroup";

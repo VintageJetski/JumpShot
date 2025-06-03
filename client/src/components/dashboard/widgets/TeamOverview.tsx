@@ -1,4 +1,4 @@
-import { TeamWithTIR } from '@shared/schema';
+import { TeamWithTIR } from '../../../../shared/schema';
 
 interface TeamOverviewProps {
   team: TeamWithTIR;

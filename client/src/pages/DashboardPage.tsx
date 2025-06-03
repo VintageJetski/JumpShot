@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { PlayerWithPIV, TeamWithTIR } from '@shared/schema';
+import { PlayerWithPIV, TeamWithTIR } from '../../shared/schema';
 import { Button } from '@/components/ui/button';
 import {
   Card,

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TeamRoundMetrics } from '@shared/schema';
+import { TeamRoundMetrics } from '../../../shared/schema';
 import { DollarSign, Target, Zap, Map } from 'lucide-react';
 
 interface RoundMetricsCardProps {

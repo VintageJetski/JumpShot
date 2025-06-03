@@ -24,7 +24,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TeamWithTIR, TeamRoundMetrics } from '@shared/types';
+import { TeamWithTIR, TeamRoundMetrics } from '../../../shared/types';
 import { 
   BarChart3, 
   LineChart as LineChartIcon, 

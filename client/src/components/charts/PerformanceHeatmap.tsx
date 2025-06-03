@@ -1,6 +1,6 @@
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlayerWithPIV } from '@shared/schema';
+import { PlayerWithPIV } from '../../../shared/schema';
 
 interface PerformanceHeatmapProps {
   players: PlayerWithPIV[];

@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, BarChart3, TrendingUp, Users, Zap, Activity } from 'lucide-react';
-import { PlayerWithPIV, TeamWithTIR } from '@shared/schema';
+import { PlayerWithPIV, TeamWithTIR } from '../../shared/schema';
 
 // Import all chart components
 import PIVDistributionChart from '@/components/charts/PIVDistributionChart';

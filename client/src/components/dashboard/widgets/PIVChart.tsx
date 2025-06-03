@@ -1,4 +1,4 @@
-import { PlayerWithPIV } from '@shared/schema';
+import { PlayerWithPIV } from '../../../../shared/schema';
 
 interface PIVChartProps {
   players: PlayerWithPIV[];

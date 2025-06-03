@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { TeamWithTIR, TeamRoundMetrics, PlayerWithPIV } from '@shared/schema';
+import { TeamWithTIR, TeamRoundMetrics, PlayerWithPIV } from '../../shared/schema';
 import { Loader2, Download, Share2, Check } from 'lucide-react';
 import TeamSelect from '@/components/infographic/TeamSelect';
 import MatchInfographicGenerator from '@/components/infographic/MatchInfographicGenerator';

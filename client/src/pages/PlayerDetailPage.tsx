@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
-import { PlayerWithPIV, PlayerRole } from "@shared/schema";
+import { PlayerWithPIV, PlayerRole } from "../../shared/schema";
 import { Card, CardContent } from "../components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import RoleBadge from "../components/ui/role-badge";

@@ -1,4 +1,4 @@
-import { TeamWithTIR } from '@shared/schema';
+import { TeamWithTIR } from '../../../../shared/schema';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 

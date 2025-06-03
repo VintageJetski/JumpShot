@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { TeamWithTIR } from "@shared/schema";
+import { TeamWithTIR } from "../../shared/schema";
 import { DataTable } from "../components/ui/data-table";
 import { Input } from "../components/ui/input";
 import { Card, CardContent } from "../components/ui/card";

@@ -32,7 +32,7 @@ import {
   X,
   Filter
 } from 'lucide-react';
-import { PlayerWithPIV } from '@shared/types';
+import { PlayerWithPIV } from '../../../shared/types';
 
 // Define stat categories
 type StatCategory = 'all' | 'offense' | 'defense' | 'utility';

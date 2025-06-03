@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayerRole } from "@shared/schema";
+import { PlayerRole } from "../../../shared/schema";
 import { motion } from 'framer-motion';
 import { Lightbulb, Target, Shield, Users, CircleDot, Filter } from 'lucide-react';
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { PlayerWithPIV } from "@shared/schema";
+import { PlayerWithPIV } from "../../../shared/schema";
 import { Slider } from "../components/ui/slider";
 import { Card, CardContent } from "../components/ui/card";
 import RoleBadge from "../components/ui/role-badge";

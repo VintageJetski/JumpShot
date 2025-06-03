@@ -1,6 +1,6 @@
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlayerWithPIV } from '@shared/schema';
+import { PlayerWithPIV } from '../../../shared/schema';
 
 interface PIVDistributionChartProps {
   players: PlayerWithPIV[];

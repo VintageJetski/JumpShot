@@ -16,7 +16,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
-import { PlayerWithPIV } from '@shared/schema';
+import { PlayerWithPIV } from '../../../shared/schema';
 
 // Create historical data based on the player's actual match statistics
 // This generates exactly one data point per actual match played

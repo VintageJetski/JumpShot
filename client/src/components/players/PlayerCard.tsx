@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayerWithPIV, PlayerRole } from "@shared/schema";
+import { PlayerWithPIV, PlayerRole } from "../../../shared/schema";
 import { motion } from 'framer-motion';
 import { useLocation } from 'wouter';
 import RoleBadge from '@/components/ui/role-badge';

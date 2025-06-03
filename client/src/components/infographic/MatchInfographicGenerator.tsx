@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { TeamWithTIR, TeamRoundMetrics, PlayerWithPIV, PlayerRole } from '@shared/schema';
+import { TeamWithTIR, TeamRoundMetrics, PlayerWithPIV, PlayerRole } from '../../../shared/schema';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';

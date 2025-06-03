@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { PlayerWithPIV, PlayerRole } from '@shared/types';
+import { PlayerWithPIV, PlayerRole } from '../../../shared/types';
 
 interface PositionalHeatmapProps {
   players: PlayerWithPIV[];

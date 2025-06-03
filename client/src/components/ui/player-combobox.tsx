@@ -1,9 +1,9 @@
 import * as React from "react"
 import { Search } from "lucide-react"
-import { Input } from "../components/ui/input"
-import { Label } from "../components/ui/label"
-import { ScrollArea } from "../components/ui/scroll-area"
-import { PlayerWithPIV } from "@shared/schema"
+import { Input } from "./input"
+import { Label } from "./label"
+import { ScrollArea } from "./scroll-area"
+import { PlayerWithPIV } from "../../../shared/schema"
 
 interface PlayerComboboxProps {
   players: PlayerWithPIV[]

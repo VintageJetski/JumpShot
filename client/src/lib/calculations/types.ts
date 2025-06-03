@@ -117,6 +117,13 @@ export interface PlayerWithPIV {
   metrics: PlayerMetrics;
   tPlayerMetrics?: PlayerMetrics;
   ctPlayerMetrics?: PlayerMetrics;
+  // Legacy compatibility fields
+  piv: number;
+  kd: number;
+  primaryMetric: { name: string; value: number };
+  ctRole?: PlayerRole;
+  tRole?: PlayerRole;
+  isIGL?: boolean;
 }
 
 export interface TeamWithTIR {

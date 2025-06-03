@@ -218,6 +218,13 @@ export function processPlayerWithPIV(
     rawStats: stats,
     metrics: createMetrics(overallMetrics, "Overall"),
     tPlayerMetrics: createMetrics(tSideMetrics, "T"),
-    ctPlayerMetrics: createMetrics(ctSideMetrics, "CT")
+    ctPlayerMetrics: createMetrics(ctSideMetrics, "CT"),
+    // Legacy compatibility fields
+    piv: piv,
+    kd: stats.kd,
+    primaryMetric: { name: sc.metric, value: sc.value },
+    ctRole: ctRole,
+    tRole: tRole,
+    isIGL: isIGL
   };
 }

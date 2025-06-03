@@ -27,7 +27,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.error('Error loading raw data:', error);
   }
   
-  // API routes
+  // Raw data API routes - no calculations
+  app.get('/api/raw/players', async (req: Request, res: Response) => {
+    try {
+      const rawPlayerStats = await loadNewPlayerStats();
+      res.json(rawPlayerStats);
+    } catch (error) {
+      console.error('Error fetching raw player data:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/raw/roles', async (req: Request, res: Response) => {
+    try {
+      const roleMap = await loadPlayerRoles();
+      const rolesArray = Array.from(roleMap.entries()).map(([playerName, roleInfo]) => ({
+        playerName,
+        ...roleInfo
+      }));
+      res.json(rolesArray);
+    } catch (error) {
+      console.error('Error fetching role data:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/raw/rounds', async (req: Request, res: Response) => {
+    try {
+      const { loadRoundData } = require('./roundAnalytics');
+      const rounds = await loadRoundData();
+      res.json(rounds);
+    } catch (error) {
+      console.error('Error fetching round data:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Legacy endpoints - now return calculated data from frontend
   app.get('/api/players', async (req: Request, res: Response) => {
     try {
       const role = req.query.role as string | undefined;

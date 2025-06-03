@@ -2,12 +2,10 @@ import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
 
-// PostgreSQL connection string for Supabase
-const SUPABASE_CONNECTION_STRING = 'postgresql://postgres:7847T8RtFanS6RUC@db.rrtfmkpqembrnieogqmk.supabase.co:5432/postgres';
-
-// Create a connection pool
+// Create a connection pool using environment variables
 export const supaPool = new Pool({
-  connectionString: SUPABASE_CONNECTION_STRING,
+  connectionString: process.env.SUPABASE_URL || process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
 });
 
 // Initialize Drizzle with the Supabase pool and our schema

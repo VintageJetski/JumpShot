@@ -1,22 +1,22 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useLocalStorage } from '../hooks/use-local-storage';
 import { PlayerWithPIV, TeamWithTIR } from '../../shared/schema';
-import { Button } from '@/components/ui/button';
+import { Button } from '../ui/button';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
+} from '../ui/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '../ui/select';
 import {
   Dialog,
   DialogTrigger,
@@ -25,20 +25,20 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { toast } from '@/hooks/use-toast';
+} from '../ui/dialog';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { toast } from '../hooks/use-toast';
 import { Loader2, Grid, Plus, Save, Trash2 } from 'lucide-react';
-import { PlayerCombobox } from '@/components/ui/player-combobox';
-import { TeamCombobox } from '@/components/ui/team-combobox';
+import { PlayerCombobox } from '../ui/player-combobox';
+import { TeamCombobox } from '../ui/team-combobox';
 
 // Import widget components
-import TopPlayersByPIVIncrease from '@/components/dashboard/widgets/TopPlayersByPIVIncrease';
-import DetailedPlayerInfo from '@/components/dashboard/widgets/DetailedPlayerInfo';
-import TopPlayersByRole from '@/components/dashboard/widgets/TopPlayersByRole';
-import TeamUpcomingMatches from '@/components/dashboard/widgets/TeamUpcomingMatches';
-import DetailedTeamInfo from '@/components/dashboard/widgets/DetailedTeamInfo';
+import TopPlayersByPIVIncrease from '../components/dashboard/widgets/TopPlayersByPIVIncrease';
+import DetailedPlayerInfo from '../components/dashboard/widgets/DetailedPlayerInfo';
+import TopPlayersByRole from '../components/dashboard/widgets/TopPlayersByRole';
+import TeamUpcomingMatches from '../components/dashboard/widgets/TeamUpcomingMatches';
+import DetailedTeamInfo from '../components/dashboard/widgets/DetailedTeamInfo';
 
 // Widget types
 const WIDGET_TYPES = {

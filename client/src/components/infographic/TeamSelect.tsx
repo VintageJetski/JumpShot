@@ -1,12 +1,12 @@
 import React from 'react';
-import { Label } from '@/components/ui/label';
+import { Label } from '../ui/label';
 import { 
   Select, 
   SelectContent, 
   SelectItem, 
   SelectTrigger, 
   SelectValue 
-} from '@/components/ui/select';
+} from '../ui/select';
 import { TeamWithTIR } from '../../../shared/schema';
 import { Loader2 } from 'lucide-react';
 

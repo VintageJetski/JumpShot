@@ -24,7 +24,7 @@ import {
   FolderOpen,
   Grid
 } from "lucide-react";
-import { useAuth } from "../hooks/use-auth";
+import { useAuth } from "../../hooks/use-auth";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../components/ui/collapsible";

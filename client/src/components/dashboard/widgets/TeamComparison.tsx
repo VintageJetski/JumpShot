@@ -1,6 +1,6 @@
 import { TeamWithTIR } from '../../../../shared/schema';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardHeader } from '../ui/card';
+import { Progress } from '../ui/progress';
 
 interface TeamComparisonProps {
   team1: TeamWithTIR;

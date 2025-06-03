@@ -1,5 +1,5 @@
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { TeamWithTIR } from '../../../shared/schema';
 
 interface TeamPerformanceOverviewProps {

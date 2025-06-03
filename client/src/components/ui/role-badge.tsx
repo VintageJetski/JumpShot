@@ -1,5 +1,5 @@
 import { Badge } from "./badge";
-import { PlayerRole } from "../../../../shared/types";
+import { PlayerRole } from "../../../shared/types";
 
 interface RoleBadgeProps {
   role: PlayerRole;

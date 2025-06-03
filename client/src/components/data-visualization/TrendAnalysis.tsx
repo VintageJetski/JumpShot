@@ -5,14 +5,14 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
+} from '../ui/select';
+import { Card, CardContent } from '../ui/card';
 import {
   Tabs,
   TabsList,
   TabsTrigger,
-} from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
+} from '../ui/tabs';
+import { Button } from '../ui/button';
 import { PlayerWithPIV } from '../../../shared/types';
 import {
   LineChart,

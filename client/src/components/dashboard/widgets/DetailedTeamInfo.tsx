@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { TeamWithTIR, PlayerWithPIV } from '../../../../shared/schema';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Loader2, Users, Trophy, Shield, Crosshair, Activity, Bomb, Star, HelpCircle } from 'lucide-react';
-import { TeamCombobox } from '@/components/ui/team-combobox';
+import { TeamCombobox } from '../ui/team-combobox';
 
 interface DetailedTeamInfoProps {
   teamId?: string;

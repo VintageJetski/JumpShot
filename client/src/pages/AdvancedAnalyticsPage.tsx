@@ -7,21 +7,21 @@ import {
   CardDescription, 
   CardHeader, 
   CardTitle 
-} from '@/components/ui/card';
+} from '../ui/card';
 import { 
   Tabs, 
   TabsContent, 
   TabsList, 
   TabsTrigger 
-} from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
+} from '../ui/tabs';
+import { Button } from '../ui/button';
 import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select';
+} from '../ui/select';
 import { 
   ArrowLeft, 
   BarChart4,
@@ -31,11 +31,11 @@ import {
   TrendingDown
 } from 'lucide-react';
 import { PlayerWithPIV, TeamWithTIR, PlayerRole, RawStats } from '../../shared/types';
-import AdvancedStatsTable from '@/components/data-visualization/AdvancedStatsTable';
-import CorrelationAnalysis from '@/components/data-visualization/CorrelationAnalysis';
-import TrendAnalysis from '@/components/data-visualization/TrendAnalysis';
-import PositionalHeatmap from '@/components/data-visualization/PositionalHeatmap';
-import { Separator } from '@/components/ui/separator';
+import AdvancedStatsTable from '../components/data-visualization/AdvancedStatsTable';
+import CorrelationAnalysis from '../components/data-visualization/CorrelationAnalysis';
+import TrendAnalysis from '../components/data-visualization/TrendAnalysis';
+import PositionalHeatmap from '../components/data-visualization/PositionalHeatmap';
+import { Separator } from '../ui/separator';
 
 // Define tabs for the advanced analytics page
 enum AnalyticsTab {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { TeamWithTIR } from '../../../../shared/schema';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Loader2, Calendar, Trophy, BarChart2 } from 'lucide-react';
 
 interface TeamUpcomingMatchesProps {

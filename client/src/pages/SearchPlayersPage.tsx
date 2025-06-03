@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { useToast } from '../hooks/use-toast';
 import { PlayerWithPIV, PlayerRole } from '../../shared/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import RoleBadge from '@/components/ui/role-badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../ui/card';
+import RoleBadge from '../ui/role-badge';
 import { BadgeInfo, Search, SlidersHorizontal, ArrowLeft, ArrowUpRight, ChevronRight } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Badge } from '../ui/badge';
+import { Slider } from '../ui/slider';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
+import { Separator } from '../ui/separator';
 import { useLocation, Link } from 'wouter';
 
 export default function SearchPlayersPage() {

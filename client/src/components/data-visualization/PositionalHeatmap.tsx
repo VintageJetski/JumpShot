@@ -5,21 +5,21 @@ import {
   CardDescription, 
   CardHeader, 
   CardTitle 
-} from '@/components/ui/card';
+} from '../ui/card';
 import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '../ui/select';
 import {
   Tabs,
   TabsList,
   TabsTrigger,
-} from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+} from '../ui/tabs';
+import { Button } from '../ui/button';
+import { Separator } from '../ui/separator';
 import { PlayerWithPIV, PlayerRole } from '../../../shared/types';
 
 interface PositionalHeatmapProps {

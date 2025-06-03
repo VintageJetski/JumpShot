@@ -6,14 +6,14 @@ import {
   CardDescription,
   CardHeader,
   CardTitle
-} from '@/components/ui/card';
+} from '../ui/card';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger
-} from '@/components/ui/tooltip';
-import { Progress } from '@/components/ui/progress';
+} from '../ui/tooltip';
+import { Progress } from '../ui/progress';
 import { InfoIcon, TrendingUp, Activity, Users, Shield } from 'lucide-react';
 import { PlayerWithPIV, TeamWithTIR } from '../../../shared/schema';
 

@@ -54,29 +54,14 @@ export const playerStats = pgTable("player_stats", {
   piv: real("piv"),
 });
 
-// Player with calculated PIV metrics
+// Player with calculated PIV metrics - simplified for authentic data
 export interface PlayerWithPIV {
   id: string;
   name: string;
   team: string;
-  role: PlayerRole;        // Primary role (determined from CT and T roles)
-  secondaryRole?: PlayerRole; // Secondary role
-  tRole?: PlayerRole;      // T side role
-  ctRole?: PlayerRole;     // CT side role
-  isIGL?: boolean;         // Is in-game leader
-  isMainAwper?: boolean;   // Is the team's main AWPer
-  piv: number;             // Player Impact Value
-  ctPIV?: number;          // CT side PIV
-  tPIV?: number;           // T side PIV
-  kd: number;
-  primaryMetric: {
-    name: string;
-    value: number;
-  };
+  role: PlayerRole;
   rawStats: PlayerRawStats;
   metrics: PlayerMetrics;
-  ctMetrics?: PlayerMetrics; // CT side metrics
-  tMetrics?: PlayerMetrics;  // T side metrics
 }
 
 // Team with calculated TIR metrics
@@ -221,7 +206,7 @@ export interface RoleMetrics {
   "Retake Utility Coordination": number;
 }
 
-// Raw stats extracted from CSV
+// Raw stats extracted from CSV - matches authentic IEM Katowice 2025 data structure
 export interface PlayerRawStats {
   steamId: string;
   userName: string;
@@ -230,13 +215,25 @@ export interface PlayerRawStats {
   headshots: number;
   wallbangKills: number;
   assistedFlashes: number;
+  tradeKills: number;
   noScope: number;
   throughSmoke: number;
+  airboneKills: number;
   blindKills: number;
   victimBlindKills: number;
+  awpKills: number;
+  pistolKills: number;
   assists: number;
   deaths: number;
+  tradeDeaths: number;
   kd: number;
+  kDiff: number;
+  adrTotal: number;
+  adrCtSide: number;
+  adrTSide: number;
+  kastTotal: number;
+  kastCtSide: number;
+  kastTSide: number;
   totalRoundsWon: number;
   tRoundsWon: number;
   ctRoundsWon: number;
@@ -263,21 +260,14 @@ export interface PlayerRawStats {
   tSmokesThrown: number;
   smokesThrownInPistolRound: number;
   totalUtilityThrown: number;
+  totalUtilDmg: number;
+  ctTotalUtilDmg: number;
+  tTotalUtilDmg: number;
 }
 
-// Player metrics for PIV calculation
+// Player metrics for PIV calculation - authentic data only
 export interface PlayerMetrics {
-  role: PlayerRole;
-  roleScores: {
-    [role in PlayerRole]?: number;
-  };
-  topMetrics: {
-    [role in PlayerRole]?: {
-      metricName: string;
-      value: number;
-    }[];
-  };
-  roleMetrics: Partial<RoleMetrics>;
+  piv: number;
   rcs: {
     value: number;
     metrics: {
@@ -293,8 +283,10 @@ export interface PlayerMetrics {
     metric: string;
   };
   osm: number;
-  piv: number;
-  side?: 'CT' | 'T' | 'Overall'; // Indicates which side these metrics are for
+  basicScore: number;
+  tPlayerMetrics: Record<string, number>;
+  ctPlayerMetrics: Record<string, number>;
+  overallMetrics: Record<string, number>;
 }
 
 // Teams table

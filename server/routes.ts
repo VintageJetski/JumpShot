@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { loadNewPlayerStats } from "./newDataParser";
-import { processPlayersFromCSV } from "./csvCalculations";
+import { processAuthenticPlayers } from "./authenticsystem";
 import { calculateTeamImpactRatings } from "./teamAnalytics";
 import { loadPlayerRoles } from "./roleParser";
 import { initializeRoundData } from "./roundDataLoader";
@@ -20,7 +20,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const roleMap = await loadPlayerRoles();
     
     // Process player stats with roles and calculate PIV using only authentic data
-    const playersWithPIV = processPlayersFromCSV(rawPlayerStats, roleMap);
+    const playersWithPIV = processAuthenticPlayers(rawPlayerStats, roleMap);
     
     // Calculate team TIR
     const teamsWithTIR = calculateTeamImpactRatings(playersWithPIV);

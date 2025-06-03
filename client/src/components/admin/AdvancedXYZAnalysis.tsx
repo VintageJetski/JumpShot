@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { useToast } from "../hooks/use-toast";
 import {
   Activity,
@@ -55,14 +55,14 @@ import {
   AreaChart,
   Area
 } from 'recharts';
-import { Badge } from "../components/ui/badge";
-import { Progress } from "../components/ui/progress";
-import { Separator } from "../components/ui/separator";
+import { Badge } from "../../components/ui/badge";
+import { Progress } from "../../components/ui/progress";
+import { Separator } from "../../components/ui/separator";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from "../components/ui/hover-card";
+} from "../../components/ui/hover-card";
 import { cn } from "../lib/utils";
 
 // CS2 Map image

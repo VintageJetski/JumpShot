@@ -49,7 +49,7 @@ import {
   Target,
   Eye
 } from "lucide-react";
-import { PlayerWithPIV, TeamWithTIR } from "../../shared/schema";
+import { PlayerWithPIV, TeamWithTIR } from "../../../shared/schema";
 import ConfidenceRatingSystem from "../components/match-predictor/ConfidenceRatingSystem";
 import { cn } from "../lib/utils";
 

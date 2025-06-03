@@ -1,22 +1,22 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Button } from '../components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { ArrowLeft, BarChart3, TrendingUp, Users, Zap, Activity } from 'lucide-react';
-import { PlayerWithPIV, TeamWithTIR } from '../../shared/schema';
+import { PlayerWithPIV, TeamWithTIR } from '../../../shared/schema';
 
 // Import all chart components
-import PIVDistributionChart from '@/components/charts/PIVDistributionChart';
-import TeamSynergyChart from '@/components/charts/TeamSynergyChart';
-import PerformanceHeatmap from '@/components/charts/PerformanceHeatmap';
-import RoleBreakdownChart from '@/components/charts/RoleBreakdownChart';
-import MetricCorrelationChart from '@/components/charts/MetricCorrelationChart';
-import TeamPIVBarChart from '@/components/charts/TeamPIVBarChart';
-import TeamPerformanceOverview from '@/components/charts/TeamPerformanceOverview';
-import RoleDistributionChart from '@/components/charts/RoleDistributionChart';
+import PIVDistributionChart from '../components/charts/PIVDistributionChart';
+import TeamSynergyChart from '../components/charts/TeamSynergyChart';
+import PerformanceHeatmap from '../components/charts/PerformanceHeatmap';
+import RoleBreakdownChart from '../components/charts/RoleBreakdownChart';
+import MetricCorrelationChart from '../components/charts/MetricCorrelationChart';
+import TeamPIVBarChart from '../components/charts/TeamPIVBarChart';
+import TeamPerformanceOverview from '../components/charts/TeamPerformanceOverview';
+import RoleDistributionChart from '../components/charts/RoleDistributionChart';
 
 type VisualizationTab = 'overview' | 'performance' | 'teams' | 'correlations' | 'roles';
 

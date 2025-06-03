@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Separator } from "../components/ui/separator";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { Separator } from "../../components/ui/separator";
 import { useToast } from "../hooks/use-toast";
 import {
   Map,
@@ -15,7 +15,7 @@ import {
   BarChart2
 } from "lucide-react";
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis } from 'recharts';
-import { Badge } from "../components/ui/badge";
+import { Badge } from "../../components/ui/badge";
 
 // Types for XYZ data analysis response
 interface PlayerMovementAnalysis {

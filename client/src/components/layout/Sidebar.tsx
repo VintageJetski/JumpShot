@@ -27,7 +27,7 @@ import {
 import { useAuth } from "../hooks/use-auth";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../components/ui/collapsible";
 
 export default function Sidebar() {
   const [location] = useLocation();

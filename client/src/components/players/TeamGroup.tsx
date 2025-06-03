@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PlayerWithPIV } from "../../../shared/schema";
+import { PlayerWithPIV } from "../../../../shared/schema";
 import { motion, AnimatePresence } from 'framer-motion';
 import PlayerCard from './PlayerCard';
 import { ChevronDown, Users2, Trophy } from 'lucide-react';

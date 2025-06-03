@@ -1,7 +1,7 @@
 import { ProtectedRoute } from "../components/auth/protected-route";
 import { useAuth } from "../hooks/use-auth";
-import { Button } from "../components/ui/button";
-import { Card } from "../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Card } from "../../components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { Shield, Database, Users, BarChart2, LogOut, Beaker, Map } from "lucide-react";
 import { motion } from "framer-motion";

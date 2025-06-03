@@ -1,10 +1,8 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loadNewPlayerStats } from "./newDataParser";
-import { processPlayerStatsWithRoles } from "./newPlayerAnalytics";
+import { HybridDataLoader } from "./hybrid-data-loader";
 import { calculateTeamImpactRatings } from "./teamAnalytics";
-import { loadPlayerRoles } from "./roleParser";
 import { initializeRoundData } from "./roundDataLoader";
 import { setupAuth, ensureAuthenticated } from "./auth";
 import { processXYZDataFromFile, RoundPositionalMetrics, PlayerMovementAnalysis } from "./xyz-data-parser";
@@ -14,14 +12,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize data on server start
   try {
     console.log('Loading and processing player data...');
-    const rawPlayerStats = await loadNewPlayerStats();
     
-    // Load player roles from CSV
-    console.log('Loading player roles from CSV...');
-    const roleMap = await loadPlayerRoles();
-    
-    // Process player stats with roles and calculate PIV
-    const playersWithPIV = processPlayerStatsWithRoles(rawPlayerStats, roleMap);
+    // Use hybrid data loader (Supabase first, then CSV fallback)
+    const playersWithPIV = await HybridDataLoader.loadPlayerData();
     
     // Calculate team TIR
     const teamsWithTIR = calculateTeamImpactRatings(playersWithPIV);

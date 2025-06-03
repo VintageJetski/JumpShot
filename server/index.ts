@@ -9,11 +9,18 @@ app.use(express.urlencoded({ extended: false }));
 // Trust proxy for deployment
 app.set("trust proxy", true);
 
-// Basic security headers
+// Basic security headers and cache control
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  
+  // Cache busting for non-API routes
+  if (!req.path.startsWith('/api')) {
+    res.header("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.header("Pragma", "no-cache");
+    res.header("Expires", "0");
+  }
   
   if (req.method === "OPTIONS") {
     res.sendStatus(200);
@@ -26,14 +33,13 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
   
-  // Serve static files from client/dist and client/public
-  app.use(express.static(path.join(process.cwd(), 'client', 'dist')));
-  app.use(express.static(path.join(process.cwd(), 'client', 'public')));
+  // Serve static files from the built React app
+  app.use(express.static(path.join(process.cwd(), 'dist', 'public')));
   
   // Serve React app for all non-API routes
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {
-      const indexPath = path.join(process.cwd(), 'client', 'dist', 'index.html');
+      const indexPath = path.join(process.cwd(), 'dist', 'public', 'index.html');
       res.sendFile(indexPath, (err) => {
         if (err) {
           // Fallback to a basic React app if dist doesn't exist

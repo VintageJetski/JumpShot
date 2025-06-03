@@ -41,7 +41,7 @@ app.use((req, res, next) => {
   // Serve your working advanced dashboard for all non-API routes
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {
-      const advancedDashboardPath = path.join(process.cwd(), 'client', 'public', 'advanced-dashboard.html');
+      const advancedDashboardPath = path.join(process.cwd(), 'client', 'public', 'working-advanced-dashboard.html');
       res.sendFile(advancedDashboardPath, (err) => {
         if (err) {
           // Fallback to a basic React app if advanced dashboard doesn't exist

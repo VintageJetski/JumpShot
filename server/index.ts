@@ -37,12 +37,14 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  let server;
+  
   // Setup Vite first in development mode
   if (app.get("env") === "development") {
-    const server = await registerRoutes(app);
+    server = await registerRoutes(app);
     await setupVite(app, server);
   } else {
-    const server = await registerRoutes(app);
+    server = await registerRoutes(app);
     serveStatic(app);
   }
 

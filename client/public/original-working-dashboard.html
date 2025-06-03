@@ -745,6 +745,132 @@
             console.error('Error loading data:', error);
             document.getElementById('loading').innerHTML = '<div style="color: #dc2626;">Failed to load advanced analytics. Please refresh the page.</div>';
         });
+
+        // View switching function
+        function showView(viewName) {
+            document.querySelectorAll('[id$="-view"]').forEach(view => {
+                view.classList.add('hidden');
+            });
+            
+            document.querySelectorAll('.nav button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            const targetView = document.getElementById(viewName + '-view');
+            if (targetView) {
+                targetView.classList.remove('hidden');
+            }
+            
+            const targetButton = document.getElementById('btn-' + viewName);
+            if (targetButton) {
+                targetButton.classList.add('active');
+            }
+
+            if (viewName === 'players') {
+                filterAndDisplayPlayers();
+            } else if (viewName === 'teams') {
+                displayTeamsGrid();
+            }
+        }
+
+        function populateDashboard() {
+            displayStatsOverview();
+            displayTopPlayers();
+            displayTopTeams();
+            populateFilters();
+        }
+
+        function displayStatsOverview() {
+            const totalPlayers = playersData.length;
+            const totalTeams = teamsData.length;
+            const avgPIV = playersData.reduce((sum, p) => sum + (p.piv || 0), 0) / totalPlayers;
+
+            document.getElementById('stats-overview').innerHTML = `
+                <div class="card stat-card">
+                    <div class="stat-value" style="color: #2563eb;">${totalPlayers}</div>
+                    <div class="stat-label">Total Players</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-value" style="color: #059669;">${totalTeams}</div>
+                    <div class="stat-label">Total Teams</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-value" style="color: #dc2626;">${avgPIV.toFixed(3)}</div>
+                    <div class="stat-label">Average PIV</div>
+                </div>
+            `;
+        }
+
+        function displayTopPlayers() {
+            const topPlayers = playersData.sort((a, b) => (b.piv || 0) - (a.piv || 0)).slice(0, 10);
+            const html = topPlayers.map(player => `
+                <div class="player-item">
+                    <div class="player-info">
+                        <div class="player-name">${player.name}</div>
+                        <div class="player-details">${player.team} - ${player.role || 'Unknown'}</div>
+                    </div>
+                    <div class="player-score">
+                        <div class="piv">${(player.piv || 0).toFixed(3)} PIV</div>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('top-players-dashboard').innerHTML = html;
+        }
+
+        function displayTopTeams() {
+            const topTeams = teamsData.sort((a, b) => (b.tir || 0) - (a.tir || 0)).slice(0, 8);
+            const html = topTeams.map(team => `
+                <div class="player-item">
+                    <div class="player-info">
+                        <div class="player-name">${team.name}</div>
+                        <div class="player-details">${team.players?.length || 0} players</div>
+                    </div>
+                    <div class="player-score">
+                        <div class="tir">${(team.tir || 0).toFixed(3)} TIR</div>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('top-teams-dashboard').innerHTML = html;
+        }
+
+        function populateFilters() {
+            const teams = [...new Set(playersData.map(p => p.team))].sort();
+            const teamSelect = document.getElementById('team-filter');
+            if (teamSelect) {
+                teamSelect.innerHTML = '<option value="">All Teams</option>' + 
+                    teams.map(team => `<option value="${team}">${team}</option>`).join('');
+            }
+        }
+
+        function filterAndDisplayPlayers() {
+            displayPlayersGrid(playersData);
+        }
+
+        function displayPlayersGrid(players) {
+            const html = players.map(player => `
+                <div class="card">
+                    <h3>${player.name}</h3>
+                    <div style="color: #6b7280; margin-bottom: 8px;">${player.team} - ${player.role || 'Unknown'}</div>
+                    <div style="font-size: 20px; font-weight: bold; color: #2563eb; margin: 8px 0;">${(player.piv||0).toFixed(3)} PIV</div>
+                    <div>K/D: ${(player.kd||0).toFixed(2)}</div>
+                </div>
+            `).join('');
+            const grid = document.getElementById('players-grid');
+            if (grid) grid.innerHTML = html;
+        }
+
+        function displayTeamsGrid() {
+            const html = teamsData.map(team => `
+                <div class="card">
+                    <h3>${team.name}</h3>
+                    <div style="color: #6b7280; margin-bottom: 8px;">${team.players?.length || 0} players</div>
+                    <div style="font-size: 20px; font-weight: bold; color: #059669; margin: 8px 0;">${(team.tir||0).toFixed(3)} TIR</div>
+                </div>
+            `).join('');
+            const grid = document.getElementById('teams-grid');
+            if (grid) grid.innerHTML = html;
+        }
     </script>
 </body>
+</html>
 </html>

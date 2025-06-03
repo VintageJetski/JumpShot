@@ -15,11 +15,13 @@ app.use((req, res, next) => {
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
   
-  // Cache busting for non-API routes
+  // Aggressive cache busting for non-API routes
   if (!req.path.startsWith('/api')) {
-    res.header("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.header("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
     res.header("Pragma", "no-cache");
     res.header("Expires", "0");
+    res.header("ETag", `"${Date.now()}"`);
+    res.header("Last-Modified", new Date().toUTCString());
   }
   
   if (req.method === "OPTIONS") {

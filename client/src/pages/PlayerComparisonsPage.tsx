@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { PlayerWithPIV, PlayerRole } from "../../../shared/schema";
+import { PlayerWithPIV, PlayerRole } from "../../shared/schema";
 import {
   Card,
   CardContent,

@@ -1,159 +1,219 @@
-import { useState, useEffect } from 'react';
+import { Switch, Route } from "wouter";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 
-interface Player {
-  playerName: string;
-  team: string;
-  piv: number;
-  role: string;
-  stats: any;
-}
-
-interface Team {
-  name: string;
-  tir: number;
-  averagePIV: number;
-  players: Player[];
-}
-
-function App() {
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
+// Simple working dashboard page
+function DashboardPage() {
+  const [players, setPlayers] = useState([]);
+  const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
+  // Load data on component mount
   useEffect(() => {
-    Promise.all([
-      fetch('/api/players').then(res => res.json()),
-      fetch('/api/teams').then(res => res.json())
-    ])
-    .then(([playersData, teamsData]) => {
-      setPlayers(playersData);
-      setTeams(teamsData);
-      setLoading(false);
-    })
-    .catch(err => {
-      setError(err.message);
-      setLoading(false);
-    });
+    const loadData = async () => {
+      try {
+        const playersRes = await fetch('/api/players');
+        const teamsRes = await fetch('/api/teams');
+        
+        if (playersRes.ok && teamsRes.ok) {
+          const playersData = await playersRes.json();
+          const teamsData = await teamsRes.json();
+          setPlayers(playersData);
+          setTeams(teamsData);
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
   }, []);
 
   if (loading) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
-        <h1>CS2 Analytics Platform</h1>
-        <p>Loading tournament data...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
-        <h1>CS2 Analytics Platform</h1>
-        <p style={{ color: 'red' }}>Error: {error}</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading CS2 Analytics...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <header style={{ marginBottom: '30px', borderBottom: '2px solid #eee', paddingBottom: '20px' }}>
-        <h1 style={{ margin: 0, color: '#333' }}>CS2 Analytics Platform</h1>
-        <p style={{ margin: '10px 0 0 0', color: '#666' }}>IEM Katowice 2025 Tournament Analysis</p>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-gray-900">CS2 Analytics Platform</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-500">IEM Katowice 2025 Data</span>
+            </div>
+          </div>
+        </div>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '30px' }}>
-        <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '8px' }}>
-          <h2 style={{ marginTop: 0 }}>Tournament Overview</h2>
-          <p><strong>Players Analyzed:</strong> {players.length}</p>
-          <p><strong>Teams:</strong> {teams.length}</p>
-          <p><strong>Analytics:</strong> PIV (Player Impact Value)</p>
-        </div>
-
-        <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '8px' }}>
-          <h2 style={{ marginTop: 0 }}>Data Status</h2>
-          <p><strong>Source:</strong> CSV Files</p>
-          <p><strong>Tournament:</strong> IEM Katowice 2025</p>
-          <p><strong>Metrics:</strong> TIR (Team Impact Rating)</p>
-        </div>
-      </div>
-
-      <div style={{ marginBottom: '30px' }}>
-        <h2>Top Players by PIV</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px' }}>
-          {players.slice(0, 12).map((player, index) => (
-            <div key={player.playerName} style={{ 
-              background: 'white', 
-              border: '1px solid #ddd', 
-              borderRadius: '8px', 
-              padding: '15px',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <h3 style={{ margin: 0, fontSize: '16px' }}>{player.playerName}</h3>
-                <span style={{ 
-                  background: '#007bff', 
-                  color: 'white', 
-                  padding: '2px 8px', 
-                  borderRadius: '12px', 
-                  fontSize: '12px' 
-                }}>
-                  #{index + 1}
-                </span>
-              </div>
-              <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>
-                <strong>Team:</strong> {player.team}
-              </p>
-              <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>
-                <strong>PIV:</strong> {player.piv?.toFixed(3) || 'N/A'}
-              </p>
-              <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>
-                <strong>Role:</strong> {player.role}
-              </p>
-              <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>
-                <strong>K/D:</strong> {player.stats?.kd?.toFixed(2) || 'N/A'}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <h2>Team Rankings</h2>
-        <div style={{ background: 'white', border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
-          {teams.slice(0, 10).map((team, index) => (
-            <div key={team.name} style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              padding: '15px 20px',
-              borderBottom: index < 9 ? '1px solid #eee' : 'none',
-              background: index % 2 === 0 ? '#f8f9fa' : 'white'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#666', minWidth: '30px' }}>
-                  #{index + 1}
-                </span>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '16px' }}>{team.name}</h3>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '14px', color: '#666' }}>
-                    {team.players?.length || 0} players
-                  </p>
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                      <span className="text-white font-bold">P</span>
+                    </div>
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Total Players</dt>
+                      <dd className="text-lg font-medium text-gray-900">{players.length}</dd>
+                    </dl>
+                  </div>
                 </div>
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <p style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#007bff' }}>
-                  TIR: {team.tir?.toFixed(3) || 'N/A'}
-                </p>
-                <p style={{ margin: '2px 0 0 0', fontSize: '14px', color: '#666' }}>
-                  Avg PIV: {team.averagePIV?.toFixed(3) || 'N/A'}
-                </p>
+            </div>
+
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                      <span className="text-white font-bold">T</span>
+                    </div>
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Total Teams</dt>
+                      <dd className="text-lg font-medium text-gray-900">{teams.length}</dd>
+                    </dl>
+                  </div>
+                </div>
               </div>
             </div>
-          ))}
+
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                      <span className="text-white font-bold">M</span>
+                    </div>
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Tournament Matches</dt>
+                      <dd className="text-lg font-medium text-gray-900">148</dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Top Players by PIV</h3>
+                <div className="space-y-3">
+                  {players
+                    .sort((a, b) => (b.piv || 0) - (a.piv || 0))
+                    .slice(0, 10)
+                    .map((player, index) => (
+                      <div key={player.name} className="flex items-center justify-between py-2 border-b border-gray-100">
+                        <div className="flex items-center">
+                          <span className="text-sm font-medium text-gray-500 w-6">#{index + 1}</span>
+                          <div className="ml-3">
+                            <p className="text-sm font-medium text-gray-900">{player.name}</p>
+                            <p className="text-xs text-gray-500">{player.team} • {player.role}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-blue-600">{(player.piv || 0).toFixed(3)}</p>
+                          <p className="text-xs text-gray-500">K/D: {(player.stats?.kdRatio || 0).toFixed(2)}</p>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Top Teams by TIR</h3>
+                <div className="space-y-3">
+                  {teams
+                    .sort((a, b) => (b.tir || 0) - (a.tir || 0))
+                    .slice(0, 8)
+                    .map((team, index) => (
+                      <div key={team.name} className="flex items-center justify-between py-2 border-b border-gray-100">
+                        <div className="flex items-center">
+                          <span className="text-sm font-medium text-gray-500 w-6">#{index + 1}</span>
+                          <div className="ml-3">
+                            <p className="text-sm font-medium text-gray-900">{team.name}</p>
+                            <p className="text-xs text-gray-500">{team.players?.length || 0} players</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-green-600">{(team.tir || 0).toFixed(3)}</p>
+                          <p className="text-xs text-gray-500">Avg PIV: {(team.averagePIV || 0).toFixed(3)}</p>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 bg-white shadow rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Analytics Overview</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-blue-600">{players.filter(p => p.role === 'AWPer').length}</div>
+                  <div className="text-sm text-blue-800">AWPers</div>
+                </div>
+                <div className="bg-green-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-green-600">{players.filter(p => p.role === 'Entry Fragger').length}</div>
+                  <div className="text-sm text-green-800">Entry Fraggers</div>
+                </div>
+                <div className="bg-purple-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-purple-600">{players.filter(p => p.isIGL).length}</div>
+                  <div className="text-sm text-purple-800">IGLs</div>
+                </div>
+                <div className="bg-orange-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-orange-600">{players.filter(p => p.role === 'Support').length}</div>
+                  <div className="text-sm text-orange-800">Support Players</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Switch>
+        <Route path="/" component={DashboardPage} />
+        <Route>
+          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-gray-900 mb-4">Page Not Found</h1>
+              <a href="/" className="text-blue-600 hover:text-blue-800">Return to Dashboard</a>
+            </div>
+          </div>
+        </Route>
+      </Switch>
+    </QueryClientProvider>
   );
 }
 

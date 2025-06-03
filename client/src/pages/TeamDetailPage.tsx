@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
-import { TeamWithTIR, PlayerRole, TeamRoundMetrics } from "../../../shared/schema";
+import { TeamWithTIR, PlayerRole, TeamRoundMetrics } from "../../shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import RoleBadge from "../components/ui/role-badge";
 import ProgressMetric from "../components/stats/ProgressMetric";

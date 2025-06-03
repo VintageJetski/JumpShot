@@ -2,7 +2,7 @@ import * as React from "react"
 import { Search } from "lucide-react"
 import { Input } from "./input"
 import { ScrollArea } from "./scroll-area"
-import { TeamWithTIR } from "@shared/schema"
+import { TeamWithTIR } from "../../../shared/schema"
 
 interface TeamComboboxProps {
   teams: TeamWithTIR[]

@@ -16,28 +16,33 @@ export function calculateBasicMetricsScore(
   role: PlayerRole, 
   rounds: RoundData[]
 ): number {
+  console.log('DEBUG BasicMetrics - Input:', { player: stats.userName, role, teamName: stats.teamName, roundsCount: rounds.length });
+  
   let score = 0;
   
   switch(role) {
     case PlayerRole.IGL:
       // Rifle Round Win Rate (from rounds data)
       const rifleRoundWinRate = calculateRifleRoundWinRate(rounds, stats.teamName);
-      score += rifleRoundWinRate * 0.35; // Increased weight (was 0.245)
+      console.log('DEBUG BasicMetrics - Rifle round win rate:', rifleRoundWinRate);
+      score += (rifleRoundWinRate || 0) * 0.35; // Fallback to 0 if null
       
       // Utility Usage Efficiency
       const utilEfficiency = stats.assistedFlashes / Math.max(stats.totalUtilityThrown, 1);
-      score += utilEfficiency * 0.30; // Increased weight (was 0.21)
+      console.log('DEBUG BasicMetrics - Utility efficiency:', utilEfficiency);
+      score += utilEfficiency * 0.30;
       
       // Eco/Force Round Conversion (from rounds data)
       const ecoForceConversion = calculateEcoForceConversion(rounds, stats.teamName);
-      score += ecoForceConversion * 0.21; // Increased weight (was 0.15)
+      console.log('DEBUG BasicMetrics - Eco/Force conversion:', ecoForceConversion);
+      score += (ecoForceConversion || 0) * 0.21; // Fallback to 0 if null
       
       // 5v4 Conversion Rate (from rounds data)
       const manAdvantageConversion = calculate5v4Conversion(rounds, stats.teamName);
-      score += manAdvantageConversion * 0.14; // No change (was 0.15)
+      console.log('DEBUG BasicMetrics - 5v4 conversion:', manAdvantageConversion);
+      score += (manAdvantageConversion || 0) * 0.14; // Fallback to 0 if null
       
-      // Note: Removed Timeout Conversion (0.14) and Basic Consistency (0.105)
-      // Weights redistributed proportionally
+      console.log('DEBUG BasicMetrics - IGL final score:', score);
       break;
       
     case PlayerRole.AWP:
@@ -161,8 +166,12 @@ export function calculateBasicMetricsScore(
       break;
       
     default:
+      console.log('DEBUG BasicMetrics - Unknown role, using fallback');
       score = 0.5; // Fallback for unknown roles
   }
   
-  return Math.max(0, Math.min(1, score)); // Clamp between 0 and 1
+  console.log('DEBUG BasicMetrics - Final score before return:', score);
+  const finalScore = Math.max(0, Math.min(1, score));
+  console.log('DEBUG BasicMetrics - Clamped final score:', finalScore);
+  return finalScore;
 }

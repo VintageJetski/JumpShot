@@ -76,7 +76,7 @@ export function PlayerCombobox({
                         {player.role}
                       </span>
                       <span className="text-xs px-1.5 py-0.5 rounded bg-slate-200/10 text-slate-300">
-                        {player.metrics.piv.toFixed(2)}
+                        {player.piv.toFixed(2)}
                       </span>
                     </div>
                   </div>

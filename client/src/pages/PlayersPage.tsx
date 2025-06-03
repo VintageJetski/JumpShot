@@ -476,8 +476,8 @@ export default function PlayersPage() {
                     )
                     .sort((a, b) => {
                       // Calculate average PIV for each team
-                      const avgPivA = a[1].reduce((sum, p) => sum + p.piv, 0) / a[1].length;
-                      const avgPivB = b[1].reduce((sum, p) => sum + p.piv, 0) / b[1].length;
+                      const avgPivA = a[1].reduce((sum, p) => sum + p.metrics.piv, 0) / a[1].length;
+                      const avgPivB = b[1].reduce((sum, p) => sum + p.metrics.piv, 0) / b[1].length;
                       return avgPivB - avgPivA; // Sort by highest average PIV
                     })
                     .map(([teamName, players], idx) => (

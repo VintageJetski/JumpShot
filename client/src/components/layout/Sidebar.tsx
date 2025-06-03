@@ -130,7 +130,7 @@ export default function Sidebar() {
 
   // Group paths for checking active status
   const analyticsRoutes = ['/players', '/teams', '/player-comparisons', '/advanced-analytics'];
-  const visualizationRoutes = ['/statistical-analysis', '/data-visualization', '/match-infographic'];
+  const visualizationRoutes = ['/statistical-analysis', '/data-visualization', '/advanced-visualization', '/match-infographic'];
 
   return (
     <aside className="hidden md:block w-64 glassmorphism border-r border-white/5 p-5 h-full overflow-y-auto">
@@ -257,6 +257,14 @@ export default function Sidebar() {
                 icon={<PieChart />} 
                 label="Data Visualization" 
                 isActive={isActive("/data-visualization")}
+                indent
+              />
+
+              <MenuItem 
+                href="/advanced-visualization" 
+                icon={<BarChart3 />} 
+                label="Advanced Charts" 
+                isActive={isActive("/advanced-visualization")}
                 indent
               />
               

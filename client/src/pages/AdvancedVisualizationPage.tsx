@@ -15,6 +15,7 @@ import PerformanceHeatmap from '@/components/charts/PerformanceHeatmap';
 import RoleBreakdownChart from '@/components/charts/RoleBreakdownChart';
 import MetricCorrelationChart from '@/components/charts/MetricCorrelationChart';
 import TeamPIVBarChart from '@/components/charts/TeamPIVBarChart';
+import TeamPerformanceOverview from '@/components/charts/TeamPerformanceOverview';
 import RoleDistributionChart from '@/components/charts/RoleDistributionChart';
 
 type VisualizationTab = 'overview' | 'performance' | 'teams' | 'correlations' | 'roles';
@@ -137,7 +138,7 @@ export default function AdvancedVisualizationPage() {
             <PIVDistributionChart players={players} />
             <RoleDistributionChart players={players} />
             <div className="lg:col-span-2">
-              <TeamPIVBarChart players={players} />
+              <TeamPerformanceOverview teams={teams} />
             </div>
           </div>
         </TabsContent>
@@ -172,7 +173,7 @@ export default function AdvancedVisualizationPage() {
         <TabsContent value="teams" className="mt-6">
           <div className="space-y-6">
             <TeamSynergyChart teams={teams.slice(0, 5)} />
-            <TeamPIVBarChart teams={teams} />
+            <TeamPerformanceOverview teams={teams} />
           </div>
         </TabsContent>
 

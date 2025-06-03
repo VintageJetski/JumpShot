@@ -1,6 +1,6 @@
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { TeamWithTIR } from '../../../shared/schema';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TeamWithTIR } from '@shared/schema';
 
 interface TeamSynergyChartProps {
   teams: TeamWithTIR[];

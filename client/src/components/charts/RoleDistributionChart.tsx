@@ -1,5 +1,5 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { PlayerWithPIV, PlayerRole } from '../../../shared/schema';
+import { PlayerWithPIV, PlayerRole } from '@shared/schema';
 
 interface RoleDistributionChartProps {
   players: PlayerWithPIV[];

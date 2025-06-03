@@ -30,7 +30,7 @@ import {
   TrendingUp,
   TrendingDown
 } from 'lucide-react';
-import { PlayerWithPIV, TeamWithTIR, PlayerRole, RawStats } from '../../shared/types';
+import { PlayerWithPIV, TeamWithTIR, PlayerRole, RawStats } from '@shared/types';
 import AdvancedStatsTable from '../components/data-visualization/AdvancedStatsTable';
 import CorrelationAnalysis from '../components/data-visualization/CorrelationAnalysis';
 import TrendAnalysis from '../components/data-visualization/TrendAnalysis';

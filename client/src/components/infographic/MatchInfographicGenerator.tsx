@@ -1,9 +1,9 @@
 import React, { useRef } from 'react';
-import { TeamWithTIR, TeamRoundMetrics, PlayerWithPIV, PlayerRole } from '../../../shared/schema';
-import { Card, CardContent } from '../ui/card';
-import { Progress } from '../ui/progress';
-import { Badge } from '../ui/badge';
-import RoleBadge from '../ui/role-badge';
+import { TeamWithTIR, TeamRoundMetrics, PlayerWithPIV, PlayerRole } from '@shared/schema';
+import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import RoleBadge from '@/components/ui/role-badge';
 import { 
   Trophy, 
   TrendingUp, 

@@ -1,13 +1,13 @@
 import React from 'react';
-import { Label } from '../ui/label';
+import { Label } from '@/components/ui/label';
 import { 
   Select, 
   SelectContent, 
   SelectItem, 
   SelectTrigger, 
   SelectValue 
-} from '../ui/select';
-import { TeamWithTIR } from '../../../shared/schema';
+} from '@/components/ui/select';
+import { TeamWithTIR } from '@shared/schema';
 import { Loader2 } from 'lucide-react';
 
 interface TeamSelectProps {

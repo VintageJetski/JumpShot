@@ -5,22 +5,22 @@ import {
   CardDescription, 
   CardHeader, 
   CardTitle 
-} from '../ui/card';
+} from '@/components/ui/card';
 import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../ui/select';
+} from '@/components/ui/select';
 import {
   Tabs,
   TabsList,
   TabsTrigger,
-} from '../ui/tabs';
-import { Button } from '../ui/button';
-import { Separator } from '../ui/separator';
-import { PlayerWithPIV, PlayerRole } from '../../../shared/types';
+} from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { PlayerWithPIV, PlayerRole } from '@shared/types';
 
 interface PositionalHeatmapProps {
   players: PlayerWithPIV[];

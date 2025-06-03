@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Calendar } from '../ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Button } from '../ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 import { CalendarIcon, Filter, RefreshCw } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Badge } from '../ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import {
   LineChart,
@@ -16,7 +16,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
-import { PlayerWithPIV } from '../../../shared/schema';
+import { PlayerWithPIV } from '@shared/schema';
 
 // Create historical data based on the player's actual match statistics
 // This generates exactly one data point per actual match played

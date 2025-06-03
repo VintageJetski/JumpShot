@@ -1,8 +1,8 @@
 import { PlayerWithPIV, PlayerRole } from '../../../../shared/schema';
-import { Card, CardContent, CardHeader } from '../ui/card';
-import { Avatar, AvatarFallback } from '../ui/avatar';
-import { Badge } from '../ui/badge';
-import { Progress } from '../ui/progress';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 
 interface PlayerCardProps {
   player: PlayerWithPIV;

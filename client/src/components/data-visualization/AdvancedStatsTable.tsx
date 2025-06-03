@@ -6,24 +6,24 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../ui/table';
+} from '@/components/ui/table';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../ui/select';
+} from '@/components/ui/select';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   FileDown, 
   SortAsc, 
@@ -32,7 +32,7 @@ import {
   X,
   Filter
 } from 'lucide-react';
-import { PlayerWithPIV } from '../../../shared/types';
+import { PlayerWithPIV } from '@shared/types';
 
 // Define stat categories
 type StatCategory = 'all' | 'offense' | 'defense' | 'utility';

@@ -2,7 +2,7 @@ import React from 'react';
 import { PlayerWithPIV, PlayerRole } from "@/../../../shared/schema";
 import { motion } from 'framer-motion';
 import { useLocation } from 'wouter';
-import RoleBadge from '../ui/role-badge';
+import RoleBadge from '@/components/ui/role-badge';
 import { Shield, Target, Lightbulb, CircleDot, Users, Gauge, ArrowRight } from 'lucide-react';
 
 interface PlayerCardProps {

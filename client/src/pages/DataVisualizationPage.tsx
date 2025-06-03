@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import PlayerPerformanceChart from '../components/data-visualization/PlayerPerformanceChart';
 import TeamPerformanceChart from '../components/data-visualization/TeamPerformanceChart';
-import { PlayerWithPIV, TeamWithTIR, PlayerRole, TeamRoundMetrics } from '../../shared/types';
+import { PlayerWithPIV, TeamWithTIR, PlayerRole, TeamRoundMetrics } from '@shared/types';
 import RoleBadge from '@/components/ui/role-badge';
 
 // Define visualization tabs

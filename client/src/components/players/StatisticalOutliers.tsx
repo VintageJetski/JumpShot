@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation } from 'wouter';
 import { motion } from 'framer-motion';
-import { PlayerWithPIV, PlayerRole } from '../../../shared/schema';
+import { PlayerWithPIV, PlayerRole } from '@shared/schema';
 import { Target, Shield, CircleDot, Gauge, ZapIcon, Brain, FlameIcon, Users, Zap, Crosshair, Award } from 'lucide-react';
 
 interface StatisticalOutliersProps {

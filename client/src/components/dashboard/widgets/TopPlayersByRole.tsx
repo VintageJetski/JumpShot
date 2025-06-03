@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { PlayerWithPIV } from '../../../../shared/schema';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Users, Award, Shield, Crosshair, Activity, Bomb } from 'lucide-react';
 
 interface TopPlayersByRoleProps {

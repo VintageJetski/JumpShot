@@ -6,16 +6,16 @@ import {
   CardDescription,
   CardHeader,
   CardTitle
-} from '../ui/card';
+} from '@/components/ui/card';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger
-} from '../ui/tooltip';
-import { Progress } from '../ui/progress';
+} from '@/components/ui/tooltip';
+import { Progress } from '@/components/ui/progress';
 import { InfoIcon, TrendingUp, Activity, Users, Shield } from 'lucide-react';
-import { PlayerWithPIV, TeamWithTIR } from '../../../shared/schema';
+import { PlayerWithPIV, TeamWithTIR } from '@shared/schema';
 
 export interface ConfidenceRating {
   teamA: TeamConfidenceRating;

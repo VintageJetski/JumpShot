@@ -16,6 +16,7 @@ import ScoutPage from "@/pages/ScoutPage";
 import SearchPlayersPage from "@/pages/SearchPlayersPage";
 import StatisticalAnalysisPage from "@/pages/StatisticalAnalysisPage";
 import DataVisualizationPage from "@/pages/DataVisualizationPage";
+import AdvancedVisualizationPage from "@/pages/AdvancedVisualizationPage";
 import AdvancedAnalyticsPage from "@/pages/AdvancedAnalyticsPage";
 import DashboardPage from "@/pages/DashboardPage";
 
@@ -117,6 +118,13 @@ function Router() {
           {() => (
             <ProtectedRoute>
               <DataVisualizationPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/advanced-visualization">
+          {() => (
+            <ProtectedRoute>
+              <AdvancedVisualizationPage />
             </ProtectedRoute>
           )}
         </Route>

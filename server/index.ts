@@ -38,13 +38,13 @@ app.use((req, res, next) => {
   // Serve static files from the built React app
   app.use(express.static(path.join(process.cwd(), 'dist', 'public')));
   
-  // Serve React app for all non-API routes
+  // Serve your working advanced dashboard for all non-API routes
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {
-      const indexPath = path.join(process.cwd(), 'dist', 'public', 'index.html');
-      res.sendFile(indexPath, (err) => {
+      const advancedDashboardPath = path.join(process.cwd(), 'client', 'public', 'advanced-dashboard.html');
+      res.sendFile(advancedDashboardPath, (err) => {
         if (err) {
-          // Fallback to a basic React app if dist doesn't exist
+          // Fallback to a basic React app if advanced dashboard doesn't exist
           res.send(`
             <!DOCTYPE html>
             <html lang="en">

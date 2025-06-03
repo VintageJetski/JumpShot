@@ -23,42 +23,20 @@ export function log(message: string, source = "express") {
 }
 
 export async function setupVite(app: Express, server: Server) {
-  const serverOptions = {
-    middlewareMode: true,
-    hmr: { server },
-  };
-
   const vite = await createViteServer({
-    ...viteConfig,
-    configFile: false,
-    server: serverOptions,
-    appType: "custom",
+    server: { middlewareMode: true },
+    appType: "spa",
+    root: path.resolve(__dirname, "..", "client"),
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "..", "client", "src"),
+        "@shared": path.resolve(__dirname, "..", "shared"),
+      },
+    },
   });
 
+  app.use(vite.ssrFixStacktrace);
   app.use(vite.middlewares);
-  app.use("*", async (req, res, next) => {
-    const url = req.originalUrl;
-
-    try {
-      const clientTemplate = path.resolve(
-        __dirname,
-        "..",
-        "client",
-        "index.html",
-      );
-
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
-      template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`,
-      );
-      const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
-    } catch (e) {
-      vite.ssrFixStacktrace(e as Error);
-      next(e);
-    }
-  });
 }
 
 export function serveStatic(app: Express) {

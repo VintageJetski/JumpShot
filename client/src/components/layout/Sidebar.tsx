@@ -270,6 +270,19 @@ export default function Sidebar() {
         </div>
         
         <div className="mt-8 pt-6 border-t border-white/5">
+          <div className="flex items-center px-4 mb-2">
+            <ShieldCheck className="h-4 w-4 text-blue-400 mr-2" />
+            <h3 className="text-xs font-semibold text-blue-300 uppercase tracking-wider">Administration</h3>
+          </div>
+          <div className="space-y-1 mb-6">
+            <MenuItem 
+              href="/admin" 
+              icon={<ShieldCheck />} 
+              label="Admin Dashboard" 
+              isActive={isActive("/admin")} 
+            />
+          </div>
+
           <div className="flex items-center px-4 mb-2 mt-6">
             <FileText className="h-4 w-4 text-blue-400 mr-2" />
             <h3 className="text-xs font-semibold text-blue-300 uppercase tracking-wider">Documentation</h3>

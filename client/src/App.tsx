@@ -42,6 +42,7 @@ function Router() {
         <Route path="/vention-mockup" component={VentionStyleMockup} />
         <Route path="/players/:id" component={PlayerDetailPage} />
         <Route path="/teams/:name" component={TeamDetailPage} />
+        <Route path="/admin" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Admin Dashboard</h1><p>System statistics and management tools would go here.</p></div>} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

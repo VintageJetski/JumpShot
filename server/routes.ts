@@ -10,31 +10,21 @@ import { initializeRoundData } from "./roundDataLoader";
 import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Initialize data on server start
+  // Initialize raw data only - no calculations
   try {
-    console.log('Loading and processing player data...');
+    console.log('Loading raw player data...');
     const rawPlayerStats = await loadNewPlayerStats();
     
-    // Load player roles from CSV
     console.log('Loading player roles from CSV...');
     const roleMap = await loadPlayerRoles();
     
-    // Process player stats with roles and calculate PIV
-    const playersWithPIV = processPlayerStatsWithRoles(rawPlayerStats, roleMap);
-    
-    // Calculate team TIR
-    const teamsWithTIR = calculateTeamImpactRatings(playersWithPIV);
-    
-    // Store processed data
-    await storage.setPlayers(playersWithPIV);
-    await storage.setTeams(teamsWithTIR);
-    
-    console.log(`Processed ${playersWithPIV.length} players and ${teamsWithTIR.length} teams`);
-    
-    // Load and process round data
+    console.log('Loading round data...');
     await initializeRoundData();
+    
+    // Store only raw data - calculations moved to frontend
+    console.log(`Loaded ${rawPlayerStats.length} raw player records`);
   } catch (error) {
-    console.error('Error initializing data:', error);
+    console.error('Error loading raw data:', error);
   }
   
   // API routes

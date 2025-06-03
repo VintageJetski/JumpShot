@@ -17,7 +17,7 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger
-} from "../../components/ui/sheet";
+} from "@/components/ui/sheet";
 import { motion } from "framer-motion";
 
 export default function MobileNav() {

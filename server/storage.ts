@@ -3,10 +3,7 @@ import {
   TeamWithTIR, 
   PlayerRawStats,
   PlayerMetrics, 
-  User, 
-  InsertUser,
   playerStats,
-  users,
   teams,
   PlayerRole,
   TeamRoundMetrics
@@ -16,11 +13,6 @@ import { eq, sql } from "drizzle-orm";
 
 // Storage interface for the application
 export interface IStorage {
-  // User management (from template)
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  
   // Player and team management
   getAllPlayers(): Promise<PlayerWithPIV[]>;
   getPlayerById(id: string): Promise<PlayerWithPIV | undefined>;
@@ -53,24 +45,7 @@ export class HybridStorage implements IStorage {
     this.roundMetricsCache = new Map();
   }
 
-  // User methods using database
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
-  }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
-    return user;
-  }
 
   // Player methods using hybrid approach
   async getAllPlayers(): Promise<PlayerWithPIV[]> {

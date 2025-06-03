@@ -731,6 +731,261 @@
         document.getElementById('role-filter').addEventListener('change', filterAndDisplayPlayers);
         document.getElementById('sort-filter').addEventListener('change', filterAndDisplayPlayers);
 
+        // Missing essential functions
+        function populateDashboard() {
+            displayStatsOverview();
+            displayTopPlayers();
+            displayTopTeams();
+            displayRoleMatrix();
+            populateFilters();
+        }
+
+        function displayStatsOverview() {
+            const totalPlayers = playersData.length;
+            const totalTeams = teamsData.length;
+            const avgPIV = playersData.reduce((sum, p) => sum + (p.piv || 0), 0) / totalPlayers;
+            const avgTIR = teamsData.reduce((sum, t) => sum + (t.tir || 0), 0) / totalTeams;
+
+            document.getElementById('stats-overview').innerHTML = `
+                <div class="card">
+                    <div class="stat">
+                        <div class="stat-icon" style="background: #2563eb;">P</div>
+                        <div>
+                            <div class="stat-label">Total Players</div>
+                            <div class="stat-value">${totalPlayers}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="stat">
+                        <div class="stat-icon" style="background: #059669;">T</div>
+                        <div>
+                            <div class="stat-label">Total Teams</div>
+                            <div class="stat-value">${totalTeams}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="stat">
+                        <div class="stat-icon" style="background: #dc2626;">PIV</div>
+                        <div>
+                            <div class="stat-label">Avg PIV</div>
+                            <div class="stat-value">${avgPIV.toFixed(3)}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="stat">
+                        <div class="stat-icon" style="background: #7c3aed;">TIR</div>
+                        <div>
+                            <div class="stat-label">Avg TIR</div>
+                            <div class="stat-value">${avgTIR.toFixed(3)}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayTopPlayers() {
+            const topPlayers = playersData.sort((a, b) => (b.piv || 0) - (a.piv || 0)).slice(0, 10);
+            const html = topPlayers.map(player => `
+                <div class="player-item">
+                    <div class="player-info">
+                        <span class="player-name">${player.name}</span>
+                        <span class="player-team">${player.team}</span>
+                    </div>
+                    <div class="player-stats">
+                        <span class="piv-score">${(player.piv || 0).toFixed(3)}</span>
+                        <span class="role-badge">${player.role || 'Unknown'}</span>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('top-players-dashboard').innerHTML = html;
+        }
+
+        function displayTopTeams() {
+            const topTeams = teamsData.sort((a, b) => (b.tir || 0) - (a.tir || 0)).slice(0, 8);
+            const html = topTeams.map(team => `
+                <div class="player-item">
+                    <div class="player-info">
+                        <span class="player-name">${team.name}</span>
+                        <span class="player-team">${team.players?.length || 0} players</span>
+                    </div>
+                    <div class="player-stats">
+                        <span class="piv-score">${(team.tir || 0).toFixed(3)}</span>
+                        <span class="role-badge">TIR</span>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('top-teams-dashboard').innerHTML = html;
+        }
+
+        function displayRoleMatrix() {
+            const roleStats = calculateRoleStats();
+            const html = Object.entries(roleStats).map(([role, stats]) => `
+                <div style="display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #e5e7eb;">
+                    <span>${role}</span>
+                    <span>${stats.count} players (${stats.avgPIV.toFixed(3)} avg PIV)</span>
+                </div>
+            `).join('');
+            document.getElementById('role-matrix').innerHTML = html;
+        }
+
+        function populateFilters() {
+            const teams = [...new Set(playersData.map(p => p.team))].sort();
+            const teamSelect = document.getElementById('team-filter');
+            teamSelect.innerHTML = '<option value="">All Teams</option>' + 
+                teams.map(team => `<option value="${team}">${team}</option>`).join('');
+
+            const player1Select = document.getElementById('player1-select');
+            const player2Select = document.getElementById('player2-select');
+            const teamASelect = document.getElementById('teamA-select');
+            const teamBSelect = document.getElementById('teamB-select');
+
+            if (player1Select) {
+                const playerOptions = playersData.map(p => `<option value="${p.name}">${p.name} (${p.team})</option>`).join('');
+                player1Select.innerHTML = '<option value="">Select Player 1</option>' + playerOptions;
+                player2Select.innerHTML = '<option value="">Select Player 2</option>' + playerOptions;
+            }
+
+            if (teamASelect) {
+                const teamOptions = teamsData.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+                teamASelect.innerHTML = '<option value="">Select Team A</option>' + teamOptions;
+                teamBSelect.innerHTML = '<option value="">Select Team B</option>' + teamOptions;
+            }
+        }
+
+        function filterAndDisplayPlayers() {
+            const teamFilter = document.getElementById('team-filter').value;
+            const roleFilter = document.getElementById('role-filter').value;
+            const sortFilter = document.getElementById('sort-filter').value;
+
+            let filtered = playersData.filter(player => {
+                return (!teamFilter || player.team === teamFilter) &&
+                       (!roleFilter || player.role === roleFilter);
+            });
+
+            filtered.sort((a, b) => {
+                if (sortFilter === 'name') return a.name.localeCompare(b.name);
+                if (sortFilter === 'kd') return (b.kd || 0) - (a.kd || 0);
+                return (b.piv || 0) - (a.piv || 0);
+            });
+
+            displayPlayersGrid(filtered);
+        }
+
+        function displayPlayersGrid(players) {
+            const html = players.map(player => `
+                <div class="card">
+                    <h3>${player.name}</h3>
+                    <div style="margin-bottom: 16px;">
+                        <div style="color: #6b7280;">${player.team} - ${player.role || 'Unknown'}</div>
+                        <div style="font-size: 24px; font-weight: bold; color: #2563eb; margin: 8px 0;">${(player.piv||0).toFixed(3)} PIV</div>
+                    </div>
+                    <div style="space-y: 8px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>K/D Ratio</span>
+                            <span style="font-weight: 600;">${(player.kd||0).toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Maps Played</span>
+                            <span style="font-weight: 600;">${player.maps || 0}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Rating</span>
+                            <span style="font-weight: 600;">${(player.rating||0).toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('players-grid').innerHTML = html;
+        }
+
+        function displayTeamsGrid() {
+            const html = teamsData.map(team => `
+                <div class="card">
+                    <h3>${team.name}</h3>
+                    <div style="margin-bottom: 16px;">
+                        <div style="color: #6b7280;">${team.players?.length || 0} players</div>
+                        <div style="font-size: 24px; font-weight: bold; color: #059669; margin: 8px 0;">${(team.tir||0).toFixed(3)} TIR</div>
+                    </div>
+                    <div style="space-y: 8px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Avg PIV</span>
+                            <span style="font-weight: 600;">${(team.averagePIV||0).toFixed(3)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Total Rounds</span>
+                            <span style="font-weight: 600;">${team.totalRounds || 0}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Win Rate</span>
+                            <span style="font-weight: 600;">${((team.roundsWon || 0) / Math.max(team.totalRounds || 1, 1) * 100).toFixed(1)}%</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('teams-grid').innerHTML = html;
+        }
+
+        function comparePlayers() {
+            const player1Name = document.getElementById('player1-select').value;
+            const player2Name = document.getElementById('player2-select').value;
+            
+            if (!player1Name || !player2Name) {
+                alert('Please select both players for comparison');
+                return;
+            }
+
+            const player1 = playersData.find(p => p.name === player1Name);
+            const player2 = playersData.find(p => p.name === player2Name);
+
+            document.getElementById('comparison-results').innerHTML = `
+                <div class="card">
+                    <h3>${player1.name}</h3>
+                    <div style="margin-bottom: 16px;">
+                        <div style="color: #6b7280;">${player1.team} - ${player1.role}</div>
+                        <div style="font-size: 24px; font-weight: bold; color: #2563eb; margin: 8px 0;">${(player1.piv||0).toFixed(3)} PIV</div>
+                    </div>
+                    <div style="space-y: 8px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>K/D Ratio</span>
+                            <span style="font-weight: 600;">${(player1.kd||0).toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Role</span>
+                            <span style="font-weight: 600;">${player1.role}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Team</span>
+                            <span style="font-weight: 600;">${player1.team}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>${player2.name}</h3>
+                    <div style="margin-bottom: 16px;">
+                        <div style="color: #6b7280;">${player2.team} - ${player2.role}</div>
+                        <div style="font-size: 24px; font-weight: bold; color: #2563eb; margin: 8px 0;">${(player2.piv||0).toFixed(3)} PIV</div>
+                    </div>
+                    <div style="space-y: 8px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>K/D Ratio</span>
+                            <span style="font-weight: 600;">${(player2.kd||0).toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Role</span>
+                            <span style="font-weight: 600;">${player2.role}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Team</span>
+                            <span style="font-weight: 600;">${player2.team}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         // Load data and initialize
         Promise.all([
             fetch('/api/players').then(r => r.json()),
@@ -740,6 +995,7 @@
             teamsData = teams;
             
             document.getElementById('loading').style.display = 'none';
+            populateDashboard();
             showView('dashboard');
         }).catch(error => {
             console.error('Error loading data:', error);
@@ -769,6 +1025,90 @@
             if (targetButton) {
                 targetButton.classList.add('active');
             }
+
+            // Populate view-specific content
+            if (viewName === 'players') {
+                filterAndDisplayPlayers();
+            } else if (viewName === 'teams') {
+                displayTeamsGrid();
+            } else if (viewName === 'analytics') {
+                displayAnalyticsView();
+            } else if (viewName === 'comparison') {
+                // Comparison view is already populated via populateFilters()
+            } else if (viewName === 'prediction') {
+                // Prediction view is already populated via populateFilters()
+            }
+        }
+
+        function displayAnalyticsView() {
+            // Display insights panel
+            const insights = generateInsights();
+            document.getElementById('insights-panel').innerHTML = insights;
+            
+            // Display advanced metrics
+            const metrics = generateAdvancedMetrics();
+            document.getElementById('advanced-metrics').innerHTML = metrics;
+            
+            // Display outliers analysis
+            const outliers = generateOutliersAnalysis();
+            document.getElementById('outliers-analysis').innerHTML = outliers;
+        }
+
+        function generateInsights() {
+            const topPIV = Math.max(...playersData.map(p => p.piv || 0));
+            const topTIR = Math.max(...teamsData.map(t => t.tir || 0));
+            const avgKD = playersData.reduce((sum, p) => sum + (p.kd || 0), 0) / playersData.length;
+            
+            return `
+                <div style="space-y: 12px;">
+                    <div style="padding: 12px; background: #f0f9ff; border-radius: 6px;">
+                        <strong>Top PIV Score:</strong> ${topPIV.toFixed(3)}
+                    </div>
+                    <div style="padding: 12px; background: #f0fdf4; border-radius: 6px;">
+                        <strong>Highest TIR:</strong> ${topTIR.toFixed(3)}
+                    </div>
+                    <div style="padding: 12px; background: #fefce8; border-radius: 6px;">
+                        <strong>Average K/D:</strong> ${avgKD.toFixed(2)}
+                    </div>
+                    <div style="padding: 12px; background: #f5f3ff; border-radius: 6px;">
+                        <strong>Tournament:</strong> IEM Katowice 2025
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateAdvancedMetrics() {
+            const roleDistribution = calculateRoleStats();
+            const entries = Object.entries(roleDistribution);
+            
+            return `
+                <div style="space-y: 8px;">
+                    <h4>Role Distribution</h4>
+                    ${entries.map(([role, stats]) => `
+                        <div style="display: flex; justify-content: space-between; padding: 8px; background: #f9fafb; border-radius: 4px;">
+                            <span>${role}</span>
+                            <span>${stats.count} (${stats.avgPIV.toFixed(3)} avg)</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function generateOutliersAnalysis() {
+            const sortedByPIV = [...playersData].sort((a, b) => (b.piv || 0) - (a.piv || 0));
+            const topPerformers = sortedByPIV.slice(0, 3);
+            
+            return `
+                <div style="space-y: 8px;">
+                    <h4>Top Performers</h4>
+                    ${topPerformers.map(player => `
+                        <div style="padding: 8px; background: #f0f9ff; border-radius: 4px;">
+                            <div style="font-weight: 600;">${player.name}</div>
+                            <div style="font-size: 12px; color: #6b7280;">${player.team} - ${(player.piv || 0).toFixed(3)} PIV</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
         }
 
         // Initialize charts

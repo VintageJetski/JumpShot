@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Search, Filter, Users, Medal, User2, Target, Lightbulb, Shield, CircleDot } from "lucide-react";
-import { PlayerWithPIV, PlayerRole } from "@shared/schema";
+import { PlayerRole } from "@shared/schema";
+import { PlayerWithPIV } from "@/lib/calculations/types";
 import { DataTable } from "@/components/ui/data-table";
 import PlayerCard from "@/components/players/PlayerCard";
 import TeamGroup from "@/components/players/TeamGroup";
@@ -425,7 +426,7 @@ export default function PlayersPage() {
                 <p className="mt-4 text-blue-300">Loading player data...</p>
               </div>
             </motion.div>
-          ) : isError ? (
+          ) : filteredPlayers.length === 0 ? (
             <motion.div 
               key="error"
               className="flex items-center justify-center h-64"

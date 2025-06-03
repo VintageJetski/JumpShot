@@ -54,7 +54,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/raw/rounds', async (req: Request, res: Response) => {
     try {
-      const { loadRoundData } = require('./roundAnalytics');
+      const { loadRoundData } = await import('./roundAnalytics.js');
       const rounds = await loadRoundData();
       res.json(rounds);
     } catch (error) {

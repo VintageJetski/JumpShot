@@ -44,7 +44,7 @@ export function useCalculatedData() {
 
   // Calculate processed data when all raw data is available
   const { data: calculatedData, isLoading: calculatingData } = useQuery({
-    queryKey: ['calculated-data', rawPlayers, rawRoles, rawRounds],
+    queryKey: ['calculated-data', rawPlayers?.length, rawRoles?.size, rawRounds?.length],
     queryFn: () => {
       if (!rawPlayers || !rawRoles || !rawRounds) {
         throw new Error('Raw data not available');

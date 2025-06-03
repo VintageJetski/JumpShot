@@ -192,7 +192,7 @@ export function processPlayerWithPIV(
   const piv = calculatePIV(rcs, icf.value, sc.value, osm, basicScore, role);
   
   // Create metrics objects for each side
-  const createMetrics = (sideMetrics: Record<string, number>, side: string) => ({
+  const createMetrics = (sideMetrics: Record<string, number>, side: "Overall" | "T" | "CT") => ({
     role,
     roleScores: { [role]: 0.9 }, // Simplified role scoring
     topMetrics: {

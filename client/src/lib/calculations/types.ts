@@ -105,7 +105,7 @@ export interface PlayerMetrics {
   sc: { value: number; metric: string };
   osm: number;
   piv: number;
-  side: string;
+  side: "Overall" | "T" | "CT";
 }
 
 export interface PlayerWithPIV {

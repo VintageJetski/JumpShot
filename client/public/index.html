@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS2 Analytics Platform</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f9fafb; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .title { font-size: 24px; font-weight: bold; color: #111827; }
+        .subtitle { color: #6b7280; font-size: 14px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .stat { display: flex; align-items: center; }
+        .stat-icon { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 16px; }
+        .stat-label { font-size: 14px; color: #6b7280; margin-bottom: 4px; }
+        .stat-value { font-size: 18px; font-weight: 600; color: #111827; }
+        .loading { text-align: center; padding: 40px; }
+        .spinner { width: 40px; height: 40px; border: 3px solid #e5e7eb; border-top: 3px solid #2563eb; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .player-list, .team-list { max-height: 400px; overflow-y: auto; }
+        .player-item, .team-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+        .player-info, .team-info { display: flex; align-items: center; }
+        .rank { width: 24px; font-size: 14px; font-weight: 500; color: #6b7280; margin-right: 12px; }
+        .name { font-size: 14px; font-weight: 500; color: #111827; }
+        .details { font-size: 12px; color: #6b7280; }
+        .score { text-align: right; }
+        .piv { font-size: 14px; font-weight: 600; color: #2563eb; }
+        .tir { font-size: 14px; font-weight: 600; color: #059669; }
+        .error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 16px; border-radius: 8px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">CS2 Analytics Platform</div>
+            <div class="subtitle">IEM Katowice 2025 Tournament Data</div>
+        </div>
+        
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <div>Loading CS2 Analytics...</div>
+        </div>
+
+        <div id="error" class="error" style="display: none;">
+            <div>Failed to load data. Please check the server connection.</div>
+        </div>
+
+        <div id="content" style="display: none;">
+            <div class="grid">
+                <div class="card">
+                    <div class="stat">
+                        <div class="stat-icon" style="background: #2563eb;">P</div>
+                        <div>
+                            <div class="stat-label">Total Players</div>
+                            <div class="stat-value" id="player-count">0</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="stat">
+                        <div class="stat-icon" style="background: #059669;">T</div>
+                        <div>
+                            <div class="stat-label">Total Teams</div>
+                            <div class="stat-value" id="team-count">0</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="stat">
+                        <div class="stat-icon" style="background: #7c3aed;">M</div>
+                        <div>
+                            <div class="stat-label">Tournament Matches</div>
+                            <div class="stat-value">148</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <h3 style="margin-bottom: 16px; color: #111827;">Top Players by PIV</h3>
+                    <div id="top-players" class="player-list"></div>
+                </div>
+                
+                <div class="card">
+                    <h3 style="margin-bottom: 16px; color: #111827;">Top Teams by TIR</h3>
+                    <div id="top-teams" class="team-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadData() {
+            try {
+                const [playersRes, teamsRes] = await Promise.all([
+                    fetch('/api/players'),
+                    fetch('/api/teams')
+                ]);
+
+                if (!playersRes.ok || !teamsRes.ok) {
+                    throw new Error('Failed to fetch data');
+                }
+
+                const players = await playersRes.json();
+                const teams = await teamsRes.json();
+
+                // Update counts
+                document.getElementById('player-count').textContent = players.length;
+                document.getElementById('team-count').textContent = teams.length;
+
+                // Sort and display top players
+                const topPlayers = players
+                    .sort((a, b) => (b.piv || 0) - (a.piv || 0))
+                    .slice(0, 10);
+
+                const playersHTML = topPlayers.map((player, index) => `
+                    <div class="player-item">
+                        <div class="player-info">
+                            <div class="rank">#${index + 1}</div>
+                            <div>
+                                <div class="name">${player.name}</div>
+                                <div class="details">${player.team} • ${player.role}</div>
+                            </div>
+                        </div>
+                        <div class="score">
+                            <div class="piv">${(player.piv || 0).toFixed(3)}</div>
+                            <div class="details">K/D: ${(player.stats?.kdRatio || 0).toFixed(2)}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                document.getElementById('top-players').innerHTML = playersHTML;
+
+                // Sort and display top teams
+                const topTeams = teams
+                    .sort((a, b) => (b.tir || 0) - (a.tir || 0))
+                    .slice(0, 8);
+
+                const teamsHTML = topTeams.map((team, index) => `
+                    <div class="team-item">
+                        <div class="team-info">
+                            <div class="rank">#${index + 1}</div>
+                            <div>
+                                <div class="name">${team.name}</div>
+                                <div class="details">${team.players?.length || 0} players</div>
+                            </div>
+                        </div>
+                        <div class="score">
+                            <div class="tir">${(team.tir || 0).toFixed(3)}</div>
+                            <div class="details">Avg PIV: ${(team.averagePIV || 0).toFixed(3)}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                document.getElementById('top-teams').innerHTML = teamsHTML;
+
+                // Show content, hide loading
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>

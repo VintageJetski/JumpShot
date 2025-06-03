@@ -1,5 +1,5 @@
 import html2pdf from 'html2pdf.js';
-import { PlayerRole } from '../../shared/schema';
+import { PlayerRole } from '@shared/schema';
 
 /**
  * Export an element to PDF

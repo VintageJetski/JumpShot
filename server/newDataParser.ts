@@ -60,8 +60,22 @@ export async function parsePlayerStatsCSV(filePath: string): Promise<PlayerRawSt
         ctSmokesThrown: parseInt(record.ct_smokes_thrown || '0', 10),
         tSmokesThrown: parseInt(record.t_smokes_thrown || '0', 10),
         smokesThrownInPistolRound: parseInt(record.smokes_thrown_in_pistol_round || '0', 10),
-        totalUtilityThrown: parseInt(record.flahes_thrown || '0', 10) + parseInt(record.he_thrown || '0', 10) + 
-                           parseInt(record.infernos_thrown || '0', 10) + parseInt(record.smokes_thrown || '0', 10)
+        totalUtilityThrown: parseInt(record.total_util_thrown || '0', 10),
+        awpKills: parseInt(record.awp_kills || '0', 10),
+        pistolKills: parseInt(record.pistol_kills || '0', 10),
+        tradeKills: parseInt(record.trade_kills || '0', 10),
+        tradeDeaths: parseInt(record.trade_deaths || '0', 10),
+        kDiff: parseInt(record.k_d_diff || '0', 10),
+        adrTotal: parseFloat(record.adr_total || '0'),
+        adrCtSide: parseFloat(record.adr_ct_side || '0'),
+        adrTSide: parseFloat(record.adr_t_side || '0'),
+        kastTotal: parseFloat(record.kast_total || '0'),
+        kastCtSide: parseFloat(record.kast_ct_side || '0'),
+        kastTSide: parseFloat(record.kast_t_side || '0'),
+        totalUtilDmg: parseInt(record.total_util_dmg || '0', 10),
+        ctTotalUtilDmg: parseInt(record.ct_total_util_dmg || '0', 10),
+        tTotalUtilDmg: parseInt(record.t_total_util_dmg || '0', 10),
+        airboneKills: parseInt(record.airbone_kills || '0', 10)
       };
     });
 

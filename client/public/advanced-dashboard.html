@@ -745,6 +745,61 @@
             console.error('Error loading data:', error);
             document.getElementById('loading').innerHTML = '<div style="color: #dc2626;">Failed to load advanced analytics. Please refresh the page.</div>';
         });
+
+        // View switching functionality
+        function showView(viewName) {
+            // Hide all views
+            document.querySelectorAll('[id$="-view"]').forEach(view => {
+                view.classList.add('hidden');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.nav button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected view
+            const targetView = document.getElementById(viewName + '-view');
+            if (targetView) {
+                targetView.classList.remove('hidden');
+            }
+            
+            // Add active class to clicked button
+            const targetButton = document.getElementById('btn-' + viewName);
+            if (targetButton) {
+                targetButton.classList.add('active');
+            }
+        }
+
+        // Initialize charts
+        function initializeCharts() {
+            if (typeof Chart === 'undefined') return;
+            
+            // PIV Distribution Chart
+            const pivCtx = document.getElementById('pivChart');
+            if (pivCtx) {
+                new Chart(pivCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['0-0.5', '0.5-1.0', '1.0-1.5', '1.5-2.0', '2.0+'],
+                        datasets: [{
+                            label: 'Player Count',
+                            data: [5, 15, 25, 20, 16],
+                            backgroundColor: 'rgba(37, 99, 235, 0.8)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initializeCharts, 1000);
+        });
     </script>
 </body>
 </html>

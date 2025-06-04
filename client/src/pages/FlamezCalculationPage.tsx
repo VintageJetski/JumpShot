@@ -41,7 +41,7 @@ const flamezData = {
 };
 
 export default function FlamezCalculationPage() {
-  const [selectedFramework, setSelectedFramework] = useState<'current' | 'ideal' | 'realistic'>('realistic');
+  const [selectedFramework, setSelectedFramework] = useState<'current' | 'realistic'>('realistic');
 
   // ADVANCED REALISTIC PIV FRAMEWORK - Authentic Data Only with RCS/ICF/SC/OSM
   const calculateRealisticPIV = () => {
@@ -213,99 +213,90 @@ export default function FlamezCalculationPage() {
     };
   };
 
-  // CURRENT FLAWED PIV (for comparison)
+  // CURRENT FLAWED PIV (detailed breakdown showing all issues)
   const calculateCurrentPIV = () => {
-    const rcs = 0.457;
-    const icf = 0.832;
-    const sc = 0.253;
-    const osm = 0.84;
+    // SYNTHETIC RCS CALCULATION (showing problematic data)
+    const rcsBreakdown = {
+      // SYNTHETIC: multiKillRounds - estimated from kills/rounds
+      multiKillRounds: 0.35, // RED FLAG: No authentic round-by-round data
+      
+      // CSV: t_first_kills / (t_first_kills + t_first_deaths) 
+      entryKillSuccess: flamezData.tFirstKills / (flamezData.tFirstKills + flamezData.tFirstDeaths),
+      
+      // SYNTHETIC: clutchSuccess - estimated proxy 
+      clutchSuccess: 0.45, // RED FLAG: No authentic clutch situation data
+      
+      // CSV: assisted_flashes / total_util_thrown
+      utilityCoordination: flamezData.assistedFlashes / flamezData.totalUtilityThrown,
+      
+      // CSV: headshots / kills
+      aimConsistency: flamezData.headshots / flamezData.kills
+    };
+    
+    // FLAWED EQUAL WEIGHTING (no role consideration)
+    const rcs = Object.values(rcsBreakdown).reduce((sum, val) => sum + val, 0) / 5;
+    
+    // ICF CALCULATION 
+    const icfBreakdown = {
+      // CSV: kd ratio
+      baseKD: flamezData.kd,
+      
+      // SYNTHETIC: consistency estimate
+      consistencyEstimate: 0.85, // RED FLAG: No round variance data
+      
+      // CSV: kast average
+      survivalRate: (flamezData.kastTSide + flamezData.kastCtSide) / 2
+    };
+    const icf = Object.values(icfBreakdown).reduce((sum, val) => sum + val, 0) / 3 / 2; // Arbitrary division
+    
+    // SEVERELY FLAWED SC CALCULATION
+    const scBreakdown = {
+      // CSV: assists / total_rounds_won - severely underweighted
+      teamContribution: (flamezData.assists / flamezData.totalRoundsWon) * 0.1, // Only 10% weight!
+      
+      // SYNTHETIC: trade efficiency estimate
+      tradeEfficiency: 0.25, // RED FLAG: No authentic trade timing data
+      
+      // CSV: total_util_dmg / total_util_thrown - poor normalization
+      utilityImpact: (flamezData.totalUtilityDamage / flamezData.totalUtilityThrown) / 20, // Arbitrarily divided by 20
+    };
+    const sc = Object.values(scBreakdown).reduce((sum, val) => sum + val, 0) / 3;
+    
+    // OSM - Static placeholder
+    const osm = 0.84; // No tournament context consideration
+    
+    // FLAWED MULTIPLICATIVE FORMULA
     const flawedPIV = (rcs * icf * sc * osm) * flamezData.kd * 100;
     
     return {
       score: flawedPIV,
+      components: { rcs, icf, sc, osm },
+      breakdown: { rcsBreakdown, icfBreakdown, scBreakdown },
       issues: [
-        "Uses synthetic multiKillRounds and clutchSuccess metrics",
-        "SC formula severely underweights entry fragging performance", 
-        "Complex multiplication of fractional values causes low scores",
-        "No proper role-specific weighting system"
-      ]
-    };
-  };
-
-  // IDEAL PIV FRAMEWORK (Enhanced Framework with Role Weightings and TIR)
-  const calculateIdealPIV = () => {
-    // Enhanced T-Side Spacetaker RCS
-    const tSideRCS = {
-      entryFragSuccess: flamezData.tFirstKills / (flamezData.tFirstKills + flamezData.tFirstDeaths),
-      tradeKillEfficiency: flamezData.tradeKills / flamezData.kills,
-      utilityCoordination: flamezData.assistedFlashes / flamezData.totalUtilityThrown,
-      siteExecutionSuccess: flamezData.tRoundsWon / flamezData.totalRoundsWon,
-      economicImpact: flamezData.adrTSide / 100,
-      consistency: 1 / (1 + Math.abs(flamezData.kd - 1.2))
-    };
-    const tRCS = Object.values(tSideRCS).reduce((sum, val) => sum + val, 0) / 6;
-
-    // Enhanced CT-Side Rotator RCS  
-    const ctSideRCS = {
-      ctEntryDenial: flamezData.ctFirstKills / (flamezData.ctFirstKills + flamezData.ctFirstDeaths),
-      ctSideEfficiency: flamezData.adrCtSide / 100,
-      ctKAST: flamezData.kastCtSide,
-      positionHolding: flamezData.ctRoundsWon / flamezData.totalRoundsWon,
-      rotationImpact: flamezData.ctFirstKills / flamezData.ctRoundsWon,
-      utilitySupport: (flamezData.totalUtilityThrown - flamezData.assistedFlashes) / flamezData.totalRoundsWon / 3
-    };
-    const ctRCS = Object.values(ctSideRCS).reduce((sum, val) => sum + val, 0) / 6;
-
-    // Enhanced ICF with role-specific adjustments
-    const icf = {
-      basePerformance: Math.min(flamezData.kd / 1.4, 1.2),
-      consistencyFactor: 1 / (1 + Math.abs(flamezData.kd - 1.0) * 0.8),
-      roleMultiplier: 1.0 // Spacetaker base
-    };
-    const finalICF = icf.basePerformance * icf.consistencyFactor * icf.roleMultiplier;
-
-    // Enhanced SC with proper role weighting
-    const sc = {
-      tSideSynergy: (flamezData.tFirstKills / flamezData.totalRoundsWon) * 0.5 + 
-                    (flamezData.tradeKills / flamezData.kills) * 0.3 + 
-                    (flamezData.assistedFlashes / flamezData.totalUtilityThrown) * 0.2,
-      ctSideSynergy: (flamezData.ctFirstKills / flamezData.totalRoundsWon) * 0.4 + 
-                     (flamezData.adrCtSide / 100) * 0.6
-    };
-    const finalSC = (sc.tSideSynergy + sc.ctSideSynergy) / 2;
-
-    // Enhanced OSM with tournament context
-    const osm = 0.95; // IEM Katowice elite competition
-
-    // Role-specific PIV calculation
-    const tSidePIV = (tRCS * finalICF * finalSC * osm) * 100;
-    const ctSidePIV = (ctRCS * finalICF * finalSC * osm) * 100;
-    
-    // Equal weight T/CT combination
-    const overallPIV = (tSidePIV + ctSidePIV) / 2;
-
-    return {
-      score: overallPIV,
-      breakdown: { tSideRCS, ctSideRCS, icf, sc, osm },
-      components: { tSidePIV, ctSidePIV, tRCS, ctRCS, finalICF, finalSC },
-      requiredData: [
-        "Enhanced role-specific weightings from original TIR model",
-        "Advanced synergy calculations with proper team context",
-        "Role clarity multipliers based on performance patterns",
-        "Tournament strength adjustments for elite competition"
+        "Uses synthetic multiKillRounds and clutchSuccess metrics with no authentic data source",
+        "SC formula severely underweights entry fragging performance (only 10% team contribution)",
+        "Complex multiplication of fractional values artificially deflates scores", 
+        "No proper role-specific weighting system - treats all roles equally",
+        "Arbitrary normalization factors (dividing by 20, 2) with no statistical basis",
+        "Static OSM value ignores actual tournament strength and context",
+        "No separation of T-side vs CT-side performance despite different roles"
+      ],
+      syntheticData: [
+        "multiKillRounds: Estimated from kills/rounds ratio - no round-by-round kill events",
+        "clutchSuccess: Proxy calculation - no authentic 1vX situation identification", 
+        "consistencyEstimate: Hardcoded value - no actual performance variance data",
+        "tradeEfficiency: Estimated - no timing data for trade kills within 5 seconds"
       ]
     };
   };
 
   const currentPIV = calculateCurrentPIV();
   const realisticPIV = calculateRealisticPIV();
-  const idealPIV = calculateIdealPIV();
 
   const getCurrentData = () => {
     switch(selectedFramework) {
       case 'current': return currentPIV;
       case 'realistic': return realisticPIV;
-      case 'ideal': return idealPIV;
       default: return realisticPIV;
     }
   };
@@ -341,13 +332,6 @@ export default function FlamezCalculationPage() {
             >
               Realistic PIV Framework
             </Button>
-            <Button 
-              variant={selectedFramework === 'ideal' ? 'default' : 'outline'}
-              onClick={() => setSelectedFramework('ideal')}
-              className="flex-1 max-w-xs"
-            >
-              Ideal PIV Framework
-            </Button>
           </div>
           
           <div className="text-center mt-4">
@@ -367,38 +351,184 @@ export default function FlamezCalculationPage() {
           {selectedFramework === 'realistic' && 
             "Advanced data-driven PIV using deep pattern analysis from authentic IEM Katowice 2025 metrics."
           }
-          {selectedFramework === 'ideal' && 
-            "Enhanced PIV framework with original role weightings and TIR models from our established system."
-          }
         </AlertDescription>
       </Alert>
 
-      {/* Current PIV Issues */}
+      {/* Current PIV Detailed Analysis */}
       {selectedFramework === 'current' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-red-600">Current PIV Issues</CardTitle>
-            <CardDescription>Why the current calculation produces unrealistically low scores</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
-              {currentPIV.issues.map((issue, index) => (
-                <div key={index} className="p-3 bg-red-50 rounded-lg">
-                  <p className="text-sm text-red-800">• {issue}</p>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-red-600">Current PIV Detailed Breakdown</CardTitle>
+              <CardDescription>Complete analysis showing all synthetic data and calculation issues</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">RCS</p>
+                  <Progress value={currentPIV.components.rcs * 100} className="h-2" />
+                  <p className="text-sm text-muted-foreground">{(currentPIV.components.rcs * 100).toFixed(1)}%</p>
                 </div>
-              ))}
-            </div>
-            <div className="bg-muted p-4 rounded-lg">
-              <p className="text-sm font-medium">Formula: (RCS × ICF × SC × OSM) × K/D × 100</p>
-              <p className="text-sm text-muted-foreground">
-                = (0.457 × 0.832 × 0.253 × 0.84) × 1.047 × 100 = {currentPIV.score.toFixed(1)}
-              </p>
-              <p className="text-sm text-red-600 mt-2">
-                Multiplicative approach with low fractional values creates artificially low scores.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">ICF</p>
+                  <Progress value={currentPIV.components.icf * 100} className="h-2" />
+                  <p className="text-sm text-muted-foreground">{(currentPIV.components.icf * 100).toFixed(1)}%</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">SC</p>
+                  <Progress value={currentPIV.components.sc * 100} className="h-2" />
+                  <p className="text-sm text-muted-foreground">{(currentPIV.components.sc * 100).toFixed(1)}%</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">OSM</p>
+                  <Progress value={currentPIV.components.osm * 100} className="h-2" />
+                  <p className="text-sm text-muted-foreground">{(currentPIV.components.osm * 100).toFixed(1)}%</p>
+                </div>
+              </div>
+
+              <Tabs defaultValue="rcs" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="rcs">RCS Components</TabsTrigger>
+                  <TabsTrigger value="icf">ICF Components</TabsTrigger>
+                  <TabsTrigger value="sc">SC Components</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="rcs" className="space-y-3">
+                  <div className="text-sm text-muted-foreground mb-3">
+                    Role Core Score - Equal weighting with synthetic data issues
+                  </div>
+                  {Object.entries(currentPIV.breakdown.rcsBreakdown).map(([key, value]) => (
+                    <div key={key} className={`flex justify-between items-center p-3 border rounded ${
+                      key === 'multiKillRounds' || key === 'clutchSuccess' ? 'bg-red-50 border-red-200' : 'bg-slate-100 border-slate-200'
+                    }`}>
+                      <div className="flex flex-col">
+                        <span className={`text-sm font-medium ${
+                          key === 'multiKillRounds' || key === 'clutchSuccess' ? 'text-red-700' : 'text-slate-700'
+                        }`}>
+                          {key.replace(/([A-Z])/g, ' $1')} (20% weight)
+                          {(key === 'multiKillRounds' || key === 'clutchSuccess') && ' - SYNTHETIC'}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {key === 'multiKillRounds' && 'FAKE: Estimated from kills/rounds ratio'}
+                          {key === 'entryKillSuccess' && 't_first_kills / (t_first_kills + t_first_deaths)'}
+                          {key === 'clutchSuccess' && 'FAKE: No authentic clutch situation data'}
+                          {key === 'utilityCoordination' && 'assisted_flashes / total_util_thrown'}
+                          {key === 'aimConsistency' && 'headshots / kills'}
+                        </span>
+                      </div>
+                      <span className={`text-sm font-semibold ${
+                        key === 'multiKillRounds' || key === 'clutchSuccess' ? 'text-red-900' : 'text-slate-900'
+                      }`}>
+                        {((value as number) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  ))}
+                </TabsContent>
+                
+                <TabsContent value="icf" className="space-y-3">
+                  <div className="text-sm text-muted-foreground mb-3">
+                    Individual Consistency Factor - Poor normalization and synthetic estimates
+                  </div>
+                  {Object.entries(currentPIV.breakdown.icfBreakdown).map(([key, value]) => (
+                    <div key={key} className={`flex justify-between items-center p-3 border rounded ${
+                      key === 'consistencyEstimate' ? 'bg-red-50 border-red-200' : 'bg-slate-100 border-slate-200'
+                    }`}>
+                      <div className="flex flex-col">
+                        <span className={`text-sm font-medium ${
+                          key === 'consistencyEstimate' ? 'text-red-700' : 'text-slate-700'
+                        }`}>
+                          {key.replace(/([A-Z])/g, ' $1')} (33.3% weight)
+                          {key === 'consistencyEstimate' && ' - SYNTHETIC'}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {key === 'baseKD' && 'kd ratio from CSV'}
+                          {key === 'consistencyEstimate' && 'FAKE: Hardcoded 0.85 - no variance data'}
+                          {key === 'survivalRate' && '(kast_t_side + kast_ct_side) / 2'}
+                        </span>
+                      </div>
+                      <span className={`text-sm font-semibold ${
+                        key === 'consistencyEstimate' ? 'text-red-900' : 'text-slate-900'
+                      }`}>
+                        {((value as number) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  ))}
+                </TabsContent>
+                
+                <TabsContent value="sc" className="space-y-3">
+                  <div className="text-sm text-muted-foreground mb-3">
+                    Synergy Contribution - Severely underweighted and synthetic data
+                  </div>
+                  {Object.entries(currentPIV.breakdown.scBreakdown).map(([key, value]) => (
+                    <div key={key} className={`flex justify-between items-center p-3 border rounded ${
+                      key === 'tradeEfficiency' ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200'
+                    }`}>
+                      <div className="flex flex-col">
+                        <span className={`text-sm font-medium ${
+                          key === 'tradeEfficiency' ? 'text-red-700' : 'text-orange-700'
+                        }`}>
+                          {key.replace(/([A-Z])/g, ' $1')} (33.3% weight)
+                          {key === 'tradeEfficiency' && ' - SYNTHETIC'}
+                          {key === 'teamContribution' && ' - SEVERELY UNDERWEIGHTED'}
+                          {key === 'utilityImpact' && ' - POOR NORMALIZATION'}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {key === 'teamContribution' && 'assists / total_rounds_won × 0.1 (only 10%!)'}
+                          {key === 'tradeEfficiency' && 'FAKE: No trade timing data within 5 seconds'}
+                          {key === 'utilityImpact' && 'total_util_dmg / total_util_thrown / 20 (arbitrary!)'}
+                        </span>
+                      </div>
+                      <span className={`text-sm font-semibold ${
+                        key === 'tradeEfficiency' ? 'text-red-900' : 'text-orange-900'
+                      }`}>
+                        {((value as number) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  ))}
+                </TabsContent>
+              </Tabs>
+
+              <div className="bg-red-50 p-4 rounded-lg">
+                <h4 className="font-semibold mb-2 text-red-800">Flawed PIV Calculation:</h4>
+                <p className="text-sm text-red-700">
+                  Formula: (RCS × ICF × SC × OSM) × K/D × 100
+                </p>
+                <p className="text-sm text-red-700">
+                  = ({currentPIV.components.rcs.toFixed(3)} × {currentPIV.components.icf.toFixed(3)} × {currentPIV.components.sc.toFixed(3)} × {currentPIV.components.osm.toFixed(3)}) × {flamezData.kd.toFixed(3)} × 100
+                </p>
+                <p className="text-sm text-red-700 font-semibold">
+                  = {currentPIV.score.toFixed(1)} PIV (Unrealistically Low)
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-red-600">Critical PIV Issues</CardTitle>
+              <CardDescription>Complete breakdown of why this calculation fails</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <h4 className="font-semibold text-red-700">Structural Problems:</h4>
+                {currentPIV.issues.map((issue, index) => (
+                  <div key={index} className="p-3 bg-red-50 rounded-lg">
+                    <p className="text-sm text-red-800">• {issue}</p>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="space-y-3">
+                <h4 className="font-semibold text-red-700">Synthetic Data Issues:</h4>
+                {currentPIV.syntheticData.map((synthetic, index) => (
+                  <div key={index} className="p-3 bg-red-100 rounded-lg border border-red-300">
+                    <p className="text-sm text-red-900">🚫 {synthetic}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {/* Advanced Realistic PIV */}
@@ -628,60 +758,7 @@ export default function FlamezCalculationPage() {
         </>
       )}
 
-      {/* Ideal PIV Framework */}
-      {selectedFramework === 'ideal' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-blue-600">Enhanced PIV Framework</CardTitle>
-            <CardDescription>Advanced role weightings with TIR integration</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm font-medium text-blue-800">T-Side PIV: {idealPIV.components.tSidePIV.toFixed(1)}</p>
-                <p className="text-xs text-blue-600">T-RCS: {idealPIV.components.tRCS.toFixed(3)}</p>
-              </div>
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm font-medium text-blue-800">CT-Side PIV: {idealPIV.components.ctSidePIV.toFixed(1)}</p>
-                <p className="text-xs text-blue-600">CT-RCS: {idealPIV.components.ctRCS.toFixed(3)}</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm font-medium text-blue-800">ICF: {idealPIV.components.finalICF.toFixed(3)}</p>
-                <p className="text-xs text-blue-600">Individual Consistency Factor</p>
-              </div>
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm font-medium text-blue-800">SC: {idealPIV.components.finalSC.toFixed(3)}</p>
-                <p className="text-xs text-blue-600">Synergy Contribution</p>
-              </div>
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm font-medium text-blue-800">OSM: {idealPIV.breakdown.osm.toFixed(3)}</p>
-                <p className="text-xs text-blue-600">Opponent Strength Multiplier</p>
-              </div>
-            </div>
-            <div className="bg-blue-100 p-4 rounded-lg">
-              <h4 className="font-semibold mb-2 text-blue-800">Enhanced PIV Calculation:</h4>
-              <p className="text-sm text-blue-700">
-                T-Side: (T-RCS × ICF × SC × OSM) × 100 = {idealPIV.components.tSidePIV.toFixed(1)}
-              </p>
-              <p className="text-sm text-blue-700">
-                CT-Side: (CT-RCS × ICF × SC × OSM) × 100 = {idealPIV.components.ctSidePIV.toFixed(1)}
-              </p>
-              <p className="text-sm text-blue-700 font-semibold">
-                Overall PIV = (T-Side + CT-Side) / 2 = {idealPIV.score.toFixed(1)}
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {idealPIV.requiredData.map((requirement, index) => (
-                <div key={index} className="p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800">• {requirement}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
 
       {/* Raw Data Context */}
       <Card>

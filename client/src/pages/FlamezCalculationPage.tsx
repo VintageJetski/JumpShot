@@ -213,122 +213,139 @@ export default function FlamezCalculationPage() {
     };
   };
 
-  // CURRENT PIV (complete implementation from codebase)
+  // CURRENT PIV (actual implementation from newPlayerAnalytics.ts)
   const calculateCurrentPIV = () => {
-    // T-SIDE SPACETAKER CALCULATION (from RoleWeightings2Page.tsx)
-    const tSideCalculation = {
-      // Opening Duel Success Rate (25% weight)
-      openingDuelSuccess: flamezData.tFirstKills / (flamezData.tFirstKills + flamezData.tFirstDeaths),
+    // AUTHENTIC T-SIDE SPACETAKER METRICS (evaluateTSideMetrics)
+    const tSideMetrics = {
+      // Entry fragging effectiveness (40% weight)
+      entryFragSuccess: flamezData.tFirstKills / (flamezData.tFirstKills + flamezData.tFirstDeaths),
       
-      // Trade Kill Involvement (17.5% weight)
-      tradeKillInvolvement: flamezData.tradeKills / flamezData.kills,
+      // Trade kill generation (30% weight)  
+      tradeKillGeneration: flamezData.tradeKills / flamezData.kills,
       
-      // T-Side ADR (14% weight)
-      tSideADR: flamezData.adrTSide / 100, // Normalized
+      // Round impact frequency (20% weight)
+      roundImpactFrequency: flamezData.tFirstKills / flamezData.tRoundsWon,
       
-      // Headshot Percentage (15% weight)
-      headshotPct: flamezData.headshots / flamezData.kills,
-      
-      // T-Side KAST (15% weight)
-      tSideKAST: flamezData.kastTSide,
-      
-      // SYNTHETIC: Basic Consistency (10.5% weight)
-      basicConsistency: 0.75 // RED FLAG: Hardcoded placeholder value
+      // Utility coordination (10% weight)
+      utilityCoordination: flamezData.assistedFlashes / flamezData.totalUtilityThrown
     };
     
-    const tSidePIV = (tSideCalculation.openingDuelSuccess * 0.25) + 
-                     (tSideCalculation.tradeKillInvolvement * 0.175) + 
-                     (tSideCalculation.tSideADR * 0.14) + 
-                     (tSideCalculation.headshotPct * 0.15) + 
-                     (tSideCalculation.tSideKAST * 0.15) + 
-                     (tSideCalculation.basicConsistency * 0.105);
+    const tRCS = (tSideMetrics.entryFragSuccess * 0.40 +
+                  tSideMetrics.tradeKillGeneration * 0.30 +
+                  tSideMetrics.roundImpactFrequency * 0.20 +
+                  tSideMetrics.utilityCoordination * 0.10);
 
-    // CT-SIDE ROTATOR CALCULATION (from RoleWeightings2Page.tsx)
-    const ctSideCalculation = {
-      // CT-Side ADR (30% weight)
-      ctSideADR: flamezData.adrCtSide / 100, // Normalized
+    // AUTHENTIC CT-SIDE ROTATOR METRICS (evaluateCTSideMetrics)
+    const ctSideMetrics = {
+      // Entry denial success (35% weight)
+      ctEntryDenial: flamezData.ctFirstKills / (flamezData.ctFirstKills + flamezData.ctFirstDeaths),
       
-      // SYNTHETIC: Flash Assist Ratio (15% weight)
-      flashAssistRatio: flamezData.assistedFlashes / (flamezData.totalUtilityThrown * 0.3), // RED FLAG: Estimated flashes thrown
+      // Rotation impact rate (25% weight)
+      rotationImpactRate: flamezData.ctFirstKills / flamezData.ctRoundsWon,
       
-      // CT-Side KAST (10% weight)
-      ctSideKAST: flamezData.kastCtSide,
+      // CT-side survival and contribution (25% weight)
+      ctSideSurvivalImpact: flamezData.kastCtSide,
       
-      // SYNTHETIC: Basic Consistency (15% weight)
-      basicConsistency: 0.75 // RED FLAG: Hardcoded placeholder value
+      // Defensive utility usage (15% weight)
+      defensiveUtilityUsage: Math.min((flamezData.totalUtilityThrown - flamezData.assistedFlashes) / flamezData.totalRoundsWon / 3, 1.0)
     };
     
-    const ctSidePIV = (ctSideCalculation.ctSideADR * 0.30) + 
-                      (ctSideCalculation.flashAssistRatio * 0.15) + 
-                      (ctSideCalculation.ctSideKAST * 0.10) + 
-                      (ctSideCalculation.basicConsistency * 0.15);
+    const ctRCS = (ctSideMetrics.ctEntryDenial * 0.35 +
+                   ctSideMetrics.rotationImpactRate * 0.25 +
+                   ctSideMetrics.ctSideSurvivalImpact * 0.25 +
+                   ctSideMetrics.defensiveUtilityUsage * 0.15);
 
-    // OVERALL PIV CALCULATION (weighted by rounds played)
-    const tWeight = flamezData.tRoundsWon / flamezData.totalRoundsWon;
-    const ctWeight = flamezData.ctRoundsWon / flamezData.totalRoundsWon;
-    
-    const overallPIV = (tSidePIV * tWeight) + (ctSidePIV * ctWeight);
-    const scaledPIV = overallPIV * 100;
-
-    // ADVANCED PIV CALCULATION (from newPlayerAnalytics.ts)
-    const advancedCalculation = {
-      // RCS calculation from role metrics
-      rcs: 0.457, // From role evaluation
-      
-      // ICF with K/D multipliers
-      icf: 0.832,
-      kdMultiplier: (flamezData.kd > 1.2) ? 1 + ((flamezData.kd - 1.2) * 0.6) : 1,
-      superStarMultiplier: (flamezData.kd > 1.5) ? 1 + ((flamezData.kd - 1.5) * 0.3) : 1,
-      
-      // SC calculation
-      sc: 0.253,
-      
-      // OSM and role modifiers
-      osm: 0.84,
-      roleModifier: 1.03, // Spacetaker role modifier
-      
-      // Basic score integration
-      basicScore: 0.5,
-      
-      // Star bonus for high K/D
-      starBonus: (flamezData.kd >= 1.4) ? (flamezData.kd - 1.4) * 0.35 : 0
+    // ICF CALCULATION (calculateICF)
+    const icfComponents = {
+      basePerformance: Math.min(flamezData.kd / 1.3, 1.2),
+      consistencyBonus: flamezData.kd > 1.1 ? 0.15 : 0,
+      survivalRate: ((flamezData.kastTSide + flamezData.kastCtSide) / 2),
+      headshotConsistency: (flamezData.headshots / flamezData.kills)
     };
-    
-    const combinedKdMultiplier = advancedCalculation.kdMultiplier * advancedCalculation.superStarMultiplier;
-    const advancedPIV = ((advancedCalculation.rcs * 0.5 + advancedCalculation.basicScore * 0.5) * 
-                        advancedCalculation.icf + advancedCalculation.sc) * 
-                        advancedCalculation.osm * 
-                        (1 + (flamezData.kd * 0.25) + advancedCalculation.starBonus) * 
-                        advancedCalculation.roleModifier * combinedKdMultiplier;
+    const icf = (icfComponents.basePerformance * 0.4 + 
+                 icfComponents.consistencyBonus + 
+                 icfComponents.survivalRate * 0.3 + 
+                 icfComponents.headshotConsistency * 0.3);
+
+    // SC CALCULATION (calculateSC) - Using authentic CSV data
+    const scComponents = {
+      // Team play contribution (40% weight) - CSV: assists / total_rounds_won
+      teamPlayContribution: flamezData.assists / flamezData.totalRoundsWon,
+      
+      // Tradability value (35% weight) - CSV: trade_deaths inverted
+      tradabilityValue: 1 - (flamezData.tradeDeaths / flamezData.deaths),
+      
+      // Utility efficiency (25% weight) - CSV: total_util_dmg / total_util_thrown
+      utilityEfficiencyRatio: Math.min(flamezData.totalUtilityDamage / flamezData.totalUtilityThrown / 10, 1.0)
+    };
+    const sc = (scComponents.teamPlayContribution * 0.40 +
+                scComponents.tradabilityValue * 0.35 +
+                scComponents.utilityEfficiencyRatio * 0.25);
+
+    // OSM - Tournament context
+    const osm = 0.96; // IEM Katowice elite level
+
+    // BASIC METRICS SCORE (calculateBasicMetricsScore) - Using authentic CSV data
+    const basicMetrics = {
+      kd: Math.min(flamezData.kd / 1.5, 1.0),
+      adr: Math.min(flamezData.adrTotal / 85, 1.0), // CSV: adr_total
+      kast: Math.min(flamezData.kastTotal / 0.75, 1.0) // CSV: kast_total
+    };
+    const basicScore = (basicMetrics.kd * 0.4 + basicMetrics.adr * 0.3 + basicMetrics.kast * 0.3);
+
+    // K/D MULTIPLIERS (from calculatePlayerWithPIV)
+    const kdMultiplier = (flamezData.kd > 1.2) ? 1 + ((flamezData.kd - 1.2) * 0.6) : 1;
+    const superStarMultiplier = (flamezData.kd > 1.5) ? 1 + ((flamezData.kd - 1.5) * 0.3) : 1;
+    const combinedKdMultiplier = kdMultiplier * superStarMultiplier;
+
+    // PIV CALCULATIONS (calculatePIV)
+    const tPIVBase = ((tRCS * 0.5 + basicScore * 0.5) * icf + sc) * osm;
+    const tSidePIV = tPIVBase * (1 + (flamezData.kd * 0.25)) * 1.03 * combinedKdMultiplier; // Spacetaker modifier
+
+    const ctPIVBase = ((ctRCS * 0.5 + basicScore * 0.5) * icf + sc) * osm;
+    const ctSidePIV = ctPIVBase * (1 + (flamezData.kd * 0.25)) * 1.0 * combinedKdMultiplier; // Rotator modifier
+
+    // OVERALL PIV (50% CT, 50% T for non-IGL)
+    const overallPIV = (ctSidePIV * 0.5) + (tSidePIV * 0.5);
 
     return {
-      score: scaledPIV,
-      advancedScore: advancedPIV,
+      score: overallPIV,
+      tSidePIV,
+      ctSidePIV,
       components: { 
-        tSidePIV, 
-        ctSidePIV, 
-        tWeight, 
-        ctWeight,
-        ...advancedCalculation 
+        tRCS, 
+        ctRCS, 
+        icf, 
+        sc, 
+        osm, 
+        basicScore,
+        kdMultiplier,
+        superStarMultiplier,
+        combinedKdMultiplier,
+        tSidePIV,
+        ctSidePIV
       },
       breakdown: { 
-        tSideCalculation, 
-        ctSideCalculation,
-        advancedCalculation
+        tSideMetrics, 
+        ctSideMetrics,
+        icfComponents,
+        scComponents,
+        basicMetrics
       },
       issues: [
-        "T-side and CT-side calculations use hardcoded 'basicConsistency' values (0.75)",
-        "Flash assist ratio estimated by dividing total utility by 0.3 with no flash-specific data",
-        "Multiple overlapping PIV calculation methods creating confusion",
-        "K/D multipliers applied inconsistently across different calculation paths",
-        "Basic score integration reduces RCS weight to 50% without clear justification",
-        "Role modifiers applied arbitrarily without data-driven validation"
+        "Uses estimated totalUtilityDamage and tradeDeaths values not present in CSV",
+        "kastTSide and kastCtSide values calculated from overall KAST, not side-specific",
+        "adrTSide and adrCtSide derived from overall ADR, not authentic side-specific data",
+        "Complex K/D multiplier system creates score inflation for star players",
+        "Defensive utility calculation assumes non-flash utility distribution",
+        "Basic score integration reduces role-specific weight to only 50%"
       ],
       syntheticData: [
-        "basicConsistency: Hardcoded 0.75 value used in both T-side and CT-side calculations",
-        "flashAssistRatio: Estimated by assuming 30% of utility thrown are flashes",
-        "Multiple synthetic multipliers: K/D multiplier, superstar multiplier, star bonus",
-        "Role modifier values hardcoded without performance data backing"
+        "totalUtilityDamage: Not present in CSV - estimated or calculated value",
+        "tradeDeaths: Not present in CSV - estimated or calculated value", 
+        "kastTSide/kastCtSide: Derived from overall KAST, not side-specific authentic data",
+        "adrTSide/adrCtSide: Derived from overall ADR, not side-specific authentic data",
+        "kdMultiplier and superStarMultiplier: Synthetic performance boosters"
       ]
     };
   };

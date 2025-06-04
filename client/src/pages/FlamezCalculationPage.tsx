@@ -413,19 +413,23 @@ export default function FlamezCalculationPage() {
                 
                 <TabsContent value="tside" className="space-y-3">
                   <div className="text-sm text-muted-foreground mb-3">
-                    T-Side Spacetaker Role Core Score - Basketball "Points Per Game" Style
+                    T-Side Spacetaker Role Core Score with Individual Weightings
                   </div>
                   {Object.entries(realisticPIV.breakdown.tSideRCS).map(([key, value]) => (
                     <div key={key} className="flex justify-between items-center p-3 bg-slate-100 border border-slate-200 rounded">
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-slate-700">{key.replace(/([A-Z])/g, ' $1')}</span>
+                        <span className="text-sm font-medium text-slate-700">
+                          {key.replace(/([A-Z])/g, ' $1')} 
+                          {key === 'entryFragSuccess' && ' (40% weight)'}
+                          {key === 'tradeKillGeneration' && ' (30% weight)'}
+                          {key === 'roundImpactFrequency' && ' (20% weight)'}
+                          {key === 'utilityCoordination' && ' (10% weight)'}
+                        </span>
                         <span className="text-xs text-slate-500">
                           {key === 'entryFragSuccess' && 't_first_kills / (t_first_kills + t_first_deaths)'}
                           {key === 'tradeKillGeneration' && 'trade_kills / kills'}
                           {key === 'roundImpactFrequency' && 't_first_kills / t_rounds_won'}
                           {key === 'utilityCoordination' && 'assisted_flashes / total_util_thrown'}
-                          {key === 'tSideDamageEfficiency' && 'adr_t_side / 100'}
-                          {key === 'wallbangProficiency' && 'wallbang_kills / kills'}
                         </span>
                       </div>
                       <span className="text-sm font-semibold text-slate-900">{((value as number) * 100).toFixed(1)}%</span>

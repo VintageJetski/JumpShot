@@ -267,27 +267,27 @@ export default function FlamezCalculationPage() {
                 
                 <TabsContent value="basic" className="space-y-3">
                   {Object.entries(realisticPIV.breakdown.basicMetrics).map(([key, value]) => (
-                    <div key={key} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                      <span className="text-sm font-medium">{key.replace(/([A-Z])/g, ' $1')}</span>
-                      <span className="text-sm">{((value as number) * 100).toFixed(1)}%</span>
+                    <div key={key} className="flex justify-between items-center p-3 bg-slate-100 border border-slate-200 rounded">
+                      <span className="text-sm font-medium text-slate-700">{key.replace(/([A-Z])/g, ' $1')}</span>
+                      <span className="text-sm font-semibold text-slate-900">{((value as number) * 100).toFixed(1)}%</span>
                     </div>
                   ))}
                 </TabsContent>
                 
                 <TabsContent value="tside" className="space-y-3">
                   {Object.entries(realisticPIV.breakdown.tSideMetrics).map(([key, value]) => (
-                    <div key={key} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                      <span className="text-sm font-medium">{key.replace(/([A-Z])/g, ' $1')}</span>
-                      <span className="text-sm">{((value as number) * 100).toFixed(1)}%</span>
+                    <div key={key} className="flex justify-between items-center p-3 bg-slate-100 border border-slate-200 rounded">
+                      <span className="text-sm font-medium text-slate-700">{key.replace(/([A-Z])/g, ' $1')}</span>
+                      <span className="text-sm font-semibold text-slate-900">{((value as number) * 100).toFixed(1)}%</span>
                     </div>
                   ))}
                 </TabsContent>
                 
                 <TabsContent value="ctside" className="space-y-3">
                   {Object.entries(realisticPIV.breakdown.ctSideMetrics).map(([key, value]) => (
-                    <div key={key} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                      <span className="text-sm font-medium">{key.replace(/([A-Z])/g, ' $1')}</span>
-                      <span className="text-sm">{((value as number) * 100).toFixed(1)}%</span>
+                    <div key={key} className="flex justify-between items-center p-3 bg-slate-100 border border-slate-200 rounded">
+                      <span className="text-sm font-medium text-slate-700">{key.replace(/([A-Z])/g, ' $1')}</span>
+                      <span className="text-sm font-semibold text-slate-900">{((value as number) * 100).toFixed(1)}%</span>
                     </div>
                   ))}
                 </TabsContent>

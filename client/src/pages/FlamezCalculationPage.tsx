@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 export default function FlamezCalculationPage() {
-  const [selectedFramework, setSelectedFramework] = useState<'current' | 'realistic'>('current');
+  const [selectedFramework, setSelectedFramework] = useState<'current' | 'realistic' | 'roles'>('current');
 
   // flameZ's authentic data from IEM Katowice 2025 CSV
   const flamezData = {
@@ -244,6 +244,13 @@ export default function FlamezCalculationPage() {
         >
           Realistic PIV Framework
         </Button>
+        <Button
+          variant={selectedFramework === 'roles' ? 'default' : 'outline'}
+          onClick={() => setSelectedFramework('roles')}
+          className="flex-1"
+        >
+          New Roles Framework
+        </Button>
       </div>
 
       {/* Document Content */}
@@ -416,6 +423,230 @@ export default function FlamezCalculationPage() {
               {realisticPIV.advantages.map((advantage, index) => (
                 <p key={index}>• {advantage}</p>
               ))}
+            </div>
+          </>
+        )}
+
+        {selectedFramework === 'roles' && (
+          <>
+            <h1 className="text-2xl font-bold mb-4">NEW ROLES FRAMEWORK - AUTHENTIC DATA ONLY</h1>
+            
+            <div className="space-y-4">
+              <p><strong>Philosophy:</strong> Role-specific PIV calculations using only authentic CSV data from IEM Katowice 2025</p>
+              <p><strong>No Synthetic Data:</strong> Zero estimated values, no performance boosters, pure tournament statistics</p>
+              <p><strong>Inspiration:</strong> HLTV 2.0 rating system + traditional sports analytics (basketball PER, hockey Corsi)</p>
+            </div>
+
+            <h2 className="text-lg font-bold mt-6 mb-3">CORE FRAMEWORK STRUCTURE</h2>
+            <div className="space-y-2">
+              <p><strong>T-Side PIV Formula:</strong> T-RCS + (ICF × OSM × BaselineScore)</p>
+              <p><strong>CT-Side PIV Formula:</strong> CT-RCS + (ICF × OSM × BaselineScore)</p>
+              <p><strong>Overall PIV:</strong> (T-Side + CT-Side) / 2 × 80% + BaselineScore × 20%</p>
+              <p><strong>OSM (Tournament Context):</strong> 0.96 (IEM Katowice elite level)</p>
+              <p><strong>ICF (Individual Consistency):</strong> K/D normalized (60%) + KAST average (40%)</p>
+            </div>
+
+            <h2 className="text-lg font-bold mt-6 mb-3">T-SIDE SPACETAKER (ENTRY FRAGGER)</h2>
+            <div className="space-y-2">
+              <p><strong>Primary Role:</strong> Create space and open rounds through aggressive entry attempts</p>
+              <p><strong>Key Metrics (T-RCS Calculation):</strong></p>
+              <p>• Entry Frag Success Rate (40%): t_first_kills / (t_first_kills + t_first_deaths)</p>
+              <p>  Inspiration: Basketball field goal percentage - reward successful attempts</p>
+              <p>• Trade Kill Generation (30%): trade_kills / kills</p>
+              <p>  Measures ability to create tradeable situations for teammates</p>
+              <p>• Round Impact Frequency (20%): t_first_kills / t_rounds_won</p>
+              <p>  How often the player directly impacts T-side round wins</p>
+              <p>• Utility Coordination (10%): assisted_flashes / total_util_thrown</p>
+              <p>  Team-first mentality in utility usage</p>
+              <p><strong>Expected PIV Range:</strong> 65-85 (elite entry fraggers)</p>
+            </div>
+
+            <h2 className="text-lg font-bold mt-6 mb-3">CT-SIDE ROTATOR</h2>
+            <div className="space-y-2">
+              <p><strong>Primary Role:</strong> Flexible site defense and rotation between positions</p>
+              <p><strong>Key Metrics (CT-RCS Calculation):</strong></p>
+              <p>• Entry Denial Success (35%): ct_first_kills / (ct_first_kills + ct_first_deaths)</p>
+              <p>  Winning crucial early-round duels on CT side</p>
+              <p>• Rotation Impact Rate (25%): ct_first_kills / ct_rounds_won</p>
+              <p>  Contributing to CT round wins through positioning</p>
+              <p>• CT Survival Impact (25%): kast_ct_side</p>
+              <p>  Staying alive to impact rounds (KAST on CT side)</p>
+              <p>• Defensive Utility Usage (15%): (total_util_thrown - assisted_flashes) / ct_rounds_won / 3</p>
+              <p>  Non-flash utility usage normalized by CT rounds</p>
+              <p><strong>Expected PIV Range:</strong> 60-80 (strong CT side players)</p>
+            </div>
+
+            <h2 className="text-lg font-bold mt-6 mb-3">T-SIDE IGL (IN-GAME LEADER)</h2>
+            <div className="space-y-2">
+              <p><strong>Primary Role:</strong> Strategic leadership and mid-round calling on T side</p>
+              <p><strong>Key Metrics (T-RCS Calculation):</strong></p>
+              <p>• Strategic Round Win Rate (35%): t_rounds_won / (t_rounds_won + t_rounds_lost)</p>
+              <p>  T-side round win percentage as strategic measure</p>
+              <p>• Team Coordination (25%): (assists + assisted_flashes) / t_rounds_won</p>
+              <p>  Supporting teammates through calls and utility</p>
+              <p>• Clutch Leadership (25%): (kills_in_clutch_situations) / total_clutch_attempts</p>
+              <p>  Proxy: kast_t_side (survival in difficult situations)</p>
+              <p>• Economic Management (15%): saves / (saves + force_buys)</p>
+              <p>  Proxy: Using consistent performance across rounds (headshots/kills ratio)</p>
+              <p><strong>Expected PIV Range:</strong> 55-75 (IGL tax compensated by leadership value)</p>
+            </div>
+
+            <h2 className="text-lg font-bold mt-6 mb-3">CT-SIDE IGL (IN-GAME LEADER)</h2>
+            <div className="space-y-2">
+              <p><strong>Primary Role:</strong> Defensive coordination and anti-stratting</p>
+              <p><strong>Key Metrics (CT-RCS Calculation):</strong></p>
+              <p>• Defensive Coordination (40%): ct_rounds_won / (ct_rounds_won + ct_rounds_lost)</p>
+              <p>  CT-side round win percentage</p>
+              <p>• Information Gathering (25%): assists / ct_rounds_won</p>
+              <p>  Helping teammates through calls and positioning</p>
+              <p>• Site Anchor Backup (20%): ct_first_kills / ct_rounds_won</p>
+              <p>  Supporting site anchors when needed</p>
+              <p>• Rotation Efficiency (15%): kast_ct_side</p>
+              <p>  Staying alive to continue calling</p>
+              <p><strong>Expected PIV Range:</strong> 55-75 (leadership value over individual performance)</p>
+            </div>
+
+            <h2 className="text-lg font-bold mt-6 mb-3">T-SIDE SUPPORT</h2>
+            <div className="space-y-2">
+              <p><strong>Primary Role:</strong> Enable teammates through utility and trading</p>
+              <p><strong>Key Metrics (T-RCS Calculation):</strong></p>
+              <p>• Flash Assist Efficiency (35%): assisted_flashes / total_flashes_thrown</p>
+              <p>  Quality of flash usage for teammates</p>
+              <p>• Trade Kill Success (30%): trade_kills / t_rounds_played</p>
+              <p>  Following up on entry fragger attempts</p>
+              <p>• Utility Distribution (20%): total_util_thrown / t_rounds_won</p>
+              <p>  Consistent utility usage to support team</p>
+              <p>• Team Play Impact (15%): assists / kills</p>
+              <p>  Assisting teammates rather than seeking individual frags</p>
+              <p><strong>Expected PIV Range:</strong> 50-70 (utility-focused role)</p>
+            </div>
+
+            <h2 className="text-lg font-bold mt-6 mb-3">CT-SIDE SUPPORT</h2>
+            <div className="space-y-2">
+              <p><strong>Primary Role:</strong> Defensive utility and rotation assistance</p>
+              <p><strong>Key Metrics (CT-RCS Calculation):</strong></p>
+              <p>• Defensive Flash Efficiency (30%): assisted_flashes / total_flashes_thrown</p>
+              <p>  Supporting defensive holds with utility</p>
+              <p>• Retake Contribution (30%): assists / ct_rounds_won</p>
+              <p>  Helping win back sites through coordination</p>
+              <p>• Utility Coverage (25%): (total_util_thrown - assisted_flashes) / ct_rounds_won</p>
+              <p>  Smokes, HE grenades for site control</p>
+              <p>• Survival for Information (15%): kast_ct_side</p>
+              <p>  Staying alive to provide intel and late-round impact</p>
+              <p><strong>Expected PIV Range:</strong> 45-65 (supportive defensive role)</p>
+            </div>
+
+            <h2 className="text-lg font-bold mt-6 mb-3">T-SIDE ANCHOR (TRADE FRAGGER)</h2>
+            <div className="space-y-2">
+              <p><strong>Primary Role:</strong> Second contact and trade fragger behind entry</p>
+              <p><strong>Key Metrics (T-RCS Calculation):</strong></p>
+              <p>• Trade Kill Efficiency (40%): trade_kills / (entry_deaths_of_teammates)</p>
+              <p>  Proxy: trade_kills / t_first_deaths (team entry failures)</p>
+              <p>• Follow-up Impact (25%): multi_kills / t_rounds_won</p>
+              <p>  Proxy: (kills - t_first_kills) / t_rounds_won</p>
+              <p>• Round Conversion (20%): t_rounds_won_after_entry / total_entries</p>
+              <p>  Proxy: kast_t_side (staying alive to convert advantages)</p>
+              <p>• Positioning Discipline (15%): deaths_after_first_pick / t_rounds_played</p>
+              <p>  Proxy: 1 - (t_first_deaths / t_rounds_played)</p>
+              <p><strong>Expected PIV Range:</strong> 60-80 (consistent fragger behind entry)</p>
+            </div>
+
+            <h2 className="text-lg font-bold mt-6 mb-3">CT-SIDE ANCHOR</h2>
+            <div className="space-y-2">
+              <p><strong>Primary Role:</strong> Hold assigned site and delay pushes</p>
+              <p><strong>Key Metrics (CT-RCS Calculation):</strong></p>
+              <p>• Site Hold Success (40%): ct_first_kills / (ct_first_kills + ct_first_deaths)</p>
+              <p>  Winning initial duels when holding site</p>
+              <p>• Delay Effectiveness (25%): survival_time_on_site / rounds_anchoring</p>
+              <p>  Proxy: kast_ct_side (staying alive for rotations)</p>
+              <p>• Multi-Kill Defense (20%): multi_kills_on_site / ct_rounds_played</p>
+              <p>  Proxy: (kills × 0.7) / ct_rounds_won (impact per round)</p>
+              <p>• Information Provision (15%): damage_per_death / 100</p>
+              <p>  Proxy: assists / ct_rounds_played (calling and assisting)</p>
+              <p><strong>Expected PIV Range:</strong> 65-85 (strong individual site holders)</p>
+            </div>
+
+            <h2 className="text-lg font-bold mt-6 mb-3">T-SIDE AWP</h2>
+            <div className="space-y-2">
+              <p><strong>Primary Role:</strong> Pick plays and long-range control on T side</p>
+              <p><strong>Key Metrics (T-RCS Calculation):</strong></p>
+              <p>• Opening Pick Success (35%): t_first_kills / (t_first_kills + t_first_deaths)</p>
+              <p>  AWP's primary job is winning opening duels</p>
+              <p>• Pick Impact Rate (30%): t_first_kills / t_rounds_played</p>
+              <p>  How often AWP creates picks per round</p>
+              <p>• Multi-Pick Potential (20%): (multi_kills) / t_rounds_won</p>
+              <p>  Proxy: max(0, (kills - t_first_kills)) / t_rounds_won</p>
+              <p>• Economic Efficiency (15%): survival_rate_with_awp / rounds_with_awp</p>
+              <p>  Proxy: kast_t_side (keeping expensive weapon alive)</p>
+              <p><strong>Expected PIV Range:</strong> 70-95 (elite AWPers with high impact)</p>
+            </div>
+
+            <h2 className="text-lg font-bold mt-6 mb-3">CT-SIDE AWP</h2>
+            <div className="space-y-2">
+              <p><strong>Primary Role:</strong> Long-range site control and early picks</p>
+              <p><strong>Key Metrics (CT-RCS Calculation):</strong></p>
+              <p>• Entry Denial Rate (40%): ct_first_kills / (ct_first_kills + ct_first_deaths)</p>
+              <p>  Stopping T-side entries with AWP</p>
+              <p>• Map Control Contribution (25%): ct_first_kills / ct_rounds_played</p>
+              <p>  Creating early advantages for team</p>
+              <p>• Rotation Value (20%): multi_kills / ct_rounds_won</p>
+              <p>  Proxy: (kills - ct_first_kills) / ct_rounds_won</p>
+              <p>• Economic Preservation (15%): awp_survival_rate</p>
+              <p>  Proxy: kast_ct_side (keeping weapon for next rounds)</p>
+              <p><strong>Expected PIV Range:</strong> 65-90 (AWP impact varies by map/opponent)</p>
+            </div>
+
+            <h2 className="text-lg font-bold mt-6 mb-3">T-SIDE LURKER</h2>
+            <div className="space-y-2">
+              <p><strong>Primary Role:</strong> Information gathering and flank timing</p>
+              <p><strong>Key Metrics (T-RCS Calculation):</strong></p>
+              <p>• Flank Timing Success (35%): lurk_kills / lurk_attempts</p>
+              <p>  Proxy: (kills - trade_kills - t_first_kills) / t_rounds_played</p>
+              <p>• Information Value (25%): rounds_with_info_provided / t_rounds_played</p>
+              <p>  Proxy: assists / t_rounds_played (calls leading to kills)</p>
+              <p>• Clutch Opportunity Creation (25%): clutch_wins / clutch_attempts</p>
+              <p>  Proxy: kast_t_side (surviving to late round situations)</p>
+              <p>• Map Control Extension (15%): time_alive_alone / total_lurk_time</p>
+              <p>  Proxy: (total_rounds - t_first_deaths) / t_rounds_played</p>
+              <p><strong>Expected PIV Range:</strong> 55-75 (high variance, timing-dependent role)</p>
+            </div>
+
+            <h2 className="text-lg font-bold mt-6 mb-3">CT-SIDE LURKER (FLANKER)</h2>
+            <div className="space-y-2">
+              <p><strong>Primary Role:</strong> Backstab timing and rotation disruption</p>
+              <p><strong>Key Metrics (CT-RCS Calculation):</strong></p>
+              <p>• Flank Success Rate (40%): flank_kills / flank_attempts</p>
+              <p>  Proxy: (kills - ct_first_kills - assists) / ct_rounds_played</p>
+              <p>• Late Round Impact (30%): clutch_round_contribution</p>
+              <p>  Proxy: kast_ct_side (alive for crucial moments)</p>
+              <p>• Information Disruption (20%): enemy_utility_forced / ct_rounds_played</p>
+              <p>  Proxy: damage_dealt / ct_rounds_played / 100</p>
+              <p>• Rotation Punishment (10%): rotation_kills / rotation_attempts</p>
+              <p>  Proxy: multi_kills / ct_rounds_won</p>
+              <p><strong>Expected PIV Range:</strong> 50-70 (situational, high-risk role)</p>
+            </div>
+
+            <h2 className="text-lg font-bold mt-6 mb-3">AUTHENTIC DATA SOURCES</h2>
+            <div className="space-y-2">
+              <p>✓ t_first_kills, t_first_deaths, ct_first_kills, ct_first_deaths</p>
+              <p>✓ trade_kills, assists, headshots, total_util_thrown</p>
+              <p>✓ assisted_flashes, kast_t_side, kast_ct_side</p>
+              <p>✓ t_rounds_won, ct_rounds_won, total_rounds_won</p>
+              <p>✓ kills, deaths, kd ratio</p>
+              <p>✗ NO totalUtilityDamage (not in CSV)</p>
+              <p>✗ NO tradeDeaths (not in CSV)</p>
+              <p>✗ NO synthetic multipliers or performance boosters</p>
+            </div>
+
+            <h2 className="text-lg font-bold mt-6 mb-3">IMPLEMENTATION NOTES</h2>
+            <div className="space-y-2">
+              <p>• All percentages are role-specific weightings within T-RCS or CT-RCS</p>
+              <p>• Proxy metrics used only when direct measurement unavailable in CSV</p>
+              <p>• Expected PIV ranges based on role difficulty and impact potential</p>
+              <p>• OSM (0.96) reflects IEM Katowice tournament strength</p>
+              <p>• ICF rewards consistency: K/D normalized (60%) + KAST average (40%)</p>
+              <p>• BaselineScore provides 20% foundation: (K/D + ADR + KAST) / 3</p>
+              <p>• No artificial performance boosters - pure tournament performance</p>
             </div>
           </>
         )}

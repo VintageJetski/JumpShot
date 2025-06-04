@@ -43,88 +43,151 @@ const flamezData = {
 export default function FlamezCalculationPage() {
   const [selectedFramework, setSelectedFramework] = useState<'current' | 'ideal' | 'realistic'>('realistic');
 
-  // ADVANCED REALISTIC PIV FRAMEWORK
+  // ADVANCED REALISTIC PIV FRAMEWORK - Authentic Data Only with RCS/ICF/SC/OSM
   const calculateRealisticPIV = () => {
-    // Tournament elite performance thresholds from IEM Katowice analysis
-    const eliteThresholds = {
-      kdRatio: 1.15,
-      adrLevel: 85.0,
-      firstKillRate: 0.55,
-      kastLevel: 0.78,
-      headshotRate: 0.60,
-      tradeEfficiency: 0.30
+    // ======================
+    // T-SIDE SPACETAKER RCS - Role Core Score
+    // ======================
+    const tSideRCS = {
+      // CSV: t_first_kills / (t_first_kills + t_first_deaths)
+      // Basketball analogy: Field Goal % for main scorer
+      entryFragSuccess: flamezData.tFirstKills / (flamezData.tFirstKills + flamezData.tFirstDeaths),
+      
+      // CSV: trade_kills / kills  
+      // Reasoning: Spacetakers create trade opportunities; higher rate = better team setup
+      tradeKillGeneration: flamezData.tradeKills / flamezData.kills,
+      
+      // CSV: t_first_kills / t_rounds_won
+      // Basketball analogy: Points per game for primary scorer
+      roundImpactFrequency: flamezData.tFirstKills / flamezData.tRoundsWon,
+      
+      // CSV: assisted_flashes / total_util_thrown
+      // Reasoning: Spacetakers coordinate utility for entries
+      utilityCoordination: flamezData.assistedFlashes / flamezData.totalUtilityThrown,
+      
+      // CSV: adr_t_side / 100 (normalized)
+      // Reasoning: Damage output efficiency on attack
+      tSideDamageEfficiency: Math.min(flamezData.adrTSide / 100, 1.0),
+      
+      // CSV: wallbang_kills / kills
+      // Reasoning: Advanced mechanical skill indicator
+      wallbangProficiency: flamezData.wallbangKills / flamezData.kills
     };
+    const tRCS = Object.values(tSideRCS).reduce((sum, val) => sum + val, 0) / 6;
 
-    // PERFORMANCE EFFICIENCY ANALYSIS (30% weight)
-    const performanceMetrics = {
-      killEfficiencyRatio: Math.min((flamezData.kd - 1.0) / (eliteThresholds.kdRatio - 1.0), 1.2),
-      damageConsistency: 1 - Math.abs(flamezData.adrTSide - flamezData.adrCtSide) / 100,
-      headshotPrecision: (flamezData.headshots / flamezData.kills) / eliteThresholds.headshotRate,
-      teamPlayContribution: (flamezData.assists / flamezData.totalRoundsWon) / 0.5
+    // ======================
+    // CT-SIDE ROTATOR RCS - Role Core Score  
+    // ======================
+    const ctSideRCS = {
+      // CSV: ct_first_kills / (ct_first_kills + ct_first_deaths)
+      // Basketball analogy: Defensive stop percentage
+      ctEntryDenial: flamezData.ctFirstKills / (flamezData.ctFirstKills + flamezData.ctFirstDeaths),
+      
+      // CSV: ct_first_kills / ct_rounds_won
+      // Reasoning: Impact frequency as rotator/anchor
+      rotationImpactRate: flamezData.ctFirstKills / flamezData.ctRoundsWon,
+      
+      // CSV: adr_ct_side / 100 (normalized)
+      // Reasoning: Damage efficiency on defense
+      ctSideDamageEfficiency: Math.min(flamezData.adrCtSide / 100, 1.0),
+      
+      // CSV: kast_ct_side
+      // Basketball analogy: Plus/minus on defense
+      ctSideSurvivalImpact: flamezData.kastCtSide,
+      
+      // CSV: through_smoke_kills / kills
+      // Reasoning: Defensive awareness and positioning skill
+      smokeDuelSuccess: flamezData.throughSmokeKills / flamezData.kills,
+      
+      // CSV: (total_util_thrown - assisted_flashes) / total_rounds_won / 3
+      // Reasoning: Defensive utility usage (non-flash utility per round)
+      defensiveUtilityUsage: (flamezData.totalUtilityThrown - flamezData.assistedFlashes) / flamezData.totalRoundsWon / 3
     };
-    const performanceScore = Object.values(performanceMetrics).reduce((sum, val) => sum + val, 0) / 4;
+    const ctRCS = Object.values(ctSideRCS).reduce((sum, val) => sum + val, 0) / 6;
 
-    // SPACETAKER MASTERY ANALYSIS (40% weight)
-    const spacetakerMetrics = {
-      entryDuelDominance: flamezData.tFirstKills / (flamezData.tFirstKills + flamezData.tFirstDeaths),
-      postEntryValueCreation: (flamezData.tradeKills / flamezData.kills) * 1.8,
-      roundImpactGeneration: (flamezData.tFirstKills / flamezData.tRoundsWon) * 1.2,
-      utilityCoordinationLevel: (flamezData.totalUtilityThrown / flamezData.totalRoundsWon) / 3.8,
-      tSideEfficiencyRating: flamezData.kastTSide / eliteThresholds.kastLevel,
-      wallbangSkillMastery: Math.min((flamezData.wallbangKills / flamezData.kills) * 12, 1.0),
-      smokeDuelProficiency: Math.min((flamezData.throughSmokeKills / flamezData.kills) * 10, 1.0)
+    // ======================
+    // ICF - Individual Consistency Factor
+    // ======================
+    const icfMetrics = {
+      // CSV: kd / 1.4 (elite threshold), capped at 1.2
+      // Basketball analogy: True Shooting % efficiency
+      basePerformanceRatio: Math.min(flamezData.kd / 1.4, 1.2),
+      
+      // CSV: 1 / (1 + |kd - 1.0| * 0.8)
+      // Basketball analogy: Turnover rate impact on efficiency
+      consistencyFactor: 1 / (1 + Math.abs(flamezData.kd - 1.0) * 0.8),
+      
+      // CSV: headshots / kills
+      // Reasoning: Precision under pressure indicator
+      precisionConsistency: flamezData.headshots / flamezData.kills
     };
-    const spacetakerScore = Object.values(spacetakerMetrics).reduce((sum, val) => sum + val, 0) / 7;
+    const icf = Object.values(icfMetrics).reduce((sum, val) => sum + val, 0) / 3;
 
-    // CLUTCH FACTOR & PRESSURE PERFORMANCE (20% weight)
-    const clutchMetrics = {
-      anchorStrengthRatio: Math.max((flamezData.adrCtSide / flamezData.adrTSide) - 1, 0),
-      blindDuelSuccess: Math.min((flamezData.blindKills / Math.max(flamezData.victimBlindKills, 1)) * 0.6, 1.0),
-      tradeDeathAvoidance: 1 - (flamezData.tradeDeaths / Math.max(flamezData.deaths, 1)),
-      pistolRoundImpact: (flamezData.pistolKills / flamezData.kills) * 2.5
+    // ======================
+    // SC - Synergy Contribution (Basketball PER-style)
+    // ======================
+    const scMetrics = {
+      // CSV: assists / total_rounds_won
+      // Basketball analogy: Assists per game
+      teamPlayContribution: flamezData.assists / flamezData.totalRoundsWon,
+      
+      // CSV: trade_deaths / deaths (inverted - lower is better)
+      // Basketball analogy: Usage rate efficiency (fewer "turnovers")
+      tradabilityValue: 1 - (flamezData.tradeDeaths / flamezData.deaths),
+      
+      // CSV: total_util_dmg / total_util_thrown
+      // Basketball analogy: Shot selection efficiency
+      utilityEfficiencyRatio: flamezData.totalUtilityDamage / flamezData.totalUtilityThrown / 15, // normalized
+      
+      // CSV: blind_kills / victim_blind_kills (when flashed vs flashing others)
+      // Basketball analogy: Performance under defensive pressure
+      adversityPerformance: flamezData.blindKills / Math.max(flamezData.victimBlindKills, 1),
+      
+      // CSV: pistol_kills / kills
+      // Basketball analogy: Clutch time performance (eco situations)
+      economicImpactRate: flamezData.pistolKills / flamezData.kills
     };
-    const clutchScore = Object.values(clutchMetrics).reduce((sum, val) => sum + val, 0) / 4;
+    const sc = Object.values(scMetrics).reduce((sum, val) => sum + val, 0) / 5;
 
-    // ADAPTATION & META MASTERY (10% weight)
-    const adaptationMetrics = {
-      utilityDamageEfficiency: (flamezData.totalUtilityDamage / flamezData.totalUtilityThrown) / 12,
-      sideAdaptationBalance: Math.min(flamezData.kastTSide, flamezData.kastCtSide) / Math.max(flamezData.kastTSide, flamezData.kastCtSide),
-      flashCoordinationMastery: (flamezData.assistedFlashes / flamezData.totalUtilityThrown) * 5
-    };
-    const adaptationScore = Object.values(adaptationMetrics).reduce((sum, val) => sum + val, 0) / 3;
+    // ======================
+    // OSM - Opponent Strength Multiplier
+    // ======================
+    // Static for IEM Katowice - elite tournament context
+    const osm = 0.96;
 
-    // TOURNAMENT CONTEXT MULTIPLIERS
-    const contextMultipliers = {
-      competitionTier: 0.98, // IEM Katowice elite competition
-      roleClarity: 1.04, // Strong spacetaker identity
-      teamSynergy: Math.min(1 + (flamezData.assistedFlashes / flamezData.totalUtilityThrown) * 0.5, 1.06)
-    };
-    const finalMultiplier = Object.values(contextMultipliers).reduce((prod, val) => prod * val, 1.0);
-
-    // WEIGHTED PIV CALCULATION
-    const pivScore = (
-      (Math.min(performanceScore, 1.0) * 0.30) + 
-      (Math.min(spacetakerScore, 1.0) * 0.40) + 
-      (Math.min(clutchScore, 1.0) * 0.20) + 
-      (Math.min(adaptationScore, 1.0) * 0.10)
-    ) * finalMultiplier * 100;
+    // ======================
+    // EQUAL WEIGHT T/CT PIV CALCULATION
+    // ======================
+    const tSidePIV = (tRCS * icf * sc * osm);
+    const ctSidePIV = (ctRCS * icf * sc * osm);
+    
+    // Equal weight combination (not rounds-based)
+    const overallPIV = ((tSidePIV + ctSidePIV) / 2) * 100;
 
     return {
-      score: pivScore,
+      score: overallPIV,
       components: { 
-        performanceScore: Math.min(performanceScore, 1.0), 
-        spacetakerScore: Math.min(spacetakerScore, 1.0), 
-        clutchScore: Math.min(clutchScore, 1.0), 
-        adaptationScore: Math.min(adaptationScore, 1.0), 
-        finalMultiplier 
+        tRCS, 
+        ctRCS, 
+        icf, 
+        sc, 
+        osm,
+        tSidePIV,
+        ctSidePIV
       },
       breakdown: { 
-        performanceMetrics, 
-        spacetakerMetrics, 
-        clutchMetrics, 
-        adaptationMetrics,
-        contextMultipliers,
-        eliteThresholds
+        tSideRCS, 
+        ctSideRCS, 
+        icfMetrics, 
+        scMetrics,
+        csvSources: {
+          entryFragSuccess: "t_first_kills / (t_first_kills + t_first_deaths)",
+          tradeKillGeneration: "trade_kills / kills",
+          tradabilityValue: "1 - (trade_deaths / deaths)",
+          utilityEfficiency: "total_util_dmg / total_util_thrown",
+          ctEntryDenial: "ct_first_kills / (ct_first_kills + ct_first_deaths)",
+          adversityPerformance: "blind_kills / victim_blind_kills"
+        }
       }
     };
   };
@@ -148,29 +211,69 @@ export default function FlamezCalculationPage() {
     };
   };
 
-  // IDEAL PIV FRAMEWORK (theoretical with complete data)
+  // IDEAL PIV FRAMEWORK (reverted to enhanced framework with original role weightings)
   const calculateIdealPIV = () => {
-    const idealMetrics = {
-      roundByRoundMultiKills: 0.78,
-      clutchSituationPerformance: 0.72,
-      economicRoundMastery: 0.69,
-      utilityTimingPrecision: 0.84,
-      positionSpecificImpact: 0.81,
-      antiEcoPerformance: 0.76,
-      mapControlContribution: 0.73
+    // This represents the enhanced framework from our original Role Weightings and TIR models
+    
+    // Advanced T-Side Spacetaker RCS
+    const tSideRCS = {
+      entryFragSuccess: flamezData.tFirstKills / (flamezData.tFirstKills + flamezData.tFirstDeaths),
+      tradeKillEfficiency: flamezData.tradeKills / flamezData.kills,
+      utilityCoordination: flamezData.assistedFlashes / flamezData.totalUtilityThrown,
+      siteExecutionSuccess: flamezData.tRoundsWon / flamezData.totalRoundsWon,
+      economicImpact: flamezData.adrTSide / 100,
+      consistency: 1 / (1 + Math.abs(flamezData.kd - 1.2))
     };
+    const tRCS = Object.values(tSideRCS).reduce((sum, val) => sum + val, 0) / 6;
+
+    // Advanced CT-Side Rotator RCS  
+    const ctSideRCS = {
+      ctEntryDenial: flamezData.ctFirstKills / (flamezData.ctFirstKills + flamezData.ctFirstDeaths),
+      ctSideEfficiency: flamezData.adrCtSide / 100,
+      ctKAST: flamezData.kastCtSide,
+      positionHolding: flamezData.ctRoundsWon / flamezData.totalRoundsWon,
+      rotationImpact: flamezData.ctFirstKills / flamezData.ctRoundsWon,
+      utilitySupport: (flamezData.totalUtilityThrown - flamezData.assistedFlashes) / flamezData.totalRoundsWon / 3
+    };
+    const ctRCS = Object.values(ctSideRCS).reduce((sum, val) => sum + val, 0) / 6;
+
+    // Enhanced ICF with role-specific adjustments
+    const icf = {
+      basePerformance: Math.min(flamezData.kd / 1.4, 1.2),
+      consistencyFactor: 1 / (1 + Math.abs(flamezData.kd - 1.0) * 0.8),
+      roleMultiplier: 1.0 // Spacetaker base
+    };
+    const finalICF = icf.basePerformance * icf.consistencyFactor * icf.roleMultiplier;
+
+    // Enhanced SC with proper role weighting
+    const sc = {
+      tSideSynergy: (flamezData.tFirstKills / flamezData.totalRoundsWon) * 0.5 + 
+                    (flamezData.tradeKills / flamezData.kills) * 0.3 + 
+                    (flamezData.assistedFlashes / flamezData.totalUtilityThrown) * 0.2,
+      ctSideSynergy: (flamezData.ctFirstKills / flamezData.totalRoundsWon) * 0.4 + 
+                     (flamezData.adrCtSide / 100) * 0.6
+    };
+    const finalSC = (sc.tSideSynergy + sc.ctSideSynergy) / 2;
+
+    // Enhanced OSM with tournament context
+    const osm = 0.95; // IEM Katowice elite competition
+
+    // Role-specific PIV calculation
+    const tSidePIV = (tRCS * finalICF * finalSC * osm) * 100;
+    const ctSidePIV = (ctRCS * finalICF * finalSC * osm) * 100;
     
-    const idealScore = Object.values(idealMetrics).reduce((sum, val) => sum + val, 0) / 7 * 100;
-    
+    // Equal weight T/CT combination
+    const overallPIV = (tSidePIV + ctSidePIV) / 2;
+
     return {
-      score: idealScore,
+      score: overallPIV,
+      breakdown: { tSideRCS, ctSideRCS, icf, sc, osm },
+      components: { tSidePIV, ctSidePIV, tRCS, ctRCS, finalICF, finalSC },
       requiredData: [
-        "Round-by-round kill events with timestamps",
-        "Clutch situation identification (1v2, 1v3, etc.)",
-        "Economic round classification",
-        "Utility usage timing and effectiveness", 
-        "Player positioning data per round",
-        "Anti-eco round identification"
+        "Enhanced role-specific weightings from original TIR model",
+        "Advanced synergy calculations with proper team context",
+        "Role clarity multipliers based on performance patterns",
+        "Tournament strength adjustments for elite competition"
       ]
     };
   };
@@ -246,7 +349,7 @@ export default function FlamezCalculationPage() {
             "Advanced data-driven PIV using deep pattern analysis from authentic IEM Katowice 2025 metrics."
           }
           {selectedFramework === 'ideal' && 
-            "Theoretical PIV framework showing potential with complete round-by-round data and enhanced metrics."
+            "Enhanced PIV framework with original role weightings and TIR models from our established system."
           }
         </AlertDescription>
       </Alert>
@@ -281,136 +384,189 @@ export default function FlamezCalculationPage() {
 
       {/* Advanced Realistic PIV */}
       {selectedFramework === 'realistic' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-green-600">Advanced Realistic PIV Framework</CardTitle>
-            <CardDescription>Deep pattern analysis from IEM Katowice 2025 tournament data</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Performance (30%)</p>
-                <Progress value={realisticPIV.components.performanceScore * 100} className="h-2" />
-                <p className="text-sm text-muted-foreground">{(realisticPIV.components.performanceScore * 100).toFixed(1)}%</p>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-green-600">Realistic PIV Framework - RCS/ICF/SC/OSM</CardTitle>
+              <CardDescription>Basketball-style analytics with authentic CSV data only</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-5 gap-4">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">T-Side RCS</p>
+                  <Progress value={realisticPIV.components.tRCS * 100} className="h-2" />
+                  <p className="text-sm text-muted-foreground">{(realisticPIV.components.tRCS * 100).toFixed(1)}%</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">CT-Side RCS</p>
+                  <Progress value={realisticPIV.components.ctRCS * 100} className="h-2" />
+                  <p className="text-sm text-muted-foreground">{(realisticPIV.components.ctRCS * 100).toFixed(1)}%</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">ICF</p>
+                  <Progress value={realisticPIV.components.icf * 100} className="h-2" />
+                  <p className="text-sm text-muted-foreground">{(realisticPIV.components.icf * 100).toFixed(1)}%</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">SC</p>
+                  <Progress value={realisticPIV.components.sc * 100} className="h-2" />
+                  <p className="text-sm text-muted-foreground">{(realisticPIV.components.sc * 100).toFixed(1)}%</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">OSM</p>
+                  <Progress value={realisticPIV.components.osm * 100} className="h-2" />
+                  <p className="text-sm text-muted-foreground">{(realisticPIV.components.osm * 100).toFixed(1)}%</p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Spacetaker (40%)</p>
-                <Progress value={realisticPIV.components.spacetakerScore * 100} className="h-2" />
-                <p className="text-sm text-muted-foreground">{(realisticPIV.components.spacetakerScore * 100).toFixed(1)}%</p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Clutch (20%)</p>
-                <Progress value={realisticPIV.components.clutchScore * 100} className="h-2" />
-                <p className="text-sm text-muted-foreground">{(realisticPIV.components.clutchScore * 100).toFixed(1)}%</p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Adaptation (10%)</p>
-                <Progress value={realisticPIV.components.adaptationScore * 100} className="h-2" />
-                <p className="text-sm text-muted-foreground">{(realisticPIV.components.adaptationScore * 100).toFixed(1)}%</p>
-              </div>
-            </div>
 
-            <Tabs defaultValue="performance" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="performance">Performance</TabsTrigger>
-                <TabsTrigger value="spacetaker">Spacetaker</TabsTrigger>
-                <TabsTrigger value="clutch">Clutch Factor</TabsTrigger>
-                <TabsTrigger value="adaptation">Adaptation</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="performance" className="space-y-3">
-                <div className="text-sm text-muted-foreground mb-3">
-                  Advanced performance metrics relative to IEM Katowice elite standards
-                </div>
-                {Object.entries(realisticPIV.breakdown.performanceMetrics).map(([key, value]) => (
-                  <div key={key} className="flex justify-between items-center p-3 bg-slate-100 border border-slate-200 rounded">
-                    <span className="text-sm font-medium text-slate-700">{key.replace(/([A-Z])/g, ' $1')}</span>
-                    <span className="text-sm font-semibold text-slate-900">{((value as number) * 100).toFixed(1)}%</span>
+              <Tabs defaultValue="tside" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="tside">T-Side Spacetaker</TabsTrigger>
+                  <TabsTrigger value="ctside">CT-Side Rotator</TabsTrigger>
+                  <TabsTrigger value="icf">ICF Consistency</TabsTrigger>
+                  <TabsTrigger value="sc">SC Synergy</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="tside" className="space-y-3">
+                  <div className="text-sm text-muted-foreground mb-3">
+                    T-Side Spacetaker Role Core Score - Basketball "Points Per Game" Style
                   </div>
-                ))}
-              </TabsContent>
-              
-              <TabsContent value="spacetaker" className="space-y-3">
-                <div className="text-sm text-muted-foreground mb-3">
-                  Role-specific spacetaker execution and mastery analysis
-                </div>
-                {Object.entries(realisticPIV.breakdown.spacetakerMetrics).map(([key, value]) => (
-                  <div key={key} className="flex justify-between items-center p-3 bg-slate-100 border border-slate-200 rounded">
-                    <span className="text-sm font-medium text-slate-700">{key.replace(/([A-Z])/g, ' $1')}</span>
-                    <span className="text-sm font-semibold text-slate-900">{((value as number) * 100).toFixed(1)}%</span>
-                  </div>
-                ))}
-              </TabsContent>
-              
-              <TabsContent value="clutch" className="space-y-3">
-                <div className="text-sm text-muted-foreground mb-3">
-                  High-pressure situation performance and clutch ability
-                </div>
-                {Object.entries(realisticPIV.breakdown.clutchMetrics).map(([key, value]) => (
-                  <div key={key} className="flex justify-between items-center p-3 bg-slate-100 border border-slate-200 rounded">
-                    <span className="text-sm font-medium text-slate-700">{key.replace(/([A-Z])/g, ' $1')}</span>
-                    <span className="text-sm font-semibold text-slate-900">{((value as number) * 100).toFixed(1)}%</span>
-                  </div>
-                ))}
-              </TabsContent>
-              
-              <TabsContent value="adaptation" className="space-y-3">
-                <div className="text-sm text-muted-foreground mb-3">
-                  Tournament meta adaptation and utility coordination mastery
-                </div>
-                {Object.entries(realisticPIV.breakdown.adaptationMetrics).map(([key, value]) => (
-                  <div key={key} className="flex justify-between items-center p-3 bg-slate-100 border border-slate-200 rounded">
-                    <span className="text-sm font-medium text-slate-700">{key.replace(/([A-Z])/g, ' $1')}</span>
-                    <span className="text-sm font-semibold text-slate-900">{((value as number) * 100).toFixed(1)}%</span>
-                  </div>
-                ))}
-              </TabsContent>
-            </Tabs>
-
-            <div className="bg-green-50 p-4 rounded-lg">
-              <h4 className="font-semibold mb-2 text-green-800">Advanced PIV Calculation:</h4>
-              <p className="text-sm text-green-700">
-                Formula: (Performance × 30%) + (Spacetaker × 40%) + (Clutch × 20%) + (Adaptation × 10%) × Tournament Context
-              </p>
-              <p className="text-sm text-green-700">
-                = ({(realisticPIV.components.performanceScore * 100).toFixed(1)} × 30%) + ({(realisticPIV.components.spacetakerScore * 100).toFixed(1)} × 40%) + ({(realisticPIV.components.clutchScore * 100).toFixed(1)} × 20%) + ({(realisticPIV.components.adaptationScore * 100).toFixed(1)} × 10%) × {realisticPIV.components.finalMultiplier.toFixed(3)}
-              </p>
-              <p className="text-sm text-green-700 font-semibold">
-                = {realisticPIV.score.toFixed(1)} PIV
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Tournament Elite Thresholds</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {Object.entries(realisticPIV.breakdown.eliteThresholds).map(([key, value]) => (
-                    <div key={key} className="flex justify-between text-sm">
-                      <span>{key.replace(/([A-Z])/g, ' $1')}</span>
-                      <span className="font-medium">{(value as number).toFixed(3)}</span>
+                  {Object.entries(realisticPIV.breakdown.tSideRCS).map(([key, value]) => (
+                    <div key={key} className="flex justify-between items-center p-3 bg-slate-100 border border-slate-200 rounded">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-slate-700">{key.replace(/([A-Z])/g, ' $1')}</span>
+                        <span className="text-xs text-slate-500">
+                          {key === 'entryFragSuccess' && 't_first_kills / (t_first_kills + t_first_deaths)'}
+                          {key === 'tradeKillGeneration' && 'trade_kills / kills'}
+                          {key === 'roundImpactFrequency' && 't_first_kills / t_rounds_won'}
+                          {key === 'utilityCoordination' && 'assisted_flashes / total_util_thrown'}
+                          {key === 'tSideDamageEfficiency' && 'adr_t_side / 100'}
+                          {key === 'wallbangProficiency' && 'wallbang_kills / kills'}
+                        </span>
+                      </div>
+                      <span className="text-sm font-semibold text-slate-900">{((value as number) * 100).toFixed(1)}%</span>
                     </div>
                   ))}
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Context Multipliers</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {Object.entries(realisticPIV.breakdown.contextMultipliers).map(([key, value]) => (
-                    <div key={key} className="flex justify-between text-sm">
-                      <span>{key.replace(/([A-Z])/g, ' $1')}</span>
-                      <span className="font-medium">{(value as number).toFixed(3)}</span>
+                </TabsContent>
+                
+                <TabsContent value="ctside" className="space-y-3">
+                  <div className="text-sm text-muted-foreground mb-3">
+                    CT-Side Rotator Role Core Score - Basketball "Defensive Stop %" Style
+                  </div>
+                  {Object.entries(realisticPIV.breakdown.ctSideRCS).map(([key, value]) => (
+                    <div key={key} className="flex justify-between items-center p-3 bg-slate-100 border border-slate-200 rounded">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-slate-700">{key.replace(/([A-Z])/g, ' $1')}</span>
+                        <span className="text-xs text-slate-500">
+                          {key === 'ctEntryDenial' && 'ct_first_kills / (ct_first_kills + ct_first_deaths)'}
+                          {key === 'rotationImpactRate' && 'ct_first_kills / ct_rounds_won'}
+                          {key === 'ctSideDamageEfficiency' && 'adr_ct_side / 100'}
+                          {key === 'ctSideSurvivalImpact' && 'kast_ct_side'}
+                          {key === 'smokeDuelSuccess' && 'through_smoke_kills / kills'}
+                          {key === 'defensiveUtilityUsage' && '(total_util_thrown - assisted_flashes) / total_rounds_won / 3'}
+                        </span>
+                      </div>
+                      <span className="text-sm font-semibold text-slate-900">{((value as number) * 100).toFixed(1)}%</span>
                     </div>
                   ))}
-                </CardContent>
-              </Card>
-            </div>
-          </CardContent>
-        </Card>
+                </TabsContent>
+                
+                <TabsContent value="icf" className="space-y-3">
+                  <div className="text-sm text-muted-foreground mb-3">
+                    Individual Consistency Factor - Basketball "True Shooting %" Style
+                  </div>
+                  {Object.entries(realisticPIV.breakdown.icfMetrics).map(([key, value]) => (
+                    <div key={key} className="flex justify-between items-center p-3 bg-slate-100 border border-slate-200 rounded">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-slate-700">{key.replace(/([A-Z])/g, ' $1')}</span>
+                        <span className="text-xs text-slate-500">
+                          {key === 'basePerformanceRatio' && 'kd / 1.4 (elite threshold)'}
+                          {key === 'consistencyFactor' && '1 / (1 + |kd - 1.0| * 0.8)'}
+                          {key === 'precisionConsistency' && 'headshots / kills'}
+                        </span>
+                      </div>
+                      <span className="text-sm font-semibold text-slate-900">{((value as number) * 100).toFixed(1)}%</span>
+                    </div>
+                  ))}
+                </TabsContent>
+                
+                <TabsContent value="sc" className="space-y-3">
+                  <div className="text-sm text-muted-foreground mb-3">
+                    Synergy Contribution - Basketball "PER" Style Team Impact
+                  </div>
+                  {Object.entries(realisticPIV.breakdown.scMetrics).map(([key, value]) => (
+                    <div key={key} className="flex justify-between items-center p-3 bg-slate-100 border border-slate-200 rounded">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-slate-700">{key.replace(/([A-Z])/g, ' $1')}</span>
+                        <span className="text-xs text-slate-500">
+                          {key === 'teamPlayContribution' && 'assists / total_rounds_won'}
+                          {key === 'tradabilityValue' && '1 - (trade_deaths / deaths)'}
+                          {key === 'utilityEfficiencyRatio' && 'total_util_dmg / total_util_thrown / 15'}
+                          {key === 'adversityPerformance' && 'blind_kills / victim_blind_kills'}
+                          {key === 'economicImpactRate' && 'pistol_kills / kills'}
+                        </span>
+                      </div>
+                      <span className="text-sm font-semibold text-slate-900">{((value as number) * 100).toFixed(1)}%</span>
+                    </div>
+                  ))}
+                </TabsContent>
+              </Tabs>
+
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h4 className="font-semibold mb-2 text-green-800">PIV Calculation Formula:</h4>
+                <p className="text-sm text-green-700">
+                  T-Side PIV = (T-RCS × ICF × SC × OSM) = {realisticPIV.components.tRCS.toFixed(3)} × {realisticPIV.components.icf.toFixed(3)} × {realisticPIV.components.sc.toFixed(3)} × {realisticPIV.components.osm.toFixed(3)} = {realisticPIV.components.tSidePIV.toFixed(3)}
+                </p>
+                <p className="text-sm text-green-700">
+                  CT-Side PIV = (CT-RCS × ICF × SC × OSM) = {realisticPIV.components.ctRCS.toFixed(3)} × {realisticPIV.components.icf.toFixed(3)} × {realisticPIV.components.sc.toFixed(3)} × {realisticPIV.components.osm.toFixed(3)} = {realisticPIV.components.ctSidePIV.toFixed(3)}
+                </p>
+                <p className="text-sm text-green-700 font-semibold">
+                  Overall PIV = (T-Side + CT-Side) / 2 × 100 = {realisticPIV.score.toFixed(1)}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Basketball Analytics Applied</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span>Field Goal % (Entry Success)</span>
+                      <span>{((flamezData.tFirstKills / (flamezData.tFirstKills + flamezData.tFirstDeaths)) * 100).toFixed(1)}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Defensive Stop % (CT Entry Denial)</span>
+                      <span>{((flamezData.ctFirstKills / (flamezData.ctFirstKills + flamezData.ctFirstDeaths)) * 100).toFixed(1)}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Assists Per Game (Team Play)</span>
+                      <span>{(flamezData.assists / flamezData.totalRoundsWon).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Usage Efficiency (Trade Death Avoidance)</span>
+                      <span>{((1 - flamezData.tradeDeaths / flamezData.deaths) * 100).toFixed(1)}%</span>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">CSV Data Sources</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-xs">
+                    {Object.entries(realisticPIV.breakdown.csvSources).map(([key, value]) => (
+                      <div key={key} className="flex justify-between">
+                        <span className="text-slate-600">{key.replace(/([A-Z])/g, ' $1')}</span>
+                        <span className="font-mono text-slate-800">{value}</span>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {/* Ideal PIV Framework */}

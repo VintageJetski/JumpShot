@@ -289,7 +289,7 @@ export default function FlamezCalculationPage() {
     const basicMetrics = {
       kd: Math.min(flamezData.kd / 1.5, 1.0),
       adr: Math.min(flamezData.adrTotal / 85, 1.0), // CSV: adr_total
-      kast: Math.min(flamezData.kastTotal / 0.75, 1.0) // CSV: kast_total
+      kast: Math.min(((flamezData.kastTSide + flamezData.kastCtSide) / 2) / 0.75, 1.0) // Calculated from T/CT sides
     };
     const basicScore = (basicMetrics.kd * 0.4 + basicMetrics.adr * 0.3 + basicMetrics.kast * 0.3);
 
@@ -426,19 +426,19 @@ export default function FlamezCalculationPage() {
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <div className="text-center">
-                    <h3 className="text-lg font-semibold text-orange-700">T-Side Spacetaker</h3>
-                    <p className="text-2xl font-bold text-orange-800">{(currentPIV.components.tSidePIV * 100).toFixed(1)}</p>
-                    <p className="text-sm text-muted-foreground">Weight: {(currentPIV.components.tWeight * 100).toFixed(1)}%</p>
+                    <h3 className="text-lg font-semibold text-orange-700">T-Side Spacetaker PIV</h3>
+                    <p className="text-2xl font-bold text-orange-800">{currentPIV.tSidePIV.toFixed(1)}</p>
+                    <p className="text-sm text-muted-foreground">T-RCS: {currentPIV.components.tRCS.toFixed(3)}</p>
                   </div>
-                  <Progress value={currentPIV.components.tSidePIV * 100} className="h-3" />
+                  <Progress value={Math.min(currentPIV.tSidePIV * 10, 100)} className="h-3" />
                 </div>
                 <div className="space-y-3">
                   <div className="text-center">
-                    <h3 className="text-lg font-semibold text-blue-700">CT-Side Rotator</h3>
-                    <p className="text-2xl font-bold text-blue-800">{(currentPIV.components.ctSidePIV * 100).toFixed(1)}</p>
-                    <p className="text-sm text-muted-foreground">Weight: {(currentPIV.components.ctWeight * 100).toFixed(1)}%</p>
+                    <h3 className="text-lg font-semibold text-blue-700">CT-Side Rotator PIV</h3>
+                    <p className="text-2xl font-bold text-blue-800">{currentPIV.ctSidePIV.toFixed(1)}</p>
+                    <p className="text-sm text-muted-foreground">CT-RCS: {currentPIV.components.ctRCS.toFixed(3)}</p>
                   </div>
-                  <Progress value={currentPIV.components.ctSidePIV * 100} className="h-3" />
+                  <Progress value={Math.min(currentPIV.ctSidePIV * 10, 100)} className="h-3" />
                 </div>
               </div>
 
@@ -446,10 +446,11 @@ export default function FlamezCalculationPage() {
                 <h4 className="font-semibold text-slate-800 mb-2">Overall Current PIV</h4>
                 <p className="text-3xl font-bold text-slate-900">{currentPIV.score.toFixed(1)}</p>
                 <p className="text-sm text-muted-foreground">
-                  ({(currentPIV.components.tSidePIV * 100).toFixed(1)} × {(currentPIV.components.tWeight * 100).toFixed(1)}%) + 
-                  ({(currentPIV.components.ctSidePIV * 100).toFixed(1)} × {(currentPIV.components.ctWeight * 100).toFixed(1)}%)
+                  Formula: (T-Side PIV × 50%) + (CT-Side PIV × 50%)
                 </p>
-                <p className="text-sm text-red-600 mt-1">Advanced Score: {currentPIV.advancedScore.toFixed(1)}</p>
+                <p className="text-sm text-muted-foreground">
+                  = ({currentPIV.tSidePIV.toFixed(1)} × 50%) + ({currentPIV.ctSidePIV.toFixed(1)} × 50%)
+                </p>
               </div>
 
               <Tabs defaultValue="tside" className="w-full">
@@ -463,30 +464,25 @@ export default function FlamezCalculationPage() {
                   <div className="text-sm text-muted-foreground mb-3">
                     T-Side Spacetaker role metrics with weightings
                   </div>
-                  {Object.entries(currentPIV.breakdown.tSideCalculation).map(([key, value]) => (
+                  {Object.entries(currentPIV.breakdown.tSideMetrics).map(([key, value]) => (
                     <div key={key} className={`flex justify-between items-center p-3 border rounded ${
                       key === 'basicConsistency' ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200'
                     }`}>
                       <div className="flex flex-col">
                         <span className={`text-sm font-medium ${
-                          key === 'basicConsistency' ? 'text-red-700' : 'text-orange-700'
+                          'text-orange-700'
                         }`}>
                           {key.replace(/([A-Z])/g, ' $1')}
-                          {key === 'basicConsistency' && ' - SYNTHETIC'}
-                          {key === 'openingDuelSuccess' && ' (25%)'}
-                          {key === 'tradeKillInvolvement' && ' (17.5%)'}
-                          {key === 'tSideADR' && ' (14%)'}
-                          {key === 'headshotPct' && ' (15%)'}
-                          {key === 'tSideKAST' && ' (15%)'}
-                          {key === 'basicConsistency' && ' (10.5%)'}
+                          {key === 'entryFragSuccess' && ' (40%)'}
+                          {key === 'tradeKillGeneration' && ' (30%)'}
+                          {key === 'roundImpactFrequency' && ' (20%)'}
+                          {key === 'utilityCoordination' && ' (10%)'}
                         </span>
                         <span className="text-xs text-slate-500">
-                          {key === 'openingDuelSuccess' && 't_first_kills / (t_first_kills + t_first_deaths)'}
-                          {key === 'tradeKillInvolvement' && 'trade_kills / kills'}
-                          {key === 'tSideADR' && 'adr_t_side / 100 (normalized)'}
-                          {key === 'headshotPct' && 'headshots / kills'}
-                          {key === 'tSideKAST' && 'kast_t_side'}
-                          {key === 'basicConsistency' && 'FAKE: Hardcoded 0.75 placeholder'}
+                          {key === 'entryFragSuccess' && 't_first_kills / (t_first_kills + t_first_deaths)'}
+                          {key === 'tradeKillGeneration' && 'trade_kills / kills'}
+                          {key === 'roundImpactFrequency' && 't_first_kills / t_rounds_won'}
+                          {key === 'utilityCoordination' && 'assisted_flashes / total_util_thrown'}
                         </span>
                       </div>
                       <span className={`text-sm font-semibold ${
@@ -502,30 +498,29 @@ export default function FlamezCalculationPage() {
                   <div className="text-sm text-muted-foreground mb-3">
                     CT-Side Rotator role metrics with weightings
                   </div>
-                  {Object.entries(currentPIV.breakdown.ctSideCalculation).map(([key, value]) => (
+                  {Object.entries(currentPIV.breakdown.ctSideMetrics).map(([key, value]) => (
                     <div key={key} className={`flex justify-between items-center p-3 border rounded ${
-                      key === 'flashAssistRatio' || key === 'basicConsistency' ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'
+                      key === 'defensiveUtilityUsage' ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200'
                     }`}>
                       <div className="flex flex-col">
                         <span className={`text-sm font-medium ${
-                          key === 'flashAssistRatio' || key === 'basicConsistency' ? 'text-red-700' : 'text-blue-700'
+                          key === 'defensiveUtilityUsage' ? 'text-yellow-700' : 'text-blue-700'
                         }`}>
                           {key.replace(/([A-Z])/g, ' $1')}
-                          {(key === 'flashAssistRatio' || key === 'basicConsistency') && ' - SYNTHETIC'}
-                          {key === 'ctSideADR' && ' (30%)'}
-                          {key === 'flashAssistRatio' && ' (15%)'}
-                          {key === 'ctSideKAST' && ' (10%)'}
-                          {key === 'basicConsistency' && ' (15%)'}
+                          {key === 'ctEntryDenial' && ' (35%)'}
+                          {key === 'rotationImpactRate' && ' (25%)'}
+                          {key === 'ctSideSurvivalImpact' && ' (25%)'}
+                          {key === 'defensiveUtilityUsage' && ' (15%)'}
                         </span>
                         <span className="text-xs text-slate-500">
-                          {key === 'ctSideADR' && 'adr_ct_side / 100 (normalized)'}
-                          {key === 'flashAssistRatio' && 'FAKE: assisted_flashes / (total_util_thrown × 0.3)'}
-                          {key === 'ctSideKAST' && 'kast_ct_side'}
-                          {key === 'basicConsistency' && 'FAKE: Hardcoded 0.75 placeholder'}
+                          {key === 'ctEntryDenial' && 'ct_first_kills / (ct_first_kills + ct_first_deaths)'}
+                          {key === 'rotationImpactRate' && 'ct_first_kills / ct_rounds_won'}
+                          {key === 'ctSideSurvivalImpact' && 'kast_ct_side'}
+                          {key === 'defensiveUtilityUsage' && '(total_util_thrown - assisted_flashes) / total_rounds_won / 3'}
                         </span>
                       </div>
                       <span className={`text-sm font-semibold ${
-                        key === 'flashAssistRatio' || key === 'basicConsistency' ? 'text-red-900' : 'text-blue-900'
+                        key === 'defensiveUtilityUsage' ? 'text-yellow-900' : 'text-blue-900'
                       }`}>
                         {((value as number) * 100).toFixed(1)}%
                       </span>
@@ -535,57 +530,87 @@ export default function FlamezCalculationPage() {
                 
                 <TabsContent value="advanced" className="space-y-3">
                   <div className="text-sm text-muted-foreground mb-3">
-                    Advanced PIV calculation with multipliers and modifiers
+                    ICF, SC, and Basic Metrics components
                   </div>
-                  {Object.entries(currentPIV.breakdown.advancedCalculation).map(([key, value]) => (
-                    <div key={key} className={`flex justify-between items-center p-3 border rounded ${
-                      key.includes('Multiplier') || key.includes('Bonus') || key === 'roleModifier' ? 'bg-red-50 border-red-200' : 'bg-purple-50 border-purple-200'
-                    }`}>
-                      <div className="flex flex-col">
-                        <span className={`text-sm font-medium ${
-                          key.includes('Multiplier') || key.includes('Bonus') || key === 'roleModifier' ? 'text-red-700' : 'text-purple-700'
-                        }`}>
-                          {key.replace(/([A-Z])/g, ' $1')}
-                          {(key.includes('Multiplier') || key.includes('Bonus') || key === 'roleModifier') && ' - SYNTHETIC'}
-                        </span>
-                        <span className="text-xs text-slate-500">
-                          {key === 'rcs' && 'Role Core Score from evaluation'}
-                          {key === 'icf' && 'Individual Consistency Factor'}
-                          {key === 'sc' && 'Synergy Contribution'}
-                          {key === 'osm' && 'Opponent Strength Multiplier'}
-                          {key === 'basicScore' && 'Basic metrics integration'}
-                          {key === 'kdMultiplier' && 'FAKE: K/D > 1.2 multiplier'}
-                          {key === 'superStarMultiplier' && 'FAKE: K/D > 1.5 additional multiplier'}
-                          {key === 'roleModifier' && 'FAKE: Spacetaker role modifier'}
-                          {key === 'starBonus' && 'FAKE: K/D >= 1.4 star bonus'}
-                        </span>
-                      </div>
-                      <span className={`text-sm font-semibold ${
-                        key.includes('Multiplier') || key.includes('Bonus') || key === 'roleModifier' ? 'text-red-900' : 'text-purple-900'
-                      }`}>
-                        {typeof value === 'number' ? value.toFixed(3) : 'N/A'}
-                      </span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-purple-700">ICF Components</h4>
+                      {Object.entries(currentPIV.breakdown.icfComponents).map(([key, value]) => (
+                        <div key={key} className="p-2 bg-purple-50 border border-purple-200 rounded">
+                          <div className="text-sm font-medium text-purple-700">{key.replace(/([A-Z])/g, ' $1')}</div>
+                          <div className="text-xs text-slate-500">
+                            {key === 'basePerformance' && 'min(kd / 1.3, 1.2)'}
+                            {key === 'consistencyBonus' && 'kd > 1.1 ? 0.15 : 0'}
+                            {key === 'survivalRate' && '(kast_t_side + kast_ct_side) / 2'}
+                            {key === 'headshotConsistency' && 'headshots / kills'}
+                          </div>
+                          <div className="text-sm font-semibold text-purple-900">{((value as number) * 100).toFixed(1)}%</div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-green-700">SC Components</h4>
+                      {Object.entries(currentPIV.breakdown.scComponents).map(([key, value]) => (
+                        <div key={key} className={`p-2 border rounded ${
+                          key === 'utilityEfficiencyRatio' ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
+                        }`}>
+                          <div className={`text-sm font-medium ${
+                            key === 'utilityEfficiencyRatio' ? 'text-red-700' : 'text-green-700'
+                          }`}>
+                            {key.replace(/([A-Z])/g, ' $1')}
+                            {key === 'utilityEfficiencyRatio' && ' - SYNTHETIC'}
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            {key === 'teamPlayContribution' && 'assists / total_rounds_won (40% weight)'}
+                            {key === 'tradabilityValue' && '1 - (trade_deaths / deaths) (35% weight)'}
+                            {key === 'utilityEfficiencyRatio' && 'FAKE: total_util_dmg / total_util_thrown (25% weight)'}
+                          </div>
+                          <div className={`text-sm font-semibold ${
+                            key === 'utilityEfficiencyRatio' ? 'text-red-900' : 'text-green-900'
+                          }`}>
+                            {((value as number) * 100).toFixed(1)}%
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 space-y-2">
+                    <h4 className="font-semibold text-slate-700">Synthetic Multipliers</h4>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="p-2 bg-red-50 border border-red-200 rounded">
+                        <div className="text-sm font-medium text-red-700">K/D Multiplier</div>
+                        <div className="text-xs text-red-600">SYNTHETIC: {currentPIV.components.kdMultiplier.toFixed(3)}</div>
+                      </div>
+                      <div className="p-2 bg-red-50 border border-red-200 rounded">
+                        <div className="text-sm font-medium text-red-700">Super Star Multiplier</div>
+                        <div className="text-xs text-red-600">SYNTHETIC: {currentPIV.components.superStarMultiplier.toFixed(3)}</div>
+                      </div>
+                      <div className="p-2 bg-red-50 border border-red-200 rounded">
+                        <div className="text-sm font-medium text-red-700">Combined Multiplier</div>
+                        <div className="text-xs text-red-600">SYNTHETIC: {currentPIV.components.combinedKdMultiplier.toFixed(3)}</div>
+                      </div>
+                    </div>
+                  </div>
                 </TabsContent>
               </Tabs>
 
               <div className="bg-red-50 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2 text-red-800">Current PIV Calculations:</h4>
+                <h4 className="font-semibold mb-2 text-red-800">Current PIV Calculation Formula:</h4>
                 <p className="text-sm text-red-700">
-                  <strong>Simple Formula:</strong> (T-Side × T-Weight) + (CT-Side × CT-Weight) × 100
+                  <strong>T-Side PIV:</strong> ((T-RCS × 0.5 + BasicScore × 0.5) × ICF + SC) × OSM × (1 + K/D×0.25) × 1.03 × KDMultiplier
                 </p>
                 <p className="text-sm text-red-700">
-                  = ({(currentPIV.components.tSidePIV * 100).toFixed(1)} × {(currentPIV.components.tWeight * 100).toFixed(1)}%) + ({(currentPIV.components.ctSidePIV * 100).toFixed(1)} × {(currentPIV.components.ctWeight * 100).toFixed(1)}%)
-                </p>
-                <p className="text-sm text-red-700 font-semibold">
-                  = {currentPIV.score.toFixed(1)} PIV
+                  = {currentPIV.tSidePIV.toFixed(1)}
                 </p>
                 <p className="text-sm text-red-700 mt-2">
-                  <strong>Advanced Formula:</strong> Complex RCS/ICF/SC/OSM with multiple synthetic multipliers
+                  <strong>CT-Side PIV:</strong> ((CT-RCS × 0.5 + BasicScore × 0.5) × ICF + SC) × OSM × (1 + K/D×0.25) × 1.0 × KDMultiplier
                 </p>
-                <p className="text-sm text-red-700 font-semibold">
-                  = {currentPIV.advancedScore.toFixed(1)} PIV (with synthetic K/D multipliers)
+                <p className="text-sm text-red-700">
+                  = {currentPIV.ctSidePIV.toFixed(1)}
+                </p>
+                <p className="text-sm text-red-700 mt-2 font-semibold">
+                  <strong>Overall PIV:</strong> (T-Side × 50%) + (CT-Side × 50%) = {currentPIV.score.toFixed(1)}
                 </p>
               </div>
             </CardContent>

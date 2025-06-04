@@ -30,79 +30,212 @@ const flamezData = {
 
 export default function FlamezCalculationPage() {
   
-  // Calculate flameZ T-Side PIV (Spacetaker)
-  const calculateTSidePIV = () => {
-    // Opening Duel Success Rate (25%)
-    const openingDuelSuccess = flamezData.tFirstKills / (flamezData.tFirstKills + flamezData.tFirstDeaths);
+  // Advanced Metrics Calculation using previous complex framework
+  const calculateAdvancedMetrics = () => {
+    // RCS (Role Core Score) - Spacetaker specific metrics
+    const spacetakerMetrics = {
+      entryFragSuccess: flamezData.tFirstKills / (flamezData.tFirstKills + flamezData.tFirstDeaths),
+      tradeKillEfficiency: flamezData.tradeKills / flamezData.kills,
+      multiKillRounds: Math.min(flamezData.kd * 0.6, 1.0), // Proxy for multi-kill capability
+      utilityCoordination: flamezData.assistedFlashes / flamezData.totalUtilityThrown,
+      siteExecutionSuccess: flamezData.tRoundsWon / flamezData.totalRoundsWon,
+      clutchSuccess: Math.min((flamezData.kd - 1) * 2, 1.0), // K/D above 1.0 indicates clutch ability
+      economicImpact: flamezData.adrTSide / 100,
+      consistency: 1 / (1 + Math.abs(flamezData.kd - 1.2)) // Consistency around optimal K/D
+    };
     
-    // Trade Kill Involvement (17.5%) 
-    const tradeKillInvolvement = flamezData.tradeKills / flamezData.kills;
+    // Normalize metrics to 0-1 scale and calculate RCS
+    const normalizedMetrics = Object.values(spacetakerMetrics).map(val => Math.max(0, Math.min(1, val)));
+    const rcs = normalizedMetrics.reduce((sum, val) => sum + val, 0) / normalizedMetrics.length;
     
-    // T-Side ADR (14%) - normalized to 0-1 scale
-    const tSideADR = Math.min(flamezData.adrTSide / 100, 1.0);
+    return { spacetakerMetrics, rcs };
+  };
+
+  // ICF (Individual Consistency Factor) - Enhanced calculation
+  const calculateICF = () => {
+    const kd = flamezData.kd;
     
-    // Headshot Percentage (15%)
-    const headshotPct = flamezData.headshots / flamezData.kills;
+    // Base performance factor
+    const basePerformanceFactor = Math.min(kd / 1.4, 1.2); // Cap at 1.2 for exceptional players
     
-    // T-Side KAST (15%)
-    const tSideKAST = flamezData.kastTSide;
+    // Consistency multiplier based on K/D variance
+    const kdDeviation = Math.abs(kd - 1.0);
+    const sigma = kdDeviation * 0.8; // Role-specific sigma calculation
+    const consistencyMultiplier = 1 / (1 + sigma);
     
-    // Basic Consistency (10.5%) - using K/D consistency
-    const basicConsistency = Math.min(flamezData.kd / 1.5, 1.0);
+    // flameZ is not IGL, so no IGL bonus
+    const iglMultiplier = 1.0;
     
-    const tSidePIV = (openingDuelSuccess * 0.25) + 
-                     (tradeKillInvolvement * 0.175) + 
-                     (tSideADR * 0.14) + 
-                     (headshotPct * 0.15) + 
-                     (tSideKAST * 0.15) + 
-                     (basicConsistency * 0.105);
+    const icf = basePerformanceFactor * consistencyMultiplier * iglMultiplier;
     
     return {
-      score: tSidePIV,
-      breakdown: [
-        { name: "Opening Duel Success", value: openingDuelSuccess, weight: 25.0, contribution: openingDuelSuccess * 0.25 },
-        { name: "Trade Kill Involvement", value: tradeKillInvolvement, weight: 17.5, contribution: tradeKillInvolvement * 0.175 },
-        { name: "T-Side ADR", value: tSideADR, weight: 14.0, contribution: tSideADR * 0.14 },
-        { name: "Headshot Percentage", value: headshotPct, weight: 15.0, contribution: headshotPct * 0.15 },
-        { name: "T-Side KAST", value: tSideKAST, weight: 15.0, contribution: tSideKAST * 0.15 },
-        { name: "Basic Consistency", value: basicConsistency, weight: 10.5, contribution: basicConsistency * 0.105 }
-      ]
+      value: Math.min(icf, 1.0),
+      breakdown: {
+        basePerformanceFactor,
+        consistencyMultiplier,
+        iglMultiplier,
+        sigma
+      }
     };
   };
 
-  // Calculate flameZ CT-Side PIV (Rotator)
+  // SC (Synergy Contribution) - Spacetaker specific
+  const calculateSC = () => {
+    // Entry impact for team
+    const entryImpact = (flamezData.tFirstKills / flamezData.totalRoundsWon) * 0.4;
+    
+    // Trade coordination
+    const tradeCoordination = (flamezData.tradeKills / flamezData.kills) * 0.3;
+    
+    // Utility synergy
+    const utilitySynergy = (flamezData.assistedFlashes / flamezData.totalUtilityThrown) * 0.2;
+    
+    // K/D contribution
+    const kdContribution = Math.min(flamezData.kd / 2, 0.5) * 0.1;
+    
+    const sc = entryImpact + tradeCoordination + utilitySynergy + kdContribution;
+    
+    return {
+      value: Math.min(sc, 1.0),
+      breakdown: {
+        entryImpact,
+        tradeCoordination,
+        utilitySynergy,
+        kdContribution
+      }
+    };
+  };
+
+  // Calculate flameZ T-Side PIV (Spacetaker) with enhanced metrics
+  const calculateTSidePIV = () => {
+    const advancedMetrics = calculateAdvancedMetrics();
+    const icf = calculateICF();
+    const sc = calculateSC();
+    const osm = 0.84; // Opponent Strength Multiplier for IEM Katowice
+    const kdMultiplier = Math.min(flamezData.kd, 1.5); // K/D multiplier capped at 1.5
+    
+    // Basic Metrics (simplified for T-side)
+    const basicMetrics = {
+      openingDuelSuccess: flamezData.tFirstKills / (flamezData.tFirstKills + flamezData.tFirstDeaths),
+      tradeKillInvolvement: flamezData.tradeKills / flamezData.kills,
+      adrNormalized: Math.min(flamezData.adrTSide / 100, 1.0),
+      headshotPct: flamezData.headshots / flamezData.kills,
+      kastTSide: flamezData.kastTSide
+    };
+    
+    const basicScore = Object.values(basicMetrics).reduce((sum, val) => sum + val, 0) / Object.values(basicMetrics).length;
+    
+    // Enhanced PIV Formula: (RCS * ICF * SC * OSM) * K/D Multiplier + Basic Score Weight
+    const complexPIV = (advancedMetrics.rcs * icf.value * sc.value * osm) * kdMultiplier;
+    const basicWeight = 0.3;
+    const complexWeight = 0.7;
+    
+    const tSidePIV = (complexPIV * complexWeight) + (basicScore * basicWeight);
+    
+    return {
+      score: tSidePIV,
+      components: {
+        rcs: advancedMetrics.rcs,
+        icf: icf.value,
+        sc: sc.value,
+        osm,
+        kdMultiplier,
+        basicScore,
+        complexPIV,
+        finalScore: tSidePIV
+      },
+      breakdown: [
+        { name: "RCS (Role Core Score)", value: advancedMetrics.rcs, weight: "Complex", contribution: advancedMetrics.rcs },
+        { name: "ICF (Individual Consistency)", value: icf.value, weight: "Complex", contribution: icf.value },
+        { name: "SC (Synergy Contribution)", value: sc.value, weight: "Complex", contribution: sc.value },
+        { name: "OSM (Opponent Strength)", value: osm, weight: "Complex", contribution: osm },
+        { name: "K/D Multiplier", value: kdMultiplier, weight: "Complex", contribution: kdMultiplier },
+        { name: "Basic Metrics Average", value: basicScore, weight: 30.0, contribution: basicScore * basicWeight }
+      ],
+      detailedBreakdown: {
+        advancedMetrics: advancedMetrics.spacetakerMetrics,
+        icfBreakdown: icf.breakdown,
+        scBreakdown: sc.breakdown,
+        basicMetrics
+      }
+    };
+  };
+
+  // Calculate flameZ CT-Side PIV (Rotator) with enhanced metrics
   const calculateCTSidePIV = () => {
-    // CT-Side ADR (30%) - normalized to 0-1 scale
-    const ctSideADR = Math.min(flamezData.adrCtSide / 100, 1.0);
+    // Advanced CT-Side Rotator Metrics
+    const rotatorMetrics = {
+      positionHoldSuccess: flamezData.ctRoundsWon / flamezData.totalRoundsWon, // Site holding effectiveness
+      rotationEfficiency: Math.min(flamezData.adrCtSide / 85, 1.0), // Damage efficiency on rotations
+      utilityImpact: flamezData.assistedFlashes / flamezData.totalUtilityThrown,
+      anchorStrength: Math.min((flamezData.ctFirstKills / flamezData.ctFirstDeaths), 1.2), // Opening duel success CT
+      retakeContribution: Math.min(flamezData.kd * 0.8, 1.0), // Retake capability
+      economicStability: flamezData.kastCtSide, // KAST indicates economic contribution
+      teamSupport: (flamezData.assistedFlashes / flamezData.totalUtilityThrown) * 1.5, // Enhanced utility support
+      adaptability: 1 / (1 + Math.abs(flamezData.adrCtSide - flamezData.adrTSide) / 20) // Consistency across sides
+    };
     
-    // Flash Assist Ratio (15%) - assists per utility thrown
-    const flashAssistRatio = flamezData.assistedFlashes / flamezData.totalUtilityThrown;
+    // Normalize and calculate RCS for CT-side
+    const normalizedCTMetrics = Object.values(rotatorMetrics).map(val => Math.max(0, Math.min(1, val)));
+    const ctRCS = normalizedCTMetrics.reduce((sum, val) => sum + val, 0) / normalizedCTMetrics.length;
     
-    // CT-Side KAST (10%)
-    const ctSideKAST = flamezData.kastCtSide;
+    // ICF for CT-side (similar calculation but CT-focused)
+    const ctICF = calculateICF(); // Same consistency factors apply
     
-    // Basic Consistency (15%) - using K/D consistency
-    const basicConsistency = Math.min(flamezData.kd / 1.5, 1.0);
+    // SC for CT-side (Rotator specific synergy)
+    const ctSC = {
+      rotationImpact: (flamezData.ctRoundsWon / flamezData.totalRoundsWon) * 0.35,
+      utilityCoordination: (flamezData.assistedFlashes / flamezData.totalUtilityThrown) * 0.25,
+      siteSupport: Math.min(flamezData.adrCtSide / 90, 1.0) * 0.25,
+      teamSynergy: Math.min(flamezData.kd / 1.8, 0.6) * 0.15
+    };
     
-    // Remaining 40% weight - need to add more CT metrics
-    const remainingWeight = 0.40; // Placeholder for additional CT metrics
-    const remainingValue = 0.75; // Placeholder calculation
+    const ctSCValue = Object.values(ctSC).reduce((sum, val) => sum + val, 0);
     
-    const ctSidePIV = (ctSideADR * 0.30) + 
-                      (flashAssistRatio * 0.15) + 
-                      (ctSideKAST * 0.10) + 
-                      (basicConsistency * 0.15) +
-                      (remainingValue * remainingWeight);
+    // Enhanced CT PIV Formula: (RCS * ICF * SC * OSM) * K/D Multiplier
+    const osm = 0.84;
+    const kdMultiplier = Math.min(flamezData.kd, 1.5);
+    const complexCTPIV = (ctRCS * ctICF.value * ctSCValue * osm) * kdMultiplier;
+    
+    // Basic CT metrics
+    const basicCTMetrics = {
+      ctADR: Math.min(flamezData.adrCtSide / 100, 1.0),
+      flashAssistRatio: flamezData.assistedFlashes / flamezData.totalUtilityThrown,
+      ctKAST: flamezData.kastCtSide,
+      siteHoldSuccess: flamezData.ctRoundsWon / flamezData.totalRoundsWon
+    };
+    
+    const basicCTScore = Object.values(basicCTMetrics).reduce((sum, val) => sum + val, 0) / Object.values(basicCTMetrics).length;
+    
+    const basicWeight = 0.3;
+    const complexWeight = 0.7;
+    const ctSidePIV = (complexCTPIV * complexWeight) + (basicCTScore * basicWeight);
     
     return {
       score: ctSidePIV,
+      components: {
+        ctRCS,
+        ctICF: ctICF.value,
+        ctSC: ctSCValue,
+        osm,
+        kdMultiplier,
+        basicCTScore,
+        complexCTPIV,
+        finalScore: ctSidePIV
+      },
       breakdown: [
-        { name: "CT-Side ADR", value: ctSideADR, weight: 30.0, contribution: ctSideADR * 0.30 },
-        { name: "Flash Assist Ratio", value: flashAssistRatio, weight: 15.0, contribution: flashAssistRatio * 0.15 },
-        { name: "CT-Side KAST", value: ctSideKAST, weight: 10.0, contribution: ctSideKAST * 0.10 },
-        { name: "Basic Consistency", value: basicConsistency, weight: 15.0, contribution: basicConsistency * 0.15 },
-        { name: "Additional CT Metrics", value: remainingValue, weight: 40.0, contribution: remainingValue * remainingWeight }
-      ]
+        { name: "CT RCS (Role Core Score)", value: ctRCS, weight: "Complex", contribution: ctRCS },
+        { name: "CT ICF (Consistency)", value: ctICF.value, weight: "Complex", contribution: ctICF.value },
+        { name: "CT SC (Synergy)", value: ctSCValue, weight: "Complex", contribution: ctSCValue },
+        { name: "OSM (Opponent Strength)", value: osm, weight: "Complex", contribution: osm },
+        { name: "K/D Multiplier", value: kdMultiplier, weight: "Complex", contribution: kdMultiplier },
+        { name: "Basic CT Metrics", value: basicCTScore, weight: 30.0, contribution: basicCTScore * basicWeight }
+      ],
+      detailedBreakdown: {
+        rotatorMetrics,
+        ctSCBreakdown: ctSC,
+        basicCTMetrics
+      }
     };
   };
 
@@ -176,57 +309,141 @@ export default function FlamezCalculationPage() {
         </CardContent>
       </Card>
 
-      {/* T-Side PIV Calculation */}
+      {/* Enhanced T-Side PIV Calculation */}
       <Card>
         <CardHeader>
-          <CardTitle>T-Side PIV (Spacetaker Role)</CardTitle>
+          <CardTitle>T-Side PIV (Spacetaker Role) - Enhanced Formula</CardTitle>
           <CardDescription>
             Score: {(flamezPIV.tSide.score * 100).toFixed(1)} | Weight: {(flamezPIV.weights.tWeight * 100).toFixed(1)}%
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* Formula Display */}
+          <div className="bg-muted p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">Enhanced PIV Formula:</h4>
+            <code className="text-sm">
+              PIV = [(RCS × ICF × SC × OSM) × K/D Multiplier × 70%] + [Basic Score × 30%]
+            </code>
+            <div className="mt-2 text-sm text-muted-foreground">
+              <p>RCS: {flamezPIV.tSide.components.rcs.toFixed(3)} | ICF: {flamezPIV.tSide.components.icf.toFixed(3)} | SC: {flamezPIV.tSide.components.sc.toFixed(3)}</p>
+              <p>OSM: {flamezPIV.tSide.components.osm} | K/D Multiplier: {flamezPIV.tSide.components.kdMultiplier.toFixed(3)}</p>
+              <p>Complex PIV: {(flamezPIV.tSide.components.complexPIV * 100).toFixed(1)} | Basic Score: {(flamezPIV.tSide.components.basicScore * 100).toFixed(1)}</p>
+            </div>
+          </div>
+
+          {/* Component Breakdown */}
           {flamezPIV.tSide.breakdown.map((metric, index) => (
             <div key={index} className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">{metric.name}</span>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{metric.weight}%</Badge>
+                  <Badge variant={metric.weight === "Complex" ? "default" : "secondary"}>
+                    {metric.weight === "Complex" ? "Complex Formula" : `${metric.weight}%`}
+                  </Badge>
                   <span className="text-sm">{(metric.value * 100).toFixed(1)}%</span>
                 </div>
               </div>
               <Progress value={metric.value * 100} className="h-2" />
               <p className="text-xs text-muted-foreground">
-                Contribution: {(metric.contribution * 100).toFixed(2)}
+                Raw Value: {metric.value.toFixed(4)}
               </p>
             </div>
           ))}
+
+          {/* Detailed Spacetaker Metrics */}
+          <div className="border-t pt-4">
+            <h4 className="font-semibold mb-3">Advanced Spacetaker Metrics (RCS Components)</h4>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              {Object.entries(flamezPIV.tSide.detailedBreakdown.advancedMetrics).map(([key, value]) => (
+                <div key={key} className="flex justify-between">
+                  <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                  <span>{((value as number) * 100).toFixed(1)}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ICF Breakdown */}
+          <div className="border-t pt-4">
+            <h4 className="font-semibold mb-3">Individual Consistency Factor (ICF) Breakdown</h4>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              {Object.entries(flamezPIV.tSide.detailedBreakdown.icfBreakdown).map(([key, value]) => (
+                <div key={key} className="flex justify-between">
+                  <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                  <span>{(value as number).toFixed(4)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* CT-Side PIV Calculation */}
+      {/* Enhanced CT-Side PIV Calculation */}
       <Card>
         <CardHeader>
-          <CardTitle>CT-Side PIV (Rotator Role)</CardTitle>
+          <CardTitle>CT-Side PIV (Rotator Role) - Enhanced Formula</CardTitle>
           <CardDescription>
             Score: {(flamezPIV.ctSide.score * 100).toFixed(1)} | Weight: {(flamezPIV.weights.ctWeight * 100).toFixed(1)}%
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* Formula Display */}
+          <div className="bg-muted p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">Enhanced CT PIV Formula:</h4>
+            <code className="text-sm">
+              PIV = [(CT_RCS × ICF × CT_SC × OSM) × K/D Multiplier × 70%] + [Basic CT Score × 30%]
+            </code>
+            <div className="mt-2 text-sm text-muted-foreground">
+              <p>CT_RCS: {flamezPIV.ctSide.components.ctRCS.toFixed(3)} | ICF: {flamezPIV.ctSide.components.ctICF.toFixed(3)} | CT_SC: {flamezPIV.ctSide.components.ctSC.toFixed(3)}</p>
+              <p>OSM: {flamezPIV.ctSide.components.osm} | K/D Multiplier: {flamezPIV.ctSide.components.kdMultiplier.toFixed(3)}</p>
+              <p>Complex CT PIV: {(flamezPIV.ctSide.components.complexCTPIV * 100).toFixed(1)} | Basic CT Score: {(flamezPIV.ctSide.components.basicCTScore * 100).toFixed(1)}</p>
+            </div>
+          </div>
+
+          {/* Component Breakdown */}
           {flamezPIV.ctSide.breakdown.map((metric, index) => (
             <div key={index} className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">{metric.name}</span>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{metric.weight}%</Badge>
+                  <Badge variant={metric.weight === "Complex" ? "default" : "secondary"}>
+                    {metric.weight === "Complex" ? "Complex Formula" : `${metric.weight}%`}
+                  </Badge>
                   <span className="text-sm">{(metric.value * 100).toFixed(1)}%</span>
                 </div>
               </div>
               <Progress value={metric.value * 100} className="h-2" />
               <p className="text-xs text-muted-foreground">
-                Contribution: {(metric.contribution * 100).toFixed(2)}
+                Raw Value: {metric.value.toFixed(4)}
               </p>
             </div>
           ))}
+
+          {/* Detailed Rotator Metrics */}
+          <div className="border-t pt-4">
+            <h4 className="font-semibold mb-3">Advanced Rotator Metrics (CT_RCS Components)</h4>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              {Object.entries(flamezPIV.ctSide.detailedBreakdown.rotatorMetrics).map(([key, value]) => (
+                <div key={key} className="flex justify-between">
+                  <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                  <span>{((value as number) * 100).toFixed(1)}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CT Synergy Breakdown */}
+          <div className="border-t pt-4">
+            <h4 className="font-semibold mb-3">CT Synergy Contribution (SC) Breakdown</h4>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              {Object.entries(flamezPIV.ctSide.detailedBreakdown.ctSCBreakdown).map(([key, value]) => (
+                <div key={key} className="flex justify-between">
+                  <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                  <span>{((value as number) * 100).toFixed(1)}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
 

@@ -247,7 +247,7 @@ export default function FlamezCalculationPage() {
       </div>
 
       {/* Document Content */}
-      <div className="bg-white p-8 font-mono text-sm leading-relaxed space-y-6 border rounded-lg">
+      <div className="bg-blue-900 text-white p-8 font-mono text-sm leading-relaxed space-y-6 border rounded-lg">
         
         {selectedFramework === 'current' && (
           <>

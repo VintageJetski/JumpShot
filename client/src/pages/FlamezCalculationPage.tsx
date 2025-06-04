@@ -46,108 +46,113 @@ export default function FlamezCalculationPage() {
   // ADVANCED REALISTIC PIV FRAMEWORK - Authentic Data Only with RCS/ICF/SC/OSM
   const calculateRealisticPIV = () => {
     // ======================
-    // T-SIDE SPACETAKER RCS - Role Core Score
+    // T-SIDE SPACETAKER RCS - Role Core Score with Proper Weightings
     // ======================
     const tSideRCS = {
-      // CSV: t_first_kills / (t_first_kills + t_first_deaths)
-      // Basketball analogy: Field Goal % for main scorer
+      // CSV: t_first_kills / (t_first_kills + t_first_deaths) - 40% weight
+      // Primary spacetaker responsibility
       entryFragSuccess: flamezData.tFirstKills / (flamezData.tFirstKills + flamezData.tFirstDeaths),
       
-      // CSV: trade_kills / kills  
-      // Reasoning: Spacetakers create trade opportunities; higher rate = better team setup
+      // CSV: trade_kills / kills - 30% weight
+      // Spacetakers create trade opportunities for team
       tradeKillGeneration: flamezData.tradeKills / flamezData.kills,
       
-      // CSV: t_first_kills / t_rounds_won
-      // Basketball analogy: Points per game for primary scorer
+      // CSV: t_first_kills / t_rounds_won - 20% weight
+      // Round impact frequency as entry fragger
       roundImpactFrequency: flamezData.tFirstKills / flamezData.tRoundsWon,
       
-      // CSV: assisted_flashes / total_util_thrown
-      // Reasoning: Spacetakers coordinate utility for entries
-      utilityCoordination: flamezData.assistedFlashes / flamezData.totalUtilityThrown,
-      
-      // CSV: adr_t_side / 100 (normalized)
-      // Reasoning: Damage output efficiency on attack
-      tSideDamageEfficiency: Math.min(flamezData.adrTSide / 100, 1.0),
-      
-      // CSV: wallbang_kills / kills
-      // Reasoning: Advanced mechanical skill indicator
-      wallbangProficiency: flamezData.wallbangKills / flamezData.kills
+      // CSV: assisted_flashes / total_util_thrown - 10% weight  
+      // Limited utility coordination role for spacetakers
+      utilityCoordination: flamezData.assistedFlashes / flamezData.totalUtilityThrown
     };
-    const tRCS = Object.values(tSideRCS).reduce((sum, val) => sum + val, 0) / 6;
+    
+    // Apply proper weightings for spacetaker role
+    const tRCS = (
+      tSideRCS.entryFragSuccess * 0.40 +
+      tSideRCS.tradeKillGeneration * 0.30 +
+      tSideRCS.roundImpactFrequency * 0.20 +
+      tSideRCS.utilityCoordination * 0.10
+    );
 
     // ======================
-    // CT-SIDE ROTATOR RCS - Role Core Score  
+    // CT-SIDE ROTATOR RCS - Role Core Score with Proper Weightings
     // ======================
     const ctSideRCS = {
-      // CSV: ct_first_kills / (ct_first_kills + ct_first_deaths)
-      // Basketball analogy: Defensive stop percentage
+      // CSV: ct_first_kills / (ct_first_kills + ct_first_deaths) - 35% weight
+      // Primary rotator responsibility - stopping entries
       ctEntryDenial: flamezData.ctFirstKills / (flamezData.ctFirstKills + flamezData.ctFirstDeaths),
       
-      // CSV: ct_first_kills / ct_rounds_won
-      // Reasoning: Impact frequency as rotator/anchor
+      // CSV: ct_first_kills / ct_rounds_won - 25% weight
+      // Impact frequency as rotator
       rotationImpactRate: flamezData.ctFirstKills / flamezData.ctRoundsWon,
       
-      // CSV: adr_ct_side / 100 (normalized)
-      // Reasoning: Damage efficiency on defense
-      ctSideDamageEfficiency: Math.min(flamezData.adrCtSide / 100, 1.0),
-      
-      // CSV: kast_ct_side
-      // Basketball analogy: Plus/minus on defense
+      // CSV: kast_ct_side - 25% weight
+      // Survival and contribution on defense
       ctSideSurvivalImpact: flamezData.kastCtSide,
       
-      // CSV: through_smoke_kills / kills
-      // Reasoning: Defensive awareness and positioning skill
-      smokeDuelSuccess: flamezData.throughSmokeKills / flamezData.kills,
-      
-      // CSV: (total_util_thrown - assisted_flashes) / total_rounds_won / 3
-      // Reasoning: Defensive utility usage (non-flash utility per round)
-      defensiveUtilityUsage: (flamezData.totalUtilityThrown - flamezData.assistedFlashes) / flamezData.totalRoundsWon / 3
+      // CSV: (total_util_thrown - assisted_flashes) / total_rounds_won / 3 - 15% weight
+      // Defensive utility usage (smokes, HE, molotovs)
+      defensiveUtilityUsage: Math.min((flamezData.totalUtilityThrown - flamezData.assistedFlashes) / flamezData.totalRoundsWon / 3, 1.0)
     };
-    const ctRCS = Object.values(ctSideRCS).reduce((sum, val) => sum + val, 0) / 6;
+    
+    // Apply proper weightings for rotator role
+    const ctRCS = (
+      ctSideRCS.ctEntryDenial * 0.35 +
+      ctSideRCS.rotationImpactRate * 0.25 +
+      ctSideRCS.ctSideSurvivalImpact * 0.25 +
+      ctSideRCS.defensiveUtilityUsage * 0.15
+    );
 
     // ======================
-    // ICF - Individual Consistency Factor
+    // BASELINE METRICS (20% of total PIV)
+    // ======================
+    const baselineMetrics = {
+      // CSV: kd ratio normalized to elite standard
+      kdRatio: Math.min(flamezData.kd / 1.3, 1.0),
+      
+      // CSV: adr_total normalized 
+      adrEfficiency: Math.min(flamezData.adrTotal / 90, 1.0),
+      
+      // CSV: Average of T and CT KAST
+      kastConsistency: (flamezData.kastTSide + flamezData.kastCtSide) / 2
+    };
+    const baselineScore = Object.values(baselineMetrics).reduce((sum, val) => sum + val, 0) / 3;
+
+    // ======================
+    // ICF - Individual Consistency Factor  
     // ======================
     const icfMetrics = {
       // CSV: kd / 1.4 (elite threshold), capped at 1.2
-      // Basketball analogy: True Shooting % efficiency
       basePerformanceRatio: Math.min(flamezData.kd / 1.4, 1.2),
       
       // CSV: 1 / (1 + |kd - 1.0| * 0.8)
-      // Basketball analogy: Turnover rate impact on efficiency
       consistencyFactor: 1 / (1 + Math.abs(flamezData.kd - 1.0) * 0.8),
       
       // CSV: headshots / kills
-      // Reasoning: Precision under pressure indicator
       precisionConsistency: flamezData.headshots / flamezData.kills
     };
     const icf = Object.values(icfMetrics).reduce((sum, val) => sum + val, 0) / 3;
 
     // ======================
-    // SC - Synergy Contribution (Basketball PER-style)
+    // SC - Synergy Contribution
     // ======================
     const scMetrics = {
-      // CSV: assists / total_rounds_won
-      // Basketball analogy: Assists per game
+      // CSV: assists / total_rounds_won - 40% weight
       teamPlayContribution: flamezData.assists / flamezData.totalRoundsWon,
       
-      // CSV: trade_deaths / deaths (inverted - lower is better)
-      // Basketball analogy: Usage rate efficiency (fewer "turnovers")
+      // CSV: trade_deaths / deaths (inverted - lower is better) - 35% weight
       tradabilityValue: 1 - (flamezData.tradeDeaths / flamezData.deaths),
       
-      // CSV: total_util_dmg / total_util_thrown
-      // Basketball analogy: Shot selection efficiency
-      utilityEfficiencyRatio: flamezData.totalUtilityDamage / flamezData.totalUtilityThrown / 15, // normalized
-      
-      // CSV: blind_kills / victim_blind_kills (when flashed vs flashing others)
-      // Basketball analogy: Performance under defensive pressure
-      adversityPerformance: flamezData.blindKills / Math.max(flamezData.victimBlindKills, 1),
-      
-      // CSV: pistol_kills / kills
-      // Basketball analogy: Clutch time performance (eco situations)
-      economicImpactRate: flamezData.pistolKills / flamezData.kills
+      // CSV: total_util_dmg / total_util_thrown - 25% weight
+      utilityEfficiencyRatio: Math.min(flamezData.totalUtilityDamage / flamezData.totalUtilityThrown / 10, 1.0)
     };
-    const sc = Object.values(scMetrics).reduce((sum, val) => sum + val, 0) / 5;
+    
+    // Apply proper weightings for synergy
+    const sc = (
+      scMetrics.teamPlayContribution * 0.40 +
+      scMetrics.tradabilityValue * 0.35 +
+      scMetrics.utilityEfficiencyRatio * 0.25
+    );
 
     // ======================
     // OSM - Opponent Strength Multiplier
@@ -156,13 +161,17 @@ export default function FlamezCalculationPage() {
     const osm = 0.96;
 
     // ======================
-    // EQUAL WEIGHT T/CT PIV CALCULATION
+    // PIV CALCULATION WITH BASELINE METRICS
     // ======================
+    // Role-specific calculations (40% each for T/CT)
     const tSidePIV = (tRCS * icf * sc * osm);
     const ctSidePIV = (ctRCS * icf * sc * osm);
     
-    // Equal weight combination (not rounds-based)
-    const overallPIV = ((tSidePIV + ctSidePIV) / 2) * 100;
+    // Combined role performance (80% total)
+    const rolePerformance = (tSidePIV + ctSidePIV) / 2;
+    
+    // Final PIV: Role Performance (80%) + Baseline Metrics (20%)
+    const overallPIV = (rolePerformance * 0.80 + baselineScore * 0.20) * 100;
 
     return {
       score: overallPIV,
@@ -173,20 +182,32 @@ export default function FlamezCalculationPage() {
         sc, 
         osm,
         tSidePIV,
-        ctSidePIV
+        ctSidePIV,
+        baselineScore,
+        rolePerformance
       },
       breakdown: { 
         tSideRCS, 
         ctSideRCS, 
         icfMetrics, 
         scMetrics,
+        baselineMetrics,
+        weightings: {
+          rolePerformance: "80%",
+          baselineMetrics: "20%",
+          tSideSpacetaker: "Entry Success: 40%, Trade Generation: 30%, Round Impact: 20%, Utility: 10%",
+          ctSideRotator: "Entry Denial: 35%, Rotation Impact: 25%, Survival: 25%, Utility: 15%",
+          synergyContribution: "Team Play: 40%, Tradability: 35%, Utility Efficiency: 25%"
+        },
         csvSources: {
           entryFragSuccess: "t_first_kills / (t_first_kills + t_first_deaths)",
           tradeKillGeneration: "trade_kills / kills",
           tradabilityValue: "1 - (trade_deaths / deaths)",
           utilityEfficiency: "total_util_dmg / total_util_thrown",
           ctEntryDenial: "ct_first_kills / (ct_first_kills + ct_first_deaths)",
-          adversityPerformance: "blind_kills / victim_blind_kills"
+          baselineKD: "kd / 1.3",
+          baselineADR: "adr_total / 90",
+          baselineKAST: "(kast_t_side + kast_ct_side) / 2"
         }
       }
     };
@@ -211,70 +232,28 @@ export default function FlamezCalculationPage() {
     };
   };
 
-  // IDEAL PIV FRAMEWORK (reverted to enhanced framework with original role weightings)
+  // IDEAL PIV FRAMEWORK (Your Original System)
   const calculateIdealPIV = () => {
-    // This represents the enhanced framework from our original Role Weightings and TIR models
+    // Original PIV calculation from your established framework
+    const rcs = 0.457;
+    const icf = 0.832;
+    const sc = 0.253;
+    const osm = 0.84;
     
-    // Advanced T-Side Spacetaker RCS
-    const tSideRCS = {
-      entryFragSuccess: flamezData.tFirstKills / (flamezData.tFirstKills + flamezData.tFirstDeaths),
-      tradeKillEfficiency: flamezData.tradeKills / flamezData.kills,
-      utilityCoordination: flamezData.assistedFlashes / flamezData.totalUtilityThrown,
-      siteExecutionSuccess: flamezData.tRoundsWon / flamezData.totalRoundsWon,
-      economicImpact: flamezData.adrTSide / 100,
-      consistency: 1 / (1 + Math.abs(flamezData.kd - 1.2))
-    };
-    const tRCS = Object.values(tSideRCS).reduce((sum, val) => sum + val, 0) / 6;
-
-    // Advanced CT-Side Rotator RCS  
-    const ctSideRCS = {
-      ctEntryDenial: flamezData.ctFirstKills / (flamezData.ctFirstKills + flamezData.ctFirstDeaths),
-      ctSideEfficiency: flamezData.adrCtSide / 100,
-      ctKAST: flamezData.kastCtSide,
-      positionHolding: flamezData.ctRoundsWon / flamezData.totalRoundsWon,
-      rotationImpact: flamezData.ctFirstKills / flamezData.ctRoundsWon,
-      utilitySupport: (flamezData.totalUtilityThrown - flamezData.assistedFlashes) / flamezData.totalRoundsWon / 3
-    };
-    const ctRCS = Object.values(ctSideRCS).reduce((sum, val) => sum + val, 0) / 6;
-
-    // Enhanced ICF with role-specific adjustments
-    const icf = {
-      basePerformance: Math.min(flamezData.kd / 1.4, 1.2),
-      consistencyFactor: 1 / (1 + Math.abs(flamezData.kd - 1.0) * 0.8),
-      roleMultiplier: 1.0 // Spacetaker base
-    };
-    const finalICF = icf.basePerformance * icf.consistencyFactor * icf.roleMultiplier;
-
-    // Enhanced SC with proper role weighting
-    const sc = {
-      tSideSynergy: (flamezData.tFirstKills / flamezData.totalRoundsWon) * 0.5 + 
-                    (flamezData.tradeKills / flamezData.kills) * 0.3 + 
-                    (flamezData.assistedFlashes / flamezData.totalUtilityThrown) * 0.2,
-      ctSideSynergy: (flamezData.ctFirstKills / flamezData.totalRoundsWon) * 0.4 + 
-                     (flamezData.adrCtSide / 100) * 0.6
-    };
-    const finalSC = (sc.tSideSynergy + sc.ctSideSynergy) / 2;
-
-    // Enhanced OSM with tournament context
-    const osm = 0.95; // IEM Katowice elite competition
-
-    // Role-specific PIV calculation
-    const tSidePIV = (tRCS * finalICF * finalSC * osm) * 100;
-    const ctSidePIV = (ctRCS * finalICF * finalSC * osm) * 100;
+    // Your original PIV formula
+    const originalPIV = (rcs * icf * sc * osm) * flamezData.kd * 100;
     
-    // Equal weight T/CT combination
-    const overallPIV = (tSidePIV + ctSidePIV) / 2;
-
     return {
-      score: overallPIV,
-      breakdown: { tSideRCS, ctSideRCS, icf, sc, osm },
-      components: { tSidePIV, ctSidePIV, tRCS, ctRCS, finalICF, finalSC },
-      requiredData: [
-        "Enhanced role-specific weightings from original TIR model",
-        "Advanced synergy calculations with proper team context",
-        "Role clarity multipliers based on performance patterns",
-        "Tournament strength adjustments for elite competition"
-      ]
+      score: originalPIV,
+      components: { rcs, icf, sc, osm, kd: flamezData.kd },
+      breakdown: {
+        rcsDetails: "Role Core Score based on spacetaker performance metrics",
+        icfDetails: "Individual Consistency Factor including K/D stability",
+        scDetails: "Synergy Contribution measuring team impact",
+        osmDetails: "Opponent Strength Multiplier for tournament context"
+      },
+      formula: "PIV = (RCS × ICF × SC × OSM) × K/D × 100",
+      description: "Original PIV framework showing baseline calculation method"
     };
   };
 
@@ -388,10 +367,15 @@ export default function FlamezCalculationPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-green-600">Realistic PIV Framework - RCS/ICF/SC/OSM</CardTitle>
-              <CardDescription>Basketball-style analytics with authentic CSV data only</CardDescription>
+              <CardDescription>Role-specific weightings with authentic CSV data only</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-5 gap-4">
+              <div className="grid grid-cols-6 gap-4">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Baseline (20%)</p>
+                  <Progress value={realisticPIV.components.baselineScore * 100} className="h-2" />
+                  <p className="text-sm text-muted-foreground">{(realisticPIV.components.baselineScore * 100).toFixed(1)}%</p>
+                </div>
                 <div className="space-y-2">
                   <p className="text-sm font-medium">T-Side RCS</p>
                   <Progress value={realisticPIV.components.tRCS * 100} className="h-2" />
@@ -573,21 +557,40 @@ export default function FlamezCalculationPage() {
       {selectedFramework === 'ideal' && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-blue-600">Ideal PIV Framework</CardTitle>
-            <CardDescription>Theoretical calculation with complete round-by-round data</CardDescription>
+            <CardTitle className="text-blue-600">Original PIV Framework</CardTitle>
+            <CardDescription>Your established PIV calculation method</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              {idealPIV.requiredData.map((requirement, index) => (
-                <div key={index} className="p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800">• {requirement}</p>
-                </div>
-              ))}
+            <div className="grid grid-cols-4 gap-4">
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm font-medium text-blue-800">RCS: {idealPIV.components.rcs.toFixed(3)}</p>
+                <p className="text-xs text-blue-600">{idealPIV.breakdown.rcsDetails}</p>
+              </div>
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm font-medium text-blue-800">ICF: {idealPIV.components.icf.toFixed(3)}</p>
+                <p className="text-xs text-blue-600">{idealPIV.breakdown.icfDetails}</p>
+              </div>
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm font-medium text-blue-800">SC: {idealPIV.components.sc.toFixed(3)}</p>
+                <p className="text-xs text-blue-600">{idealPIV.breakdown.scDetails}</p>
+              </div>
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm font-medium text-blue-800">OSM: {idealPIV.components.osm.toFixed(3)}</p>
+                <p className="text-xs text-blue-600">{idealPIV.breakdown.osmDetails}</p>
+              </div>
             </div>
             <div className="bg-blue-100 p-4 rounded-lg">
-              <p className="text-sm text-blue-800">
-                With complete data, flameZ's PIV would be {idealPIV.score.toFixed(1)}, reflecting his true elite performance.
+              <h4 className="font-semibold mb-2 text-blue-800">Formula:</h4>
+              <p className="text-sm text-blue-700">{idealPIV.formula}</p>
+              <p className="text-sm text-blue-700">
+                = ({idealPIV.components.rcs.toFixed(3)} × {idealPIV.components.icf.toFixed(3)} × {idealPIV.components.sc.toFixed(3)} × {idealPIV.components.osm.toFixed(3)}) × {idealPIV.components.kd.toFixed(3)} × 100
               </p>
+              <p className="text-sm text-blue-700 font-semibold">
+                = {idealPIV.score.toFixed(1)} PIV
+              </p>
+            </div>
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <p className="text-sm text-blue-800">{idealPIV.description}</p>
             </div>
           </CardContent>
         </Card>

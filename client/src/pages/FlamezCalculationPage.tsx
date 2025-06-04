@@ -329,15 +329,61 @@ export default function FlamezCalculationPage() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">flameZ PIV Calculation Framework</h1>
+          <h1 className="text-3xl font-bold">PIV Framework Analysis</h1>
           <p className="text-muted-foreground mt-2">
-            Clean T/CT side separation with role-specific metrics
+            Comparing authentic data calculations vs ideal PIV framework
           </p>
         </div>
-        <Badge variant="outline" className="text-lg px-4 py-2">
-          PIV: {flamezPIV.scaled.toFixed(1)}
-        </Badge>
+        <div className="flex items-center space-x-4">
+          <Badge variant="outline" className="text-lg px-4 py-2">
+            PIV: {flamezPIV.scaled.toFixed(1)}
+          </Badge>
+        </div>
       </div>
+
+      {/* Framework Toggle Switch */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-center space-x-4 p-4 bg-muted rounded-lg">
+            <Label htmlFor="framework-switch" className="text-sm font-medium">
+              flameZ's PIV (Authentic Data)
+            </Label>
+            <Switch
+              id="framework-switch"
+              checked={showIdeal}
+              onCheckedChange={setShowIdeal}
+            />
+            <Label htmlFor="framework-switch" className="text-sm font-medium">
+              Ideal PIV Framework
+            </Label>
+          </div>
+          
+          <div className="text-center mt-4">
+            <div className="text-sm text-muted-foreground">
+              {showIdeal 
+                ? "Showing ideal PIV calculation with complete round-by-round data and enhanced metrics"
+                : "Showing authentic calculation using only real CSV data (synthetic metrics removed)"
+              }
+            </div>
+            {showIdeal && (
+              <div className="mt-2 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800 font-medium">
+                  Ideal Framework includes: Multi-kill detection, clutch analysis, pistol round performance, 
+                  positional data, utility timing, and enhanced synergy metrics
+                </p>
+              </div>
+            )}
+            {!showIdeal && (
+              <div className="mt-2 p-3 bg-red-50 rounded-lg">
+                <p className="text-sm text-red-800 font-medium">
+                  Authentic Data removes: Synthetic multi-kill estimates, fake clutch calculations, 
+                  and uses only verifiable CSV metrics
+                </p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Raw Data Display */}
       <Card>

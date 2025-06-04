@@ -169,13 +169,6 @@ export default function Sidebar() {
             isActive={isActive("/dashboard")} 
           />
           
-          <MenuItem 
-            href="/flamez-calculation" 
-            icon={<Sigma />} 
-            label="PIV Framework Analysis" 
-            isActive={isActive("/flamez-calculation")}
-          />
-          
           {/* Analytics Section - Collapsible */}
           <motion.div 
             className="mt-6 mb-2 px-4"
@@ -314,6 +307,13 @@ export default function Sidebar() {
               icon={<Layers />} 
               label="Vention UI Style" 
               isActive={isActive("/vention-mockup")} 
+            />
+            
+            <MenuItem 
+              href="/flamez-calculation" 
+              icon={<Sigma />} 
+              label="PIV Framework Analysis" 
+              isActive={isActive("/flamez-calculation")}
             />
           </div>
           

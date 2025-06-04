@@ -447,36 +447,240 @@ export default function FlamezCalculationPage() {
         </CardContent>
       </Card>
 
-      {/* Final PIV Summary */}
+      {/* Comprehensive Analysis - What We Abandoned */}
       <Card>
         <CardHeader>
-          <CardTitle>Overall PIV Calculation</CardTitle>
-          <CardDescription>Combined T-side and CT-side performance</CardDescription>
+          <CardTitle>Analysis: Previous Framework vs Enhanced Framework</CardTitle>
+          <CardDescription>Detailed comparison and potential issues</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-yellow-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2 text-yellow-800">What We Abandoned:</h4>
+            <ul className="text-sm text-yellow-700 space-y-1">
+              <li>• Original normalized metrics across all players (now using individual calculations)</li>
+              <li>• Role-specific per-round sigma calculations (now using simple K/D deviation)</li>
+              <li>• Advanced economic round metrics from rounds data</li>
+              <li>• Position-based metrics (we don't have positional data yet)</li>
+              <li>• Multi-kill round detection from actual round data</li>
+              <li>• Clutch situation identification from rounds</li>
+            </ul>
+          </div>
+          
+          <div className="bg-red-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2 text-red-800">Potential Issues with Current T-Side PIV:</h4>
+            <ul className="text-sm text-red-700 space-y-1">
+              <li>• RCS (45.7%) seems low - may be using incorrect normalization</li>
+              <li>• SC (25.3%) very low - synergy calculation may be flawed</li>
+              <li>• Not using round-by-round data for true performance measurement</li>
+              <li>• Missing impact of specific map performance</li>
+              <li>• flameZ had excellent T-side stats but formula doesn't reflect this</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Detailed RCS Breakdown */}
+      <Card>
+        <CardHeader>
+          <CardTitle>RCS Detailed Breakdown - Every Metric</CardTitle>
+          <CardDescription>Exact calculation showing why RCS is 45.7%</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-muted p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">RCS Calculation Method:</h4>
+            <code className="text-sm">RCS = Average of 8 normalized Spacetaker metrics (each 0-1 scale)</code>
+          </div>
+          
+          <div className="space-y-4">
+            {Object.entries(flamezPIV.tSide.detailedBreakdown.advancedMetrics).map(([key, value]) => {
+              const percentage = (value as number) * 100;
+              return (
+                <div key={key} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">{key.replace(/([A-Z])/g, ' $1')}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">{percentage.toFixed(1)}%</span>
+                      <span className="text-xs text-muted-foreground">({(value as number).toFixed(4)})</span>
+                    </div>
+                  </div>
+                  <Progress value={percentage} className="h-2" />
+                  <div className="text-xs text-muted-foreground grid grid-cols-1 gap-1">
+                    {key === 'entryFragSuccess' && (
+                      <span>T First Kills: {flamezData.tFirstKills} / (T First Kills + T First Deaths): {flamezData.tFirstKills + flamezData.tFirstDeaths} = {((flamezData.tFirstKills / (flamezData.tFirstKills + flamezData.tFirstDeaths)) * 100).toFixed(1)}%</span>
+                    )}
+                    {key === 'tradeKillEfficiency' && (
+                      <span>Trade Kills: {flamezData.tradeKills} / Total Kills: {flamezData.kills} = {((flamezData.tradeKills / flamezData.kills) * 100).toFixed(1)}%</span>
+                    )}
+                    {key === 'multiKillRounds' && (
+                      <span>K/D × 0.6 (proxy): {flamezData.kd.toFixed(3)} × 0.6 = {(flamezData.kd * 0.6).toFixed(3)} (capped at 1.0)</span>
+                    )}
+                    {key === 'utilityCoordination' && (
+                      <span>Assisted Flashes: {flamezData.assistedFlashes} / Total Utility: {flamezData.totalUtilityThrown} = {((flamezData.assistedFlashes / flamezData.totalUtilityThrown) * 100).toFixed(1)}%</span>
+                    )}
+                    {key === 'siteExecutionSuccess' && (
+                      <span>T Rounds Won: {flamezData.tRoundsWon} / Total Rounds: {flamezData.totalRoundsWon} = {((flamezData.tRoundsWon / flamezData.totalRoundsWon) * 100).toFixed(1)}%</span>
+                    )}
+                    {key === 'clutchSuccess' && (
+                      <span>(K/D - 1) × 2: ({flamezData.kd.toFixed(3)} - 1) × 2 = {((flamezData.kd - 1) * 2).toFixed(3)} (capped at 1.0)</span>
+                    )}
+                    {key === 'economicImpact' && (
+                      <span>T-Side ADR: {flamezData.adrTSide} / 100 = {(flamezData.adrTSide / 100).toFixed(3)}</span>
+                    )}
+                    {key === 'consistency' && (
+                      <span>1 / (1 + |K/D - 1.2|): 1 / (1 + |{flamezData.kd.toFixed(3)} - 1.2|) = {(1 / (1 + Math.abs(flamezData.kd - 1.2))).toFixed(4)}</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2 text-blue-800">RCS Final Calculation:</h4>
+            <p className="text-sm text-blue-700">
+              Sum of all metrics: {Object.values(flamezPIV.tSide.detailedBreakdown.advancedMetrics).reduce((sum, val) => sum + (val as number), 0).toFixed(4)}
+            </p>
+            <p className="text-sm text-blue-700">
+              Divided by 8 metrics: {Object.values(flamezPIV.tSide.detailedBreakdown.advancedMetrics).reduce((sum, val) => sum + (val as number), 0).toFixed(4)} ÷ 8 = {flamezPIV.tSide.components.rcs.toFixed(4)}
+            </p>
+            <p className="text-sm text-blue-700">
+              Percentage: {(flamezPIV.tSide.components.rcs * 100).toFixed(1)}%
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Detailed ICF Breakdown */}
+      <Card>
+        <CardHeader>
+          <CardTitle>ICF Detailed Breakdown</CardTitle>
+          <CardDescription>Individual Consistency Factor calculation</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-muted p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">ICF Formula:</h4>
+            <code className="text-sm">ICF = base_performance_factor × consistency_multiplier × igl_multiplier</code>
+          </div>
+          
+          {Object.entries(flamezPIV.tSide.detailedBreakdown.icfBreakdown).map(([key, value]) => (
+            <div key={key} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+              <span className="text-sm font-medium">{key.replace(/([A-Z])/g, ' $1')}</span>
+              <span className="text-sm">{(value as number).toFixed(4)}</span>
+            </div>
+          ))}
+          
+          <div className="bg-green-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2 text-green-800">ICF Calculation Steps:</h4>
+            <p className="text-sm text-green-700">1. Base Performance Factor: K/D ÷ 1.4 = {flamezData.kd.toFixed(3)} ÷ 1.4 = {(flamezData.kd / 1.4).toFixed(4)} (capped at 1.2)</p>
+            <p className="text-sm text-green-700">2. K/D Deviation: |{flamezData.kd.toFixed(3)} - 1.0| = {Math.abs(flamezData.kd - 1.0).toFixed(4)}</p>
+            <p className="text-sm text-green-700">3. Sigma: {Math.abs(flamezData.kd - 1.0).toFixed(4)} × 0.8 = {(Math.abs(flamezData.kd - 1.0) * 0.8).toFixed(4)}</p>
+            <p className="text-sm text-green-700">4. Consistency Multiplier: 1 ÷ (1 + {(Math.abs(flamezData.kd - 1.0) * 0.8).toFixed(4)}) = {(1 / (1 + Math.abs(flamezData.kd - 1.0) * 0.8)).toFixed(4)}</p>
+            <p className="text-sm text-green-700">5. IGL Multiplier: 1.0 (flameZ is not IGL)</p>
+            <p className="text-sm text-green-700">6. Final ICF: {(flamezData.kd / 1.4).toFixed(4)} × {(1 / (1 + Math.abs(flamezData.kd - 1.0) * 0.8)).toFixed(4)} × 1.0 = {flamezPIV.tSide.components.icf.toFixed(4)}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Detailed SC Breakdown */}
+      <Card>
+        <CardHeader>
+          <CardTitle>SC (Synergy Contribution) Detailed Breakdown</CardTitle>
+          <CardDescription>Why SC is only 25.3% - this seems to be the main issue</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-muted p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">SC Formula for Spacetaker:</h4>
+            <code className="text-sm">SC = (entry_impact × 0.4) + (trade_coordination × 0.3) + (utility_synergy × 0.2) + (kd_contribution × 0.1)</code>
+          </div>
+          
+          {Object.entries(flamezPIV.tSide.detailedBreakdown.scBreakdown).map(([key, value]) => {
+            let calculation = '';
+            if (key === 'entryImpact') {
+              calculation = `(T First Kills ÷ Total Rounds) × 0.4 = (${flamezData.tFirstKills} ÷ ${flamezData.totalRoundsWon}) × 0.4 = ${((flamezData.tFirstKills / flamezData.totalRoundsWon) * 0.4).toFixed(4)}`;
+            } else if (key === 'tradeCoordination') {
+              calculation = `(Trade Kills ÷ Total Kills) × 0.3 = (${flamezData.tradeKills} ÷ ${flamezData.kills}) × 0.3 = ${((flamezData.tradeKills / flamezData.kills) * 0.3).toFixed(4)}`;
+            } else if (key === 'utilitySynergy') {
+              calculation = `(Assisted Flashes ÷ Total Utility) × 0.2 = (${flamezData.assistedFlashes} ÷ ${flamezData.totalUtilityThrown}) × 0.2 = ${((flamezData.assistedFlashes / flamezData.totalUtilityThrown) * 0.2).toFixed(4)}`;
+            } else if (key === 'kdContribution') {
+              calculation = `min(K/D ÷ 2, 0.5) × 0.1 = min(${flamezData.kd.toFixed(3)} ÷ 2, 0.5) × 0.1 = ${(Math.min(flamezData.kd / 2, 0.5) * 0.1).toFixed(4)}`;
+            }
+            
+            return (
+              <div key={key} className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">{key.replace(/([A-Z])/g, ' $1')}</span>
+                  <span className="text-sm">{((value as number) * 100).toFixed(1)}%</span>
+                </div>
+                <Progress value={(value as number) * 100} className="h-2" />
+                <p className="text-xs text-muted-foreground">{calculation}</p>
+              </div>
+            );
+          })}
+          
+          <div className="bg-red-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2 text-red-800">SC Issue Analysis:</h4>
+            <p className="text-sm text-red-700">Total SC: {flamezPIV.tSide.components.sc.toFixed(4)} (25.3%)</p>
+            <p className="text-sm text-red-700 mt-2">Problem: SC calculation seems too restrictive. flameZ's excellent stats:</p>
+            <ul className="text-sm text-red-700 ml-4 mt-1">
+              <li>• 46 T-side first kills (excellent entry fragging)</li>
+              <li>• 58 trade kills out of 202 total kills (28.7% trade involvement)</li>
+              <li>• 85.39 overall ADR, 82.35 T-side ADR (very high)</li>
+            </ul>
+            <p className="text-sm text-red-700 mt-2">These should result in much higher synergy contribution.</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Final PIV Summary with Correct Weightings */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Final PIV Calculation - Correct Weightings</CardTitle>
+          <CardDescription>T-Side: 43.0% weight | CT-Side: 57.0% weight (based on rounds played)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <p className="text-sm font-medium">T-Side Contribution</p>
+              <p className="text-sm font-medium">T-Side PIV Contribution</p>
               <p className="text-lg">{(flamezPIV.tSide.score * flamezPIV.weights.tWeight * 100).toFixed(1)}</p>
               <p className="text-xs text-muted-foreground">
-                {(flamezPIV.tSide.score * 100).toFixed(1)} × {(flamezPIV.weights.tWeight * 100).toFixed(1)}%
+                T-Side Score: {(flamezPIV.tSide.score * 100).toFixed(1)} × T-Side Weight: {(flamezPIV.weights.tWeight * 100).toFixed(1)}%
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {flamezData.tRoundsWon} T rounds ÷ {flamezData.totalRoundsWon} total rounds = {(flamezPIV.weights.tWeight * 100).toFixed(1)}%
               </p>
             </div>
             <div className="space-y-2">
-              <p className="text-sm font-medium">CT-Side Contribution</p>
+              <p className="text-sm font-medium">CT-Side PIV Contribution</p>
               <p className="text-lg">{(flamezPIV.ctSide.score * flamezPIV.weights.ctWeight * 100).toFixed(1)}</p>
               <p className="text-xs text-muted-foreground">
-                {(flamezPIV.ctSide.score * 100).toFixed(1)} × {(flamezPIV.weights.ctWeight * 100).toFixed(1)}%
+                CT-Side Score: {(flamezPIV.ctSide.score * 100).toFixed(1)} × CT-Side Weight: {(flamezPIV.weights.ctWeight * 100).toFixed(1)}%
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {flamezData.ctRoundsWon} CT rounds ÷ {flamezData.totalRoundsWon} total rounds = {(flamezPIV.weights.ctWeight * 100).toFixed(1)}%
               </p>
             </div>
           </div>
+          
+          <div className="bg-muted p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">Complete PIV Formula:</h4>
+            <code className="text-sm">
+              Overall_PIV = (T_PIV × T_weight) + (CT_PIV × CT_weight) × 100
+            </code>
+            <p className="text-sm mt-2">
+              = ({(flamezPIV.tSide.score * 100).toFixed(1)} × {(flamezPIV.weights.tWeight * 100).toFixed(1)}%) + ({(flamezPIV.ctSide.score * 100).toFixed(1)} × {(flamezPIV.weights.ctWeight * 100).toFixed(1)}%) 
+            </p>
+            <p className="text-sm">
+              = {(flamezPIV.tSide.score * flamezPIV.weights.tWeight * 100).toFixed(1)} + {(flamezPIV.ctSide.score * flamezPIV.weights.ctWeight * 100).toFixed(1)} = {flamezPIV.scaled.toFixed(1)}
+            </p>
+          </div>
+          
           <div className="pt-4 border-t">
             <div className="flex justify-between items-center">
               <span className="text-lg font-bold">Final PIV Score</span>
               <span className="text-2xl font-bold text-primary">{flamezPIV.scaled.toFixed(1)}</span>
             </div>
             <p className="text-sm text-muted-foreground mt-2">
-              Formula: (T_PIV × {(flamezPIV.weights.tWeight * 100).toFixed(1)}%) + (CT_PIV × {(flamezPIV.weights.ctWeight * 100).toFixed(1)}%) × 100
+              Note: This is NOT a 50/50 T/CT split. Weight is based on actual rounds played each side.
             </p>
           </div>
         </CardContent>

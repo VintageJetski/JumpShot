@@ -80,7 +80,7 @@ async function startServer() {
 
     // Start the HTTP server with error handling
     const port = 5000;
-    server.listen(port, "0.0.0.0", () => {
+    server.listen(port, () => {
       log(`serving on port ${port}`);
     });
 

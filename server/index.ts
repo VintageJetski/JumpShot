@@ -55,17 +55,13 @@ async function startServer() {
     // Register API routes
     await registerRoutes(app);
 
-    // Setup Vite for TypeScript compilation in development
-    if (process.env.NODE_ENV !== "production") {
-      try {
-        await setupVite(app, server);
-        console.log('Vite development server setup complete');
-      } catch (error) {
-        console.error('Vite setup failed:', error);
-      }
-    } else {
-      serveStatic(app);
-    }
+    // Simplified static file serving to avoid Vite middleware blocking
+    app.use(express.static(path.join(process.cwd(), 'client', 'public')));
+    
+    // Serve main HTML file for SPA
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(process.cwd(), 'client', 'index.html'));
+    });
 
     // Start the HTTP server
     const port = 5000;

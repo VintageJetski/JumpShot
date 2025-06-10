@@ -10,7 +10,7 @@ import { initializeRoundData } from "./roundDataLoader";
 import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Initialize raw data only - no calculations
+  // Initialize and store data in storage
   try {
     console.log('Loading raw player data...');
     const rawPlayerStats = await loadNewPlayerStats();
@@ -21,8 +21,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('Loading round data...');
     await initializeRoundData();
     
-    // Store only raw data - calculations moved to frontend
+    // Process player data and store in cache
+    const processedPlayers = processPlayerStatsWithRoles(rawPlayerStats, roleMap);
+    await storage.setPlayers(processedPlayers);
+    
+    // Calculate and store team data
+    const teams = calculateTeamImpactRatings(processedPlayers);
+    await storage.setTeams(teams);
+    
     console.log(`Loaded ${rawPlayerStats.length} raw player records`);
+    console.log(`Processed ${processedPlayers.length} players and ${teams.length} teams`);
   } catch (error) {
     console.error('Error loading raw data:', error);
   }

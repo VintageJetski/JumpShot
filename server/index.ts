@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { loadXYZData, processPositionalData } from "./xyzDataParser";
@@ -49,19 +50,31 @@ async function startServer() {
 
     const server = await registerRoutes(app);
 
-    // Start the HTTP server first
-    const port = 5000;
-    server.listen(port, "0.0.0.0", () => {
-      log(`serving on port ${port}`);
-      
-      // Setup vite middleware after server is listening
-      if (app.get("env") === "development") {
-        setupVite(app, server).catch(err => {
-          console.warn('Vite setup failed, continuing without:', err.message);
+    // Setup middleware first
+    if (app.get("env") === "development") {
+      try {
+        await setupVite(app, server);
+        console.log('Vite middleware setup complete');
+      } catch (err) {
+        console.warn('Vite setup failed, using fallback serving:', (err as Error).message);
+        // Fallback to basic static serving
+        app.use(express.static('client'));
+        app.get('*', (req, res) => {
+          res.sendFile(path.resolve(process.cwd(), 'client/index.html'));
         });
-      } else {
-        serveStatic(app);
       }
+    } else {
+      serveStatic(app);
+    }
+
+    // Start the HTTP server
+    const port = 5000;
+    server.listen(port, "0.0.0.0", (err?: Error) => {
+      if (err) {
+        console.error('Failed to start server:', err);
+        process.exit(1);
+      }
+      log(`serving on port ${port}`);
     });
 
     // Load XYZ positional data after server starts

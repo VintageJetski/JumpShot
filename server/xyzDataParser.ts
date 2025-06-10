@@ -80,28 +80,9 @@ export interface PositionalMetrics {
 }
 
 /**
- * Map area definitions for different CS2 maps
+ * Dynamically generated map areas based on actual coordinate data
  */
-const MAP_AREAS = {
-  'de_inferno': {
-    'A Site': { minX: 1800, maxX: 2600, minY: -800, maxY: 200 },
-    'B Site': { minX: 100, maxX: 800, minY: 2000, maxY: 2800 },
-    'Mid': { minX: 800, maxX: 1800, minY: 500, maxY: 1500 },
-    'Apartments': { minX: 200, maxX: 1000, minY: 800, maxY: 1600 },
-    'Banana': { minX: -400, maxX: 400, minY: 1800, maxY: 2600 },
-    'T Spawn': { minX: -2000, maxX: -1000, minY: 2000, maxY: 3000 },
-    'CT Spawn': { minX: 2000, maxX: 3000, minY: 1500, maxY: 2500 }
-  },
-  'de_dust2': {
-    'A Site': { minX: 1000, maxX: 1800, minY: -1000, maxY: -200 },
-    'B Site': { minX: -1000, maxX: -200, minY: 200, maxY: 1000 },
-    'Mid': { minX: -200, maxX: 600, minY: -600, maxY: 200 },
-    'Long': { minX: 600, maxX: 1400, minY: -1400, maxY: -600 },
-    'Tunnels': { minX: -1400, maxX: -600, minY: -200, maxY: 600 },
-    'T Spawn': { minX: -2000, maxX: -1400, minY: -1000, maxY: 0 },
-    'CT Spawn': { minX: 1400, maxX: 2000, minY: -600, maxY: 400 }
-  }
-};
+let MAP_AREAS: Record<string, Record<string, { minX: number; maxX: number; minY: number; maxY: number }>> = {};
 
 /**
  * Parse XYZ positional data from CSV
@@ -147,10 +128,163 @@ export async function parseXYZData(filePath: string): Promise<XYZPlayerData[]> {
 }
 
 /**
- * Determine which map area a position belongs to
+ * Generate map areas dynamically from actual coordinate data using clustering
  */
-export function getMapArea(x: number, y: number, mapName: string = 'de_inferno'): string {
-  const areas = MAP_AREAS[mapName as keyof typeof MAP_AREAS];
+function generateMapAreas(data: XYZPlayerData[]): Record<string, { minX: number; maxX: number; minY: number; maxY: number }> {
+  if (data.length === 0) return {};
+
+  // Get coordinate bounds from actual data
+  const xCoords = data.map(d => d.X);
+  const yCoords = data.map(d => d.Y);
+  
+  const minX = Math.min(...xCoords);
+  const maxX = Math.max(...xCoords);
+  const minY = Math.min(...yCoords);
+  const maxY = Math.max(...yCoords);
+
+  // Use K-means clustering approach to identify natural position clusters
+  const clusters = performKMeansClustering(data, 8); // 8 clusters for typical map areas
+  
+  // Convert clusters to named areas based on position characteristics
+  const areas: Record<string, { minX: number; maxX: number; minY: number; maxY: number }> = {};
+  
+  clusters.forEach((cluster, index) => {
+    const clusterX = cluster.points.map(p => p.X);
+    const clusterY = cluster.points.map(p => p.Y);
+    
+    const areaName = determineAreaName(cluster, index, minX, maxX, minY, maxY);
+    
+    areas[areaName] = {
+      minX: Math.min(...clusterX) - 50, // Add small buffer
+      maxX: Math.max(...clusterX) + 50,
+      minY: Math.min(...clusterY) - 50,
+      maxY: Math.max(...clusterY) + 50
+    };
+  });
+  
+  return areas;
+}
+
+/**
+ * Perform K-means clustering on coordinate data
+ */
+function performKMeansClustering(data: XYZPlayerData[], k: number): Array<{ center: { x: number; y: number }; points: XYZPlayerData[] }> {
+  // Initialize centroids randomly
+  const xCoords = data.map(d => d.X);
+  const yCoords = data.map(d => d.Y);
+  const minX = Math.min(...xCoords);
+  const maxX = Math.max(...xCoords);
+  const minY = Math.min(...yCoords);
+  const maxY = Math.max(...yCoords);
+  
+  let centroids = Array.from({ length: k }, () => ({
+    x: minX + Math.random() * (maxX - minX),
+    y: minY + Math.random() * (maxY - minY)
+  }));
+  
+  let clusters: Array<{ center: { x: number; y: number }; points: XYZPlayerData[] }> = [];
+  let iterations = 0;
+  const maxIterations = 50;
+  
+  while (iterations < maxIterations) {
+    // Assign points to nearest centroid
+    clusters = centroids.map(centroid => ({ center: centroid, points: [] }));
+    
+    data.forEach(point => {
+      let minDistance = Infinity;
+      let closestClusterIndex = 0;
+      
+      centroids.forEach((centroid, index) => {
+        const distance = Math.sqrt(
+          Math.pow(point.X - centroid.x, 2) + Math.pow(point.Y - centroid.y, 2)
+        );
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestClusterIndex = index;
+        }
+      });
+      
+      clusters[closestClusterIndex].points.push(point);
+    });
+    
+    // Update centroids
+    const newCentroids = clusters.map(cluster => {
+      if (cluster.points.length === 0) return cluster.center;
+      
+      const avgX = cluster.points.reduce((sum, p) => sum + p.X, 0) / cluster.points.length;
+      const avgY = cluster.points.reduce((sum, p) => sum + p.Y, 0) / cluster.points.length;
+      
+      return { x: avgX, y: avgY };
+    });
+    
+    // Check for convergence
+    const converged = newCentroids.every((newCentroid, index) => {
+      const oldCentroid = centroids[index];
+      return Math.abs(newCentroid.x - oldCentroid.x) < 10 && 
+             Math.abs(newCentroid.y - oldCentroid.y) < 10;
+    });
+    
+    centroids = newCentroids;
+    
+    if (converged) break;
+    iterations++;
+  }
+  
+  return clusters;
+}
+
+/**
+ * Determine area name based on cluster characteristics and position
+ */
+function determineAreaName(cluster: { center: { x: number; y: number }; points: XYZPlayerData[] }, index: number, minX: number, maxX: number, minY: number, maxY: number): string {
+  const { center, points } = cluster;
+  const centerX = center.x;
+  const centerY = center.y;
+  
+  // Analyze cluster characteristics
+  const xRange = maxX - minX;
+  const yRange = maxY - minY;
+  
+  // Determine relative position
+  const xRatio = (centerX - minX) / xRange;
+  const yRatio = (centerY - minY) / yRange;
+  
+  // Analyze team composition in this area
+  const tSideCount = points.filter(p => p.side === 't').length;
+  const ctSideCount = points.filter(p => p.side === 'ct').length;
+  
+  // Analyze activity level (how often players are here)
+  const activityLevel = points.length;
+  
+  // Generate meaningful names based on position and characteristics
+  if (xRatio < 0.3 && yRatio > 0.7) {
+    return tSideCount > ctSideCount ? 'T Spawn Area' : 'T Side Control';
+  } else if (xRatio > 0.7 && yRatio < 0.3) {
+    return ctSideCount > tSideCount ? 'CT Spawn Area' : 'CT Side Control';
+  } else if (xRatio > 0.6 && yRatio > 0.4 && yRatio < 0.8) {
+    return activityLevel > 100 ? 'A Site Complex' : 'A Site Approach';
+  } else if (xRatio < 0.4 && yRatio > 0.4 && yRatio < 0.8) {
+    return activityLevel > 100 ? 'B Site Complex' : 'B Site Approach';
+  } else if (xRatio > 0.3 && xRatio < 0.7 && yRatio > 0.3 && yRatio < 0.7) {
+    return 'Mid Control';
+  } else if (yRatio > 0.7) {
+    return 'North Sector';
+  } else if (yRatio < 0.3) {
+    return 'South Sector';
+  } else if (xRatio < 0.3) {
+    return 'West Sector';
+  } else if (xRatio > 0.7) {
+    return 'East Sector';
+  } else {
+    return `Zone ${index + 1}`;
+  }
+}
+
+/**
+ * Determine which map area a position belongs to using dynamic areas
+ */
+export function getMapArea(x: number, y: number, mapName: string = 'dynamic'): string {
+  const areas = MAP_AREAS[mapName];
   if (!areas) return 'Unknown';
 
   for (const [areaName, bounds] of Object.entries(areas)) {
@@ -160,7 +294,7 @@ export function getMapArea(x: number, y: number, mapName: string = 'de_inferno')
     }
   }
   
-  return 'Other';
+  return 'Unmapped Area';
 }
 
 /**
@@ -180,9 +314,15 @@ export function calculateVelocity(vx: number, vy: number, vz: number): number {
 /**
  * Process raw XYZ data into positional metrics
  */
-export function processPositionalData(rawData: XYZPlayerData[], mapName: string = 'de_inferno'): PositionalMetrics[] {
+export function processPositionalData(rawData: XYZPlayerData[], mapName: string = 'dynamic'): PositionalMetrics[] {
   const playerMetrics = new Map<string, PositionalMetrics>();
   const playerPositions = new Map<string, XYZPlayerData[]>();
+
+  // Generate dynamic map areas from actual coordinate data
+  console.log('Generating dynamic map areas from coordinate data...');
+  const dynamicAreas = generateMapAreas(rawData);
+  MAP_AREAS[mapName] = dynamicAreas;
+  console.log(`Generated ${Object.keys(dynamicAreas).length} map areas:`, Object.keys(dynamicAreas));
 
   // Group data by player
   rawData.forEach(record => {
@@ -243,13 +383,13 @@ export function processPositionalData(rawData: XYZPlayerData[], mapName: string 
       const timeInArea = areaTime.get(area) || 0;
       areaTime.set(area, timeInArea + 1); // +1 tick
 
-      // Track utility usage
+      // Track utility usage with real effectiveness calculation
       if (pos.xSmoke !== undefined && pos.ySmoke !== undefined && pos.zSmoke !== undefined) {
         metrics.utilityUsage.smokes.push({
           x: pos.xSmoke,
           y: pos.ySmoke,
           z: pos.zSmoke,
-          effectiveness: calculateUtilityEffectiveness(pos.xSmoke, pos.ySmoke, 'smoke', mapName)
+          effectiveness: calculateUtilityEffectiveness(pos.xSmoke, pos.ySmoke, 'smoke', rawData, pos.tick)
         });
       }
 
@@ -258,7 +398,7 @@ export function processPositionalData(rawData: XYZPlayerData[], mapName: string 
           x: pos.xFlashes,
           y: pos.yFlashes,
           z: pos.zFlashes,
-          effectiveness: calculateUtilityEffectiveness(pos.xFlashes, pos.yFlashes, 'flash', mapName)
+          effectiveness: calculateUtilityEffectiveness(pos.xFlashes, pos.yFlashes, 'flash', rawData, pos.tick)
         });
       }
 
@@ -267,7 +407,7 @@ export function processPositionalData(rawData: XYZPlayerData[], mapName: string 
           x: pos.xHe,
           y: pos.yHe,
           z: pos.zHe,
-          effectiveness: calculateUtilityEffectiveness(pos.xHe, pos.yHe, 'he', mapName)
+          effectiveness: calculateUtilityEffectiveness(pos.xHe, pos.yHe, 'he', rawData, pos.tick)
         });
       }
 
@@ -276,7 +416,7 @@ export function processPositionalData(rawData: XYZPlayerData[], mapName: string 
           x: pos.xInfernos,
           y: pos.yInfernos,
           z: pos.zInfernos,
-          effectiveness: calculateUtilityEffectiveness(pos.xInfernos, pos.yInfernos, 'molotov', mapName)
+          effectiveness: calculateUtilityEffectiveness(pos.xInfernos, pos.yInfernos, 'molotov', rawData, pos.tick)
         });
       }
 
@@ -305,62 +445,228 @@ export function processPositionalData(rawData: XYZPlayerData[], mapName: string 
 }
 
 /**
- * Calculate utility effectiveness based on position and type
+ * Calculate utility effectiveness based on actual usage patterns and outcomes
  */
-function calculateUtilityEffectiveness(x: number, y: number, type: string, mapName: string): number {
-  const area = getMapArea(x, y, mapName);
+function calculateUtilityEffectiveness(x: number, y: number, type: string, allData: XYZPlayerData[], utilityTick: number): number {
+  const effectivenessRadius = 400; // Units within which to measure impact
+  const timeWindow = 320; // ~5 seconds in ticks to measure post-utility impact
   
-  // Basic effectiveness calculation based on utility type and area
-  const baseEffectiveness = {
-    'smoke': { 'A Site': 0.9, 'B Site': 0.9, 'Mid': 0.8, 'default': 0.6 },
-    'flash': { 'A Site': 0.8, 'B Site': 0.8, 'Mid': 0.7, 'default': 0.5 },
-    'he': { 'A Site': 0.7, 'B Site': 0.7, 'Mid': 0.6, 'default': 0.4 },
-    'molotov': { 'A Site': 0.8, 'B Site': 0.8, 'Mid': 0.5, 'default': 0.3 }
-  };
-
-  const typeEffectiveness = baseEffectiveness[type as keyof typeof baseEffectiveness];
-  if (!typeEffectiveness) return 0.5;
-
-  return typeEffectiveness[area as keyof typeof typeEffectiveness] || typeEffectiveness.default;
+  // Find all players within effectiveness radius during the time window
+  const affectedPlayers = allData.filter(data => {
+    const distance = calculateDistance(x, y, data.X, data.Y);
+    const timeDiff = Math.abs(data.tick - utilityTick);
+    
+    return distance <= effectivenessRadius && timeDiff <= timeWindow;
+  });
+  
+  if (affectedPlayers.length === 0) return 0.1;
+  
+  // Calculate effectiveness based on actual impact metrics
+  let effectivenessScore = 0;
+  let maxPossibleScore = 0;
+  
+  affectedPlayers.forEach(player => {
+    const timeDiff = Math.abs(player.tick - utilityTick);
+    const distance = calculateDistance(x, y, player.X, player.Y);
+    const proximity = Math.max(0, 1 - (distance / effectivenessRadius));
+    const timeRelevance = Math.max(0, 1 - (timeDiff / timeWindow));
+    
+    maxPossibleScore += proximity * timeRelevance;
+    
+    // Different utility types have different impact measurements
+    switch (type) {
+      case 'smoke':
+        // Effectiveness based on player movement disruption and positioning changes
+        const velocityMagnitude = calculateVelocity(player.velocityX, player.velocityY, player.velocityZ);
+        if (velocityMagnitude < 50) { // Player stopped/slowed by smoke
+          effectivenessScore += proximity * timeRelevance * 0.8;
+        }
+        if (player.flashDuration > 0) { // Player was also flashed through smoke
+          effectivenessScore += proximity * timeRelevance * 0.3;
+        }
+        break;
+        
+      case 'flash':
+        // Effectiveness based on actual flash duration
+        if (player.flashDuration > 0) {
+          const flashIntensity = Math.min(1, player.flashDuration / 2.0); // Normalize flash duration
+          effectivenessScore += proximity * timeRelevance * flashIntensity;
+        }
+        break;
+        
+      case 'he':
+        // Effectiveness based on health reduction and positioning impact
+        if (player.health < 100) {
+          const healthImpact = (100 - player.health) / 100;
+          effectivenessScore += proximity * timeRelevance * healthImpact;
+        }
+        // Movement disruption from explosion
+        const postUtilVelocity = calculateVelocity(player.velocityX, player.velocityY, player.velocityZ);
+        if (postUtilVelocity > 200) { // Player forced to move quickly
+          effectivenessScore += proximity * timeRelevance * 0.4;
+        }
+        break;
+        
+      case 'molotov':
+        // Effectiveness based on area denial and movement patterns
+        const playerVelocity = calculateVelocity(player.velocityX, player.velocityY, player.velocityZ);
+        if (playerVelocity > 150) { // Player forced to move away
+          effectivenessScore += proximity * timeRelevance * 0.7;
+        }
+        if (player.health < 100) { // Damage dealt
+          const damageRatio = (100 - player.health) / 100;
+          effectivenessScore += proximity * timeRelevance * damageRatio * 0.9;
+        }
+        break;
+    }
+  });
+  
+  // Normalize effectiveness score
+  const normalizedScore = maxPossibleScore > 0 ? effectivenessScore / maxPossibleScore : 0;
+  
+  // Add strategic positioning bonus based on map area control
+  const area = getMapArea(x, y, 'dynamic');
+  const strategicBonus = calculateStrategicPositioningBonus(area, type, affectedPlayers);
+  
+  return Math.min(1.0, normalizedScore + strategicBonus);
 }
 
 /**
- * Generate hot zones from position data
+ * Calculate strategic positioning bonus based on area importance and team composition
+ */
+function calculateStrategicPositioningBonus(area: string, utilityType: string, affectedPlayers: XYZPlayerData[]): number {
+  const enemyPlayers = affectedPlayers.filter(p => p.side !== affectedPlayers[0]?.side);
+  const friendlyPlayers = affectedPlayers.filter(p => p.side === affectedPlayers[0]?.side);
+  
+  let bonus = 0;
+  
+  // High-value areas get bonus effectiveness
+  if (area.includes('Site') || area.includes('Mid Control')) {
+    bonus += 0.15;
+  }
+  
+  // Utilities affecting more enemies than friendlies get bonus
+  if (enemyPlayers.length > friendlyPlayers.length) {
+    bonus += Math.min(0.2, (enemyPlayers.length - friendlyPlayers.length) * 0.05);
+  }
+  
+  // Specific utility bonuses for strategic usage
+  if (utilityType === 'smoke' && area.includes('Site')) {
+    bonus += 0.1; // Smokes on sites are highly valuable
+  }
+  
+  if (utilityType === 'flash' && enemyPlayers.length >= 2) {
+    bonus += 0.15; // Multi-player flashes are very effective
+  }
+  
+  return Math.min(0.3, bonus); // Cap bonus at 30%
+}
+
+/**
+ * Generate hot zones using adaptive density-based clustering
  */
 function generateHotZones(positions: XYZPlayerData[], mapName: string): Array<{x: number; y: number; intensity: number; timeSpent: number}> {
-  const gridSize = 200; // 200 unit grid cells
-  const heatMap = new Map<string, { count: number; totalTime: number }>();
-
-  positions.forEach(pos => {
-    const gridX = Math.floor(pos.X / gridSize) * gridSize;
-    const gridY = Math.floor(pos.Y / gridSize) * gridSize;
-    const key = `${gridX},${gridY}`;
-    
-    const existing = heatMap.get(key) || { count: 0, totalTime: 0 };
-    heatMap.set(key, {
-      count: existing.count + 1,
-      totalTime: existing.totalTime + 1 // 1 tick = ~15ms
-    });
-  });
-
-  // Convert to hot zones array
+  if (positions.length === 0) return [];
+  
+  // Use DBSCAN-like clustering to find natural activity hotspots
+  const clusters = performDensityBasedClustering(positions, 150, 5); // 150 unit radius, min 5 points
+  
   const hotZones: Array<{x: number; y: number; intensity: number; timeSpent: number}> = [];
   
-  heatMap.forEach(({ count, totalTime }, key) => {
-    const [x, y] = key.split(',').map(Number);
-    const intensity = Math.min(1.0, count / 100); // Normalize intensity
+  clusters.forEach(cluster => {
+    if (cluster.points.length === 0) return;
     
-    if (intensity > 0.1) { // Only include significant hot zones
+    // Calculate cluster center
+    const centerX = cluster.points.reduce((sum, p) => sum + p.X, 0) / cluster.points.length;
+    const centerY = cluster.points.reduce((sum, p) => sum + p.Y, 0) / cluster.points.length;
+    
+    // Calculate intensity based on point density and time spent
+    const maxPoints = Math.max(...clusters.map(c => c.points.length));
+    const intensity = cluster.points.length / maxPoints;
+    
+    // Calculate total time spent in this zone
+    const timeSpent = cluster.points.length * 15.625; // Convert ticks to milliseconds (64 tick rate)
+    
+    // Only include significant clusters
+    if (intensity > 0.1 && cluster.points.length >= 5) {
       hotZones.push({
-        x: x + gridSize / 2, // Center of grid cell
-        y: y + gridSize / 2,
+        x: centerX,
+        y: centerY,
         intensity,
-        timeSpent: totalTime * 15 // Convert ticks to milliseconds
+        timeSpent
       });
     }
   });
 
-  return hotZones.sort((a, b) => b.intensity - a.intensity).slice(0, 20); // Top 20 hot zones
+  return hotZones.sort((a, b) => b.intensity - a.intensity);
+}
+
+/**
+ * Perform density-based clustering similar to DBSCAN
+ */
+function performDensityBasedClustering(data: XYZPlayerData[], epsilon: number, minPoints: number): Array<{ points: XYZPlayerData[] }> {
+  const clusters: Array<{ points: XYZPlayerData[] }> = [];
+  const visited = new Set<number>();
+  const clustered = new Set<number>();
+  
+  data.forEach((point, index) => {
+    if (visited.has(index)) return;
+    
+    visited.add(index);
+    const neighbors = findNeighbors(data, index, epsilon);
+    
+    if (neighbors.length < minPoints) {
+      // Point is noise, skip
+      return;
+    }
+    
+    // Create new cluster
+    const cluster = { points: [point] };
+    clustered.add(index);
+    
+    // Expand cluster
+    const queue = [...neighbors];
+    while (queue.length > 0) {
+      const neighborIndex = queue.shift()!;
+      
+      if (!visited.has(neighborIndex)) {
+        visited.add(neighborIndex);
+        const neighborNeighbors = findNeighbors(data, neighborIndex, epsilon);
+        
+        if (neighborNeighbors.length >= minPoints) {
+          queue.push(...neighborNeighbors);
+        }
+      }
+      
+      if (!clustered.has(neighborIndex)) {
+        cluster.points.push(data[neighborIndex]);
+        clustered.add(neighborIndex);
+      }
+    }
+    
+    clusters.push(cluster);
+  });
+  
+  return clusters;
+}
+
+/**
+ * Find neighbors within epsilon distance
+ */
+function findNeighbors(data: XYZPlayerData[], pointIndex: number, epsilon: number): number[] {
+  const point = data[pointIndex];
+  const neighbors: number[] = [];
+  
+  data.forEach((otherPoint, index) => {
+    if (index === pointIndex) return;
+    
+    const distance = calculateDistance(point.X, point.Y, otherPoint.X, otherPoint.Y);
+    if (distance <= epsilon) {
+      neighbors.push(index);
+    }
+  });
+  
+  return neighbors;
 }
 
 /**

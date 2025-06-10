@@ -4,16 +4,76 @@ import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import PositionalHeatmap from "@/components/data-visualization/PositionalHeatmap";
+import XYZPositionalAnalysis from "@/components/data-visualization/XYZPositionalAnalysis";
 import { PlayerWithPIV } from "@shared/types";
+
+interface XYZPlayerData {
+  health: number;
+  flashDuration: number;
+  place: string;
+  armor: number;
+  side: 't' | 'ct';
+  pitch: number;
+  X: number;
+  yaw: number;
+  Y: number;
+  velocityX: number;
+  Z: number;
+  velocityY: number;
+  velocityZ: number;
+  tick: number;
+  userSteamid: string;
+  name: string;
+  roundNum: number;
+}
+
+interface PositionalMetrics {
+  playerId: string;
+  playerName: string;
+  team: string;
+  roundNum: number;
+  totalDistance: number;
+  averageVelocity: number;
+  maxVelocity: number;
+  mapControl: {
+    areasCovered: string[];
+    timeInEachArea: Record<string, number>;
+    dominantArea: string;
+  };
+  hotZones: {
+    x: number;
+    y: number;
+    intensity: number;
+    timeSpent: number;
+  }[];
+  rotations: {
+    from: string;
+    to: string;
+    timeToRotate: number;
+    distanceTraveled: number;
+  }[];
+  utilityUsage: {
+    smokes: { x: number; y: number; z: number; effectiveness: number }[];
+    flashes: { x: number; y: number; z: number; effectiveness: number }[];
+    nades: { x: number; y: number; z: number; effectiveness: number }[];
+    molotovs: { x: number; y: number; z: number; effectiveness: number }[];
+  };
+}
 
 export default function PositionalAnalysisPage() {
   const [, setLocation] = useLocation();
 
-  // Fetch players data
-  const { data: players = [], isLoading } = useQuery<PlayerWithPIV[]>({
-    queryKey: ['/api/players'],
+  // Fetch XYZ positional data
+  const { data: xyzData = [], isLoading: isLoadingXYZ } = useQuery<XYZPlayerData[]>({
+    queryKey: ['/api/xyz/raw'],
   });
+
+  // Fetch positional metrics
+  const { data: positionalMetrics = [], isLoading: isLoadingMetrics } = useQuery<PositionalMetrics[]>({
+    queryKey: ['/api/xyz/metrics'],
+  });
+
+  const isLoading = isLoadingXYZ || isLoadingMetrics;
 
   if (isLoading) {
     return (
@@ -65,7 +125,10 @@ export default function PositionalAnalysisPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <PositionalHeatmap players={players} />
+            <XYZPositionalAnalysis 
+              xyzData={xyzData} 
+              positionalMetrics={positionalMetrics} 
+            />
           </CardContent>
         </Card>
 

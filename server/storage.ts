@@ -40,11 +40,15 @@ export class MemoryStorage implements IStorage {
   private playersCache: Map<string, PlayerWithPIV>;
   private teamsCache: Map<string, TeamWithTIR>;
   private roundMetricsCache: Map<string, TeamRoundMetrics>;
+  private xyzDataCache: XYZPlayerData[];
+  private positionalMetricsCache: PositionalMetrics[];
 
   constructor() {
     this.playersCache = new Map();
     this.teamsCache = new Map();
     this.roundMetricsCache = new Map();
+    this.xyzDataCache = [];
+    this.positionalMetricsCache = [];
   }
 
   async getAllPlayers(): Promise<PlayerWithPIV[]> {
@@ -88,6 +92,31 @@ export class MemoryStorage implements IStorage {
 
   async setTeamRoundMetrics(metrics: TeamRoundMetrics): Promise<void> {
     this.roundMetricsCache.set(metrics.teamName, metrics);
+  }
+
+  // XYZ Positional Data methods implementation
+  async getXYZData(): Promise<XYZPlayerData[]> {
+    return this.xyzDataCache;
+  }
+
+  async getPositionalMetrics(): Promise<PositionalMetrics[]> {
+    return this.positionalMetricsCache;
+  }
+
+  async getPlayerXYZData(steamId: string): Promise<XYZPlayerData[]> {
+    return this.xyzDataCache.filter(data => data.userSteamid === steamId);
+  }
+
+  async getRoundXYZData(roundNum: number): Promise<XYZPlayerData[]> {
+    return this.xyzDataCache.filter(data => data.roundNum === roundNum);
+  }
+
+  async setXYZData(data: XYZPlayerData[]): Promise<void> {
+    this.xyzDataCache = data;
+  }
+
+  async setPositionalMetrics(metrics: PositionalMetrics[]): Promise<void> {
+    this.positionalMetricsCache = metrics;
   }
 }
 

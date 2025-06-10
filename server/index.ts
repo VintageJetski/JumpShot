@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { loadXYZData, processPositionalData } from "./xyzDataParser";
+import { storage } from "./storage";
 
 const app = express();
 app.use(express.json());
@@ -37,6 +39,16 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Load XYZ positional data from the attached CSV file
+  console.log('Loading XYZ positional data...');
+  try {
+    const positionalMetrics = await loadXYZData();
+    await storage.setPositionalMetrics(positionalMetrics);
+    console.log(`Loaded positional metrics for ${positionalMetrics.length} players`);
+  } catch (error) {
+    console.error('Failed to load XYZ data:', error);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

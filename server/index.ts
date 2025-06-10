@@ -63,10 +63,19 @@ async function startServer() {
       res.sendFile(path.join(process.cwd(), 'client', 'index.html'));
     });
 
-    // Start the HTTP server
+    // Start the HTTP server with error handling
     const port = 5000;
     server.listen(port, "0.0.0.0", () => {
       log(`serving on port ${port}`);
+    });
+
+    server.on('error', (err) => {
+      console.error('Server error:', err);
+      process.exit(1);
+    });
+
+    server.on('listening', () => {
+      console.log(`Server successfully bound to port ${port}`);
     });
 
     // Load XYZ positional data after server starts

@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import path from "path";
+import fs from "fs";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { loadXYZData, processPositionalData } from "./xyzDataParser";
@@ -55,12 +56,23 @@ async function startServer() {
     // Register API routes
     await registerRoutes(app);
 
-    // Simplified static file serving to avoid Vite middleware blocking
-    app.use(express.static(path.join(process.cwd(), 'client', 'public')));
+    // Serve built assets first
+    app.use(express.static(path.join(process.cwd(), 'dist', 'public')));
     
-    // Serve main HTML file for SPA
+    // Fallback to client directory for development
+    app.use(express.static(path.join(process.cwd(), 'client')));
+    
+    // SPA fallback route
     app.get('*', (req, res) => {
-      res.sendFile(path.join(process.cwd(), 'client', 'index.html'));
+      const builtIndex = path.join(process.cwd(), 'dist', 'public', 'index.html');
+      const devIndex = path.join(process.cwd(), 'client', 'index.html');
+      
+      // Try built version first, then fallback to development
+      if (fs.existsSync(builtIndex)) {
+        res.sendFile(builtIndex);
+      } else {
+        res.sendFile(devIndex);
+      }
     });
 
     // Start the HTTP server with error handling

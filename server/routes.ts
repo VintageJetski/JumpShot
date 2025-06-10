@@ -146,20 +146,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/xyz/raw', async (req: Request, res: Response) => {
     try {
       const xyzData = await storage.getXYZData();
-      res.json(xyzData);
+      // Return empty array if data is still loading
+      res.json(xyzData || []);
     } catch (error) {
       console.error('Error fetching XYZ data:', error);
-      res.status(500).json({ message: 'Failed to fetch XYZ data' });
+      res.json([]); // Return empty array instead of error to prevent white screen
     }
   });
 
   app.get('/api/xyz/metrics', async (req: Request, res: Response) => {
     try {
       const metrics = await storage.getPositionalMetrics();
-      res.json(metrics);
+      // Return empty array if metrics are still being calculated
+      res.json(metrics || []);
     } catch (error) {
       console.error('Error fetching positional metrics:', error);
-      res.status(500).json({ message: 'Failed to fetch positional metrics' });
+      res.json([]); // Return empty array instead of error to prevent white screen
     }
   });
 

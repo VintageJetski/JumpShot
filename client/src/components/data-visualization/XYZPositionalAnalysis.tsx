@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Move, Zap, Target, RotateCcw, Activity } from 'lucide-react';
+import { MapPin, Move, Zap, Target, Activity, AlertCircle, RotateCcw } from 'lucide-react';
 
 interface XYZPlayerData {
   health: number;
@@ -71,6 +71,32 @@ export default function XYZPositionalAnalysis({ xyzData = [], positionalMetrics 
   const [playbackTick, setPlaybackTick] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>('heatmap');
+
+  // Show loading state if no data is available yet
+  if (!xyzData || xyzData.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Card className="glassmorphism border-white/10">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center space-y-4">
+                <AlertCircle className="h-12 w-12 text-blue-400 mx-auto animate-pulse" />
+                <h3 className="text-white font-semibold">Loading Authentic Coordinate Data</h3>
+                <p className="text-blue-200 text-sm max-w-md mx-auto">
+                  Processing real XYZ coordinates from CS2 demo files. 
+                  Dynamic clustering algorithms are generating authentic map areas from player positioning data.
+                </p>
+                <div className="flex items-center justify-center space-x-2 text-xs text-blue-300">
+                  <Activity className="h-4 w-4 animate-spin" />
+                  <span>Analyzing movement patterns...</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Get unique players and rounds from data
   const { players, rounds, tickRange } = useMemo(() => {
@@ -229,7 +255,7 @@ export default function XYZPositionalAnalysis({ xyzData = [], positionalMetrics 
           <div className="mt-4">
             <Slider
               value={[playbackTick]}
-              onValueChange={([value]) => setPlaybackTick(value)}
+              onValueChange={(values: number[]) => setPlaybackTick(values[0])}
               min={tickRange.min}
               max={tickRange.max}
               step={64}

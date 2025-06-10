@@ -4,6 +4,7 @@ import {
   PlayerRole,
   TeamRoundMetrics
 } from "@shared/schema";
+import { XYZPlayerData, PositionalMetrics } from "./xyzDataParser";
 
 // Storage interface for the application
 export interface IStorage {
@@ -22,6 +23,14 @@ export interface IStorage {
   // Storage update methods
   setPlayers(players: PlayerWithPIV[]): Promise<void>;
   setTeams(teams: TeamWithTIR[]): Promise<void>;
+  
+  // XYZ Positional Data methods
+  getXYZData(): Promise<XYZPlayerData[]>;
+  getPositionalMetrics(): Promise<PositionalMetrics[]>;
+  getPlayerXYZData(steamId: string): Promise<XYZPlayerData[]>;
+  getRoundXYZData(roundNum: number): Promise<XYZPlayerData[]>;
+  setXYZData(data: XYZPlayerData[]): Promise<void>;
+  setPositionalMetrics(metrics: PositionalMetrics[]): Promise<void>;
 }
 
 /**

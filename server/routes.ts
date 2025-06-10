@@ -142,7 +142,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // XYZ Positional Data endpoints
+  app.get('/api/xyz/raw', async (req: Request, res: Response) => {
+    try {
+      const xyzData = await storage.getXYZData();
+      res.json(xyzData);
+    } catch (error) {
+      console.error('Error fetching XYZ data:', error);
+      res.status(500).json({ message: 'Failed to fetch XYZ data' });
+    }
+  });
 
+  app.get('/api/xyz/metrics', async (req: Request, res: Response) => {
+    try {
+      const metrics = await storage.getPositionalMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error('Error fetching positional metrics:', error);
+      res.status(500).json({ message: 'Failed to fetch positional metrics' });
+    }
+  });
+
+  app.get('/api/xyz/player/:steamId', async (req: Request, res: Response) => {
+    try {
+      const { steamId } = req.params;
+      const playerData = await storage.getPlayerXYZData(steamId);
+      res.json(playerData);
+    } catch (error) {
+      console.error('Error fetching player XYZ data:', error);
+      res.status(500).json({ message: 'Failed to fetch player XYZ data' });
+    }
+  });
+
+  app.get('/api/xyz/round/:roundNum', async (req: Request, res: Response) => {
+    try {
+      const roundNum = parseInt(req.params.roundNum);
+      const roundData = await storage.getRoundXYZData(roundNum);
+      res.json(roundData);
+    } catch (error) {
+      console.error('Error fetching round XYZ data:', error);
+      res.status(500).json({ message: 'Failed to fetch round XYZ data' });
+    }
+  });
 
   
   const httpServer = createServer(app);

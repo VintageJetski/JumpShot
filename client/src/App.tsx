@@ -20,6 +20,7 @@ import DataVisualizationPage from "@/pages/DataVisualizationPage";
 import AdvancedAnalyticsPage from "@/pages/AdvancedAnalyticsPage";
 import DashboardPage from "@/pages/DashboardPage";
 import VentionStyleMockup from "@/pages/VentionStyleMockup";
+import PositionalAnalysisPage from "@/pages/PositionalAnalysisPage";
 import Layout from "@/components/layout/Layout";
 
 function Router() {
@@ -39,6 +40,7 @@ function Router() {
         <Route path="/scout/search-players" component={SearchPlayersPage} />
         <Route path="/statistical-analysis" component={StatisticalAnalysisPage} />
         <Route path="/data-visualization" component={DataVisualizationPage} />
+        <Route path="/positional-analysis" component={PositionalAnalysisPage} />
         <Route path="/advanced-analytics" component={AdvancedAnalyticsPage} />
         <Route path="/dashboard" component={DashboardPage} />
         <Route path="/vention-mockup" component={VentionStyleMockup} />

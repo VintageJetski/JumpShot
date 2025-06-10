@@ -21,7 +21,8 @@ import {
   AreaChart,
   Network,
   FolderOpen,
-  Grid
+  Grid,
+  MapPin
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -128,7 +129,7 @@ export default function Sidebar() {
 
   // Group paths for checking active status
   const analyticsRoutes = ['/players', '/teams', '/player-comparisons', '/advanced-analytics'];
-  const visualizationRoutes = ['/statistical-analysis', '/data-visualization', '/match-infographic'];
+  const visualizationRoutes = ['/statistical-analysis', '/data-visualization', '/match-infographic', '/positional-analysis'];
 
   return (
     <aside className="hidden md:block w-64 glassmorphism border-r border-white/5 p-5 h-full overflow-y-auto">
@@ -263,6 +264,14 @@ export default function Sidebar() {
                 icon={<Image />} 
                 label="Match Infographic" 
                 isActive={isActive("/match-infographic")}
+                indent
+              />
+              
+              <MenuItem 
+                href="/positional-analysis" 
+                icon={<MapPin />} 
+                label="Positional Analysis" 
+                isActive={isActive("/positional-analysis")}
                 indent
               />
             </CollapsibleContent>

@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { loadNewPlayerStats } from "./newDataParser";
-import { loadXYZPositionalData } from "./xyzDataParser";
+import { loadXYZData } from "./xyzDataParser";
 import { processPlayerStatsWithRoles } from "./newPlayerAnalytics";
 import { loadPlayerRoles } from "./roleParser";
 
@@ -23,17 +23,20 @@ async function initializeData() {
     const roleMap = await loadPlayerRoles();
     
     // Load authentic XYZ coordinate data
-    const xyzPositions = await loadXYZPositionalData();
+    const xyzPositions = await loadXYZData();
     console.log(`Loaded ${xyzPositions.length} authentic XYZ coordinate records`);
     
     // Process with role assignments
-    const { players, teams } = processPlayerStatsWithRoles(rawStats, roleMap);
+    const processedPlayers = processPlayerStatsWithRoles(rawStats, roleMap);
     
-    playersData = players;
-    teamsData = teams;
+    playersData = processedPlayers;
+    teamsData = Array.from(new Set(processedPlayers.map(p => p.team))).map(teamName => ({
+      name: teamName,
+      players: processedPlayers.filter(p => p.team === teamName)
+    }));
     xyzData = xyzPositions;
     
-    console.log(`Processed ${players.length} players and ${teams.length} teams with authentic data`);
+    console.log(`Processed ${processedPlayers.length} players and ${teamsData.length} teams with authentic data`);
     
   } catch (error) {
     console.error("Data initialization error:", error);

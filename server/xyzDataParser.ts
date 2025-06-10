@@ -142,15 +142,19 @@ function generateMapAreas(data: XYZPlayerData[]): Record<string, { minX: number;
   const minY = Math.min(...yCoords);
   const maxY = Math.max(...yCoords);
 
-  // Use K-means clustering approach to identify natural position clusters
-  const clusters = performKMeansClustering(data, 8); // 8 clusters for typical map areas
+  // Sample data more aggressively for faster processing while maintaining spatial distribution
+  const sampledData = data.filter((_, index) => index % 500 === 0);
+  console.log(`Sampling ${sampledData.length} points from ${data.length} total points for clustering`);
+  
+  // Use simplified grid-based clustering for faster processing
+  const clusters = performSimplifiedClustering(sampledData, 8); // 8 clusters for comprehensive map coverage
   
   // Convert clusters to named areas based on position characteristics
   const areas: Record<string, { minX: number; maxX: number; minY: number; maxY: number }> = {};
   
-  clusters.forEach((cluster, index) => {
-    const clusterX = cluster.points.map(p => p.X);
-    const clusterY = cluster.points.map(p => p.Y);
+  clusters.forEach((cluster: { center: { x: number; y: number }; points: XYZPlayerData[] }, index: number) => {
+    const clusterX = cluster.points.map((p: XYZPlayerData) => p.X);
+    const clusterY = cluster.points.map((p: XYZPlayerData) => p.Y);
     
     const areaName = determineAreaName(cluster, index, minX, maxX, minY, maxY);
     
@@ -166,10 +170,11 @@ function generateMapAreas(data: XYZPlayerData[]): Record<string, { minX: number;
 }
 
 /**
- * Perform K-means clustering on coordinate data
+ * Perform simplified grid-based clustering for faster processing
  */
-function performKMeansClustering(data: XYZPlayerData[], k: number): Array<{ center: { x: number; y: number }; points: XYZPlayerData[] }> {
-  // Initialize centroids randomly
+function performSimplifiedClustering(data: XYZPlayerData[], k: number): Array<{ center: { x: number; y: number }; points: XYZPlayerData[] }> {
+  if (data.length === 0) return [];
+  
   const xCoords = data.map(d => d.X);
   const yCoords = data.map(d => d.Y);
   const minX = Math.min(...xCoords);
@@ -177,58 +182,39 @@ function performKMeansClustering(data: XYZPlayerData[], k: number): Array<{ cent
   const minY = Math.min(...yCoords);
   const maxY = Math.max(...yCoords);
   
-  let centroids = Array.from({ length: k }, () => ({
-    x: minX + Math.random() * (maxX - minX),
-    y: minY + Math.random() * (maxY - minY)
-  }));
+  // Create grid-based clusters using spatial divisions
+  const gridSize = Math.ceil(Math.sqrt(k));
+  const xStep = (maxX - minX) / gridSize;
+  const yStep = (maxY - minY) / gridSize;
   
-  let clusters: Array<{ center: { x: number; y: number }; points: XYZPlayerData[] }> = [];
-  let iterations = 0;
-  const maxIterations = 50;
+  const gridClusters = new Map<string, XYZPlayerData[]>();
   
-  while (iterations < maxIterations) {
-    // Assign points to nearest centroid
-    clusters = centroids.map(centroid => ({ center: centroid, points: [] }));
+  data.forEach(point => {
+    const gridX = Math.min(gridSize - 1, Math.max(0, Math.floor((point.X - minX) / xStep)));
+    const gridY = Math.min(gridSize - 1, Math.max(0, Math.floor((point.Y - minY) / yStep)));
+    const key = `${gridX},${gridY}`;
     
-    data.forEach(point => {
-      let minDistance = Infinity;
-      let closestClusterIndex = 0;
+    if (!gridClusters.has(key)) {
+      gridClusters.set(key, []);
+    }
+    gridClusters.get(key)!.push(point);
+  });
+  
+  // Convert to cluster format and merge small clusters
+  const clusters: Array<{ center: { x: number; y: number }; points: XYZPlayerData[] }> = [];
+  
+  Array.from(gridClusters.entries())
+    .filter(([_, points]) => points.length >= 1) // Include all areas with activity
+    .sort(([_, a], [__, b]) => b.length - a.length) // Sort by size
+    .forEach(([_, points]) => {
+      const centerX = points.reduce((sum, p) => sum + p.X, 0) / points.length;
+      const centerY = points.reduce((sum, p) => sum + p.Y, 0) / points.length;
       
-      centroids.forEach((centroid, index) => {
-        const distance = Math.sqrt(
-          Math.pow(point.X - centroid.x, 2) + Math.pow(point.Y - centroid.y, 2)
-        );
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestClusterIndex = index;
-        }
+      clusters.push({
+        center: { x: centerX, y: centerY },
+        points
       });
-      
-      clusters[closestClusterIndex].points.push(point);
     });
-    
-    // Update centroids
-    const newCentroids = clusters.map(cluster => {
-      if (cluster.points.length === 0) return cluster.center;
-      
-      const avgX = cluster.points.reduce((sum, p) => sum + p.X, 0) / cluster.points.length;
-      const avgY = cluster.points.reduce((sum, p) => sum + p.Y, 0) / cluster.points.length;
-      
-      return { x: avgX, y: avgY };
-    });
-    
-    // Check for convergence
-    const converged = newCentroids.every((newCentroid, index) => {
-      const oldCentroid = centroids[index];
-      return Math.abs(newCentroid.x - oldCentroid.x) < 10 && 
-             Math.abs(newCentroid.y - oldCentroid.y) < 10;
-    });
-    
-    centroids = newCentroids;
-    
-    if (converged) break;
-    iterations++;
-  }
   
   return clusters;
 }

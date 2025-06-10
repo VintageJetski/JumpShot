@@ -38,43 +38,46 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
-  // Load XYZ positional data asynchronously after server starts
-  setTimeout(async () => {
-    console.log('Loading XYZ positional data...');
-    try {
-      const positionalMetrics = await loadXYZData();
-      await storage.setPositionalMetrics(positionalMetrics);
-      console.log(`Loaded positional metrics for ${positionalMetrics.length} players`);
-    } catch (error) {
-      console.error('Failed to load XYZ data:', error);
+async function startServer() {
+  try {
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      res.status(status).json({ message });
+      throw err;
+    });
+
+    const server = await registerRoutes(app);
+
+    // Start the HTTP server first
+    const port = 5000;
+    server.listen(port, "0.0.0.0", () => {
+      log(`serving on port ${port}`);
+    });
+
+    // Then setup vite after server is listening
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
     }
-  }, 1000); // Start after 1 second to allow server to start first
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    // Load XYZ positional data after server starts
+    setTimeout(async () => {
+      console.log('Loading XYZ positional data...');
+      try {
+        const positionalMetrics = await loadXYZData();
+        await storage.setPositionalMetrics(positionalMetrics);
+        console.log(`Loaded positional metrics for ${positionalMetrics.length} players`);
+      } catch (error) {
+        console.error('Failed to load XYZ data:', error);
+      }
+    }, 2000);
 
-    res.status(status).json({ message });
-    throw err;
-  });
-
-  const server = await registerRoutes(app);
-
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
   }
+}
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen(port, "0.0.0.0", () => {
-    log(`serving on port ${port}`);
-  });
-})();
+startServer();

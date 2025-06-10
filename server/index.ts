@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import { createServer } from "http";
 import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -48,31 +49,27 @@ async function startServer() {
       throw err;
     });
 
+    // Create HTTP server
+    const server = createServer(app);
+
     // Register API routes
     await registerRoutes(app);
 
-    // Direct Express server setup for better connectivity
-    const port = 5000;
-    
-    // Serve built client files
-    const clientDistPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(clientDistPath));
-    
-    // Fallback to client files during development
-    app.use(express.static(path.join(process.cwd(), 'client')));
-    
-    // SPA fallback route
-    app.get('*', (req, res) => {
-      const indexPath = path.join(clientDistPath, 'index.html');
-      if (require('fs').existsSync(indexPath)) {
-        res.sendFile(indexPath);
-      } else {
-        res.sendFile(path.join(process.cwd(), 'client', 'index.html'));
+    // Setup Vite for TypeScript compilation in development
+    if (process.env.NODE_ENV !== "production") {
+      try {
+        await setupVite(app, server);
+        console.log('Vite development server setup complete');
+      } catch (error) {
+        console.error('Vite setup failed:', error);
       }
-    });
-    
-    // Start with simple Express listen
-    app.listen(port, '0.0.0.0', () => {
+    } else {
+      serveStatic(app);
+    }
+
+    // Start the HTTP server
+    const port = 5000;
+    server.listen(port, "0.0.0.0", () => {
       log(`serving on port ${port}`);
     });
 

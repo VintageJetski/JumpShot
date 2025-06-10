@@ -48,15 +48,27 @@ async function startServer() {
       throw err;
     });
 
-    const server = await registerRoutes(app);
+    // Register API routes
+    await registerRoutes(app);
 
     // Direct Express server setup for better connectivity
     const port = 5000;
     
-    // Use Express directly without complex middleware
+    // Serve built client files
+    const clientDistPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(clientDistPath));
+    
+    // Fallback to client files during development
     app.use(express.static(path.join(process.cwd(), 'client')));
+    
+    // SPA fallback route
     app.get('*', (req, res) => {
-      res.sendFile(path.join(process.cwd(), 'client', 'index.html'));
+      const indexPath = path.join(clientDistPath, 'index.html');
+      if (require('fs').existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.sendFile(path.join(process.cwd(), 'client', 'index.html'));
+      }
     });
     
     // Start with simple Express listen

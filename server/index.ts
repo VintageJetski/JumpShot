@@ -50,30 +50,17 @@ async function startServer() {
 
     const server = await registerRoutes(app);
 
-    // Setup middleware first
-    if (app.get("env") === "development") {
-      try {
-        await setupVite(app, server);
-        console.log('Vite middleware setup complete');
-      } catch (err) {
-        console.warn('Vite setup failed, using fallback serving:', (err as Error).message);
-        // Fallback to basic static serving
-        app.use(express.static('client'));
-        app.get('*', (req, res) => {
-          res.sendFile(path.resolve(process.cwd(), 'client/index.html'));
-        });
-      }
-    } else {
-      serveStatic(app);
-    }
-
-    // Start the HTTP server
+    // Direct Express server setup for better connectivity
     const port = 5000;
-    server.listen(port, "0.0.0.0", (err?: Error) => {
-      if (err) {
-        console.error('Failed to start server:', err);
-        process.exit(1);
-      }
+    
+    // Use Express directly without complex middleware
+    app.use(express.static(path.join(process.cwd(), 'client')));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(process.cwd(), 'client', 'index.html'));
+    });
+    
+    // Start with simple Express listen
+    app.listen(port, '0.0.0.0', () => {
       log(`serving on port ${port}`);
     });
 

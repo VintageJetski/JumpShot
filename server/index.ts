@@ -53,14 +53,16 @@ async function startServer() {
     const port = 5000;
     server.listen(port, "0.0.0.0", () => {
       log(`serving on port ${port}`);
+      
+      // Setup vite middleware after server is listening
+      if (app.get("env") === "development") {
+        setupVite(app, server).catch(err => {
+          console.warn('Vite setup failed, continuing without:', err.message);
+        });
+      } else {
+        serveStatic(app);
+      }
     });
-
-    // Then setup vite after server is listening
-    if (app.get("env") === "development") {
-      await setupVite(app, server);
-    } else {
-      serveStatic(app);
-    }
 
     // Load XYZ positional data after server starts
     setTimeout(async () => {

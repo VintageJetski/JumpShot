@@ -132,31 +132,31 @@ export default function PositionalAnalysisPage() {
           </CardContent>
         </Card>
 
-        {/* Additional Info */}
+        {/* Real-time Data Info */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card className="glassmorphism border-white/10">
             <CardContent className="pt-6">
-              <h3 className="text-white font-semibold mb-2">T-Side Positioning</h3>
+              <h3 className="text-white font-semibold mb-2">Real Coordinate Data</h3>
               <p className="text-blue-200 text-sm">
-                Analyze attacking positions and effectiveness for entry fraggers, AWPers, and support players
+                Analysis powered by actual XYZ coordinates from CS2 demo files with {xyzData.length.toLocaleString()} position records
               </p>
             </CardContent>
           </Card>
           
           <Card className="glassmorphism border-white/10">
             <CardContent className="pt-6">
-              <h3 className="text-white font-semibold mb-2">CT-Side Positioning</h3>
+              <h3 className="text-white font-semibold mb-2">Movement Analytics</h3>
               <p className="text-blue-200 text-sm">
-                Evaluate defensive setups, anchor positions, and rotation patterns
+                Track player rotations, hot zones, velocity patterns, and territory control using real positioning data
               </p>
             </CardContent>
           </Card>
           
           <Card className="glassmorphism border-white/10">
             <CardContent className="pt-6">
-              <h3 className="text-white font-semibold mb-2">Role-Based Analysis</h3>
+              <h3 className="text-white font-semibold mb-2">Utility Effectiveness</h3>
               <p className="text-blue-200 text-sm">
-                Compare positioning effectiveness across different player roles and maps
+                Analyze smoke placements, flash effectiveness, and grenade impact using precise coordinate tracking
               </p>
             </CardContent>
           </Card>

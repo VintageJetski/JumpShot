@@ -39,15 +39,17 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Load XYZ positional data from the attached CSV file
-  console.log('Loading XYZ positional data...');
-  try {
-    const positionalMetrics = await loadXYZData();
-    await storage.setPositionalMetrics(positionalMetrics);
-    console.log(`Loaded positional metrics for ${positionalMetrics.length} players`);
-  } catch (error) {
-    console.error('Failed to load XYZ data:', error);
-  }
+  // Load XYZ positional data asynchronously after server starts
+  setTimeout(async () => {
+    console.log('Loading XYZ positional data...');
+    try {
+      const positionalMetrics = await loadXYZData();
+      await storage.setPositionalMetrics(positionalMetrics);
+      console.log(`Loaded positional metrics for ${positionalMetrics.length} players`);
+    } catch (error) {
+      console.error('Failed to load XYZ data:', error);
+    }
+  }, 1000); // Start after 1 second to allow server to start first
 
   const server = await registerRoutes(app);
 

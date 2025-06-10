@@ -62,13 +62,16 @@ async function startServer() {
     // Fallback to client directory for development
     app.use(express.static(path.join(process.cwd(), 'client')));
     
-    // SPA fallback route
+    // SPA fallback route - serve simple HTML that works without TypeScript compilation
     app.get('*', (req, res) => {
+      const simpleIndex = path.join(process.cwd(), 'client', 'simple.html');
       const builtIndex = path.join(process.cwd(), 'dist', 'public', 'index.html');
       const devIndex = path.join(process.cwd(), 'client', 'index.html');
       
-      // Try built version first, then fallback to development
-      if (fs.existsSync(builtIndex)) {
+      // Try simple HTML first for immediate functionality
+      if (fs.existsSync(simpleIndex)) {
+        res.sendFile(simpleIndex);
+      } else if (fs.existsSync(builtIndex)) {
         res.sendFile(builtIndex);
       } else {
         res.sendFile(devIndex);

@@ -143,11 +143,11 @@ function generateMapAreas(data: XYZPlayerData[]): Record<string, { minX: number;
   const maxY = Math.max(...yCoords);
 
   // Sample data more aggressively for faster processing while maintaining spatial distribution
-  const sampledData = data.filter((_, index) => index % 500 === 0);
+  const sampledData = data.filter((_, index) => index % 1000 === 0);
   console.log(`Sampling ${sampledData.length} points from ${data.length} total points for clustering`);
   
   // Use simplified grid-based clustering for faster processing
-  const clusters = performSimplifiedClustering(sampledData, 8); // 8 clusters for comprehensive map coverage
+  const clusters = performSimplifiedClustering(sampledData, 4); // Reduced to 4 clusters for faster processing
   
   // Convert clusters to named areas based on position characteristics
   const areas: Record<string, { minX: number; maxX: number; minY: number; maxY: number }> = {};

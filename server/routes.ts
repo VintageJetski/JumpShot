@@ -9,8 +9,14 @@ import { initializeRoundData } from "./roundDataLoader";
 
 import path from "path";
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // Initialize and store data in storage
+// Global cache for processed data
+let dataInitialized = false;
+let dataInitializing = false;
+
+async function initializeDataIfNeeded() {
+  if (dataInitialized || dataInitializing) return;
+  
+  dataInitializing = true;
   try {
     console.log('Loading raw player data...');
     const rawPlayerStats = await loadNewPlayerStats();
@@ -31,9 +37,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     console.log(`Loaded ${rawPlayerStats.length} raw player records`);
     console.log(`Processed ${processedPlayers.length} players and ${teams.length} teams`);
+    dataInitialized = true;
   } catch (error) {
     console.error('Error loading raw data:', error);
+  } finally {
+    dataInitializing = false;
   }
+}
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize data asynchronously in background
+  initializeDataIfNeeded();
+  
+  // Simple status endpoint to verify server is working
+  app.get('/api/status', (req: Request, res: Response) => {
+    res.json({ 
+      status: 'ok', 
+      timestamp: new Date().toISOString(),
+      dataInitialized: dataInitialized,
+      dataInitializing: dataInitializing 
+    });
+  });
   
   // Raw data API routes - no calculations
   app.get('/api/raw/players', async (req: Request, res: Response) => {
@@ -74,6 +98,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Legacy endpoints - now return calculated data from frontend
   app.get('/api/players', async (req: Request, res: Response) => {
     try {
+      // Ensure data is initialized
+      await initializeDataIfNeeded();
+      
       const role = req.query.role as string | undefined;
       
       if (role && role !== 'All Roles') {

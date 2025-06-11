@@ -40,13 +40,6 @@ app.use((req, res, next) => {
 
 async function startServer() {
   try {
-    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-      const status = err.status || err.statusCode || 500;
-      const message = err.message || "Internal Server Error";
-      res.status(status).json({ message });
-      throw err;
-    });
-
     // Create HTTP server
     const server = createServer(app);
 
@@ -59,19 +52,6 @@ async function startServer() {
       });
     });
 
-    // Quick status endpoint
-    app.get('/', (req, res) => {
-      res.status(200).send(`
-        <!DOCTYPE html>
-        <html><head><title>CS2 Analytics Platform</title></head>
-        <body style="font-family: system-ui; margin: 40px; background: #0f172a; color: #f8fafc;">
-          <h1 style="color: #3b82f6;">CS2 Analytics Platform</h1>
-          <p>Revolutionary positional analysis system operational</p>
-          <p>Processing 90,840 authentic XYZ coordinates from IEM Katowice 2025</p>
-        </body></html>
-      `);
-    });
-
     // Register API routes
     await registerRoutes(app);
 
@@ -81,6 +61,14 @@ async function startServer() {
     } else {
       await setupVite(app, server);
     }
+
+    // Error handling middleware (must be after all routes)
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      res.status(status).json({ message });
+      console.error("Server error:", err);
+    });
 
     // Start the HTTP server
     const port = Number(process.env.PORT) || 5000;

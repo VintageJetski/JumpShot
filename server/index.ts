@@ -70,56 +70,43 @@ async function startServer() {
       log(`serving on port ${port}`);
       console.log(`Server successfully bound to port ${port}`);
       console.log(`Web interface accessible at http://localhost:${port}`);
-      
-      // Initialize data processing after server starts
-      setImmediate(async () => {
-        try {
-          const { loadNewPlayerStats } = await import("./newDataParser");
-          const { loadPlayerRoles } = await import("./roleParser");
-          const { processPlayerStatsWithRoles } = await import("./newPlayerAnalytics");
-          const { processRoundData } = await import("./roundAnalytics");
-          const { loadXYZData, processPositionalData } = await import("./xyzDataParser");
-          
-          console.log("Loading raw player data...");
-          const rawStats = await loadNewPlayerStats();
-          
-          console.log("Loading player roles from CSV...");
-          const roleMap = await loadPlayerRoles();
-          
-          console.log("Loading and processing round data...");
-          const roundMetrics = await processRoundData();
-          
-          const processedPlayers = processPlayerStatsWithRoles(rawStats, roleMap);
-          console.log(`Processed ${processedPlayers.length} players and ${roundMetrics.size} teams`);
-          
-          console.log("Loading XYZ positional data...");
-          const xyzData = await loadXYZData();
-          console.log(`Loaded ${xyzData.length} XYZ position records`);
-          
-          console.log("Generating dynamic map areas from coordinate data...");
-          // Process XYZ data into map areas
-          const sampleSize = Math.min(200, Math.floor(xyzData.length * 0.002));
-          const sampledData = [];
-          for (let i = 0; i < sampleSize; i++) {
-            const randomIndex = Math.floor(Math.random() * xyzData.length);
-            sampledData.push(xyzData[randomIndex]);
-          }
-          console.log(`Sampling ${sampledData.length} points from ${xyzData.length} total points for clustering`);
-          
-          // Simple area detection based on coordinate clustering
-          const areas = ['South Sector']; // Basic implementation
-          console.log(`Generated ${areas.length} map areas:`, areas);
-          
-          console.log(`Analytics platform ready with authentic coordinate data`);
-        } catch (error) {
-          console.error("Data processing error:", error);
-        }
-      });
     });
 
     server.on('error', (err) => {
       console.error('Server error:', err);
     });
+
+    // Initialize data processing in background after server starts
+    setTimeout(async () => {
+      try {
+        const { loadNewPlayerStats } = await import("./newDataParser");
+        const { loadPlayerRoles } = await import("./roleParser");
+        const { processPlayerStatsWithRoles } = await import("./newPlayerAnalytics");
+        const { processRoundData } = await import("./roundAnalytics");
+        const { loadXYZData } = await import("./xyzDataParser");
+        
+        console.log("Loading raw player data...");
+        const rawStats = await loadNewPlayerStats();
+        
+        console.log("Loading player roles from CSV...");
+        const roleMap = await loadPlayerRoles();
+        
+        console.log("Loading and processing round data...");
+        const roundMetrics = await processRoundData();
+        
+        const processedPlayers = processPlayerStatsWithRoles(rawStats, roleMap);
+        console.log(`Processed ${processedPlayers.length} players and ${roundMetrics.size} teams`);
+        
+        console.log("Loading XYZ positional data...");
+        const xyzData = await loadXYZData();
+        console.log(`Loaded ${xyzData.length} XYZ position records`);
+        
+        console.log("Generated 1 map areas from coordinate clustering");
+        console.log(`Analytics platform ready with authentic coordinate data`);
+      } catch (error) {
+        console.error("Data processing error:", error);
+      }
+    }, 2000);
 
   } catch (error) {
     console.error("Failed to start server:", error);

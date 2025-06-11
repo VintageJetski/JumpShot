@@ -31,6 +31,9 @@ export interface IStorage {
   getRoundXYZData(roundNum: number): Promise<XYZPlayerData[]>;
   setXYZData(data: XYZPlayerData[]): Promise<void>;
   setPositionalMetrics(metrics: PositionalMetrics[]): Promise<void>;
+  
+  // Data initialization
+  initializeData(): Promise<void>;
 }
 
 /**
@@ -117,6 +120,52 @@ export class MemoryStorage implements IStorage {
 
   async setPositionalMetrics(metrics: PositionalMetrics[]): Promise<void> {
     this.positionalMetricsCache = metrics;
+  }
+
+  // Initialize data by loading from CSV files
+  async initializeData(): Promise<void> {
+    const { loadNewPlayerStats } = await import("./newDataParser");
+    const { loadPlayerRoles } = await import("./roleParser");
+    const { processPlayerStatsWithRoles } = await import("./newPlayerAnalytics");
+    const { processRoundData } = await import("./roundAnalytics");
+
+    try {
+      // Load player stats and roles
+      const rawStats = await loadNewPlayerStats();
+      const roleMap = await loadPlayerRoles();
+      
+      // Process players with role assignments
+      const processedPlayers = processPlayerStatsWithRoles(rawStats, roleMap);
+      await this.setPlayers(processedPlayers);
+
+      // Generate teams from processed players
+      const teamMap = new Map<string, TeamWithTIR>();
+      processedPlayers.forEach(player => {
+        if (!teamMap.has(player.team)) {
+          const teamPlayers = processedPlayers.filter(p => p.team === player.team);
+          const avgPIV = teamPlayers.reduce((sum, p) => sum + p.piv, 0) / teamPlayers.length;
+          teamMap.set(player.team, {
+            name: player.team,
+            players: teamPlayers,
+            tir: avgPIV, // Team Impact Rating based on average PIV
+            averagePIV: avgPIV
+          });
+        }
+      });
+      await this.setTeams(Array.from(teamMap.values()));
+
+      // Load round metrics
+      const roundMetrics = await processRoundData();
+      for (const [teamName, metrics] of roundMetrics.entries()) {
+        await this.setTeamRoundMetrics(metrics);
+      }
+
+      console.log(`Loaded ${rawStats.length} raw player records`);
+      console.log(`Processed ${processedPlayers.length} players and ${teamMap.size} teams`);
+    } catch (error) {
+      console.error("Failed to initialize data:", error);
+      throw error;
+    }
   }
 }
 

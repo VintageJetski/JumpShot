@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
+import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
@@ -52,19 +53,23 @@ async function startServer() {
     // Register API routes
     await registerRoutes(app);
 
-    // Setup Vite development server
-    if (process.env.NODE_ENV === "production") {
-      serveStatic(app);
-    } else {
-      await setupVite(app, server);
-    }
+    // Serve static files from public directory
+    app.use(express.static('public'));
+    
+    // Serve the main page for all non-API routes
+    app.get('*', (req, res) => {
+      if (!req.path.startsWith('/api')) {
+        res.sendFile(path.join(process.cwd(), 'public/index.html'));
+      }
+    });
 
     // Start the HTTP server
     const port = Number(process.env.PORT) || 5000;
     
-    server.listen(port, '0.0.0.0', () => {
+    server.listen(port, () => {
       log(`serving on port ${port}`);
       console.log(`Server successfully bound to port ${port}`);
+      console.log(`Web interface accessible at http://localhost:${port}`);
       
       // Initialize data processing after server starts
       setImmediate(async () => {

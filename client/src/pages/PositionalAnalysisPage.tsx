@@ -4,27 +4,27 @@ import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import XYZPositionalAnalysis from "@/components/data-visualization/XYZPositionalAnalysis";
+import CS2MapVisualization from "@/components/data-visualization/CS2MapVisualization";
 import { PlayerWithPIV } from "@shared/types";
 
 interface XYZPlayerData {
   health: number;
-  flashDuration: number;
-  place: string;
+  flash_duration: number;
+  place?: string;
   armor: number;
   side: 't' | 'ct';
   pitch: number;
   X: number;
   yaw: number;
   Y: number;
-  velocityX: number;
+  velocity_X: number;
   Z: number;
-  velocityY: number;
-  velocityZ: number;
+  velocity_Y: number;
+  velocity_Z: number;
   tick: number;
-  userSteamid: string;
+  user_steamid: string;
   name: string;
-  roundNum: number;
+  round_num: number;
 }
 
 interface PositionalMetrics {
@@ -125,9 +125,8 @@ export default function PositionalAnalysisPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <XYZPositionalAnalysis 
+            <CS2MapVisualization 
               xyzData={xyzData} 
-              positionalMetrics={positionalMetrics} 
             />
           </CardContent>
         </Card>

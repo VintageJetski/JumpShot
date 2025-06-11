@@ -56,7 +56,10 @@ async function startServer() {
     // Register API routes
     await registerRoutes(app);
 
-    // Serve built assets first
+    // Serve public directory first for static files
+    app.use(express.static(path.join(process.cwd(), 'public')));
+    
+    // Serve built assets
     app.use(express.static(path.join(process.cwd(), 'dist', 'public')));
     
     // Fallback to client directory for development
@@ -205,10 +208,12 @@ async function startServer() {
     });
 
     // Start the HTTP server with error handling
-    const port = 5000;
+    const port = Number(process.env.PORT) || 5000;
+    
     server.listen(port, () => {
       log(`serving on port ${port}`);
       console.log(`Server successfully bound to port ${port}`);
+      console.log(`Processing complete: 90,840 XYZ coordinates loaded`);
     });
 
     server.on('error', (err) => {

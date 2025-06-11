@@ -7,7 +7,7 @@ import path from 'path';
  */
 export interface XYZPlayerData {
   health: number;
-  flashDuration: number;
+  flash_duration: number;
   place: string;
   armor: number;
   side: 't' | 'ct';
@@ -15,27 +15,27 @@ export interface XYZPlayerData {
   X: number;
   yaw: number;
   Y: number;
-  velocityX: number;
+  velocity_X: number;
   Z: number;
-  velocityY: number;
-  velocityZ: number;
+  velocity_Y: number;
+  velocity_Z: number;
   tick: number;
-  userSteamid: string;
+  user_steamid: string;
   name: string;
-  roundNum: number;
+  round_num: number;
   // Utility positions
-  xSmoke?: number;
-  ySmoke?: number;
-  zSmoke?: number;
-  xInfernos?: number;
-  yInfernos?: number;
-  zInfernos?: number;
-  xHe?: number;
-  yHe?: number;
-  zHe?: number;
-  xFlashes?: number;
-  yFlashes?: number;
-  zFlashes?: number;
+  x_smoke?: number;
+  y_smoke?: number;
+  z_smoke?: number;
+  x_infernos?: number;
+  y_infernos?: number;
+  z_infernos?: number;
+  x_he?: number;
+  y_he?: number;
+  z_he?: number;
+  x_flashes?: number;
+  y_flashes?: number;
+  z_flashes?: number;
 }
 
 /**
@@ -97,12 +97,12 @@ export async function parseXYZData(filePath: string): Promise<XYZPlayerData[]> {
         columns: true,
         skip_empty_lines: true,
         cast: (value, { column }) => {
-          // Convert numeric fields
+          // Convert numeric fields - using actual CSV column names
           const numericFields = [
-            'health', 'flashDuration', 'armor', 'pitch', 'X', 'yaw', 'Y',
-            'velocityX', 'Z', 'velocityY', 'velocityZ', 'tick', 'roundNum',
-            'xSmoke', 'ySmoke', 'zSmoke', 'xInfernos', 'yInfernos', 'zInfernos',
-            'xHe', 'yHe', 'zHe', 'xFlashes', 'yFlashes', 'zFlashes'
+            'health', 'flash_duration', 'armor', 'pitch', 'X', 'yaw', 'Y',
+            'velocity_X', 'Z', 'velocity_Y', 'velocity_Z', 'tick', 'round_num',
+            'x_smoke', 'y_smoke', 'z_smoke', 'x_infernos', 'y_infernos', 'z_infernos',
+            'x_he', 'y_he', 'z_he', 'x_flashes', 'y_flashes', 'z_flashes'
           ];
           
           if (numericFields.includes(column as string)) {
@@ -298,6 +298,13 @@ export function calculateVelocity(vx: number, vy: number, vz: number): number {
 }
 
 /**
+ * Calculate velocity from XYZ data object
+ */
+export function calculateVelocityFromData(data: XYZPlayerData): number {
+  return calculateVelocity(data.velocity_X, data.velocity_Y, data.velocity_Z);
+}
+
+/**
  * Process raw XYZ data into positional metrics
  */
 export function processPositionalData(rawData: XYZPlayerData[], mapName: string = 'dynamic'): PositionalMetrics[] {
@@ -312,7 +319,7 @@ export function processPositionalData(rawData: XYZPlayerData[], mapName: string 
 
   // Group data by player
   rawData.forEach(record => {
-    const playerId = record.userSteamid;
+    const playerId = record.user_steamid;
     if (!playerPositions.has(playerId)) {
       playerPositions.set(playerId, []);
     }
@@ -328,7 +335,7 @@ export function processPositionalData(rawData: XYZPlayerData[], mapName: string 
       playerId,
       playerName: positions[0].name,
       team: positions[0].side === 't' ? 'Terrorist' : 'Counter-Terrorist',
-      roundNum: positions[0].roundNum,
+      roundNum: positions[0].round_num,
       totalDistance: 0,
       averageVelocity: 0,
       maxVelocity: 0,
@@ -354,7 +361,7 @@ export function processPositionalData(rawData: XYZPlayerData[], mapName: string 
 
     positions.forEach((pos, index) => {
       // Calculate velocity
-      const velocity = calculateVelocity(pos.velocityX, pos.velocityY, pos.velocityZ);
+      const velocity = calculateVelocity(pos.velocity_X, pos.velocity_Y, pos.velocity_Z);
       totalVelocity += velocity;
       metrics.maxVelocity = Math.max(metrics.maxVelocity, velocity);
 
@@ -370,39 +377,39 @@ export function processPositionalData(rawData: XYZPlayerData[], mapName: string 
       areaTime.set(area, timeInArea + 1); // +1 tick
 
       // Track utility usage with real effectiveness calculation
-      if (pos.xSmoke !== undefined && pos.ySmoke !== undefined && pos.zSmoke !== undefined) {
+      if (pos.x_smoke !== undefined && pos.y_smoke !== undefined && pos.z_smoke !== undefined) {
         metrics.utilityUsage.smokes.push({
-          x: pos.xSmoke,
-          y: pos.ySmoke,
-          z: pos.zSmoke,
-          effectiveness: calculateUtilityEffectiveness(pos.xSmoke, pos.ySmoke, 'smoke', rawData, pos.tick)
+          x: pos.x_smoke,
+          y: pos.y_smoke,
+          z: pos.z_smoke,
+          effectiveness: calculateUtilityEffectiveness(pos.x_smoke, pos.y_smoke, 'smoke', rawData, pos.tick)
         });
       }
 
-      if (pos.xFlashes !== undefined && pos.yFlashes !== undefined && pos.zFlashes !== undefined) {
+      if (pos.x_flashes !== undefined && pos.y_flashes !== undefined && pos.z_flashes !== undefined) {
         metrics.utilityUsage.flashes.push({
-          x: pos.xFlashes,
-          y: pos.yFlashes,
-          z: pos.zFlashes,
-          effectiveness: calculateUtilityEffectiveness(pos.xFlashes, pos.yFlashes, 'flash', rawData, pos.tick)
+          x: pos.x_flashes,
+          y: pos.y_flashes,
+          z: pos.z_flashes,
+          effectiveness: calculateUtilityEffectiveness(pos.x_flashes, pos.y_flashes, 'flash', rawData, pos.tick)
         });
       }
 
-      if (pos.xHe !== undefined && pos.yHe !== undefined && pos.zHe !== undefined) {
+      if (pos.x_he !== undefined && pos.y_he !== undefined && pos.z_he !== undefined) {
         metrics.utilityUsage.nades.push({
-          x: pos.xHe,
-          y: pos.yHe,
-          z: pos.zHe,
-          effectiveness: calculateUtilityEffectiveness(pos.xHe, pos.yHe, 'he', rawData, pos.tick)
+          x: pos.x_he,
+          y: pos.y_he,
+          z: pos.z_he,
+          effectiveness: calculateUtilityEffectiveness(pos.x_he, pos.y_he, 'he', rawData, pos.tick)
         });
       }
 
-      if (pos.xInfernos !== undefined && pos.yInfernos !== undefined && pos.zInfernos !== undefined) {
+      if (pos.x_infernos !== undefined && pos.y_infernos !== undefined && pos.z_infernos !== undefined) {
         metrics.utilityUsage.molotovs.push({
-          x: pos.xInfernos,
-          y: pos.yInfernos,
-          z: pos.zInfernos,
-          effectiveness: calculateUtilityEffectiveness(pos.xInfernos, pos.yInfernos, 'molotov', rawData, pos.tick)
+          x: pos.x_infernos,
+          y: pos.y_infernos,
+          z: pos.z_infernos,
+          effectiveness: calculateUtilityEffectiveness(pos.x_infernos, pos.y_infernos, 'molotov', rawData, pos.tick)
         });
       }
 

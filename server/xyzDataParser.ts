@@ -470,19 +470,19 @@ function calculateUtilityEffectiveness(x: number, y: number, type: string, allDa
     switch (type) {
       case 'smoke':
         // Effectiveness based on player movement disruption and positioning changes
-        const velocityMagnitude = calculateVelocity(player.velocityX, player.velocityY, player.velocityZ);
+        const velocityMagnitude = calculateVelocity(player.velocity_X, player.velocity_Y, player.velocity_Z);
         if (velocityMagnitude < 50) { // Player stopped/slowed by smoke
           effectivenessScore += proximity * timeRelevance * 0.8;
         }
-        if (player.flashDuration > 0) { // Player was also flashed through smoke
+        if (player.flash_duration > 0) { // Player was also flashed through smoke
           effectivenessScore += proximity * timeRelevance * 0.3;
         }
         break;
         
       case 'flash':
         // Effectiveness based on actual flash duration
-        if (player.flashDuration > 0) {
-          const flashIntensity = Math.min(1, player.flashDuration / 2.0); // Normalize flash duration
+        if (player.flash_duration > 0) {
+          const flashIntensity = Math.min(1, player.flash_duration / 2.0); // Normalize flash duration
           effectivenessScore += proximity * timeRelevance * flashIntensity;
         }
         break;
@@ -494,7 +494,7 @@ function calculateUtilityEffectiveness(x: number, y: number, type: string, allDa
           effectivenessScore += proximity * timeRelevance * healthImpact;
         }
         // Movement disruption from explosion
-        const postUtilVelocity = calculateVelocity(player.velocityX, player.velocityY, player.velocityZ);
+        const postUtilVelocity = calculateVelocity(player.velocity_X, player.velocity_Y, player.velocity_Z);
         if (postUtilVelocity > 200) { // Player forced to move quickly
           effectivenessScore += proximity * timeRelevance * 0.4;
         }
@@ -502,7 +502,7 @@ function calculateUtilityEffectiveness(x: number, y: number, type: string, allDa
         
       case 'molotov':
         // Effectiveness based on area denial and movement patterns
-        const playerVelocity = calculateVelocity(player.velocityX, player.velocityY, player.velocityZ);
+        const playerVelocity = calculateVelocity(player.velocity_X, player.velocity_Y, player.velocity_Z);
         if (playerVelocity > 150) { // Player forced to move away
           effectivenessScore += proximity * timeRelevance * 0.7;
         }

@@ -6,7 +6,6 @@ import { processPlayerStatsWithRoles } from "./newPlayerAnalytics";
 import { calculateTeamImpactRatings } from "./teamAnalytics";
 import { loadPlayerRoles } from "./roleParser";
 import { initializeRoundData } from "./roundDataLoader";
-
 import path from "path";
 
 // Global cache for processed data
@@ -26,6 +25,28 @@ async function initializeDataIfNeeded() {
     
     console.log('Loading round data...');
     await initializeRoundData();
+    
+    // Load XYZ coordinate data in background after other data is ready
+    setTimeout(async () => {
+      try {
+        console.log('Loading XYZ coordinate data...');
+        const { parseXYZData, processPositionalData } = await import('./xyzDataParser');
+        const rawXYZData = await parseXYZData(path.join(process.cwd(), 'attached_assets', 'round_4_mapping_1749572845894.csv'));
+        
+        console.log(`Loaded ${rawXYZData.length} XYZ position records`);
+        
+        // Process positional metrics from raw data
+        const positionalMetrics = processPositionalData(rawXYZData, 'de_inferno');
+        
+        // Store XYZ data in storage
+        await storage.setXYZData(rawXYZData);
+        await storage.setPositionalMetrics(positionalMetrics);
+        
+        console.log(`Processed ${positionalMetrics.length} positional metrics`);
+      } catch (error) {
+        console.error('Error loading XYZ data:', error);
+      }
+    }, 1000);
     
     // Process player data and store in cache
     const processedPlayers = processPlayerStatsWithRoles(rawPlayerStats, roleMap);

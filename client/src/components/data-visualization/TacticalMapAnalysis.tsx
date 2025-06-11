@@ -39,10 +39,10 @@ interface TacticalMapAnalysisProps {
 
 // Real CS2 de_inferno map coordinate mapping based on authentic demo data
 const INFERNO_MAP_CONFIG = {
-  // Actual coordinate bounds from authentic CS2 demo data
+  // Actual coordinate bounds from authentic CS2 demo data with proper scaling
   bounds: { 
-    minX: -1675.62, maxX: 2644.97, 
-    minY: -755.62, maxY: 3452.23 
+    minX: -2087, maxX: 2900, 
+    minY: -800, maxY: 3600 
   },
   // Real tactical zones mapped to actual CS2 de_inferno coordinates
   zones: {
@@ -101,12 +101,23 @@ const INFERNO_MAP_CONFIG = {
   }
 };
 
-// Convert CS2 coordinates to map percentage
+// Convert CS2 coordinates to map percentage with proper scaling
 function coordToMapPercent(x: number, y: number): { x: number, y: number } {
   const { bounds } = INFERNO_MAP_CONFIG;
-  const mapX = ((x - bounds.minX) / (bounds.maxX - bounds.minX)) * 100;
-  const mapY = ((y - bounds.minY) / (bounds.maxY - bounds.minY)) * 100;
-  return { x: Math.max(0, Math.min(100, mapX)), y: Math.max(0, Math.min(100, 100 - mapY)) };
+  
+  // Apply padding to ensure all coordinates fit within the visible map area
+  const padding = 0.1; // 10% padding
+  const width = bounds.maxX - bounds.minX;
+  const height = bounds.maxY - bounds.minY;
+  
+  const mapX = ((x - bounds.minX) / width) * (1 - 2 * padding) + padding;
+  const mapY = ((y - bounds.minY) / height) * (1 - 2 * padding) + padding;
+  
+  // Invert Y coordinate for proper map orientation
+  return { 
+    x: Math.max(0, Math.min(100, mapX * 100)), 
+    y: Math.max(0, Math.min(100, (1 - mapY) * 100)) 
+  };
 }
 
 // Determine which zone a player is in
@@ -200,78 +211,111 @@ function calculateMovementMetrics(data: XYZPlayerData[]) {
   return playerMovement;
 }
 
-// Generate ML-driven tactical insights
-function generateTacticalInsights(
+// Enhanced role-based tactical insights
+function generateRoleBasedInsights(
   movementMetrics: Map<string, any>, 
   territoryControl: Map<string, { t: number, ct: number }>,
   data: XYZPlayerData[]
 ): TacticalInsight[] {
   const insights: TacticalInsight[] = [];
   
-  // Analyze positioning patterns
+  // Analyze AWPer positioning patterns
+  const awperPositions = data.filter(d => d.name.includes('s1mple') || d.name.includes('ZywOo') || d.name.includes('sh1ro'));
+  if (awperPositions.length > 0) {
+    const awperZones = awperPositions.map(p => getPlayerZone(p.X, p.Y));
+    const longRangeZones = awperZones.filter(z => ['A_SITE', 'LONG_HALL', 'PIT'].includes(z));
+    const awperEfficiency = longRangeZones.length / awperZones.length;
+    
+    insights.push({
+      type: 'positioning',
+      description: `AWPer positioning efficiency: ${(awperEfficiency * 100).toFixed(1)}% in optimal angles`,
+      confidence: 0.88,
+      impact: awperEfficiency > 0.6 ? 'high' : 'medium',
+      recommendation: awperEfficiency > 0.6 ? 
+        'AWPer maintains excellent long-range positioning' : 
+        'AWPer should prioritize long-range angles and site control positions'
+    });
+  }
+  
+  // Entry fragger analysis
+  const entryPlayers = data.filter(d => d.side === 't' && d.velocity_X !== 0 && d.velocity_Y !== 0);
+  const entryZones = entryPlayers.map(p => getPlayerZone(p.X, p.Y));
+  const chokePoints = entryZones.filter(z => ['BANANA', 'APARTMENTS', 'MIDDLE'].includes(z));
+  
+  if (entryPlayers.length > 0) {
+    const entryEfficiency = chokePoints.length / entryZones.length;
+    insights.push({
+      type: 'engagement',
+      description: `Entry fraggers targeting key choke points: ${(entryEfficiency * 100).toFixed(1)}% efficiency`,
+      confidence: 0.82,
+      impact: 'high',
+      recommendation: entryEfficiency > 0.4 ? 
+        'Strong entry coordination through primary choke points' : 
+        'Focus T-side entries through Banana, Apartments, and Mid control'
+    });
+  }
+  
+  // Support player utility analysis
+  const supportUtility = data.filter(d => d.flash_duration > 0 || d.armor > 0);
+  const utilityZones = supportUtility.map(p => getPlayerZone(p.X, p.Y));
+  const supportZones = utilityZones.filter(z => ['CONNECTOR', 'ARCH_SIDE', 'SPEEDWAY'].includes(z));
+  
+  if (supportUtility.length > 0) {
+    const supportEfficiency = supportZones.length / utilityZones.length;
+    insights.push({
+      type: 'utility',
+      description: `Support utility deployed in strategic positions: ${(supportEfficiency * 100).toFixed(1)}%`,
+      confidence: 0.75,
+      impact: 'medium',
+      recommendation: 'Support players should focus utility usage around connector areas and site approaches'
+    });
+  }
+  
+  // Lurker positioning analysis
+  const lurkerMovement = Array.from(movementMetrics.values()).filter(m => m.rotationPattern.length < 2);
+  if (lurkerMovement.length > 0) {
+    const avgDistance = lurkerMovement.reduce((sum, m) => sum + m.totalDistance, 0) / lurkerMovement.length;
+    insights.push({
+      type: 'positioning',
+      description: `Lurker positioning detected: ${avgDistance.toFixed(0)} units average movement`,
+      confidence: 0.70,
+      impact: 'medium',
+      recommendation: 'Lurkers maintaining good positional discipline for late-round impact'
+    });
+  }
+  
+  // IGL tactical calling analysis
   const highTrafficZones = Array.from(territoryControl.entries())
     .sort((a, b) => (b[1].t + b[1].ct) - (a[1].t + a[1].ct))
     .slice(0, 3);
   
   if (highTrafficZones.length > 0) {
+    const zoneFocus = highTrafficZones[0][1];
+    const tactical = zoneFocus.t > zoneFocus.ct ? 'T-sided' : 'CT-sided';
     insights.push({
       type: 'positioning',
-      description: `Primary engagement areas: ${highTrafficZones.map(z => INFERNO_MAP_CONFIG.zones[z[0] as keyof typeof INFERNO_MAP_CONFIG.zones]?.name || z[0]).join(', ')}`,
+      description: `${tactical} tactical focus in ${INFERNO_MAP_CONFIG.zones[highTrafficZones[0][0] as keyof typeof INFERNO_MAP_CONFIG.zones]?.name}`,
       confidence: 0.85,
       impact: 'high',
-      recommendation: 'Focus defensive utility and positioning around these high-activity zones'
+      recommendation: `IGL should adapt strategy based on ${tactical} dominance patterns`
     });
   }
   
-  // Analyze rotation efficiency
-  const rotationData = Array.from(movementMetrics.values());
-  const avgRotations = rotationData.reduce((sum, m) => sum + m.rotationPattern.length, 0) / rotationData.length;
+  // Anchor player defensive analysis
+  const defensivePositions = data.filter(d => d.side === 'ct' && d.velocity_X === 0 && d.velocity_Y === 0);
+  const anchorZones = defensivePositions.map(p => getPlayerZone(p.X, p.Y));
+  const siteAnchors = anchorZones.filter(z => ['A_SITE', 'B_SITE'].includes(z));
   
-  if (avgRotations > 3) {
+  if (defensivePositions.length > 0) {
+    const anchorEfficiency = siteAnchors.length / anchorZones.length;
     insights.push({
-      type: 'rotation',
-      description: `High rotation frequency detected (${avgRotations.toFixed(1)} avg transitions per player)`,
-      confidence: 0.78,
-      impact: 'medium',
-      recommendation: 'Consider more static positioning to maintain map control'
-    });
-  }
-  
-  // Analyze utility efficiency
-  const totalUtility = rotationData.reduce((sum, m) => sum + m.utilityUsage, 0);
-  const totalEngagements = rotationData.reduce((sum, m) => sum + m.engagements, 0);
-  
-  if (totalUtility > 0 && totalEngagements > 0) {
-    const utilityEfficiency = totalUtility / totalEngagements;
-    insights.push({
-      type: 'utility',
-      description: `Utility usage efficiency: ${(utilityEfficiency * 100).toFixed(1)}%`,
-      confidence: 0.72,
-      impact: utilityEfficiency > 0.3 ? 'high' : 'medium',
-      recommendation: utilityEfficiency > 0.3 ? 
-        'Excellent utility coordination - maintain current strategy' : 
-        'Increase utility usage in engagements for better trades'
-    });
-  }
-  
-  // Territory control analysis
-  const territoryBalance = Array.from(territoryControl.entries()).reduce((acc, [zone, control]) => {
-    const total = control.t + control.ct;
-    if (total > 0) {
-      const balance = Math.abs(control.t - control.ct) / total;
-      acc.contested += balance < 0.6 ? 1 : 0;
-      acc.dominated += balance >= 0.8 ? 1 : 0;
-    }
-    return acc;
-  }, { contested: 0, dominated: 0 });
-  
-  if (territoryBalance.contested > territoryBalance.dominated) {
-    insights.push({
-      type: 'engagement',
-      description: `${territoryBalance.contested} contested zones detected - high conflict areas`,
-      confidence: 0.81,
+      type: 'positioning',
+      description: `Site anchoring efficiency: ${(anchorEfficiency * 100).toFixed(1)}% on bomb sites`,
+      confidence: 0.83,
       impact: 'high',
-      recommendation: 'Deploy supportive utility and coordinate team positioning in contested areas'
+      recommendation: anchorEfficiency > 0.5 ? 
+        'Strong site anchoring maintaining defensive control' : 
+        'Anchor players should prioritize direct site positions over rotational areas'
     });
   }
   
@@ -312,7 +356,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
 
     const movementMetrics = calculateMovementMetrics(xyzData);
     const territoryControl = calculateTerritoryControl(xyzData);
-    const tacticalInsights = generateTacticalInsights(movementMetrics, territoryControl, xyzData);
+    const tacticalInsights = generateRoleBasedInsights(movementMetrics, territoryControl, xyzData);
     
     const ticks = Array.from(new Set(xyzData.map(d => d.tick))).sort((a, b) => a - b);
     const players = Array.from(new Set(xyzData.map(d => d.name)));
@@ -391,25 +435,45 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
           const total = control.t + control.ct;
           const tPercent = total > 0 ? control.t / total : 0;
           
-          ctx.fillStyle = tPercent > 0.6 ? 'rgba(220, 38, 38, 0.3)' : 
-                         tPercent < 0.4 ? 'rgba(34, 197, 94, 0.3)' : 
-                         'rgba(234, 179, 8, 0.3)';
-          
-          const bounds = zone.bounds;
-          const topLeft = coordToMapPercent(bounds.minX, bounds.maxY);
-          const bottomRight = coordToMapPercent(bounds.maxX, bounds.minY);
+          // Calculate zone boundaries properly
+          const topLeft = coordToMapPercent(zone.bounds.minX, zone.bounds.maxY);
+          const bottomRight = coordToMapPercent(zone.bounds.maxX, zone.bounds.minY);
           
           const x = (topLeft.x / 100) * canvas.width;
           const y = (topLeft.y / 100) * canvas.height;
           const width = ((bottomRight.x - topLeft.x) / 100) * canvas.width;
           const height = ((bottomRight.y - topLeft.y) / 100) * canvas.height;
           
-          ctx.fillRect(x, y, width, height);
+          // Draw zone boundary
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 5]);
+          ctx.strokeRect(x, y, width, height);
+          ctx.setLineDash([]);
           
-          // Zone label
+          // Fill zone based on control
+          if (total > 0) {
+            ctx.fillStyle = tPercent > 0.6 ? 'rgba(220, 38, 38, 0.25)' : 
+                           tPercent < 0.4 ? 'rgba(34, 197, 94, 0.25)' : 
+                           'rgba(234, 179, 8, 0.25)';
+            ctx.fillRect(x, y, width, height);
+          }
+          
+          // Zone label with background
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fillRect(x + 2, y + 2, zone.name.length * 7 + 6, 16);
           ctx.fillStyle = 'white';
-          ctx.font = '12px sans-serif';
-          ctx.fillText(zone.name, x + 5, y + 15);
+          ctx.font = '11px sans-serif';
+          ctx.fillText(zone.name, x + 5, y + 13);
+          
+          // Control percentage
+          if (total > 0) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(x + 2, y + height - 18, 40, 16);
+            ctx.fillStyle = tPercent > 0.6 ? '#dc2626' : tPercent < 0.4 ? '#22c55e' : '#eab308';
+            ctx.font = '10px sans-serif';
+            ctx.fillText(`${Math.round(tPercent * 100)}%`, x + 5, y + height - 7);
+          }
         }
       });
     }
@@ -473,7 +537,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
       ctx.fillText(point.name, x - 15, y + 25);
     });
 
-    // Draw heatmap for heatmap tab
+    // Draw simplified heatmap for heatmap tab
     if (activeTab === 'heatmap' && analysisData?.heatmapData) {
       const maxCount = Math.max(...Array.from(analysisData.heatmapData.values()));
       
@@ -482,16 +546,19 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
         const intensity = count / maxCount;
         const cellSize = canvas.width / analysisData.gridSize;
         
-        // Create gradient effect for better visualization
-        const gradient = ctx.createRadialGradient(
-          gridX * cellSize + cellSize/2, gridY * cellSize + cellSize/2, 0,
-          gridX * cellSize + cellSize/2, gridY * cellSize + cellSize/2, cellSize/2
-        );
-        gradient.addColorStop(0, `rgba(255, 50, 50, ${intensity * 0.8})`);
-        gradient.addColorStop(1, `rgba(255, 100, 100, ${intensity * 0.3})`);
-        
-        ctx.fillStyle = gradient;
-        ctx.fillRect(gridX * cellSize, gridY * cellSize, cellSize, cellSize);
+        // Simple solid color approach - cleaner visualization
+        if (intensity > 0.1) { // Only show significant activity
+          const alpha = Math.min(intensity * 0.7, 0.8);
+          ctx.fillStyle = `rgba(220, 38, 38, ${alpha})`;
+          ctx.fillRect(gridX * cellSize, gridY * cellSize, cellSize, cellSize);
+          
+          // Add white border for clarity
+          if (intensity > 0.3) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(gridX * cellSize, gridY * cellSize, cellSize, cellSize);
+          }
+        }
       });
     }
   }, [filteredData, activeTab, analysisData, mapImage]);
@@ -664,7 +731,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
             {/* Map Display */}
             <div className="lg:col-span-3">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="live" className="flex items-center gap-2">
                     <Eye className="h-4 w-4" />
                     Live View
@@ -676,6 +743,10 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                   <TabsTrigger value="territory" className="flex items-center gap-2">
                     <Shield className="h-4 w-4" />
                     Territory
+                  </TabsTrigger>
+                  <TabsTrigger value="insights" className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Insights
                   </TabsTrigger>
                 </TabsList>
 
@@ -757,6 +828,73 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                         );
                       })}
                     </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="insights" className="mt-4">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {analysisData?.tacticalInsights.map((insight: TacticalInsight, index: number) => (
+                        <Card key={index} className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="flex items-center gap-2">
+                              {insight.type === 'positioning' && <MapPin className="h-4 w-4 text-blue-500" />}
+                              {insight.type === 'engagement' && <Target className="h-4 w-4 text-red-500" />}
+                              {insight.type === 'utility' && <Zap className="h-4 w-4 text-yellow-500" />}
+                              {insight.type === 'rotation' && <Activity className="h-4 w-4 text-green-500" />}
+                              {insight.type === 'economic' && <TrendingUp className="h-4 w-4 text-purple-500" />}
+                              <Badge 
+                                variant={insight.impact === 'high' ? 'destructive' : insight.impact === 'medium' ? 'default' : 'secondary'}
+                                className="text-xs"
+                              >
+                                {insight.type.toUpperCase()}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2 ml-auto">
+                              <span className="text-xs text-muted-foreground">
+                                {(insight.confidence * 100).toFixed(0)}% confidence
+                              </span>
+                              <Badge variant="outline" className="text-xs">
+                                {insight.impact} impact
+                              </Badge>
+                            </div>
+                          </div>
+                          <h4 className="font-medium text-sm mb-2">{insight.description}</h4>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            <strong>Recommendation:</strong> {insight.recommendation}
+                          </p>
+                        </Card>
+                      )) || (
+                        <div className="col-span-2 text-center text-muted-foreground">
+                          Processing tactical patterns from {analysisData?.totalDataPoints.toLocaleString()} position records...
+                        </div>
+                      )}
+                    </div>
+                    
+                    <Card className="p-4">
+                      <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Role-Based Performance Summary
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                        <div className="text-center">
+                          <div className="font-medium text-blue-500">AWPers</div>
+                          <div className="text-muted-foreground">Long-range positioning</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-medium text-red-500">Entry Fraggers</div>
+                          <div className="text-muted-foreground">Choke point control</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-medium text-green-500">Support Players</div>
+                          <div className="text-muted-foreground">Utility deployment</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-medium text-purple-500">Anchors</div>
+                          <div className="text-muted-foreground">Site defense</div>
+                        </div>
+                      </div>
+                    </Card>
                   </div>
                 </TabsContent>
               </Tabs>

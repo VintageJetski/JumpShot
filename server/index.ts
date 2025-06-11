@@ -79,9 +79,10 @@ async function startServer() {
     });
 
     // Start the HTTP server with error handling
-    const port = 5000;
-    server.listen(port, () => {
+    const port = process.env.PORT || 5000;
+    server.listen(port, '0.0.0.0', () => {
       log(`serving on port ${port}`);
+      console.log(`Server successfully bound to port ${port}`);
     });
 
     server.on('error', (err) => {

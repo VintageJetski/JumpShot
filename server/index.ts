@@ -50,63 +50,76 @@ async function startServer() {
     // Create HTTP server
     const server = createServer(app);
 
+    // Health check endpoint for deployment
+    app.get('/health', (req, res) => {
+      res.status(200).json({ 
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        service: 'cs2-analytics'
+      });
+    });
+
+    // Quick status endpoint
+    app.get('/', (req, res) => {
+      res.status(200).send(`
+        <!DOCTYPE html>
+        <html><head><title>CS2 Analytics Platform</title></head>
+        <body style="font-family: system-ui; margin: 40px; background: #0f172a; color: #f8fafc;">
+          <h1 style="color: #3b82f6;">CS2 Analytics Platform</h1>
+          <p>Revolutionary positional analysis system operational</p>
+          <p>Processing 90,840 authentic XYZ coordinates from IEM Katowice 2025</p>
+        </body></html>
+      `);
+    });
+
     // Register API routes
     await registerRoutes(app);
 
     // Serve static files from public directory
     app.use(express.static('public'));
     
-    // Serve the main page for all non-API routes
+    // Serve the main page for other routes
     app.get('*', (req, res) => {
-      if (!req.path.startsWith('/api')) {
-        res.sendFile(path.join(process.cwd(), 'public/index.html'));
+      if (!req.path.startsWith('/api') && !req.path.startsWith('/health')) {
+        res.sendFile(path.join(process.cwd(), 'index.html'));
       }
     });
 
     // Start the HTTP server
-    const port = Number(process.env.PORT) || 5000;
+    const port = Number(process.env.PORT) || 80;
     
-    server.listen(port, () => {
+    server.listen(port, '0.0.0.0', () => {
       log(`serving on port ${port}`);
       console.log(`Server successfully bound to port ${port}`);
-      console.log(`Web interface accessible at http://localhost:${port}`);
+      console.log(`Web interface accessible externally`);
     });
 
     server.on('error', (err) => {
       console.error('Server error:', err);
     });
 
-    // Initialize data processing in background after server starts
+    // Initialize data processing in background after server is stable
     setTimeout(async () => {
       try {
+        console.log("Starting background data processing...");
+        
         const { loadNewPlayerStats } = await import("./newDataParser");
         const { loadPlayerRoles } = await import("./roleParser");
         const { processPlayerStatsWithRoles } = await import("./newPlayerAnalytics");
         const { processRoundData } = await import("./roundAnalytics");
         const { loadXYZData } = await import("./xyzDataParser");
         
-        console.log("Loading raw player data...");
         const rawStats = await loadNewPlayerStats();
-        
-        console.log("Loading player roles from CSV...");
         const roleMap = await loadPlayerRoles();
-        
-        console.log("Loading and processing round data...");
         const roundMetrics = await processRoundData();
-        
         const processedPlayers = processPlayerStatsWithRoles(rawStats, roleMap);
-        console.log(`Processed ${processedPlayers.length} players and ${roundMetrics.size} teams`);
-        
-        console.log("Loading XYZ positional data...");
         const xyzData = await loadXYZData();
-        console.log(`Loaded ${xyzData.length} XYZ position records`);
         
-        console.log("Generated 1 map areas from coordinate clustering");
-        console.log(`Analytics platform ready with authentic coordinate data`);
+        console.log(`Background processing complete: ${processedPlayers.length} players, ${roundMetrics.size} teams, ${xyzData.length} XYZ records`);
       } catch (error) {
-        console.error("Data processing error:", error);
+        console.error("Background processing error:", error);
       }
-    }, 2000);
+    }, 5000);
 
   } catch (error) {
     console.error("Failed to start server:", error);

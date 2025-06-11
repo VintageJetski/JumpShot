@@ -30,19 +30,16 @@ async function initializeDataIfNeeded() {
     setTimeout(async () => {
       try {
         console.log('Loading XYZ coordinate data...');
-        const { parseXYZData, processPositionalData } = await import('./xyzDataParser');
+        const { parseXYZData } = await import('./xyzDataParser');
         const rawXYZData = await parseXYZData(path.join(process.cwd(), 'attached_assets', 'round_4_mapping_1749572845894.csv'));
         
         console.log(`Loaded ${rawXYZData.length} XYZ position records`);
         
-        // Process positional metrics from raw data
-        const positionalMetrics = processPositionalData(rawXYZData, 'de_inferno');
-        
-        // Store XYZ data in storage
+        // Store raw XYZ data in storage (skip heavy processing for now)
         await storage.setXYZData(rawXYZData);
-        await storage.setPositionalMetrics(positionalMetrics);
+        await storage.setPositionalMetrics([]); // Empty for now to unblock the API
         
-        console.log(`Processed ${positionalMetrics.length} positional metrics`);
+        console.log(`Stored ${rawXYZData.length} XYZ records for API access`);
       } catch (error) {
         console.error('Error loading XYZ data:', error);
       }

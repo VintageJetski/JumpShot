@@ -4,7 +4,7 @@ import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import TacticalMapAnalysis from "@/components/data-visualization/TacticalMapAnalysis";
+import { TacticalMapAnalysis } from "@/components/data-visualization/TacticalMapAnalysis";
 import { PlayerWithPIV } from "@shared/types";
 
 interface XYZPlayerData {

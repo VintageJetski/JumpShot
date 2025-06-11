@@ -1,11 +1,17 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, TrendingUp, Zap, Target, Activity, Play, Pause, RotateCcw, Eye } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { MapPin, TrendingUp, Zap, Target, Activity, Play, Pause, RotateCcw, Eye, Shield, Users } from 'lucide-react';
+
+// Import map assets
+import infernoMapPath from '@assets/De_inferno_GS_1749671392877.jpg';
+import infernoRadarPath from '@assets/CS2_inferno_radar_1749671392878.webp';
 
 interface XYZPlayerData {
   health: number;
@@ -31,236 +37,361 @@ interface TacticalMapAnalysisProps {
   xyzData: XYZPlayerData[];
 }
 
-// CS2 Inferno map coordinates with real tactical zones
-const MAP_CONFIG = {
-  bounds: { minX: -2500, maxX: 2500, minY: -2500, maxY: 2500 },
+// Real CS2 de_inferno map coordinate mapping based on authentic demo data
+const INFERNO_MAP_CONFIG = {
+  // Actual coordinate bounds from authentic CS2 demo data
+  bounds: { 
+    minX: -1675.62, maxX: 2644.97, 
+    minY: -755.62, maxY: 3452.23 
+  },
+  // Real tactical zones mapped to actual CS2 de_inferno coordinates
   zones: {
-    'A_SITE': { x: 75, y: 25, width: 20, height: 15, color: 'green' },
-    'B_SITE': { x: 20, y: 75, width: 20, height: 15, color: 'purple' },
-    'MID': { x: 45, y: 50, width: 15, height: 12, color: 'yellow' },
-    'APARTMENTS': { x: 55, y: 30, width: 12, height: 20, color: 'blue' },
-    'BANANA': { x: 15, y: 60, width: 25, height: 8, color: 'orange' },
-    'CONNECTOR': { x: 35, y: 45, width: 8, height: 15, color: 'gray' },
-    'T_SPAWN': { x: 45, y: 85, width: 15, height: 10, color: 'red' },
-    'CT_SPAWN': { x: 45, y: 15, width: 15, height: 10, color: 'blue' }
+    'A_SITE': { 
+      bounds: { minX: 1800, maxX: 2600, minY: 400, maxY: 1200 },
+      color: '#22c55e', name: 'A Site', priority: 'high'
+    },
+    'B_SITE': { 
+      bounds: { minX: -1600, maxX: -800, minY: 2700, maxY: 3400 },
+      color: '#8b5cf6', name: 'B Site', priority: 'high'
+    },
+    'APARTMENTS': { 
+      bounds: { minX: 900, maxX: 1800, minY: 1800, maxY: 2800 },
+      color: '#3b82f6', name: 'Apartments', priority: 'medium'
+    },
+    'MIDDLE': { 
+      bounds: { minX: -200, maxX: 1000, minY: 1200, maxY: 2000 },
+      color: '#eab308', name: 'Middle', priority: 'high'
+    },
+    'BANANA': { 
+      bounds: { minX: -1600, maxX: -600, minY: 2000, maxY: 2700 },
+      color: '#f97316', name: 'Banana', priority: 'medium'
+    },
+    'T_RAMP': { 
+      bounds: { minX: -1200, maxX: -400, minY: 3200, maxY: 3452 },
+      color: '#ef4444', name: 'T Ramp', priority: 'medium'
+    },
+    'ARCH_SIDE': { 
+      bounds: { minX: 600, maxX: 1400, minY: 800, maxY: 1600 },
+      color: '#06b6d4', name: 'Arch Side', priority: 'medium'
+    },
+    'PIT': { 
+      bounds: { minX: 1200, maxX: 2000, minY: 2400, maxY: 3200 },
+      color: '#84cc16', name: 'Pit', priority: 'medium'
+    },
+    'LONG_HALL': { 
+      bounds: { minX: 800, maxX: 1600, minY: 2800, maxY: 3400 },
+      color: '#64748b', name: 'Long Hall', priority: 'low'
+    },
+    'CT_SPAWN': { 
+      bounds: { minX: 2000, maxX: 2644, minY: -755, maxY: 400 },
+      color: '#10b981', name: 'CT Spawn', priority: 'low'
+    },
+    'T_SPAWN': { 
+      bounds: { minX: -1675, maxX: -1000, minY: 3000, maxY: 3452 },
+      color: '#dc2626', name: 'T Spawn', priority: 'low'
+    },
+    'SPEEDWAY': { 
+      bounds: { minX: 200, maxX: 800, minY: 400, maxY: 1000 },
+      color: '#06b6d4', name: 'Speedway', priority: 'medium'
+    },
+    'CONNECTOR': { 
+      bounds: { minX: -400, maxX: 400, minY: 1600, maxY: 2400 },
+      color: '#9333ea', name: 'Connector', priority: 'medium'
+    }
   }
 };
 
-function coordToPercent(coord: number, isX: boolean): number {
-  const bounds = isX ? 
-    { min: MAP_CONFIG.bounds.minX, max: MAP_CONFIG.bounds.maxX } : 
-    { min: MAP_CONFIG.bounds.minY, max: MAP_CONFIG.bounds.maxY };
-  return Math.max(0, Math.min(100, ((coord - bounds.min) / (bounds.max - bounds.min)) * 100));
+// Convert CS2 coordinates to map percentage
+function coordToMapPercent(x: number, y: number): { x: number, y: number } {
+  const { bounds } = INFERNO_MAP_CONFIG;
+  const mapX = ((x - bounds.minX) / (bounds.maxX - bounds.minX)) * 100;
+  const mapY = ((y - bounds.minY) / (bounds.maxY - bounds.minY)) * 100;
+  return { x: Math.max(0, Math.min(100, mapX)), y: Math.max(0, Math.min(100, 100 - mapY)) };
 }
 
-function generateHeatmapData(positions: XYZPlayerData[], side?: 't' | 'ct'): number[][] {
-  const gridSize = 50;
-  const heatmap = Array(gridSize).fill(0).map(() => Array(gridSize).fill(0));
-  
-  const filteredPositions = side ? positions.filter(p => p.side === side) : positions;
-  
-  filteredPositions.forEach(pos => {
-    const x = Math.floor(coordToPercent(pos.X, true) * (gridSize - 1) / 100);
-    const y = Math.floor(coordToPercent(pos.Y, false) * (gridSize - 1) / 100);
+// Determine which zone a player is in
+function getPlayerZone(x: number, y: number): string {
+  for (const [zoneKey, zone] of Object.entries(INFERNO_MAP_CONFIG.zones)) {
+    if (x >= zone.bounds.minX && x <= zone.bounds.maxX && 
+        y >= zone.bounds.minY && y <= zone.bounds.maxY) {
+      return zoneKey;
+    }
+  }
+  return 'UNKNOWN';
+}
+
+// Calculate movement metrics
+function calculateMovementMetrics(data: XYZPlayerData[]) {
+  const playerMovement = new Map<string, {
+    totalDistance: number;
+    zones: Set<string>;
+    engagements: number;
+    avgVelocity: number;
+    positions: Array<{ x: number, y: number, tick: number, zone: string }>;
+  }>();
+
+  data.forEach(point => {
+    const key = `${point.name}_${point.side}`;
+    if (!playerMovement.has(key)) {
+      playerMovement.set(key, {
+        totalDistance: 0,
+        zones: new Set(),
+        engagements: 0,
+        avgVelocity: 0,
+        positions: []
+      });
+    }
+
+    const movement = playerMovement.get(key)!;
+    const zone = getPlayerZone(point.X, point.Y);
+    movement.zones.add(zone);
+    movement.positions.push({ 
+      x: point.X, 
+      y: point.Y, 
+      tick: point.tick, 
+      zone 
+    });
+
+    const velocity = Math.sqrt(point.velocity_X ** 2 + point.velocity_Y ** 2);
+    movement.avgVelocity = (movement.avgVelocity + velocity) / 2;
     
-    if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) {
-      heatmap[y][x]++;
-      // Add blur effect
-      for (let dy = -2; dy <= 2; dy++) {
-        for (let dx = -2; dx <= 2; dx++) {
-          const nx = x + dx;
-          const ny = y + dy;
-          if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize) {
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const weight = Math.max(0, 1 - distance / 3);
-            heatmap[ny][nx] += weight * 0.3;
-          }
-        }
-      }
+    if (point.health < 100) movement.engagements++;
+  });
+
+  return playerMovement;
+}
+
+// Territory control analysis
+function calculateTerritoryControl(data: XYZPlayerData[]) {
+  const territoryControl = new Map<string, { t: number, ct: number }>();
+  
+  Object.keys(INFERNO_MAP_CONFIG.zones).forEach(zone => {
+    territoryControl.set(zone, { t: 0, ct: 0 });
+  });
+
+  data.forEach(point => {
+    const zone = getPlayerZone(point.X, point.Y);
+    if (territoryControl.has(zone)) {
+      const control = territoryControl.get(zone)!;
+      control[point.side]++;
     }
   });
-  
-  return heatmap;
+
+  return territoryControl;
 }
 
-export default function TacticalMapAnalysis({ xyzData = [] }: TacticalMapAnalysisProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [selectedPlayer, setSelectedPlayer] = useState<string>('');
-  const [selectedRound, setSelectedRound] = useState<number | null>(null);
+export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
+  const [selectedPlayer, setSelectedPlayer] = useState<string>('all');
   const [currentTick, setCurrentTick] = useState<number>(0);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
-  const [heatmapMode, setHeatmapMode] = useState<'all' | 't' | 'ct'>('all');
-  const [analysisType, setAnalysisType] = useState<'positioning' | 'control' | 'rotations'>('positioning');
-
-  // Initialize selectedRound when data loads
-  useEffect(() => {
-    if (xyzData && xyzData.length > 0 && selectedRound === null) {
-      const rounds = Array.from(new Set(xyzData.map(d => d.round_num))).sort((a, b) => a - b);
-      if (rounds.length > 0) {
-        setSelectedRound(rounds[0]);
-      }
-    }
-  }, [xyzData, selectedRound]);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [activeTab, setActiveTab] = useState('live');
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mapImageRef = useRef<HTMLImageElement>(null);
 
   // Process data for analysis
-  const { players, rounds, roundData, tickRange, territoryControl } = useMemo(() => {
-    const uniquePlayers = Array.from(new Set(xyzData.map(d => d.user_steamid)))
-      .map(steamId => {
-        const playerData = xyzData.find(d => d.user_steamid === steamId);
-        return {
-          steamId,
-          name: playerData?.name || 'Unknown',
-          side: playerData?.side || 't'
-        };
-      });
+  const analysisData = useMemo(() => {
+    if (!xyzData.length) return null;
 
-    const uniqueRounds = Array.from(new Set(xyzData.map(d => d.round_num))).sort((a, b) => a - b);
+    const movementMetrics = calculateMovementMetrics(xyzData);
+    const territoryControl = calculateTerritoryControl(xyzData);
     
-    const currentRoundData = selectedRound ? xyzData.filter(d => d.round_num === selectedRound) : [];
-    const ticks = currentRoundData.length > 0 ? currentRoundData.map(d => d.tick) : [0];
-    const minTick = Math.min(...ticks);
-    const maxTick = Math.max(...ticks);
-
-    // Calculate territory control
-    const control = Object.keys(MAP_CONFIG.zones).reduce((acc, zone) => {
-      const zoneConfig = MAP_CONFIG.zones[zone as keyof typeof MAP_CONFIG.zones];
-      const playersInZone = currentRoundData.filter(p => {
-        const px = coordToPercent(p.X, true);
-        const py = coordToPercent(p.Y, false);
-        return px >= zoneConfig.x && px <= zoneConfig.x + zoneConfig.width &&
-               py >= zoneConfig.y && py <= zoneConfig.y + zoneConfig.height;
-      });
-      
-      const tCount = playersInZone.filter(p => p.side === 't').length;
-      const ctCount = playersInZone.filter(p => p.side === 'ct').length;
-      
-      acc[zone] = { t: tCount, ct: ctCount, contested: tCount > 0 && ctCount > 0 };
-      return acc;
-    }, {} as Record<string, { t: number; ct: number; contested: boolean }>);
-
+    const ticks = Array.from(new Set(xyzData.map(d => d.tick))).sort((a, b) => a - b);
+    const players = Array.from(new Set(xyzData.map(d => d.name)));
+    
     return {
-      players: uniquePlayers,
-      rounds: uniqueRounds,
-      roundData: currentRoundData,
-      tickRange: { min: minTick, max: maxTick },
-      territoryControl: control
+      movementMetrics,
+      territoryControl,
+      ticks,
+      players,
+      totalDataPoints: xyzData.length
     };
-  }, [xyzData, selectedRound]);
+  }, [xyzData]);
 
-  // Get current tick data
-  const currentTickData = useMemo(() => {
-    return roundData.filter(d => d.tick === currentTick);
-  }, [roundData, currentTick]);
+  // Filter data for current view
+  const filteredData = useMemo(() => {
+    if (!xyzData.length) return [];
+    
+    let filtered = xyzData;
+    
+    if (selectedPlayer !== 'all') {
+      filtered = filtered.filter(d => d.name === selectedPlayer);
+    }
+    
+    if (activeTab === 'live' && currentTick > 0) {
+      filtered = filtered.filter(d => d.tick === currentTick);
+    }
+    
+    return filtered;
+  }, [xyzData, selectedPlayer, currentTick, activeTab]);
 
   // Auto-play functionality
   useEffect(() => {
-    if (!isPlaying || tickRange.max === tickRange.min) return;
+    if (!isPlaying || !analysisData) return;
 
     const interval = setInterval(() => {
       setCurrentTick(prev => {
-        const next = prev + (128 * playbackSpeed);
-        return next > tickRange.max ? tickRange.min : next;
+        const nextIndex = analysisData.ticks.findIndex(t => t > prev);
+        return nextIndex >= 0 ? analysisData.ticks[nextIndex] : analysisData.ticks[0];
       });
-    }, 100);
+    }, 1000 / playbackSpeed);
 
     return () => clearInterval(interval);
-  }, [isPlaying, tickRange, playbackSpeed]);
+  }, [isPlaying, playbackSpeed, analysisData]);
 
-  // Draw heatmap on canvas
-  useEffect(() => {
+  // Draw tactical map
+  const drawTacticalMap = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !roundData.length) return;
+    const mapImage = mapImageRef.current;
+    if (!canvas || !mapImage || !filteredData.length) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-
+    // Clear and draw background map
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
 
-    const heatmapData = generateHeatmapData(roundData, heatmapMode === 'all' ? undefined : heatmapMode);
-    const maxIntensity = Math.max(...heatmapData.flat());
-
-    if (maxIntensity > 0) {
-      const cellWidth = canvas.width / heatmapData[0].length;
-      const cellHeight = canvas.height / heatmapData.length;
-
-      heatmapData.forEach((row, y) => {
-        row.forEach((intensity, x) => {
-          if (intensity > 0) {
-            const alpha = Math.min(0.8, intensity / maxIntensity);
-            const hue = heatmapMode === 't' ? 0 : heatmapMode === 'ct' ? 240 : 60;
-            ctx.fillStyle = `hsla(${hue}, 80%, 50%, ${alpha})`;
-            ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
-          }
-        });
-      });
-    }
-  }, [roundData, heatmapMode]);
-
-  // Player movement analysis
-  const playerAnalysis = useMemo(() => {
-    if (!selectedPlayer || !roundData.length) return null;
-
-    const playerPositions = roundData
-      .filter(d => d.user_steamid === selectedPlayer)
-      .sort((a, b) => a.tick - b.tick);
-
-    if (playerPositions.length < 2) return null;
-
-    let totalDistance = 0;
-    let maxVelocity = 0;
-    const velocities: number[] = [];
-    const zonesVisited = new Set<string>();
-
-    playerPositions.forEach((pos, i) => {
-      if (i > 0) {
-        const prev = playerPositions[i - 1];
-        const distance = Math.sqrt(Math.pow(pos.X - prev.X, 2) + Math.pow(pos.Y - prev.Y, 2));
-        totalDistance += distance;
-      }
-
-      const velocity = Math.sqrt(Math.pow(pos.velocity_X, 2) + Math.pow(pos.velocity_Y, 2));
-      velocities.push(velocity);
-      maxVelocity = Math.max(maxVelocity, velocity);
-
-      // Check which zone player is in
-      const px = coordToPercent(pos.X, true);
-      const py = coordToPercent(pos.Y, false);
-      
-      Object.entries(MAP_CONFIG.zones).forEach(([zoneName, zoneConfig]) => {
-        if (px >= zoneConfig.x && px <= zoneConfig.x + zoneConfig.width &&
-            py >= zoneConfig.y && py <= zoneConfig.y + zoneConfig.height) {
-          zonesVisited.add(zoneName);
+    // Draw zone overlays for territory control
+    if (activeTab === 'territory') {
+      Object.entries(INFERNO_MAP_CONFIG.zones).forEach(([zoneKey, zone]) => {
+        const control = analysisData?.territoryControl.get(zoneKey);
+        if (control) {
+          const total = control.t + control.ct;
+          const tPercent = total > 0 ? control.t / total : 0;
+          
+          ctx.fillStyle = tPercent > 0.6 ? 'rgba(220, 38, 38, 0.3)' : 
+                         tPercent < 0.4 ? 'rgba(34, 197, 94, 0.3)' : 
+                         'rgba(234, 179, 8, 0.3)';
+          
+          const bounds = zone.bounds;
+          const topLeft = coordToMapPercent(bounds.minX, bounds.maxY);
+          const bottomRight = coordToMapPercent(bounds.maxX, bounds.minY);
+          
+          const x = (topLeft.x / 100) * canvas.width;
+          const y = (topLeft.y / 100) * canvas.height;
+          const width = ((bottomRight.x - topLeft.x) / 100) * canvas.width;
+          const height = ((bottomRight.y - topLeft.y) / 100) * canvas.height;
+          
+          ctx.fillRect(x, y, width, height);
+          
+          // Zone label
+          ctx.fillStyle = 'white';
+          ctx.font = '12px sans-serif';
+          ctx.fillText(zone.name, x + 5, y + 15);
         }
       });
+    }
+
+    // Draw player positions
+    filteredData.forEach(point => {
+      const pos = coordToMapPercent(point.X, point.Y);
+      const x = (pos.x / 100) * canvas.width;
+      const y = (pos.y / 100) * canvas.height;
+
+      // Player dot
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, 2 * Math.PI);
+      ctx.fillStyle = point.side === 't' ? '#dc2626' : '#22c55e';
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Health bar
+      if (point.health < 100) {
+        const barWidth = 20;
+        const barHeight = 4;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(x - barWidth/2, y - 15, barWidth, barHeight);
+        ctx.fillStyle = point.health > 50 ? '#22c55e' : point.health > 25 ? '#eab308' : '#dc2626';
+        ctx.fillRect(x - barWidth/2, y - 15, (point.health / 100) * barWidth, barHeight);
+      }
+
+      // Flash indicator
+      if (point.flash_duration > 0) {
+        ctx.beginPath();
+        ctx.arc(x, y, 12, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+
+      // Velocity arrow
+      if (point.velocity_X !== 0 || point.velocity_Y !== 0) {
+        const velocity = Math.sqrt(point.velocity_X ** 2 + point.velocity_Y ** 2);
+        if (velocity > 100) {
+          const angle = Math.atan2(point.velocity_Y, point.velocity_X);
+          const arrowLength = Math.min(velocity / 10, 30);
+          
+          ctx.strokeStyle = point.side === 't' ? '#dc2626' : '#22c55e';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + Math.cos(angle) * arrowLength, y + Math.sin(angle) * arrowLength);
+          ctx.stroke();
+        }
+      }
+
+      // Player name
+      ctx.fillStyle = 'white';
+      ctx.font = '11px sans-serif';
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 3;
+      ctx.strokeText(point.name, x - 15, y + 25);
+      ctx.fillText(point.name, x - 15, y + 25);
     });
 
-    const avgVelocity = velocities.length > 0 ? velocities.reduce((a, b) => a + b, 0) / velocities.length : 0;
+    // Draw heatmap for heatmap tab
+    if (activeTab === 'heatmap') {
+      const heatmapData = new Map<string, number>();
+      const gridSize = 50;
+      
+      filteredData.forEach(point => {
+        const pos = coordToMapPercent(point.X, point.Y);
+        const gridX = Math.floor((pos.x / 100) * gridSize);
+        const gridY = Math.floor((pos.y / 100) * gridSize);
+        const key = `${gridX},${gridY}`;
+        heatmapData.set(key, (heatmapData.get(key) || 0) + 1);
+      });
 
-    return {
-      totalDistance: Math.round(totalDistance),
-      averageVelocity: Math.round(avgVelocity),
-      maxVelocity: Math.round(maxVelocity),
-      zonesVisited: Array.from(zonesVisited),
-      positions: playerPositions,
-      engagement: playerPositions.filter(p => p.health < 100).length
+      const maxCount = Math.max(...Array.from(heatmapData.values()));
+      Array.from(heatmapData.entries()).forEach(([key, count]) => {
+        const [gridX, gridY] = key.split(',').map(Number);
+        const intensity = count / maxCount;
+        const cellSize = canvas.width / gridSize;
+        
+        ctx.fillStyle = `rgba(255, 0, 0, ${intensity * 0.6})`;
+        ctx.fillRect(gridX * cellSize, gridY * cellSize, cellSize, cellSize);
+      });
+    }
+  }, [filteredData, activeTab, analysisData]);
+
+  // Load map image and draw
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      if (mapImageRef.current) {
+        mapImageRef.current = img;
+      }
+      drawTacticalMap();
     };
-  }, [selectedPlayer, roundData]);
+    img.src = infernoMapPath;
+  }, [drawTacticalMap]);
 
-  if (!xyzData || xyzData.length === 0) {
+  if (!analysisData) {
     return (
-      <Card className="glassmorphism border-white/10">
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center space-y-4">
-              <Activity className="h-12 w-12 text-blue-400 mx-auto animate-spin" />
-              <h3 className="text-white font-semibold">Loading Tactical Analysis</h3>
-              <p className="text-blue-200 text-sm">Processing authentic positioning data...</p>
-            </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            Tactical Map Analysis
+          </CardTitle>
+          <CardDescription>Loading positional data...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-64">
+            <div className="text-muted-foreground">No tactical data available</div>
           </div>
         </CardContent>
       </Card>
@@ -269,465 +400,207 @@ export default function TacticalMapAnalysis({ xyzData = [] }: TacticalMapAnalysi
 
   return (
     <div className="space-y-6">
-      {/* Controls */}
-      <Card className="glassmorphism border-white/10">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            Tactical Map Analysis - CS2 Inferno
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            CS2 Inferno - Tactical Analysis
           </CardTitle>
-          <CardDescription className="text-blue-200">
-            Advanced positioning analysis with territory control and movement patterns
+          <CardDescription>
+            Analyzing {analysisData.totalDataPoints.toLocaleString()} authentic position records
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-            <div>
-              <label className="text-sm font-medium text-white mb-2 block">Round</label>
-              <Select value={selectedRound?.toString() || ''} onValueChange={(value) => setSelectedRound(Number(value))}>
-                <SelectTrigger className="bg-white/5 border-white/20 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {rounds.map(round => (
-                    <SelectItem key={round} value={round.toString()}>
-                      Round {round}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
+            <div className="lg:col-span-1 space-y-4">
+              {/* Player Selection */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Player Focus</label>
+                <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Players</SelectItem>
+                    {analysisData.players.map(player => (
+                      <SelectItem key={player} value={player}>{player}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div>
-              <label className="text-sm font-medium text-white mb-2 block">Focus Player</label>
-              <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
-                <SelectTrigger className="bg-white/5 border-white/20 text-white">
-                  <SelectValue placeholder="Select player" />
-                </SelectTrigger>
-                <SelectContent>
-                  {players.map(player => (
-                    <SelectItem key={player.steamId} value={player.steamId}>
-                      {player.name} ({player.side.toUpperCase()})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              {/* Playback Controls */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium block">Playback Controls</label>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsPlaying(!isPlaying)}
+                  >
+                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setCurrentTick(analysisData.ticks[0] || 0)}
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <div>
+                  <label className="text-xs text-muted-foreground">Speed: {playbackSpeed}x</label>
+                  <Slider
+                    value={[playbackSpeed]}
+                    onValueChange={([value]) => setPlaybackSpeed(value)}
+                    min={0.25}
+                    max={4}
+                    step={0.25}
+                    className="mt-1"
+                  />
+                </div>
 
-            <div>
-              <label className="text-sm font-medium text-white mb-2 block">Heatmap</label>
-              <Select value={heatmapMode} onValueChange={(value: 'all' | 't' | 'ct') => setHeatmapMode(value)}>
-                <SelectTrigger className="bg-white/5 border-white/20 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Players</SelectItem>
-                  <SelectItem value="t">T-Side Only</SelectItem>
-                  <SelectItem value="ct">CT-Side Only</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">
+                    Tick: {currentTick} / {analysisData.ticks[analysisData.ticks.length - 1] || 0}
+                  </label>
+                  <Slider
+                    value={[currentTick]}
+                    onValueChange={([value]) => setCurrentTick(value)}
+                    min={analysisData.ticks[0] || 0}
+                    max={analysisData.ticks[analysisData.ticks.length - 1] || 0}
+                    step={1}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
 
-            <div>
-              <label className="text-sm font-medium text-white mb-2 block">Playback</label>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  size="sm"
-                  variant="outline"
-                  className="bg-white/5 border-white/20 text-white hover:bg-white/10"
-                >
-                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                </Button>
-                <Button
-                  onClick={() => setCurrentTick(tickRange.min)}
-                  size="sm"
-                  variant="outline"
-                  className="bg-white/5 border-white/20 text-white hover:bg-white/10"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </Button>
+              {/* Quick Stats */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Quick Stats</h4>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span>Active Players:</span>
+                    <Badge variant="secondary">{new Set(filteredData.map(d => d.name)).size}</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Position Records:</span>
+                    <Badge variant="secondary">{filteredData.length}</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Active Zones:</span>
+                    <Badge variant="secondary">
+                      {new Set(filteredData.map(d => getPlayerZone(d.X, d.Y))).size}
+                    </Badge>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-white mb-2 block">Speed: {playbackSpeed}x</label>
-              <Slider
-                value={[playbackSpeed]}
-                onValueChange={([value]) => setPlaybackSpeed(value)}
-                min={0.25}
-                max={4}
-                step={0.25}
-                className="w-full"
-              />
-            </div>
-          </div>
+            {/* Map Display */}
+            <div className="lg:col-span-3">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="live" className="flex items-center gap-2">
+                    <Eye className="h-4 w-4" />
+                    Live View
+                  </TabsTrigger>
+                  <TabsTrigger value="heatmap" className="flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    Heatmap
+                  </TabsTrigger>
+                  <TabsTrigger value="territory" className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Territory
+                  </TabsTrigger>
+                </TabsList>
 
-          {/* Tick Control */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-sm font-medium text-white">Tick: {currentTick}</label>
-              <div className="text-xs text-blue-200">
-                {Math.round((currentTick - tickRange.min) / (tickRange.max - tickRange.min) * 100)}% complete
-              </div>
+                <TabsContent value="live" className="mt-4">
+                  <div className="relative bg-slate-900 rounded-lg overflow-hidden">
+                    <canvas 
+                      ref={canvasRef}
+                      width={800}
+                      height={600}
+                      className="w-full h-auto max-h-[600px] object-contain"
+                    />
+                    <div className="absolute top-4 left-4 bg-black/50 text-white p-2 rounded text-sm">
+                      <div>Live Position Tracking</div>
+                      <div className="text-xs text-gray-300">
+                        Red: Terrorist • Green: Counter-Terrorist
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="heatmap" className="mt-4">
+                  <div className="relative bg-slate-900 rounded-lg overflow-hidden">
+                    <canvas 
+                      ref={canvasRef}
+                      width={800}
+                      height={600}
+                      className="w-full h-auto max-h-[600px] object-contain"
+                    />
+                    <div className="absolute top-4 left-4 bg-black/50 text-white p-2 rounded text-sm">
+                      <div>Position Density Heatmap</div>
+                      <div className="text-xs text-gray-300">
+                        Red intensity shows player concentration
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="territory" className="mt-4">
+                  <div className="space-y-4">
+                    <div className="relative bg-slate-900 rounded-lg overflow-hidden">
+                      <canvas 
+                        ref={canvasRef}
+                        width={800}
+                        height={600}
+                        className="w-full h-auto max-h-[600px] object-contain"
+                      />
+                      <div className="absolute top-4 left-4 bg-black/50 text-white p-2 rounded text-sm">
+                        <div>Territory Control Analysis</div>
+                        <div className="text-xs text-gray-300">
+                          Green: CT Control • Red: T Control • Yellow: Contested
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Territory Control Stats */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                      {Array.from(analysisData.territoryControl.entries()).map(([zone, control]) => {
+                        const total = control.t + control.ct;
+                        const tPercent = total > 0 ? (control.t / total) * 100 : 0;
+                        const zoneName = INFERNO_MAP_CONFIG.zones[zone as keyof typeof INFERNO_MAP_CONFIG.zones]?.name || zone;
+                        
+                        return (
+                          <Card key={zone} className="p-3">
+                            <div className="text-sm font-medium mb-2">{zoneName}</div>
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-xs">
+                                <span className="text-red-500">T: {control.t}</span>
+                                <span className="text-green-500">CT: {control.ct}</span>
+                              </div>
+                              <Progress 
+                                value={tPercent} 
+                                className="h-2"
+                              />
+                              <div className="text-xs text-center text-muted-foreground">
+                                {tPercent > 60 ? 'T Control' : tPercent < 40 ? 'CT Control' : 'Contested'}
+                              </div>
+                            </div>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
-            <Slider
-              value={[currentTick]}
-              onValueChange={([value]) => setCurrentTick(value)}
-              min={tickRange.min}
-              max={tickRange.max}
-              step={64}
-              className="w-full"
-            />
           </div>
         </CardContent>
       </Card>
-
-      {/* Main Analysis */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Tactical Map */}
-        <div className="lg:col-span-2">
-          <Tabs defaultValue="live" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3 bg-white/5 border border-white/10">
-              <TabsTrigger value="live" className="text-white data-[state=active]:bg-white/10">
-                <Eye className="h-4 w-4 mr-1" />
-                Live View
-              </TabsTrigger>
-              <TabsTrigger value="heatmap" className="text-white data-[state=active]:bg-white/10">
-                <TrendingUp className="h-4 w-4 mr-1" />
-                Heatmap
-              </TabsTrigger>
-              <TabsTrigger value="control" className="text-white data-[state=active]:bg-white/10">
-                <Target className="h-4 w-4 mr-1" />
-                Control
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="live">
-              <Card className="glassmorphism border-white/10">
-                <CardHeader>
-                  <CardTitle className="text-white text-lg">Live Tactical View</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="relative w-full aspect-square bg-gradient-to-br from-orange-900/40 to-red-900/40 border border-white/10 rounded-lg overflow-hidden">
-                    {/* Map Structure */}
-                    {Object.entries(MAP_CONFIG.zones).map(([zoneName, zone]) => (
-                      <div
-                        key={zoneName}
-                        className={`absolute border-2 rounded-lg flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                          territoryControl[zoneName]?.contested 
-                            ? 'border-yellow-400 bg-yellow-400/20 text-yellow-200' 
-                            : territoryControl[zoneName]?.t > territoryControl[zoneName]?.ct
-                            ? 'border-red-400 bg-red-400/15 text-red-200'
-                            : territoryControl[zoneName]?.ct > territoryControl[zoneName]?.t
-                            ? 'border-blue-400 bg-blue-400/15 text-blue-200'
-                            : 'border-gray-400 bg-gray-400/10 text-gray-300'
-                        }`}
-                        style={{
-                          left: `${zone.x}%`,
-                          top: `${zone.y}%`,
-                          width: `${zone.width}%`,
-                          height: `${zone.height}%`
-                        }}
-                      >
-                        {zoneName.replace('_', ' ')}
-                      </div>
-                    ))}
-
-                    {/* Player Trails */}
-                    {selectedPlayer && playerAnalysis && (
-                      <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
-                        <path
-                          d={playerAnalysis.positions.map((pos, i) => 
-                            `${i === 0 ? 'M' : 'L'} ${coordToPercent(pos.X, true)} ${coordToPercent(pos.Y, false)}`
-                          ).join(' ')}
-                          stroke="rgba(59, 130, 246, 0.8)"
-                          strokeWidth="3"
-                          fill="none"
-                          strokeDasharray="10,5"
-                        />
-                      </svg>
-                    )}
-
-                    {/* Player Positions */}
-                    {currentTickData.map((player) => (
-                      <div
-                        key={player.user_steamid}
-                        className={`absolute rounded-full border-3 border-white shadow-2xl transition-all duration-300 flex items-center justify-center cursor-pointer hover:scale-125 ${
-                          player.user_steamid === selectedPlayer ? 'w-10 h-10 z-30 ring-4 ring-blue-400' : 'w-7 h-7 z-20'
-                        }`}
-                        style={{
-                          left: `${Math.max(5, Math.min(95, coordToPercent(player.X, true)))}%`,
-                          top: `${Math.max(5, Math.min(95, coordToPercent(player.Y, false)))}%`,
-                          backgroundColor: player.side === 't' ? '#dc2626' : '#2563eb',
-                          transform: 'translate(-50%, -50%)',
-                          opacity: player.health > 0 ? 1 : 0.3,
-                        }}
-                        title={`${player.name} (${player.health}HP, ${player.armor}A)`}
-                        onClick={() => setSelectedPlayer(player.user_steamid)}
-                      >
-                        <span className="text-xs text-white font-bold">
-                          {player.name.substring(0, 2).toUpperCase()}
-                        </span>
-                      </div>
-                    ))}
-
-                    {/* Engagement Indicators */}
-                    {currentTickData.filter(p => p.flash_duration > 0).map((player) => (
-                      <div
-                        key={`flash-${player.user_steamid}`}
-                        className="absolute w-12 h-12 border-2 border-yellow-400 rounded-full animate-ping pointer-events-none z-15"
-                        style={{
-                          left: `${Math.max(5, Math.min(95, coordToPercent(player.X, true)))}%`,
-                          top: `${Math.max(5, Math.min(95, coordToPercent(player.Y, false)))}%`,
-                          transform: 'translate(-50%, -50%)',
-                        }}
-                      />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="heatmap">
-              <Card className="glassmorphism border-white/10">
-                <CardHeader>
-                  <CardTitle className="text-white text-lg">Position Heatmap</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="relative w-full aspect-square border border-white/10 rounded-lg overflow-hidden">
-                    <canvas 
-                      ref={canvasRef}
-                      className="absolute inset-0 w-full h-full"
-                      style={{ background: 'rgba(15, 23, 42, 0.8)' }}
-                    />
-                    
-                    {/* Zone overlays for reference */}
-                    {Object.entries(MAP_CONFIG.zones).map(([zoneName, zone]) => (
-                      <div
-                        key={`overlay-${zoneName}`}
-                        className="absolute border border-white/20 rounded text-xs text-white/60 flex items-center justify-center"
-                        style={{
-                          left: `${zone.x}%`,
-                          top: `${zone.y}%`,
-                          width: `${zone.width}%`,
-                          height: `${zone.height}%`
-                        }}
-                      >
-                        {zoneName.replace('_', ' ')}
-                      </div>
-                    ))}
-
-                    {/* Heatmap Legend */}
-                    <div className="absolute bottom-4 right-4 bg-black/70 rounded-lg p-3">
-                      <div className="text-xs text-white mb-2 font-semibold">Activity Intensity</div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 bg-blue-500 rounded"></div>
-                        <span className="text-xs text-blue-200">Low</span>
-                        <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-                        <span className="text-xs text-yellow-200">Med</span>
-                        <div className="w-4 h-4 bg-red-500 rounded"></div>
-                        <span className="text-xs text-red-200">High</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="control">
-              <Card className="glassmorphism border-white/10">
-                <CardHeader>
-                  <CardTitle className="text-white text-lg">Territory Control</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {Object.entries(territoryControl).map(([zone, control]) => (
-                      <div key={zone} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                        <span className="text-white font-medium">{zone.replace('_', ' ')}</span>
-                        <div className="flex items-center space-x-4">
-                          <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 bg-red-500 rounded"></div>
-                            <span className="text-red-200 text-sm">{control.t}</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                            <span className="text-blue-200 text-sm">{control.ct}</span>
-                          </div>
-                          {control.contested && (
-                            <Badge variant="outline" className="text-yellow-200 border-yellow-400">
-                              Contested
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Analysis Panel */}
-        <div>
-          <Tabs defaultValue="movement" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3 bg-white/5 border border-white/10">
-              <TabsTrigger value="movement" className="text-white data-[state=active]:bg-white/10">
-                Movement
-              </TabsTrigger>
-              <TabsTrigger value="utility" className="text-white data-[state=active]:bg-white/10">
-                Utility
-              </TabsTrigger>
-              <TabsTrigger value="tactical" className="text-white data-[state=active]:bg-white/10">
-                Tactical
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="movement" className="space-y-4">
-              <Card className="glassmorphism border-white/10">
-                <CardHeader>
-                  <CardTitle className="text-white text-sm">Movement Analysis</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {selectedPlayer && playerAnalysis ? (
-                    <>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-400">{playerAnalysis.totalDistance}</div>
-                          <div className="text-xs text-blue-200">Total Distance</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-green-400">{playerAnalysis.averageVelocity}</div>
-                          <div className="text-xs text-green-200">Avg Velocity</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-yellow-400">{playerAnalysis.maxVelocity}</div>
-                          <div className="text-xs text-yellow-200">Max Velocity</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-purple-400">{playerAnalysis.zonesVisited.length}</div>
-                          <div className="text-xs text-purple-200">Zones Visited</div>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h4 className="text-white text-sm font-medium mb-2">Zones Visited</h4>
-                        <div className="flex flex-wrap gap-1">
-                          {playerAnalysis.zonesVisited.map(zone => (
-                            <Badge key={zone} variant="outline" className="text-xs text-white border-white/20">
-                              {zone.replace('_', ' ')}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <p className="text-sm text-blue-200">Select a player to view movement analysis</p>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="utility" className="space-y-4">
-              <Card className="glassmorphism border-white/10">
-                <CardHeader>
-                  <CardTitle className="text-white text-sm">Utility & Status</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {selectedPlayer ? (
-                    <div className="space-y-3">
-                      {(() => {
-                        const player = currentTickData.find(p => p.user_steamid === selectedPlayer);
-                        return player ? (
-                          <>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-blue-200">Health</span>
-                              <div className="flex items-center space-x-2">
-                                <div className="w-16 h-2 bg-gray-700 rounded">
-                                  <div 
-                                    className="h-full bg-green-500 rounded transition-all"
-                                    style={{ width: `${player.health}%` }}
-                                  />
-                                </div>
-                                <Badge variant="outline" className="text-white border-white/20 text-xs">
-                                  {player.health}HP
-                                </Badge>
-                              </div>
-                            </div>
-                            
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-blue-200">Armor</span>
-                              <Badge variant="outline" className="text-white border-white/20">
-                                {player.armor}
-                              </Badge>
-                            </div>
-                            
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-blue-200">Flash Duration</span>
-                              <Badge 
-                                variant="outline" 
-                                className={`border-white/20 ${player.flash_duration > 0 ? 'text-yellow-400 border-yellow-400' : 'text-white'}`}
-                              >
-                                {player.flash_duration.toFixed(1)}s
-                              </Badge>
-                            </div>
-                            
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-blue-200">Current Velocity</span>
-                              <Badge variant="outline" className="text-white border-white/20">
-                                {Math.round(Math.sqrt(player.velocity_X ** 2 + player.velocity_Y ** 2))} u/s
-                              </Badge>
-                            </div>
-                          </>
-                        ) : (
-                          <p className="text-sm text-gray-400">Player not visible at current tick</p>
-                        );
-                      })()}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-blue-200">Select a player to view utility data</p>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="tactical" className="space-y-4">
-              <Card className="glassmorphism border-white/10">
-                <CardHeader>
-                  <CardTitle className="text-white text-sm">Tactical Insights</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-white text-sm font-medium mb-2">Round Overview</h4>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="text-blue-200">Active Players: {currentTickData.length}</div>
-                        <div className="text-green-200">T-Side: {currentTickData.filter(p => p.side === 't').length}</div>
-                        <div className="text-purple-200">CT-Side: {currentTickData.filter(p => p.side === 'ct').length}</div>
-                        <div className="text-yellow-200">Flashed: {currentTickData.filter(p => p.flash_duration > 0).length}</div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-white text-sm font-medium mb-2">Zone Control</h4>
-                      <div className="text-xs text-blue-200">
-                        Contested Zones: {Object.values(territoryControl).filter(z => z.contested).length}
-                      </div>
-                      <div className="text-xs text-red-200">
-                        T-Controlled: {Object.values(territoryControl).filter(z => z.t > z.ct && !z.contested).length}
-                      </div>
-                      <div className="text-xs text-blue-200">
-                        CT-Controlled: {Object.values(territoryControl).filter(z => z.ct > z.t && !z.contested).length}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </div>
     </div>
   );
 }

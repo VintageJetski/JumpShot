@@ -1,11 +1,12 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
-import path from "path";
-import fs from "fs";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { loadXYZData, processPositionalData } from "./xyzDataParser";
-import { storage } from "./storage";
+import { loadNewPlayerStats } from "./newDataParser";
+import { loadPlayerRoles } from "./roleParser";
+import { processPlayerStatsWithRoles } from "./newPlayerAnalytics";
+import { processRoundData } from "./roundAnalytics";
 
 const app = express();
 app.use(express.json());
@@ -50,17 +51,47 @@ async function startServer() {
       throw err;
     });
 
-    // Initialize data processing
-    console.log("Loading raw player data...");
-    await storage.initializeData();
-    
-    console.log("Loading XYZ positional data...");
-    const xyzData = await loadXYZData();
-    console.log(`Loaded ${xyzData.length} XYZ position records`);
-    
-    console.log("Generating dynamic map areas from coordinate data...");
-    const mapAreas = await processPositionalData(xyzData);
-    console.log(`Generated ${mapAreas.length} map areas:`, mapAreas.map(area => `${area.name || 'Unknown Area'}`));
+    // Create HTTP server first
+    const server = createServer(app);
+
+    // Register API routes
+    await registerRoutes(app);
+
+    // Setup Vite development server
+    if (process.env.NODE_ENV === "production") {
+      serveStatic(app);
+    } else {
+      await setupVite(app, server);
+    }
+
+    // Initialize data processing in background
+    setImmediate(async () => {
+      try {
+        console.log("Loading raw player data...");
+        const rawStats = await loadNewPlayerStats();
+        
+        console.log("Loading player roles from CSV...");
+        const roleMap = await loadPlayerRoles();
+        
+        console.log("Loading and processing round data...");
+        const roundMetrics = await processRoundData();
+        
+        const processedPlayers = processPlayerStatsWithRoles(rawStats, roleMap);
+        console.log(`Processed ${processedPlayers.length} players and ${roundMetrics.size} teams`);
+        
+        console.log("Loading XYZ positional data...");
+        const xyzData = await loadXYZData();
+        console.log(`Loaded ${xyzData.length} XYZ position records`);
+        
+        console.log("Generating dynamic map areas from coordinate data...");
+        const mapAreas = await processPositionalData(xyzData);
+        console.log(`Generated ${mapAreas.length} map areas from coordinate clustering`);
+        
+        console.log(`Analytics platform ready with authentic coordinate data`);
+      } catch (error) {
+        console.error("Data processing error:", error);
+      }
+    });
 
     // Create HTTP server
     const server = createServer(app);
@@ -78,19 +109,19 @@ async function startServer() {
     // Start the HTTP server with error handling
     const port = Number(process.env.PORT) || 5000;
     
-    server.listen(port, () => {
+    server.listen(port, '0.0.0.0', () => {
       log(`serving on port ${port}`);
       console.log(`Server successfully bound to port ${port}`);
       console.log(`Processing complete: ${xyzData.length} XYZ coordinates loaded`);
+      console.log(`Analytics platform ready with authentic coordinate data`);
     });
 
     server.on('error', (err) => {
       console.error('Server error:', err);
-      process.exit(1);
-    });
-
-    server.on('listening', () => {
-      console.log(`Server successfully bound to port ${port}`);
+      if (err.message.includes('EADDRINUSE')) {
+        console.log('Port in use, trying alternate port...');
+        server.listen(port + 1, '0.0.0.0');
+      }
     });
 
   } catch (error) {

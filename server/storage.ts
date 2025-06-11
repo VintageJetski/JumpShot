@@ -94,7 +94,7 @@ export class MemoryStorage implements IStorage {
   }
 
   async setTeamRoundMetrics(metrics: TeamRoundMetrics): Promise<void> {
-    this.roundMetricsCache.set(metrics.teamName, metrics);
+    this.roundMetricsCache.set(metrics.team, metrics);
   }
 
   // XYZ Positional Data methods implementation
@@ -147,8 +147,7 @@ export class MemoryStorage implements IStorage {
           teamMap.set(player.team, {
             name: player.team,
             players: teamPlayers,
-            tir: avgPIV, // Team Impact Rating based on average PIV
-            averagePIV: avgPIV
+            tir: avgPIV // Team Impact Rating based on average PIV
           });
         }
       });
@@ -156,9 +155,9 @@ export class MemoryStorage implements IStorage {
 
       // Load round metrics
       const roundMetrics = await processRoundData();
-      for (const [teamName, metrics] of roundMetrics.entries()) {
-        await this.setTeamRoundMetrics(metrics);
-      }
+      roundMetrics.forEach((metrics, teamName) => {
+        this.roundMetricsCache.set(teamName, metrics);
+      });
 
       console.log(`Loaded ${rawStats.length} raw player records`);
       console.log(`Processed ${processedPlayers.length} players and ${teamMap.size} teams`);

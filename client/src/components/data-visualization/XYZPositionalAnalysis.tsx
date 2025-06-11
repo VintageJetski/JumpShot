@@ -9,22 +9,22 @@ import { MapPin, Move, Zap, Target, Activity, AlertCircle, RotateCcw } from 'luc
 
 interface XYZPlayerData {
   health: number;
-  flashDuration: number;
-  place: string;
+  flash_duration: number;
+  place?: string;
   armor: number;
   side: 't' | 'ct';
   pitch: number;
   X: number;
   yaw: number;
   Y: number;
-  velocityX: number;
+  velocity_X: number;
   Z: number;
-  velocityY: number;
-  velocityZ: number;
+  velocity_Y: number;
+  velocity_Z: number;
   tick: number;
-  userSteamid: string;
+  user_steamid: string;
   name: string;
-  roundNum: number;
+  round_num: number;
 }
 
 interface PositionalMetrics {
@@ -67,10 +67,20 @@ interface XYZPositionalAnalysisProps {
 
 export default function XYZPositionalAnalysis({ xyzData = [], positionalMetrics = [] }: XYZPositionalAnalysisProps) {
   const [selectedPlayer, setSelectedPlayer] = useState<string>('');
-  const [selectedRound, setSelectedRound] = useState<number>(4);
+  const [selectedRound, setSelectedRound] = useState<number | null>(null);
   const [playbackTick, setPlaybackTick] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>('heatmap');
+
+  // Initialize selectedRound when XYZ data loads
+  useEffect(() => {
+    if (xyzData && xyzData.length > 0 && selectedRound === null) {
+      const uniqueRounds = Array.from(new Set(xyzData.map(d => d.round_num))).sort((a, b) => a - b);
+      if (uniqueRounds.length > 0) {
+        setSelectedRound(uniqueRounds[0]);
+      }
+    }
+  }, [xyzData, selectedRound]);
 
   // Show loading state if no data is available yet
   if (!xyzData || xyzData.length === 0) {
@@ -100,9 +110,9 @@ export default function XYZPositionalAnalysis({ xyzData = [], positionalMetrics 
 
   // Get unique players and rounds from data
   const { players, rounds, tickRange } = useMemo(() => {
-    const uniquePlayers = Array.from(new Set(xyzData.map(d => d.userSteamid)))
+    const uniquePlayers = Array.from(new Set(xyzData.map(d => d.user_steamid)))
       .map(steamId => {
-        const playerData = xyzData.find(d => d.userSteamid === steamId);
+        const playerData = xyzData.find(d => d.user_steamid === steamId);
         return {
           steamId,
           name: playerData?.name || 'Unknown',
@@ -110,11 +120,11 @@ export default function XYZPositionalAnalysis({ xyzData = [], positionalMetrics 
         };
       });
 
-    const uniqueRounds = Array.from(new Set(xyzData.map(d => d.roundNum))).sort((a, b) => a - b);
+    const uniqueRounds = Array.from(new Set(xyzData.map(d => d.round_num))).sort((a, b) => a - b);
     
-    const roundData = xyzData.filter(d => d.roundNum === selectedRound);
-    const minTick = Math.min(...roundData.map(d => d.tick));
-    const maxTick = Math.max(...roundData.map(d => d.tick));
+    const roundData = selectedRound ? xyzData.filter(d => d.round_num === selectedRound) : [];
+    const minTick = roundData.length > 0 ? Math.min(...roundData.map(d => d.tick)) : 0;
+    const maxTick = roundData.length > 0 ? Math.max(...roundData.map(d => d.tick)) : 0;
 
     return {
       players: uniquePlayers,
@@ -125,7 +135,7 @@ export default function XYZPositionalAnalysis({ xyzData = [], positionalMetrics 
 
   // Get current round data
   const currentRoundData = useMemo(() => {
-    return xyzData.filter(d => d.roundNum === selectedRound);
+    return selectedRound ? xyzData.filter(d => d.round_num === selectedRound) : [];
   }, [xyzData, selectedRound]);
 
   // Get current tick data for playback
@@ -190,7 +200,7 @@ export default function XYZPositionalAnalysis({ xyzData = [], positionalMetrics 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="text-sm font-medium text-white mb-2 block">Round</label>
-              <Select value={selectedRound.toString()} onValueChange={(value) => setSelectedRound(Number(value))}>
+              <Select value={selectedRound?.toString() || ''} onValueChange={(value) => setSelectedRound(Number(value))}>
                 <SelectTrigger className="bg-white/5 border-white/20 text-white">
                   <SelectValue />
                 </SelectTrigger>

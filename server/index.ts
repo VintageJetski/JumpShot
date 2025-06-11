@@ -83,28 +83,7 @@ async function startServer() {
       console.error('Server error:', err);
     });
 
-    // Initialize data processing in background after server is stable
-    setTimeout(async () => {
-      try {
-        console.log("Starting background data processing...");
-        
-        const { loadNewPlayerStats } = await import("./newDataParser");
-        const { loadPlayerRoles } = await import("./roleParser");
-        const { processPlayerStatsWithRoles } = await import("./newPlayerAnalytics");
-        const { processRoundData } = await import("./roundAnalytics");
-        const { loadXYZData } = await import("./xyzDataParser");
-        
-        const rawStats = await loadNewPlayerStats();
-        const roleMap = await loadPlayerRoles();
-        const roundMetrics = await processRoundData();
-        const processedPlayers = processPlayerStatsWithRoles(rawStats, roleMap);
-        const xyzData = await loadXYZData();
-        
-        console.log(`Background processing complete: ${processedPlayers.length} players, ${roundMetrics.size} teams, ${xyzData.length} XYZ records`);
-      } catch (error) {
-        console.error("Background processing error:", error);
-      }
-    }, 5000);
+    // Background data processing removed to prevent server blocking
 
   } catch (error) {
     console.error("Failed to start server:", error);

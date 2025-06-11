@@ -98,16 +98,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Legacy endpoints - now return calculated data from frontend
   app.get('/api/players', async (req: Request, res: Response) => {
     try {
-      // Ensure data is initialized
-      await initializeDataIfNeeded();
+      console.log('Players API called - checking data status...');
+      
+      if (!dataInitialized) {
+        return res.status(202).json({ 
+          message: 'Data still loading, please try again shortly',
+          dataInitialized: dataInitialized,
+          dataInitializing: dataInitializing 
+        });
+      }
       
       const role = req.query.role as string | undefined;
+      console.log(`Fetching players with role filter: ${role || 'all'}`);
       
       if (role && role !== 'All Roles') {
         const players = await storage.getPlayersByRole(role);
+        console.log(`Found ${players.length} players for role ${role}`);
         res.json(players);
       } else {
         const players = await storage.getAllPlayers();
+        console.log(`Found ${players.length} total players`);
         res.json(players);
       }
     } catch (error) {

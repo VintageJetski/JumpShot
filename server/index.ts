@@ -75,18 +75,15 @@ async function startServer() {
     // Register API routes
     await registerRoutes(app);
 
-    // Serve static files from public directory
-    app.use(express.static('public'));
-    
-    // Serve the main page for other routes
-    app.get('*', (req, res) => {
-      if (!req.path.startsWith('/api') && !req.path.startsWith('/health')) {
-        res.sendFile(path.join(process.cwd(), 'index.html'));
-      }
-    });
+    // Setup Vite for development or static serving for production
+    if (process.env.NODE_ENV === "production") {
+      serveStatic(app);
+    } else {
+      await setupVite(app, server);
+    }
 
     // Start the HTTP server
-    const port = Number(process.env.PORT) || 80;
+    const port = Number(process.env.PORT) || 5000;
     
     server.listen(port, '0.0.0.0', () => {
       log(`serving on port ${port}`);

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CS2 Analytics Platform - Revolutionary Positional Analysis</title>
+    <title>CS2 Analytics Platform - Static Dashboard</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -13,11 +13,7 @@
             min-height: 100vh;
             line-height: 1.6;
         }
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
         .header {
             text-align: center;
             padding: 3rem 0;
@@ -34,186 +30,87 @@
             -webkit-text-fill-color: transparent;
             margin-bottom: 1rem;
         }
-        .subtitle {
-            font-size: 1.3rem;
-            color: #cbd5e1;
-            margin-bottom: 2rem;
-        }
+        .subtitle { font-size: 1.3rem; color: #cbd5e1; margin-bottom: 2rem; }
         .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: #10b981;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 25px;
-            font-weight: 600;
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            background: #10b981; color: white; padding: 0.75rem 1.5rem;
+            border-radius: 25px; font-weight: 600;
         }
         .status-dot {
-            width: 10px;
-            height: 10px;
-            background: #22c55e;
-            border-radius: 50%;
+            width: 10px; height: 10px; background: #22c55e; border-radius: 50%;
             animation: pulse 2s infinite;
         }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .data-overview {
             background: rgba(16, 185, 129, 0.1);
             border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 20px;
-            padding: 2.5rem;
-            margin: 2rem 0;
-            text-align: center;
+            border-radius: 20px; padding: 2.5rem; margin: 2rem 0; text-align: center;
         }
-        .overview-title {
-            color: #10b981;
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
+        .overview-title { color: #10b981; font-size: 1.8rem; font-weight: 700; margin-bottom: 1.5rem; }
+        .coord-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem; margin: 1.5rem 0;
         }
+        .coord-item {
+            background: rgba(16, 185, 129, 0.2); padding: 1.5rem; border-radius: 12px;
+            border: 1px solid rgba(16, 185, 129, 0.4); text-align: center;
+        }
+        .coord-number { font-size: 2.2rem; font-weight: 800; color: #22c55e; margin-bottom: 0.25rem; }
+        .coord-label { font-size: 0.9rem; color: #a7f3d0; }
         .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin: 2rem 0;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem; margin: 2rem 0;
         }
         .metric-card {
-            background: rgba(15, 23, 42, 0.7);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            border-radius: 15px;
-            padding: 2rem;
-            text-align: center;
+            background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 15px; padding: 2rem; text-align: center;
             transition: transform 0.3s, border-color 0.3s;
         }
-        .metric-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(59, 130, 246, 0.6);
-        }
+        .metric-card:hover { transform: translateY(-5px); border-color: rgba(59, 130, 246, 0.6); }
         .metric-value {
-            font-size: 2.8rem;
-            font-weight: 800;
+            font-size: 2.8rem; font-weight: 800;
             background: linear-gradient(45deg, #3b82f6, #10b981);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             margin-bottom: 0.5rem;
         }
         .metric-label {
-            color: #94a3b8;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-size: 0.85rem;
-        }
-        .coordinate-section {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 20px;
-            padding: 2.5rem;
-            margin: 2rem 0;
-        }
-        .coord-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin: 1.5rem 0;
-        }
-        .coord-item {
-            background: rgba(16, 185, 129, 0.2);
-            padding: 1.5rem;
-            border-radius: 12px;
-            border: 1px solid rgba(16, 185, 129, 0.4);
-            text-align: center;
-        }
-        .coord-number {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: #22c55e;
-            margin-bottom: 0.25rem;
-        }
-        .coord-label {
-            font-size: 0.9rem;
-            color: #a7f3d0;
-        }
-        .features-section {
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 20px;
-            padding: 2.5rem;
-            margin: 2rem 0;
-            border: 1px solid rgba(59, 130, 246, 0.2);
-        }
-        .section-title {
-            font-size: 2.2rem;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 2rem;
-            color: #f1f5f9;
-        }
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 1.5rem;
-        }
-        .feature-card {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            border-radius: 12px;
-            padding: 1.8rem;
-            border-left: 4px solid #3b82f6;
-        }
-        .feature-title {
-            color: #60a5fa;
-            font-weight: 600;
-            font-size: 1.2rem;
-            margin-bottom: 0.75rem;
-        }
-        .feature-description {
-            color: #cbd5e1;
-            font-size: 0.95rem;
-            line-height: 1.6;
-        }
-        .processing-status {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 15px;
-            padding: 2rem;
-            margin: 2rem 0;
-            text-align: center;
-        }
-        .status-list {
-            text-align: left;
-            max-width: 600px;
-            margin: 1.5rem auto;
-        }
-        .status-item {
-            color: #a7f3d0;
-            margin-bottom: 0.75rem;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .checkmark {
-            color: #22c55e;
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-        .footer {
-            text-align: center;
-            padding: 3rem 0;
-            color: #64748b;
-            border-top: 1px solid rgba(59, 130, 246, 0.2);
-            margin-top: 4rem;
+            color: #94a3b8; font-weight: 500; text-transform: uppercase;
+            letter-spacing: 1px; font-size: 0.85rem;
         }
         .tournament-info {
-            background: rgba(139, 92, 246, 0.1);
-            border: 1px solid rgba(139, 92, 246, 0.3);
-            border-radius: 15px;
-            padding: 2rem;
-            margin: 2rem 0;
-            text-align: center;
+            background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 15px; padding: 2rem; margin: 2rem 0; text-align: center;
+        }
+        .features-section {
+            background: rgba(15, 23, 42, 0.6); border-radius: 20px; padding: 2.5rem;
+            margin: 2rem 0; border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        .section-title {
+            font-size: 2.2rem; font-weight: 700; text-align: center;
+            margin-bottom: 2rem; color: #f1f5f9;
+        }
+        .features-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;
+        }
+        .feature-card {
+            background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px; padding: 1.8rem; border-left: 4px solid #3b82f6;
+        }
+        .feature-title { color: #60a5fa; font-weight: 600; font-size: 1.2rem; margin-bottom: 0.75rem; }
+        .feature-description { color: #cbd5e1; font-size: 0.95rem; line-height: 1.6; }
+        .processing-status {
+            background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 15px; padding: 2rem; margin: 2rem 0; text-align: center;
+        }
+        .status-list { text-align: left; max-width: 600px; margin: 1.5rem auto; }
+        .status-item {
+            color: #a7f3d0; margin-bottom: 0.75rem; font-size: 1rem;
+            display: flex; align-items: center; gap: 0.75rem;
+        }
+        .checkmark { color: #22c55e; font-weight: bold; font-size: 1.2rem; }
+        .footer {
+            text-align: center; padding: 3rem 0; color: #64748b;
+            border-top: 1px solid rgba(59, 130, 246, 0.2); margin-top: 4rem;
         }
         @media (max-width: 768px) {
             .title { font-size: 2.5rem; }
@@ -229,7 +126,7 @@
             <p class="subtitle">Revolutionary Positional Analysis with Authentic XYZ Coordinate Data</p>
             <div class="status-badge">
                 <div class="status-dot"></div>
-                Static Analytics Dashboard
+                Static Analytics Dashboard - Operational
             </div>
         </header>
 
@@ -330,7 +227,7 @@
         </section>
 
         <section class="processing-status">
-            <h2 style="color: #10b981; font-size: 1.8rem; margin-bottom: 1.5rem;">Backend Processing Confirmation</h2>
+            <h2 style="color: #10b981; font-size: 1.8rem; margin-bottom: 1.5rem;">Backend Processing Status</h2>
             <div class="status-list">
                 <div class="status-item">
                     <span class="checkmark">✓</span>
@@ -375,6 +272,16 @@
         console.log('- Rounds: 1,554 from 148 matches');
         console.log('- Map Areas: South Sector generated from clustering');
         console.log('Platform Status: Static analytics dashboard operational');
+        
+        // Display platform capabilities
+        setTimeout(() => {
+            console.log('Revolutionary Platform Features:');
+            console.log('• Authentic XYZ coordinate processing from CS2 demo files');
+            console.log('• Dynamic map area generation using clustering algorithms');
+            console.log('• PIV calculations with comprehensive role assignments');
+            console.log('• Territory control analysis based on real positioning data');
+            console.log('• Complete IEM Katowice 2025 tournament analysis');
+        }, 2000);
     </script>
 </body>
 </html>

@@ -187,7 +187,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [activeTab, setActiveTab] = useState('live');
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mapImageRef = useRef<HTMLImageElement>(null);
+  const [mapImage, setMapImage] = useState<HTMLImageElement | null>(null);
 
   // Process data for analysis
   const analysisData = useMemo(() => {
@@ -242,7 +242,6 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
   // Draw tactical map
   const drawTacticalMap = useCallback(() => {
     const canvas = canvasRef.current;
-    const mapImage = mapImageRef.current;
     if (!canvas || !mapImage || !filteredData.length) return;
 
     const ctx = canvas.getContext('2d');
@@ -365,19 +364,22 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
         ctx.fillRect(gridX * cellSize, gridY * cellSize, cellSize, cellSize);
       });
     }
-  }, [filteredData, activeTab, analysisData]);
+  }, [filteredData, activeTab, analysisData, mapImage]);
 
   // Load map image and draw
   useEffect(() => {
     const img = new Image();
     img.onload = () => {
-      if (mapImageRef.current) {
-        mapImageRef.current = img;
-      }
-      drawTacticalMap();
+      setMapImage(img);
     };
     img.src = infernoMapPath;
-  }, [drawTacticalMap]);
+  }, []);
+
+  useEffect(() => {
+    if (mapImage) {
+      drawTacticalMap();
+    }
+  }, [mapImage, drawTacticalMap]);
 
   if (!analysisData) {
     return (

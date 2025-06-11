@@ -4,7 +4,7 @@ import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import CS2MapVisualization from "@/components/data-visualization/CS2MapVisualization";
+import TacticalMapAnalysis from "@/components/data-visualization/TacticalMapAnalysis";
 import { PlayerWithPIV } from "@shared/types";
 
 interface XYZPlayerData {
@@ -125,7 +125,7 @@ export default function PositionalAnalysisPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <CS2MapVisualization 
+            <TacticalMapAnalysis 
               xyzData={xyzData} 
             />
           </CardContent>

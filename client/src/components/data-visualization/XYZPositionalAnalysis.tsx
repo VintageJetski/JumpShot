@@ -318,14 +318,14 @@ export default function XYZPositionalAnalysis({ xyzData = [], positionalMetrics 
                     {/* Current Player Positions */}
                     {currentTickData.map((player, index) => (
                       <div
-                        key={player.userSteamid}
+                        key={player.user_steamid}
                         className="absolute w-3 h-3 rounded-full border-2 border-white shadow-lg transition-all duration-200"
                         style={{
                           left: `${((player.X + 2000) / 4000) * 100}%`,
                           top: `${((player.Y + 2000) / 4000) * 100}%`,
                           backgroundColor: getPlayerColor(player.side, index),
                           transform: 'translate(-50%, -50%)',
-                          zIndex: player.userSteamid === selectedPlayer ? 20 : 10
+                          zIndex: player.user_steamid === selectedPlayer ? 20 : 10
                         }}
                         title={`${player.name} (${player.health}HP)`}
                       />

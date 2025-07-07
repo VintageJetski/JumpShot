@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, TrendingUp, Brain, Target, Zap, Activity } from 'lucide-react';
+import { MapPin, TrendingUp, Brain, Target, Zap, Activity, Shield, Sword, Users, AlertTriangle, Eye, Crown } from 'lucide-react';
 
 interface XYZPlayerData {
   health: number;
@@ -32,6 +32,88 @@ interface SimpleTacticalMapProps {
 export function SimpleTacticalMap({ xyzData }: SimpleTacticalMapProps) {
   const [selectedRound, setSelectedRound] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('overview');
+
+  // Phase 4: Tactical Analysis Functions
+  const analyzeTacticalFormations = (players: XYZPlayerData[]) => {
+    if (players.length === 0) return { type: 'Unknown', confidence: 0 };
+    
+    const alivePlayers = players.filter(p => p.health > 0);
+    if (alivePlayers.length < 2) return { type: 'Individual', confidence: 90 };
+    
+    const avgX = alivePlayers.reduce((sum, p) => sum + p.X, 0) / alivePlayers.length;
+    const avgY = alivePlayers.reduce((sum, p) => sum + p.Y, 0) / alivePlayers.length;
+    
+    const distances = alivePlayers.map(p => Math.sqrt((p.X - avgX) ** 2 + (p.Y - avgY) ** 2));
+    const avgDistance = distances.reduce((sum, d) => sum + d, 0) / distances.length;
+    
+    if (avgDistance < 400) return { type: 'Tight Stack', confidence: 85 };
+    if (avgDistance < 800) return { type: 'Loose Formation', confidence: 75 };
+    return { type: 'Split Formation', confidence: 80 };
+  };
+
+  const calculateMapControl = (players: XYZPlayerData[]) => {
+    const tPlayers = players.filter(p => p.side === 't' && p.health > 0);
+    const ctPlayers = players.filter(p => p.side === 'ct' && p.health > 0);
+    
+    const tCoverage = tPlayers.length * 500;
+    const ctCoverage = ctPlayers.length * 500;
+    
+    const totalCoverage = tCoverage + ctCoverage;
+    const tControl = totalCoverage > 0 ? (tCoverage / totalCoverage) * 100 : 50;
+    
+    return { score: Math.round(tControl), advantage: tControl > 60 ? 'T-SIDE' : tControl < 40 ? 'CT-SIDE' : 'CONTESTED' };
+  };
+
+  const assessTacticalAdvantage = (players: XYZPlayerData[]) => {
+    const tPlayers = players.filter(p => p.side === 't');
+    const ctPlayers = players.filter(p => p.side === 'ct');
+    
+    const tAlive = tPlayers.filter(p => p.health > 0).length;
+    const ctAlive = ctPlayers.filter(p => p.health > 0).length;
+    
+    const tAvgHealth = tPlayers.reduce((sum, p) => sum + p.health, 0) / tPlayers.length || 0;
+    const ctAvgHealth = ctPlayers.reduce((sum, p) => sum + p.health, 0) / ctPlayers.length || 0;
+    
+    const tScore = (tAlive * 20) + (tAvgHealth * 0.5);
+    const ctScore = (ctAlive * 20) + (ctAvgHealth * 0.5);
+    
+    if (tScore > ctScore + 30) return { side: 'T-STRONG', confidence: 80 };
+    if (ctScore > tScore + 30) return { side: 'CT-STRONG', confidence: 80 };
+    return { side: 'BALANCED', confidence: 60 };
+  };
+
+  const predictExecuteTiming = (players: XYZPlayerData[]) => {
+    const highVelocity = players.filter(p => 
+      Math.sqrt(p.velocity_X ** 2 + p.velocity_Y ** 2) > 150 && p.health > 0
+    ).length;
+    
+    const coordination = players.reduce((acc, player) => {
+      const teammates = players.filter(other => 
+        other.side === player.side && 
+        other.name !== player.name &&
+        Math.sqrt((player.X - other.X) ** 2 + (player.Y - other.Y) ** 2) < 600
+      );
+      return acc + teammates.length;
+    }, 0) / 2;
+    
+    if (highVelocity > 4 && coordination > 10) return { phase: 'IMMEDIATE EXECUTE', timing: '0-5s' };
+    if (highVelocity > 2 && coordination > 5) return { phase: 'PREPARING EXECUTE', timing: '5-15s' };
+    return { phase: 'POSITIONAL SETUP', timing: '15-30s' };
+  };
+
+  const calculateInformationControl = (players: XYZPlayerData[]) => {
+    const tPlayers = players.filter(p => p.side === 't' && p.health > 0);
+    const ctPlayers = players.filter(p => p.side === 'ct' && p.health > 0);
+    
+    const tSpread = tPlayers.length > 1 ? 
+      Math.max(...tPlayers.map(p => p.X)) - Math.min(...tPlayers.map(p => p.X)) : 0;
+    const ctSpread = ctPlayers.length > 1 ? 
+      Math.max(...ctPlayers.map(p => p.X)) - Math.min(...ctPlayers.map(p => p.X)) : 0;
+    
+    if (tSpread > ctSpread + 500) return { advantage: 'T-SIDE', score: 75 };
+    if (ctSpread > tSpread + 500) return { advantage: 'CT-SIDE', score: 75 };
+    return { advantage: 'NEUTRAL', score: 50 };
+  };
 
   // Get available rounds
   const availableRounds = useMemo(() => {
@@ -83,6 +165,14 @@ export function SimpleTacticalMap({ xyzData }: SimpleTacticalMapProps) {
       roundPrediction = 'CT-SIDE FAVORED';
       confidence = Math.min(85, 50 + (ctAlive - tAlive) * 10 + (ctAvgHealth - tAvgHealth) / 10);
     }
+
+    // Phase 4: Advanced Tactical Analysis
+    const tFormations = analyzeTacticalFormations(tPlayers);
+    const ctFormations = analyzeTacticalFormations(ctPlayers);
+    const mapControl = calculateMapControl(filteredData);
+    const tacticalAdvantage = assessTacticalAdvantage(filteredData);
+    const executeTiming = predictExecuteTiming(filteredData);
+    const informationControl = calculateInformationControl(filteredData);
     
     return {
       totalPositions: filteredData.length,
@@ -96,7 +186,14 @@ export function SimpleTacticalMap({ xyzData }: SimpleTacticalMapProps) {
       vulnerablePlayers: lowHealthPlayers.length,
       teamCoordination: Math.round(coordinations),
       roundPrediction,
-      predictionConfidence: Math.round(confidence)
+      predictionConfidence: Math.round(confidence),
+      // Phase 4 metrics
+      tFormation: tFormations.type,
+      ctFormation: ctFormations.type,
+      mapControlScore: mapControl.score,
+      tacticalAdvantage: tacticalAdvantage.side,
+      executeTiming: executeTiming.phase,
+      informationControl: informationControl.advantage
     };
   }, [filteredData]);
 
@@ -139,10 +236,11 @@ export function SimpleTacticalMap({ xyzData }: SimpleTacticalMapProps) {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-3 w-full max-w-lg">
+        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="insights">Phase 2 AI</TabsTrigger>
           <TabsTrigger value="predictive">Phase 3 Predictive</TabsTrigger>
+          <TabsTrigger value="tactical">Phase 4 Tactical</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
@@ -374,6 +472,205 @@ export function SimpleTacticalMap({ xyzData }: SimpleTacticalMapProps) {
                     {stats.teamCoordination > 15 ? 
                       "Coordinated team execute likely - expect synchronized utility" :
                       "Individual plays expected - watch for picks and duels"
+                    }
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="tactical" className="mt-4">
+          <div className="space-y-6">
+            {/* Phase 4 Header */}
+            <div className="bg-gradient-to-r from-indigo-600/10 to-purple-600/10 border border-indigo-600/20 rounded-lg p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="bg-indigo-600 text-white p-2 rounded-lg">
+                  <Crown className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">Phase 4: Advanced Tactical Intelligence</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Elite-level tactical analysis, formation recognition, and strategic decision support
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Tactical Command Center */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Formation Analysis */}
+              <Card className="p-6 bg-gradient-to-br from-slate-900 to-slate-800 border border-indigo-600/20">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-indigo-600 text-white p-2 rounded-lg">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <h4 className="font-semibold text-lg text-white">Formation Analysis</h4>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="bg-red-600/20 border border-red-600/30 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-red-400 font-medium">T-Side Formation</span>
+                      <Badge variant="outline" className="text-xs border-red-600/50">
+                        {stats.tFormation}
+                      </Badge>
+                    </div>
+                    <div className="text-sm text-gray-300">
+                      Current tactical positioning and team structure
+                    </div>
+                  </div>
+
+                  <div className="bg-green-600/20 border border-green-600/30 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-green-400 font-medium">CT-Side Formation</span>
+                      <Badge variant="outline" className="text-xs border-green-600/50">
+                        {stats.ctFormation}
+                      </Badge>
+                    </div>
+                    <div className="text-sm text-gray-300">
+                      Defensive setup and site coverage analysis
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Tactical Advantage */}
+              <Card className="p-6 bg-gradient-to-br from-slate-900 to-slate-800 border border-purple-600/20">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-purple-600 text-white p-2 rounded-lg">
+                    <Sword className="h-5 w-5" />
+                  </div>
+                  <h4 className="font-semibold text-lg text-white">Tactical Advantage</h4>
+                </div>
+                
+                <div className="text-center space-y-3">
+                  <div className="text-2xl font-bold text-purple-400">
+                    {stats.tacticalAdvantage}
+                  </div>
+                  <div className="text-sm text-gray-300">
+                    Overall tactical position assessment
+                  </div>
+                  
+                  <div className="bg-purple-600/20 border border-purple-600/30 rounded-lg p-3 mt-4">
+                    <div className="text-sm text-purple-400 font-medium mb-1">Map Control</div>
+                    <div className="text-lg font-bold text-white">{stats.mapControlScore}% T-Control</div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Strategic Intelligence Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-yellow-600 text-white p-2 rounded-lg">
+                    <AlertTriangle className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold">{stats.executeTiming}</div>
+                    <div className="text-sm text-muted-foreground">Execute Phase</div>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Predicted timing window for coordinated action
+                </div>
+              </Card>
+
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-cyan-600 text-white p-2 rounded-lg">
+                    <Eye className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold">{stats.informationControl}</div>
+                    <div className="text-sm text-muted-foreground">Info Control</div>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Information warfare advantage assessment
+                </div>
+              </Card>
+
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-emerald-600 text-white p-2 rounded-lg">
+                    <Shield className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold">{stats.teamCoordination}</div>
+                    <div className="text-sm text-muted-foreground">Coordination Index</div>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Team synchronization and positioning cohesion
+                </div>
+              </Card>
+            </div>
+
+            {/* Elite Tactical Insights */}
+            <Card className="p-6">
+              <h4 className="font-semibold mb-4 flex items-center gap-2">
+                <Crown className="h-5 w-5 text-indigo-400" />
+                Elite Tactical Command Center
+              </h4>
+              <div className="space-y-4">
+                <div className="bg-gradient-to-r from-indigo-600/10 to-blue-600/10 border border-indigo-600/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-4 w-4 text-indigo-400" />
+                    <span className="font-medium text-indigo-400">Formation Intelligence</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {stats.tFormation === 'Tight Stack' ? 
+                      "T-side showing coordinated stack formation - expect synchronized utility and team execute" :
+                    stats.tFormation === 'Split Formation' ? 
+                      "T-side utilizing split formation - multiple site pressure and pick potential" :
+                      "T-side in loose formation - adaptable positioning with individual play potential"
+                    }
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-purple-600/10 to-pink-600/10 border border-purple-600/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sword className="h-4 w-4 text-purple-400" />
+                    <span className="font-medium text-purple-400">Strategic Assessment</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {stats.tacticalAdvantage === 'T-STRONG' ? 
+                      "T-side holds significant tactical advantage - aggressive plays favored" :
+                    stats.tacticalAdvantage === 'CT-STRONG' ? 
+                      "CT-side maintains strong defensive position - hold angles and wait for picks" :
+                      "Balanced tactical state - adaptability and mid-round calls crucial"
+                    }
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-cyan-600/10 to-blue-600/10 border border-cyan-600/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Eye className="h-4 w-4 text-cyan-400" />
+                    <span className="font-medium text-cyan-400">Information Warfare</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {stats.informationControl === 'T-SIDE' ? 
+                      "T-side controls information flow - CT rotations may be delayed or misdirected" :
+                    stats.informationControl === 'CT-SIDE' ? 
+                      "CT-side has information advantage - strong reads on T-side positioning" :
+                      "Neutral information state - both teams operating with limited intel"
+                    }
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-yellow-600/10 to-orange-600/10 border border-yellow-600/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="h-4 w-4 text-yellow-400" />
+                    <span className="font-medium text-yellow-400">Execute Timing Analysis</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {stats.executeTiming === 'IMMEDIATE EXECUTE' ? 
+                      "High-velocity coordinated execute incoming - prepare for immediate utility exchanges" :
+                    stats.executeTiming === 'PREPARING EXECUTE' ? 
+                      "Teams positioning for coordinated execute - utility and timing setup phase" :
+                      "Positional setup phase - tactical maneuvering and information gathering"
                     }
                   </div>
                 </div>

@@ -295,6 +295,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Phase 4: Advanced Tactical Intelligence endpoints
+  app.get('/api/tactical/formations', async (req: Request, res: Response) => {
+    try {
+      const { analyzeTacticalFormations } = await import('./tacticalIntelligence.js');
+      const formations = analyzeTacticalFormations(xyzData);
+      res.json(formations);
+    } catch (error) {
+      console.error('Error analyzing formations:', error);
+      res.status(500).json({ error: 'Failed to analyze formations' });
+    }
+  });
+
+  app.get('/api/tactical/map-control', async (req: Request, res: Response) => {
+    try {
+      const { analyzeMapControl } = await import('./tacticalIntelligence.js');
+      const mapControl = analyzeMapControl(xyzData);
+      res.json(mapControl);
+    } catch (error) {
+      console.error('Error analyzing map control:', error);
+      res.status(500).json({ error: 'Failed to analyze map control' });
+    }
+  });
+
+  app.get('/api/tactical/advantage', async (req: Request, res: Response) => {
+    try {
+      const { assessTacticalAdvantage } = await import('./tacticalIntelligence.js');
+      const advantage = assessTacticalAdvantage(xyzData);
+      res.json(advantage);
+    } catch (error) {
+      console.error('Error assessing tactical advantage:', error);
+      res.status(500).json({ error: 'Failed to assess tactical advantage' });
+    }
+  });
+
+  app.get('/api/tactical/execute-timing', async (req: Request, res: Response) => {
+    try {
+      const { predictExecuteTiming } = await import('./tacticalIntelligence.js');
+      const timing = predictExecuteTiming(xyzData);
+      res.json(timing);
+    } catch (error) {
+      console.error('Error predicting execute timing:', error);
+      res.status(500).json({ error: 'Failed to predict execute timing' });
+    }
+  });
+
+  app.get('/api/tactical/information-warfare', async (req: Request, res: Response) => {
+    try {
+      const { analyzeInformationWarfare } = await import('./tacticalIntelligence.js');
+      const warfare = analyzeInformationWarfare(xyzData);
+      res.json(warfare);
+    } catch (error) {
+      console.error('Error analyzing information warfare:', error);
+      res.status(500).json({ error: 'Failed to analyze information warfare' });
+    }
+  });
+
+  app.get('/api/tactical/intelligence', async (req: Request, res: Response) => {
+    try {
+      const { generateTacticalIntelligence } = await import('./tacticalIntelligence.js');
+      const intelligence = generateTacticalIntelligence(xyzData);
+      res.json(intelligence);
+    } catch (error) {
+      console.error('Error generating tactical intelligence:', error);
+      res.status(500).json({ error: 'Failed to generate tactical intelligence' });
+    }
+  });
+
   
   const httpServer = createServer(app);
   return httpServer;

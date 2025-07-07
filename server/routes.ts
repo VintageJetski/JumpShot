@@ -250,6 +250,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Phase 3: Predictive Analytics endpoints
+  app.get('/api/predictive/match-state', async (req: Request, res: Response) => {
+    try {
+      const { analyzeMatchState } = await import('./predictiveAnalytics.js');
+      const matchState = analyzeMatchState(xyzData);
+      res.json(matchState);
+    } catch (error) {
+      console.error('Error analyzing match state:', error);
+      res.status(500).json({ error: 'Failed to analyze match state' });
+    }
+  });
+
+  app.get('/api/predictive/insights', async (req: Request, res: Response) => {
+    try {
+      const { generatePredictiveInsights } = await import('./predictiveAnalytics.js');
+      const insights = generatePredictiveInsights(xyzData);
+      res.json(insights);
+    } catch (error) {
+      console.error('Error generating predictive insights:', error);
+      res.status(500).json({ error: 'Failed to generate insights' });
+    }
+  });
+
+  app.get('/api/predictive/momentum', async (req: Request, res: Response) => {
+    try {
+      const { calculateMomentumMetrics } = await import('./predictiveAnalytics.js');
+      const momentum = calculateMomentumMetrics(xyzData);
+      res.json(momentum);
+    } catch (error) {
+      console.error('Error calculating momentum:', error);
+      res.status(500).json({ error: 'Failed to calculate momentum' });
+    }
+  });
+
+  app.get('/api/predictive/next-phase', async (req: Request, res: Response) => {
+    try {
+      const { predictNextPhase } = await import('./predictiveAnalytics.js');
+      const nextPhase = predictNextPhase(xyzData);
+      res.json(nextPhase);
+    } catch (error) {
+      console.error('Error predicting next phase:', error);
+      res.status(500).json({ error: 'Failed to predict next phase' });
+    }
+  });
+
   
   const httpServer = createServer(app);
   return httpServer;

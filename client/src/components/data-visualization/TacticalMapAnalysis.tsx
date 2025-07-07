@@ -221,16 +221,17 @@ function generateEnhancedTacticalInsights(
   
   // Phase 1 Enhanced Analytics: Real-Time Player State Assessment
   
-  // Health-based vulnerability analysis
-  const vulnerablePlayers = data.filter(d => d.health < 30);
-  if (vulnerablePlayers.length > 0) {
-    const vulnRatio = vulnerablePlayers.length / data.length;
+  // Player survival analysis (replacing vulnerability alerts with more tactical insights)
+  const lowHealthPlayers = data.filter(d => d.health > 0 && d.health < 50);
+  const deadPlayers = data.filter(d => d.health <= 0);
+  
+  if (deadPlayers.length > 0) {
     insights.push({
-      type: 'positioning',
-      description: `Critical health alert: ${vulnerablePlayers.length} players below 30HP (${(vulnRatio * 100).toFixed(1)}%)`,
-      confidence: 0.95,
-      impact: vulnRatio > 0.2 ? 'high' : 'medium',
-      recommendation: 'Vulnerable players should seek immediate cover and team support'
+      type: 'tactical',
+      description: `Combat casualties: ${deadPlayers.length} players eliminated, ${lowHealthPlayers.length} wounded`,
+      confidence: 0.98,
+      impact: 'high',
+      recommendation: deadPlayers.length > 2 ? 'Critical player disadvantage - consider saving weapons' : 'Manageable casualties - maintain aggression'
     });
   }
   
@@ -535,29 +536,40 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
       });
     }
 
-    // Draw player positions
-    filteredData.forEach(point => {
+    // Draw player positions with unique identifiers
+    filteredData.forEach((point, index) => {
       const pos = coordToMapPercent(point.X, point.Y);
       const x = (pos.x / 100) * canvas.width;
       const y = (pos.y / 100) * canvas.height;
 
-      // Player dot
-      ctx.beginPath();
-      ctx.arc(x, y, 8, 0, 2 * Math.PI);
-      ctx.fillStyle = point.side === 't' ? '#dc2626' : '#22c55e';
-      ctx.fill();
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      // Check if player is dead (health <= 0)
+      const isDead = point.health <= 0;
 
-      // Health bar
-      if (point.health < 100) {
-        const barWidth = 20;
-        const barHeight = 4;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(x - barWidth/2, y - 15, barWidth, barHeight);
+      if (isDead) {
+        // Draw skull icon for dead players
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('💀', x, y + 4);
+        ctx.textAlign = 'left';
+      } else {
+        // Player dot for alive players
+        ctx.beginPath();
+        ctx.arc(x, y, 8, 0, 2 * Math.PI);
+        ctx.fillStyle = point.side === 't' ? '#dc2626' : '#22c55e';
+        ctx.fill();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // HP number above player head
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillRect(x - 10, y - 25, 20, 12);
         ctx.fillStyle = point.health > 50 ? '#22c55e' : point.health > 25 ? '#eab308' : '#dc2626';
-        ctx.fillRect(x - barWidth/2, y - 15, (point.health / 100) * barWidth, barHeight);
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${point.health}`, x, y - 16);
+        ctx.textAlign = 'left';
       }
 
       // Flash indicator
@@ -594,8 +606,91 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
       ctx.fillText(point.name, x - 15, y + 25);
     });
 
-    // Draw simplified heatmap for heatmap tab
-    if (activeTab === 'heatmap' && analysisData?.heatmapData) {
+    // Draw movement trails for heatmap tab
+    if (activeTab === 'heatmap' && selectedPlayer !== 'all') {
+      // Get all positions for selected player, sorted by tick
+      const playerPositions = xyzData
+        .filter(d => d.name === selectedPlayer)
+        .sort((a, b) => a.tick - b.tick);
+
+      if (playerPositions.length > 1) {
+        // Determine player side for color
+        const playerSide = playerPositions[0].side;
+        const trailColor = playerSide === 't' ? '#dc2626' : '#22c55e';
+        
+        // Draw glow effect (multiple lines with decreasing opacity)
+        for (let glowLevel = 0; glowLevel < 3; glowLevel++) {
+          ctx.strokeStyle = `${trailColor}${Math.round(255 * (0.15 - glowLevel * 0.05)).toString(16).padStart(2, '0')}`;
+          ctx.lineWidth = 12 - glowLevel * 2;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          
+          ctx.beginPath();
+          playerPositions.forEach((pos, index) => {
+            const mapPos = coordToMapPercent(pos.X, pos.Y);
+            const x = (mapPos.x / 100) * canvas.width;
+            const y = (mapPos.y / 100) * canvas.height;
+            
+            if (index === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+          });
+          ctx.stroke();
+        }
+        
+        // Draw main trail line
+        ctx.strokeStyle = trailColor;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        ctx.beginPath();
+        playerPositions.forEach((pos, index) => {
+          const mapPos = coordToMapPercent(pos.X, pos.Y);
+          const x = (mapPos.x / 100) * canvas.width;
+          const y = (mapPos.y / 100) * canvas.height;
+          
+          if (index === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+        ctx.stroke();
+        
+        // Mark start and end positions
+        if (playerPositions.length > 0) {
+          // Start position
+          const startPos = coordToMapPercent(playerPositions[0].X, playerPositions[0].Y);
+          const startX = (startPos.x / 100) * canvas.width;
+          const startY = (startPos.y / 100) * canvas.height;
+          
+          ctx.beginPath();
+          ctx.arc(startX, startY, 6, 0, 2 * Math.PI);
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+          ctx.strokeStyle = trailColor;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          
+          // End position
+          const endPos = coordToMapPercent(playerPositions[playerPositions.length - 1].X, playerPositions[playerPositions.length - 1].Y);
+          const endX = (endPos.x / 100) * canvas.width;
+          const endY = (endPos.y / 100) * canvas.height;
+          
+          ctx.beginPath();
+          ctx.arc(endX, endY, 8, 0, 2 * Math.PI);
+          ctx.fillStyle = trailColor;
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      }
+    } else if (activeTab === 'heatmap' && analysisData?.heatmapData) {
+      // Show grid-based heatmap for all players
       const maxCount = Math.max(...Array.from(analysisData.heatmapData.values()));
       
       Array.from(analysisData.heatmapData.entries()).forEach(([key, count]) => {
@@ -603,13 +698,11 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
         const intensity = count / maxCount;
         const cellSize = canvas.width / analysisData.gridSize;
         
-        // Simple solid color approach - cleaner visualization
-        if (intensity > 0.1) { // Only show significant activity
+        if (intensity > 0.1) {
           const alpha = Math.min(intensity * 0.7, 0.8);
           ctx.fillStyle = `rgba(220, 38, 38, ${alpha})`;
           ctx.fillRect(gridX * cellSize, gridY * cellSize, cellSize, cellSize);
           
-          // Add white border for clarity
           if (intensity > 0.3) {
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
             ctx.lineWidth = 1;
@@ -833,9 +926,9 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                       className="w-full h-auto max-h-[600px] object-contain"
                     />
                     <div className="absolute top-4 left-4 bg-black/50 text-white p-2 rounded text-sm">
-                      <div>Position Density Heatmap</div>
+                      <div>Movement Trail Analysis</div>
                       <div className="text-xs text-gray-300">
-                        Red intensity shows player concentration
+                        Select a player to see movement trail with glow effect
                       </div>
                     </div>
                   </div>

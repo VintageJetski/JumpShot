@@ -536,78 +536,83 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
       });
     }
 
-    // Draw player positions with unique identifiers
-    filteredData.forEach((point, index) => {
-      const pos = coordToMapPercent(point.X, point.Y);
-      const x = (pos.x / 100) * canvas.width;
-      const y = (pos.y / 100) * canvas.height;
+    // Draw player positions (skip if showing individual player trail in heatmap)
+    if (!(activeTab === 'heatmap' && selectedPlayer !== 'all')) {
+      filteredData.forEach((point, index) => {
+        const pos = coordToMapPercent(point.X, point.Y);
+        const x = (pos.x / 100) * canvas.width;
+        const y = (pos.y / 100) * canvas.height;
 
-      // Check if player is dead (health <= 0)
-      const isDead = point.health <= 0;
+        // Check if player is dead (health <= 0)
+        const isDead = point.health <= 0;
 
-      if (isDead) {
-        // Draw skull icon for dead players
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        ctx.font = '16px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('💀', x, y + 4);
-        ctx.textAlign = 'left';
-      } else {
-        // Player dot for alive players
-        ctx.beginPath();
-        ctx.arc(x, y, 8, 0, 2 * Math.PI);
-        ctx.fillStyle = point.side === 't' ? '#dc2626' : '#22c55e';
-        ctx.fill();
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // HP number above player head
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        ctx.fillRect(x - 10, y - 25, 20, 12);
-        ctx.fillStyle = point.health > 50 ? '#22c55e' : point.health > 25 ? '#eab308' : '#dc2626';
-        ctx.font = 'bold 10px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${point.health}`, x, y - 16);
-        ctx.textAlign = 'left';
-      }
-
-      // Flash indicator
-      if (point.flash_duration > 0) {
-        ctx.beginPath();
-        ctx.arc(x, y, 12, 0, 2 * Math.PI);
-        ctx.strokeStyle = '#fbbf24';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-      }
-
-      // Velocity arrow
-      if (point.velocity_X !== 0 || point.velocity_Y !== 0) {
-        const velocity = Math.sqrt(point.velocity_X ** 2 + point.velocity_Y ** 2);
-        if (velocity > 100) {
-          const angle = Math.atan2(point.velocity_Y, point.velocity_X);
-          const arrowLength = Math.min(velocity / 10, 30);
-          
-          ctx.strokeStyle = point.side === 't' ? '#dc2626' : '#22c55e';
-          ctx.lineWidth = 2;
+        if (isDead) {
+          // Draw skull icon for dead players
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+          ctx.font = '16px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('💀', x, y + 4);
+          ctx.textAlign = 'left';
+        } else {
+          // Player dot for alive players
           ctx.beginPath();
-          ctx.moveTo(x, y);
-          ctx.lineTo(x + Math.cos(angle) * arrowLength, y + Math.sin(angle) * arrowLength);
+          ctx.arc(x, y, 8, 0, 2 * Math.PI);
+          ctx.fillStyle = point.side === 't' ? '#dc2626' : '#22c55e';
+          ctx.fill();
+          ctx.strokeStyle = 'white';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // HP number above player head
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+          ctx.fillRect(x - 10, y - 25, 20, 12);
+          ctx.fillStyle = point.health > 50 ? '#22c55e' : point.health > 25 ? '#eab308' : '#dc2626';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(`${point.health}`, x, y - 16);
+          ctx.textAlign = 'left';
+        }
+
+        // Flash indicator
+        if (point.flash_duration > 0) {
+          ctx.beginPath();
+          ctx.arc(x, y, 12, 0, 2 * Math.PI);
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 3;
           ctx.stroke();
         }
-      }
 
-      // Player name
-      ctx.fillStyle = 'white';
-      ctx.font = '11px sans-serif';
-      ctx.strokeStyle = 'black';
-      ctx.lineWidth = 3;
-      ctx.strokeText(point.name, x - 15, y + 25);
-      ctx.fillText(point.name, x - 15, y + 25);
-    });
+        // Velocity arrow
+        if (point.velocity_X !== 0 || point.velocity_Y !== 0) {
+          const velocity = Math.sqrt(point.velocity_X ** 2 + point.velocity_Y ** 2);
+          if (velocity > 100) {
+            const angle = Math.atan2(point.velocity_Y, point.velocity_X);
+            const arrowLength = Math.min(velocity / 10, 30);
+            
+            ctx.strokeStyle = point.side === 't' ? '#dc2626' : '#22c55e';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + Math.cos(angle) * arrowLength, y + Math.sin(angle) * arrowLength);
+            ctx.stroke();
+          }
+        }
 
-    // Draw movement trails for heatmap tab
+        // Player name
+        ctx.fillStyle = 'white';
+        ctx.font = '11px sans-serif';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.strokeText(point.name, x - 15, y + 25);
+        ctx.fillText(point.name, x - 15, y + 25);
+      });
+    }
+
+    // Draw clean movement trails for heatmap tab (only when player selected)
     if (activeTab === 'heatmap' && selectedPlayer !== 'all') {
+      // Clear any existing artifacts first
+      ctx.save();
+      
       // Get all positions for selected player, sorted by tick
       const playerPositions = xyzData
         .filter(d => d.name === selectedPlayer)
@@ -620,10 +625,13 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
         
         // Draw glow effect (multiple lines with decreasing opacity)
         for (let glowLevel = 0; glowLevel < 3; glowLevel++) {
-          ctx.strokeStyle = `${trailColor}${Math.round(255 * (0.15 - glowLevel * 0.05)).toString(16).padStart(2, '0')}`;
-          ctx.lineWidth = 12 - glowLevel * 2;
+          const glowOpacity = Math.round(255 * (0.2 - glowLevel * 0.06));
+          ctx.strokeStyle = `${trailColor}${glowOpacity.toString(16).padStart(2, '0')}`;
+          ctx.lineWidth = 14 - glowLevel * 3;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
+          ctx.shadowColor = trailColor;
+          ctx.shadowBlur = 8 - glowLevel * 2;
           
           ctx.beginPath();
           playerPositions.forEach((pos, index) => {
@@ -640,9 +648,13 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
           ctx.stroke();
         }
         
+        // Reset shadow
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        
         // Draw main trail line
         ctx.strokeStyle = trailColor;
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 4;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         
@@ -662,54 +674,35 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
         
         // Mark start and end positions
         if (playerPositions.length > 0) {
-          // Start position
+          // Start position (white circle with colored border)
           const startPos = coordToMapPercent(playerPositions[0].X, playerPositions[0].Y);
           const startX = (startPos.x / 100) * canvas.width;
           const startY = (startPos.y / 100) * canvas.height;
           
           ctx.beginPath();
-          ctx.arc(startX, startY, 6, 0, 2 * Math.PI);
+          ctx.arc(startX, startY, 7, 0, 2 * Math.PI);
           ctx.fillStyle = '#ffffff';
           ctx.fill();
           ctx.strokeStyle = trailColor;
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 3;
           ctx.stroke();
           
-          // End position
+          // End position (colored circle with white border)
           const endPos = coordToMapPercent(playerPositions[playerPositions.length - 1].X, playerPositions[playerPositions.length - 1].Y);
           const endX = (endPos.x / 100) * canvas.width;
           const endY = (endPos.y / 100) * canvas.height;
           
           ctx.beginPath();
-          ctx.arc(endX, endY, 8, 0, 2 * Math.PI);
+          ctx.arc(endX, endY, 9, 0, 2 * Math.PI);
           ctx.fillStyle = trailColor;
           ctx.fill();
           ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 3;
           ctx.stroke();
         }
       }
-    } else if (activeTab === 'heatmap' && analysisData?.heatmapData) {
-      // Show grid-based heatmap for all players
-      const maxCount = Math.max(...Array.from(analysisData.heatmapData.values()));
       
-      Array.from(analysisData.heatmapData.entries()).forEach(([key, count]) => {
-        const [gridX, gridY] = key.split(',').map(Number);
-        const intensity = count / maxCount;
-        const cellSize = canvas.width / analysisData.gridSize;
-        
-        if (intensity > 0.1) {
-          const alpha = Math.min(intensity * 0.7, 0.8);
-          ctx.fillStyle = `rgba(220, 38, 38, ${alpha})`;
-          ctx.fillRect(gridX * cellSize, gridY * cellSize, cellSize, cellSize);
-          
-          if (intensity > 0.3) {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(gridX * cellSize, gridY * cellSize, cellSize, cellSize);
-          }
-        }
-      });
+      ctx.restore();
     }
   }, [filteredData, activeTab, analysisData, mapImage]);
 

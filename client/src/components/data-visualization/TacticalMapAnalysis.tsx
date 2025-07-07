@@ -37,12 +37,12 @@ interface TacticalMapAnalysisProps {
   xyzData: XYZPlayerData[];
 }
 
-// Real CS2 de_inferno map coordinate mapping based on authentic demo data
+// Enhanced CS2 de_inferno map coordinate mapping with corrected spawn area bounds
 const INFERNO_MAP_CONFIG = {
-  // Actual coordinate bounds from authentic CS2 demo data with proper scaling
+  // Updated coordinate bounds to properly show spawn areas (green boxes)
   bounds: { 
-    minX: -2087, maxX: 2900, 
-    minY: -800, maxY: 3600 
+    minX: -1775.62, maxX: 2593.0,  // Adjusted to include T spawn (bottom left) and CT spawn (top right)
+    minY: -855.61707, maxY: 3552.2346  // Extended boundaries for complete map coverage
   },
   // Real tactical zones mapped to actual CS2 de_inferno coordinates
   zones: {
@@ -212,12 +212,69 @@ function calculateMovementMetrics(data: XYZPlayerData[]) {
 }
 
 // Enhanced role-based tactical insights
-function generateRoleBasedInsights(
+function generateEnhancedTacticalInsights(
   movementMetrics: Map<string, any>, 
   territoryControl: Map<string, { t: number, ct: number }>,
   data: XYZPlayerData[]
 ): TacticalInsight[] {
   const insights: TacticalInsight[] = [];
+  
+  // Phase 1 Enhanced Analytics: Real-Time Player State Assessment
+  
+  // Health-based vulnerability analysis
+  const vulnerablePlayers = data.filter(d => d.health < 30);
+  if (vulnerablePlayers.length > 0) {
+    const vulnRatio = vulnerablePlayers.length / data.length;
+    insights.push({
+      type: 'positioning',
+      description: `Critical health alert: ${vulnerablePlayers.length} players below 30HP (${(vulnRatio * 100).toFixed(1)}%)`,
+      confidence: 0.95,
+      impact: vulnRatio > 0.2 ? 'high' : 'medium',
+      recommendation: 'Vulnerable players should seek immediate cover and team support'
+    });
+  }
+  
+  // Flash coordination and impact tracking
+  const flashedPlayers = data.filter(d => d.flash_duration > 0);
+  if (flashedPlayers.length > 0) {
+    const avgFlash = flashedPlayers.reduce((sum, p) => sum + p.flash_duration, 0) / flashedPlayers.length;
+    insights.push({
+      type: 'utility',
+      description: `Flash warfare: ${flashedPlayers.length} players affected, ${avgFlash.toFixed(1)}s avg duration`,
+      confidence: 0.90,
+      impact: 'high',
+      recommendation: avgFlash > 2.5 ? 'Excellent flash usage - capitalize on blind enemies' : 'Quick flash recovery detected'
+    });
+  }
+  
+  // Armor economics assessment
+  const armorData = {
+    armored: data.filter(d => d.armor > 0).length,
+    total: data.length,
+    fullArmor: data.filter(d => d.armor >= 100).length
+  };
+  if (armorData.armored / armorData.total < 0.6) {
+    insights.push({
+      type: 'economic',
+      description: `Armor disadvantage: Only ${armorData.armored}/${armorData.total} players equipped`,
+      confidence: 0.85,
+      impact: 'medium',
+      recommendation: 'Consider defensive positioning until next buy round'
+    });
+  }
+  
+  // Velocity-based movement prediction
+  const activePlayers = data.filter(d => Math.sqrt(d.velocity_X ** 2 + d.velocity_Y ** 2) > 150);
+  if (activePlayers.length > 2) {
+    const rotationZones = activePlayers.map(p => getPlayerZone(p.X, p.Y));
+    insights.push({
+      type: 'rotation',
+      description: `High mobility detected: ${activePlayers.length} players in active rotation`,
+      confidence: 0.82,
+      impact: 'medium',
+      recommendation: 'Expect aggressive site executes or rapid rotations'
+    });
+  }
   
   // Analyze AWPer positioning patterns
   const awperPositions = data.filter(d => d.name.includes('s1mple') || d.name.includes('ZywOo') || d.name.includes('sh1ro'));
@@ -356,7 +413,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
 
     const movementMetrics = calculateMovementMetrics(xyzData);
     const territoryControl = calculateTerritoryControl(xyzData);
-    const tacticalInsights = generateRoleBasedInsights(movementMetrics, territoryControl, xyzData);
+    const tacticalInsights = generateEnhancedTacticalInsights(movementMetrics, territoryControl, xyzData);
     
     const ticks = Array.from(new Set(xyzData.map(d => d.tick))).sort((a, b) => a - b);
     const players = Array.from(new Set(xyzData.map(d => d.name)));

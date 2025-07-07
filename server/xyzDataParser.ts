@@ -704,19 +704,19 @@ function detectRotations(positions: XYZPlayerData[], mapName: string): Array<{fr
  */
 export async function loadXYZData(): Promise<PositionalMetrics[]> {
   try {
-    const filePath = path.join(process.cwd(), 'attached_assets', 'round_4_mapping_1749572845894.csv');
+    const filePath = path.join(process.cwd(), 'attached_assets', 'round_4_mapping_1751911522059.csv');
     const rawData = await parseXYZData(filePath);
     
-    console.log(`Loaded ${rawData.length} XYZ position records`);
+    console.log(`Loaded ${rawData.length} enhanced XYZ position records`);
     
     // Process the data into positional metrics
     const metrics = processPositionalData(rawData, 'de_inferno');
     
-    console.log(`Processed metrics for ${metrics.length} players`);
+    console.log(`Processed enhanced metrics for ${metrics.length} players`);
     
     return metrics;
   } catch (error) {
-    console.error('Error loading XYZ data:', error);
+    console.error('Error loading enhanced XYZ data:', error);
     return [];
   }
 }

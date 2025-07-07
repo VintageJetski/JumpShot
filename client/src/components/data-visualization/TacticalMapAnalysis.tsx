@@ -220,6 +220,7 @@ function generateEnhancedTacticalInsights(
   const insights: TacticalInsight[] = [];
   
   // Phase 1 Enhanced Analytics: Real-Time Player State Assessment
+  // Phase 2 Enhanced Analytics: Utility Intelligence & Advanced Tactical Analysis
   
   // Player survival analysis (replacing vulnerability alerts with more tactical insights)
   const lowHealthPlayers = data.filter(d => d.health > 0 && d.health < 50);
@@ -277,6 +278,65 @@ function generateEnhancedTacticalInsights(
     });
   }
   
+  // Phase 2: Advanced Utility Intelligence
+  
+  // Smoke/Utility deployment analysis
+  const smokePatterns = data.filter(d => d.side === 't' && Math.sqrt(d.velocity_X ** 2 + d.velocity_Y ** 2) < 100);
+  const utilityZones = smokePatterns.map(p => getPlayerZone(p.X, p.Y));
+  const strategicSmokes = utilityZones.filter(z => ['MIDDLE', 'CONNECTOR', 'BANANA'].includes(z));
+  
+  if (strategicSmokes.length > 0) {
+    insights.push({
+      type: 'utility',
+      description: `Strategic utility deployment: ${strategicSmokes.length} key choke points controlled`,
+      confidence: 0.87,
+      impact: 'high',
+      recommendation: 'Terrorist utility setup indicates coordinated site execute incoming'
+    });
+  }
+  
+  // Cross-map coordination detection
+  const tPlayers = data.filter(d => d.side === 't');
+  const ctPlayers = data.filter(d => d.side === 'ct');
+  
+  if (tPlayers.length >= 3 && ctPlayers.length >= 3) {
+    const tZones = new Set(tPlayers.map(p => getPlayerZone(p.X, p.Y)));
+    const ctZones = new Set(ctPlayers.map(p => getPlayerZone(p.X, p.Y)));
+    
+    const coordLevel = Math.min(tZones.size, ctZones.size);
+    if (coordLevel >= 3) {
+      insights.push({
+        type: 'tactical',
+        description: `High coordination: Both teams spread across ${coordLevel} zones simultaneously`,
+        confidence: 0.78,
+        impact: 'medium',
+        recommendation: 'Complex multi-site strategies in play - expect feints and late rotations'
+      });
+    }
+  }
+  
+  // Information warfare analysis
+  const isolatedPlayers = data.filter(d => {
+    const otherPlayers = data.filter(other => other.side === d.side && other.name !== d.name);
+    const nearbyTeammates = otherPlayers.filter(teammate => {
+      const distance = Math.sqrt((d.X - teammate.X) ** 2 + (d.Y - teammate.Y) ** 2);
+      return distance < 500; // Within reasonable support distance
+    });
+    return nearbyTeammates.length === 0;
+  });
+  
+  if (isolatedPlayers.length > 0) {
+    insights.push({
+      type: 'positioning',
+      description: `Information gathering: ${isolatedPlayers.length} players operating in isolation`,
+      confidence: 0.85,
+      impact: 'medium',
+      recommendation: isolatedPlayers.length > 2 ? 
+        'Multiple lurkers active - expect split executes and rotational plays' :
+        'Isolated player likely gathering intel or preparing flanks'
+    });
+  }
+  
   // Analyze AWPer positioning patterns
   const awperPositions = data.filter(d => d.name.includes('s1mple') || d.name.includes('ZywOo') || d.name.includes('sh1ro'));
   if (awperPositions.length > 0) {
@@ -315,8 +375,8 @@ function generateEnhancedTacticalInsights(
   
   // Support player utility analysis
   const supportUtility = data.filter(d => d.flash_duration > 0 || d.armor > 0);
-  const utilityZones = supportUtility.map(p => getPlayerZone(p.X, p.Y));
-  const supportZones = utilityZones.filter(z => ['CONNECTOR', 'ARCH_SIDE', 'SPEEDWAY'].includes(z));
+  const supportUtilityZones = supportUtility.map(p => getPlayerZone(p.X, p.Y));
+  const supportZones = supportUtilityZones.filter(z => ['CONNECTOR', 'ARCH_SIDE', 'SPEEDWAY'].includes(z));
   
   if (supportUtility.length > 0) {
     const supportEfficiency = supportZones.length / utilityZones.length;
@@ -374,6 +434,71 @@ function generateEnhancedTacticalInsights(
       recommendation: anchorEfficiency > 0.5 ? 
         'Strong site anchoring maintaining defensive control' : 
         'Anchor players should prioritize direct site positions over rotational areas'
+    });
+  }
+  
+  // Phase 2: Advanced Coordination Pattern Detection
+  
+  // Team formation analysis
+  const teamFormations = data.reduce((acc, player) => {
+    if (!acc[player.side]) acc[player.side] = [];
+    acc[player.side].push(player);
+    return acc;
+  }, {} as Record<string, XYZPlayerData[]>);
+  
+  Object.entries(teamFormations).forEach(([side, players]) => {
+    if (players.length >= 3) {
+      const zones = players.map(p => getPlayerZone(p.X, p.Y));
+      const uniqueZones = new Set(zones);
+      
+      // Detect stacked formations
+      const stackedSites = zones.filter((zone, index) => zones.indexOf(zone) !== index);
+      if (stackedSites.length > 0) {
+        insights.push({
+          type: 'positioning',
+          description: `${side.toUpperCase()} team stacking: ${stackedSites.length + 1} players concentrated in ${stackedSites[0]}`,
+          confidence: 0.92,
+          impact: 'high',
+          recommendation: side === 't' ? 
+            'Strong site execute expected - prepare for immediate utility usage' :
+            'Defensive stack detected - T-side should avoid overcommitting to this site'
+        });
+      }
+      
+      // Detect spread formations
+      if (uniqueZones.size >= 4) {
+        insights.push({
+          type: 'positioning',
+          description: `${side.toUpperCase()} team spread formation: Control of ${uniqueZones.size} zones simultaneously`,
+          confidence: 0.88,
+          impact: 'medium',
+          recommendation: side === 't' ? 
+            'Multi-pronged attack setup - expect split executes and late rotations' :
+            'Full map control - ready for any site execute'
+        });
+      }
+    }
+  });
+  
+  // Economic state inference from positioning
+  const economicInference = data.filter(d => d.armor > 0 || d.health > 80);
+  const economicRatio = economicInference.length / data.length;
+  
+  if (economicRatio > 0.7) {
+    insights.push({
+      type: 'economic',
+      description: `Strong economic state: ${Math.round(economicRatio * 100)}% of players in good condition`,
+      confidence: 0.85,
+      impact: 'high',
+      recommendation: 'Expect aggressive plays and utility-heavy rounds - both teams likely have strong buys'
+    });
+  } else if (economicRatio < 0.3) {
+    insights.push({
+      type: 'economic',
+      description: `Eco/force-buy round detected: Only ${Math.round(economicRatio * 100)}% of players in optimal condition`,
+      confidence: 0.83,
+      impact: 'medium',
+      recommendation: 'Low-utility round expected - focus on positioning and aim duels'
     });
   }
   
@@ -704,7 +829,78 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
       
       ctx.restore();
     }
-  }, [filteredData, activeTab, analysisData, mapImage]);
+    
+    // Phase 2: Advanced Tactical Overlays
+    
+    // Draw utility prediction zones
+    if (activeTab === 'territory' || activeTab === 'insights') {
+      const tPlayers = filteredData.filter(d => d.side === 't');
+      const slowMovingT = tPlayers.filter(d => Math.sqrt(d.velocity_X ** 2 + d.velocity_Y ** 2) < 100);
+      
+      // Draw potential utility deployment zones
+      slowMovingT.forEach(player => {
+        const pos = coordToMapPercent(player.X, player.Y);
+        const x = (pos.x / 100) * canvas.width;
+        const y = (pos.y / 100) * canvas.height;
+        const zone = getPlayerZone(player.X, player.Y);
+        
+        // Strategic zones get utility prediction circles
+        if (['MIDDLE', 'CONNECTOR', 'BANANA', 'APARTMENTS'].includes(zone)) {
+          ctx.beginPath();
+          ctx.arc(x, y, 25, 0, 2 * Math.PI);
+          ctx.fillStyle = 'rgba(255, 165, 0, 0.15)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 165, 0, 0.4)';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 5]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          
+          // Utility prediction label
+          ctx.fillStyle = 'rgba(255, 165, 0, 0.8)';
+          ctx.font = 'bold 8px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('UTIL', x, y - 30);
+          ctx.textAlign = 'left';
+        }
+      });
+    }
+    
+    // Draw information warfare indicators
+    if (activeTab === 'insights') {
+      const isolatedPlayers = filteredData.filter(player => {
+        const teammates = filteredData.filter(other => 
+          other.side === player.side && 
+          other.name !== player.name &&
+          Math.sqrt((player.X - other.X) ** 2 + (player.Y - other.Y) ** 2) < 500
+        );
+        return teammates.length === 0;
+      });
+      
+      // Draw lurker/information gathering indicators
+      isolatedPlayers.forEach(player => {
+        const pos = coordToMapPercent(player.X, player.Y);
+        const x = (pos.x / 100) * canvas.width;
+        const y = (pos.y / 100) * canvas.height;
+        
+        // Radar pulse effect for information gathering
+        ctx.beginPath();
+        ctx.arc(x, y, 20, 0, 2 * Math.PI);
+        ctx.strokeStyle = player.side === 't' ? 'rgba(220, 38, 38, 0.6)' : 'rgba(34, 197, 94, 0.6)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([3, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Information icon
+        ctx.fillStyle = player.side === 't' ? '#dc2626' : '#22c55e';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('ℹ', x, y + 35);
+        ctx.textAlign = 'left';
+      });
+    }
+  }, [filteredData, activeTab, analysisData, mapImage, xyzData]);
 
   // Load map image and draw
   useEffect(() => {
@@ -889,7 +1085,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                   </TabsTrigger>
                   <TabsTrigger value="insights" className="flex items-center gap-2">
                     <TrendingUp className="h-4 w-4" />
-                    Insights
+                    Phase 2 AI
                   </TabsTrigger>
                 </TabsList>
 
@@ -975,7 +1171,59 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                 </TabsContent>
 
                 <TabsContent value="insights" className="mt-4">
-                  <div className="space-y-4">
+                  <div className="space-y-6">
+                    {/* Phase 2 AI Overview */}
+                    <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-600/20 rounded-lg p-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="bg-blue-600 text-white p-2 rounded-lg">
+                          <TrendingUp className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg">Phase 2: Advanced AI Intelligence</h3>
+                          <p className="text-sm text-muted-foreground">Utility deployment prediction, information warfare analysis, and coordination detection</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div className="text-center">
+                          <div className="text-orange-500 font-semibold">Utility Intelligence</div>
+                          <div className="text-xs text-muted-foreground">Predicting smoke & flash deployment zones</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-green-500 font-semibold">Information Warfare</div>
+                          <div className="text-xs text-muted-foreground">Lurker detection & intel gathering analysis</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-purple-500 font-semibold">Coordination AI</div>
+                          <div className="text-xs text-muted-foreground">Cross-map tactical pattern recognition</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Enhanced Tactical Insights */}
+                    <div className="relative bg-slate-900 rounded-lg overflow-hidden">
+                      <canvas 
+                        ref={canvasRef}
+                        width={800}
+                        height={600}
+                        className="w-full h-auto max-h-[600px] object-contain"
+                      />
+                      <div className="absolute top-4 left-4 bg-black/80 text-white p-3 rounded-lg text-sm space-y-1">
+                        <div className="font-semibold">Phase 2 AI Analysis</div>
+                        <div className="text-xs text-gray-300 space-y-1">
+                          <div>🟠 Utility Deployment Zones</div>
+                          <div>ℹ️ Information Warfare</div>
+                          <div>⚡ Coordination Patterns</div>
+                        </div>
+                      </div>
+                      
+                      <div className="absolute top-4 right-4 bg-black/80 text-white p-3 rounded-lg text-sm">
+                        <div className="font-semibold">Live Analysis</div>
+                        <div className="text-xs text-gray-300">
+                          Processing {filteredData.length} positions
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {analysisData?.tacticalInsights.map((insight: TacticalInsight, index: number) => (
                         <Card key={index} className="p-4">
@@ -986,6 +1234,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                               {insight.type === 'utility' && <Zap className="h-4 w-4 text-yellow-500" />}
                               {insight.type === 'rotation' && <Activity className="h-4 w-4 text-green-500" />}
                               {insight.type === 'economic' && <TrendingUp className="h-4 w-4 text-purple-500" />}
+                              {insight.type === 'tactical' && <Shield className="h-4 w-4 text-cyan-500" />}
                               <Badge 
                                 variant={insight.impact === 'high' ? 'destructive' : insight.impact === 'medium' ? 'default' : 'secondary'}
                                 className="text-xs"
@@ -1009,7 +1258,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                         </Card>
                       )) || (
                         <div className="col-span-2 text-center text-muted-foreground">
-                          Processing tactical patterns from {analysisData?.totalDataPoints.toLocaleString()} position records...
+                          Processing Phase 2 AI patterns from {analysisData?.totalDataPoints.toLocaleString()} position records...
                         </div>
                       )}
                     </div>

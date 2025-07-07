@@ -362,6 +362,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Phase 5: Competitive Intelligence endpoints
+  app.get('/api/intelligence/competitive', async (req: Request, res: Response) => {
+    try {
+      const { analyzeCompetitiveIntelligence } = await import('./competitiveIntelligence.js');
+      const intelligence = analyzeCompetitiveIntelligence(xyzData);
+      res.json(intelligence);
+    } catch (error) {
+      console.error('Error analyzing competitive intelligence:', error);
+      res.status(500).json({ error: 'Failed to analyze competitive intelligence' });
+    }
+  });
+
+  app.get('/api/intelligence/patterns', async (req: Request, res: Response) => {
+    try {
+      const { performPatternRecognition } = await import('./competitiveIntelligence.js');
+      const patterns = performPatternRecognition(xyzData);
+      res.json(patterns);
+    } catch (error) {
+      console.error('Error performing pattern recognition:', error);
+      res.status(500).json({ error: 'Failed to perform pattern recognition' });
+    }
+  });
+
+  app.get('/api/intelligence/match-outcome', async (req: Request, res: Response) => {
+    try {
+      const { predictMatchOutcome } = await import('./competitiveIntelligence.js');
+      const outcome = predictMatchOutcome(xyzData);
+      res.json(outcome);
+    } catch (error) {
+      console.error('Error predicting match outcome:', error);
+      res.status(500).json({ error: 'Failed to predict match outcome' });
+    }
+  });
+
+  app.get('/api/intelligence/recommendations', async (req: Request, res: Response) => {
+    try {
+      const { generateStrategicRecommendations } = await import('./competitiveIntelligence.js');
+      const recommendations = generateStrategicRecommendations(xyzData);
+      res.json(recommendations);
+    } catch (error) {
+      console.error('Error generating strategic recommendations:', error);
+      res.status(500).json({ error: 'Failed to generate strategic recommendations' });
+    }
+  });
+
+  app.get('/api/intelligence/report', async (req: Request, res: Response) => {
+    try {
+      const { generateCompetitiveIntelligenceReport } = await import('./competitiveIntelligence.js');
+      const report = generateCompetitiveIntelligenceReport(xyzData);
+      res.json(report);
+    } catch (error) {
+      console.error('Error generating intelligence report:', error);
+      res.status(500).json({ error: 'Failed to generate intelligence report' });
+    }
+  });
+
   
   const httpServer = createServer(app);
   return httpServer;

@@ -229,10 +229,13 @@ export function SimpleTacticalMap({ xyzData }: SimpleTacticalMapProps) {
     return xyzData.filter(player => player.round_num === roundNum);
   }, [xyzData, selectedRound]);
 
-  // Enhanced statistics with Phase 3 predictive metrics
-  const stats = useMemo(() => {
+  // Use Web Worker for heavy calculations
+  const [workerStats, setWorkerStats] = useState<any>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+
+  useEffect(() => {
     if (filteredData.length === 0) {
-      return {
+      setWorkerStats({
         totalPositions: 0,
         tPlayers: 0,
         ctPlayers: 0,
@@ -253,12 +256,45 @@ export function SimpleTacticalMap({ xyzData }: SimpleTacticalMapProps) {
         patternStrength: 0,
         matchPrediction: 'NO DATA',
         strategicPriority: 'UNKNOWN'
-      };
+      });
+      return;
     }
 
+    setIsCalculating(true);
+    
+    // Use Web Worker for heavy calculations
+    const worker = new Worker(new URL('../../workers/tacticalAnalysis.worker.ts', import.meta.url));
+    
+    worker.postMessage({
+      type: 'ANALYZE_TACTICAL_DATA',
+      data: filteredData
+    });
+    
+    worker.onmessage = (e) => {
+      const { type, result, error } = e.data;
+      
+      if (type === 'ANALYSIS_COMPLETE') {
+        setWorkerStats(result);
+        setIsCalculating(false);
+      } else if (type === 'ANALYSIS_ERROR') {
+        console.error('Worker error:', error);
+        setIsCalculating(false);
+      }
+      
+      worker.terminate();
+    };
+    
+    return () => worker.terminate();
+  }, [filteredData]);
+
+  // Enhanced statistics with Phase 3 predictive metrics
+  const stats = useMemo(() => {
+    if (workerStats) return workerStats;
+    
+    // Fallback for immediate display
     const tPlayers = filteredData.filter(d => d.side === 't');
     const ctPlayers = filteredData.filter(d => d.side === 'ct');
-    const avgHealth = filteredData.reduce((sum, d) => sum + d.health, 0) / filteredData.length;
+    const avgHealth = filteredData.length > 0 ? filteredData.reduce((sum, d) => sum + d.health, 0) / filteredData.length : 0;
     const activePlayers = filteredData.filter(d => d.health > 0);
     
     // Phase 3: Predictive Analytics

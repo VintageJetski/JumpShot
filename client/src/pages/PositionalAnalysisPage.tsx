@@ -4,7 +4,7 @@ import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { SimpleTacticalMap } from "@/components/data-visualization/SimpleTacticalMap";
+import { OptimizedTacticalMap } from "@/components/data-visualization/OptimizedTacticalMap";
 import { PlayerWithPIV } from "@shared/types";
 
 interface XYZPlayerData {
@@ -63,14 +63,21 @@ interface PositionalMetrics {
 export default function PositionalAnalysisPage() {
   const [, setLocation] = useLocation();
 
-  // Fetch XYZ positional data with proper timeout handling
-  const { data: xyzData = [], isLoading: isLoadingXYZ, error: xyzError } = useQuery<XYZPlayerData[]>({
-    queryKey: ['/api/xyz/raw'],
+  // Fetch XYZ positional data with pagination
+  const { data: xyzResponse, isLoading: isLoadingXYZ, error: xyzError } = useQuery<{
+    data: XYZPlayerData[];
+    total: number;
+    hasMore: boolean;
+    round: string;
+  }>({
+    queryKey: ['/api/xyz/raw', { round: 4, limit: 5000 }],
     retry: 1,
     retryDelay: 2000,
-    staleTime: 300000, // 5 minutes
-    gcTime: 600000, // 10 minutes
+    staleTime: 300000,
+    gcTime: 600000,
   });
+
+  const xyzData = xyzResponse?.data || [];
 
   // Fetch positional metrics (optional - don't block on this)
   const { data: positionalMetrics = [] } = useQuery<PositionalMetrics[]>({
@@ -147,7 +154,7 @@ export default function PositionalAnalysisPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <SimpleTacticalMap 
+            <OptimizedTacticalMap 
               xyzData={xyzData} 
             />
           </CardContent>

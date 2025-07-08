@@ -208,8 +208,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // XYZ Positional Data endpoints
   app.get('/api/xyz/raw', async (req: Request, res: Response) => {
     try {
+      const { round, limit = 5000, offset = 0 } = req.query;
       const fullData = await storage.getXYZData();
-      res.json(fullData || []);
+      
+      let filteredData = fullData || [];
+      
+      // Filter by round if specified
+      if (round && round !== 'all') {
+        filteredData = filteredData.filter(d => d.round_num === parseInt(round as string));
+      }
+      
+      // Apply pagination
+      const startIndex = parseInt(offset as string);
+      const endIndex = startIndex + parseInt(limit as string);
+      const paginatedData = filteredData.slice(startIndex, endIndex);
+      
+      res.json({
+        data: paginatedData,
+        total: filteredData.length,
+        hasMore: endIndex < filteredData.length,
+        round: round || 'all'
+      });
     } catch (error) {
       console.error('Error fetching XYZ data:', error);
       res.status(500).json({ error: 'Failed to fetch XYZ data' });

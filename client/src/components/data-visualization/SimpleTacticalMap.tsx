@@ -30,7 +30,7 @@ interface SimpleTacticalMapProps {
 }
 
 export function SimpleTacticalMap({ xyzData }: SimpleTacticalMapProps) {
-  const [selectedRound, setSelectedRound] = useState<string>('all');
+  const [selectedRound, setSelectedRound] = useState<string>('4');
   const [activeTab, setActiveTab] = useState('overview');
 
   // Phase 4: Tactical Analysis Functions
@@ -208,9 +208,9 @@ export function SimpleTacticalMap({ xyzData }: SimpleTacticalMapProps) {
     return rounds;
   }, [xyzData]);
 
-  // Filter data by selected round
+  // Filter data by selected round - default to round 4 for better performance
   const filteredData = useMemo(() => {
-    if (selectedRound === 'all') return xyzData;
+    if (selectedRound === 'all') return xyzData.slice(0, 200); // Limit all data for performance
     return xyzData.filter(d => d.round_num === parseInt(selectedRound));
   }, [xyzData, selectedRound]);
 

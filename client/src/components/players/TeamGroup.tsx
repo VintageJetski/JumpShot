@@ -217,7 +217,7 @@ export default function TeamGroup({ teamName, players, expanded = true }: TeamGr
               variants={playersContainerVariants}
             >
               {sortedPlayers.map((player, index) => (
-                <PlayerCard key={`${player.id}-${player.stats.steamId}-${index}`} player={player} index={index} />
+                <PlayerCard key={`${player.stats.steamId}-${player.stats.name}-${index}-${Date.now()}`} player={player} index={index} />
               ))}
             </motion.div>
           </motion.div>

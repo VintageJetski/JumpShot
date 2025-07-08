@@ -63,17 +63,37 @@ interface PositionalMetrics {
 export default function PositionalAnalysisPage() {
   const [, setLocation] = useLocation();
 
-  // Fetch XYZ positional data
-  const { data: xyzData = [], isLoading: isLoadingXYZ } = useQuery<XYZPlayerData[]>({
+  // Fetch XYZ positional data with improved error handling
+  const { data: xyzData = [], isLoading: isLoadingXYZ, error: xyzError } = useQuery<XYZPlayerData[]>({
     queryKey: ['/api/xyz/raw'],
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 30000,
   });
 
   // Fetch positional metrics
-  const { data: positionalMetrics = [], isLoading: isLoadingMetrics } = useQuery<PositionalMetrics[]>({
+  const { data: positionalMetrics = [], isLoading: isLoadingMetrics, error: metricsError } = useQuery<PositionalMetrics[]>({
     queryKey: ['/api/xyz/metrics'],
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 30000,
   });
 
   const isLoading = isLoadingXYZ || isLoadingMetrics;
+  const hasError = xyzError || metricsError;
+
+  if (hasError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="glassmorphism rounded-xl p-8 text-center">
+            <div className="text-lg text-red-400 mb-2">Error loading data</div>
+            <div className="text-sm text-muted-foreground">Please refresh the page to try again</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

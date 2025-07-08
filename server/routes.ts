@@ -208,9 +208,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // XYZ Positional Data endpoints
   app.get('/api/xyz/raw', async (req: Request, res: Response) => {
     try {
-      const xyzData = await storage.getXYZData();
-      // Return empty array if data is still loading
-      res.json(xyzData || []);
+      const fullData = await storage.getXYZData();
+      // Limit data to prevent timeouts - send only first 1000 records for performance
+      const limitedData = (fullData || []).slice(0, 1000);
+      res.json(limitedData);
     } catch (error) {
       console.error('Error fetching XYZ data:', error);
       res.json([]); // Return empty array instead of error to prevent white screen

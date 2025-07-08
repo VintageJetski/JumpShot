@@ -63,24 +63,26 @@ interface PositionalMetrics {
 export default function PositionalAnalysisPage() {
   const [, setLocation] = useLocation();
 
-  // Fetch XYZ positional data with improved error handling
+  // Fetch XYZ positional data with proper timeout handling
   const { data: xyzData = [], isLoading: isLoadingXYZ, error: xyzError } = useQuery<XYZPlayerData[]>({
     queryKey: ['/api/xyz/raw'],
-    retry: 2,
-    retryDelay: 1000,
-    staleTime: 30000,
+    retry: 1,
+    retryDelay: 2000,
+    staleTime: 300000, // 5 minutes
+    gcTime: 600000, // 10 minutes
   });
 
-  // Fetch positional metrics
-  const { data: positionalMetrics = [], isLoading: isLoadingMetrics, error: metricsError } = useQuery<PositionalMetrics[]>({
+  // Fetch positional metrics (optional - don't block on this)
+  const { data: positionalMetrics = [] } = useQuery<PositionalMetrics[]>({
     queryKey: ['/api/xyz/metrics'],
-    retry: 2,
+    retry: 1,
     retryDelay: 1000,
-    staleTime: 30000,
+    staleTime: 60000,
+    enabled: false, // Disable for now to prevent blocking
   });
 
-  const isLoading = isLoadingXYZ || isLoadingMetrics;
-  const hasError = xyzError || metricsError;
+  const isLoading = isLoadingXYZ;
+  const hasError = xyzError;
 
   if (hasError) {
     return (

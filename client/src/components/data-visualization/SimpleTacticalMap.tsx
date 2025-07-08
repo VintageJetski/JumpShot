@@ -33,6 +33,20 @@ export function SimpleTacticalMap({ xyzData }: SimpleTacticalMapProps) {
   const [selectedRound, setSelectedRound] = useState<string>('4');
   const [activeTab, setActiveTab] = useState('overview');
 
+  // Early return if no data to prevent white screen
+  if (!xyzData || xyzData.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-600/20 rounded-lg p-4">
+          <div className="text-center">
+            <div className="text-lg font-semibold mb-2">Loading Tactical Analysis...</div>
+            <div className="text-sm text-muted-foreground">Waiting for positional data</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Phase 4: Tactical Analysis Functions
   const analyzeTacticalFormations = (players: XYZPlayerData[]) => {
     if (players.length === 0) return { type: 'Unknown', confidence: 0 };
@@ -208,14 +222,40 @@ export function SimpleTacticalMap({ xyzData }: SimpleTacticalMapProps) {
     return rounds;
   }, [xyzData]);
 
-  // Filter data by selected round - default to round 4 for better performance
+  // Filter data for selected round - preserve full dataset
   const filteredData = useMemo(() => {
-    if (selectedRound === 'all') return xyzData.slice(0, 200); // Limit all data for performance
-    return xyzData.filter(d => d.round_num === parseInt(selectedRound));
+    if (selectedRound === 'all') return xyzData; // Use full dataset
+    const roundNum = parseInt(selectedRound);
+    return xyzData.filter(player => player.round_num === roundNum);
   }, [xyzData, selectedRound]);
 
   // Enhanced statistics with Phase 3 predictive metrics
   const stats = useMemo(() => {
+    if (filteredData.length === 0) {
+      return {
+        totalPositions: 0,
+        tPlayers: 0,
+        ctPlayers: 0,
+        avgHealth: 0,
+        activePlayers: 0,
+        highVelocityPlayers: 0,
+        lowHealthPlayers: 0,
+        teamCoordination: 0,
+        roundPrediction: 'NO DATA',
+        predictionConfidence: 0,
+        tFormation: 'Unknown',
+        ctFormation: 'Unknown',
+        mapControlScore: 50,
+        tacticalAdvantage: 'BALANCED',
+        executeTiming: 'UNKNOWN',
+        informationControl: 'BALANCED',
+        competitiveScore: 50,
+        patternStrength: 0,
+        matchPrediction: 'NO DATA',
+        strategicPriority: 'UNKNOWN'
+      };
+    }
+
     const tPlayers = filteredData.filter(d => d.side === 't');
     const ctPlayers = filteredData.filter(d => d.side === 'ct');
     const avgHealth = filteredData.reduce((sum, d) => sum + d.health, 0) / filteredData.length;
@@ -227,8 +267,11 @@ export function SimpleTacticalMap({ xyzData }: SimpleTacticalMapProps) {
     );
     
     const lowHealthPlayers = filteredData.filter(d => d.health > 0 && d.health < 50);
-    const coordinations = filteredData.reduce((acc, player) => {
-      const teammates = filteredData.filter(other => 
+    // Optimized coordination calculation - sample instead of full calculation
+    const sampleSize = Math.min(filteredData.length, 20);
+    const sampledData = filteredData.slice(0, sampleSize);
+    const coordinations = sampledData.reduce((acc, player) => {
+      const teammates = sampledData.filter(other => 
         other.side === player.side && 
         other.name !== player.name &&
         Math.sqrt((player.X - other.X) ** 2 + (player.Y - other.Y) ** 2) < 800

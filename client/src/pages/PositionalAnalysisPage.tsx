@@ -4,7 +4,7 @@ import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { OptimizedTacticalMap } from "@/components/data-visualization/OptimizedTacticalMap";
+import { SimpleTacticalMap } from "@/components/data-visualization/SimpleTacticalMap";
 import { PlayerWithPIV } from "@shared/types";
 
 interface XYZPlayerData {
@@ -63,14 +63,15 @@ interface PositionalMetrics {
 export default function PositionalAnalysisPage() {
   const [, setLocation] = useLocation();
 
-  // Fetch XYZ positional data with pagination
+  // Start with a specific round to prevent initial loading timeout
+  const [selectedRound, setSelectedRound] = useState<string>('4');
+  
+  // Fetch XYZ positional data with sampling for performance
   const { data: xyzResponse, isLoading: isLoadingXYZ, error: xyzError } = useQuery<{
     data: XYZPlayerData[];
-    total: number;
-    hasMore: boolean;
-    round: string;
+    metadata: { totalRecords: number; sampledRecords?: number; sampleRate?: number; teamsIncluded?: any };
   }>({
-    queryKey: ['/api/xyz/raw', { round: 4, limit: 5000 }],
+    queryKey: ['/api/xyz/raw', { round: selectedRound, sample: 'true' }],
     retry: 1,
     retryDelay: 2000,
     staleTime: 300000,
@@ -78,6 +79,7 @@ export default function PositionalAnalysisPage() {
   });
 
   const xyzData = xyzResponse?.data || [];
+  const metadata = xyzResponse?.metadata;
 
   // Fetch positional metrics (optional - don't block on this)
   const { data: positionalMetrics = [] } = useQuery<PositionalMetrics[]>({
@@ -154,8 +156,18 @@ export default function PositionalAnalysisPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <OptimizedTacticalMap 
-              xyzData={xyzData} 
+            {metadata && (
+              <div className="mb-4 p-3 bg-blue-50 rounded-lg text-sm">
+                <strong>Dataset Info:</strong> {metadata.totalRecords.toLocaleString()} total records
+                {metadata.sampledRecords && (
+                  <span> • Showing {metadata.sampledRecords.toLocaleString()} sampled records for performance</span>
+                )}
+              </div>
+            )}
+            <SimpleTacticalMap 
+              xyzData={xyzData}
+              selectedRound={selectedRound}
+              onRoundChange={setSelectedRound}
             />
           </CardContent>
         </Card>

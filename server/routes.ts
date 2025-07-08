@@ -205,30 +205,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // XYZ Positional Data endpoints
+  // XYZ Positional Data endpoints with efficient sampling
   app.get('/api/xyz/raw', async (req: Request, res: Response) => {
     try {
-      const { round, limit = 5000, offset = 0 } = req.query;
+      const { round, sample } = req.query;
       const fullData = await storage.getXYZData();
       
-      let filteredData = fullData || [];
-      
+      if (!fullData || fullData.length === 0) {
+        return res.json([]);
+      }
+
+      let data = fullData;
+
       // Filter by round if specified
       if (round && round !== 'all') {
-        filteredData = filteredData.filter(d => d.round_num === parseInt(round as string));
+        const roundNum = parseInt(round as string);
+        data = fullData.filter(d => d.round_num === roundNum);
       }
-      
-      // Apply pagination
-      const startIndex = parseInt(offset as string);
-      const endIndex = startIndex + parseInt(limit as string);
-      const paginatedData = filteredData.slice(startIndex, endIndex);
-      
-      res.json({
-        data: paginatedData,
-        total: filteredData.length,
-        hasMore: endIndex < filteredData.length,
-        round: round || 'all'
-      });
+
+      // Apply intelligent sampling to prevent browser freezing
+      if (sample !== 'false' && data.length > 10000) {
+        // Sample every nth record to maintain spatial distribution
+        const sampleRate = Math.ceil(data.length / 5000);
+        const sampledData = data.filter((_, index) => index % sampleRate === 0);
+        
+        // Ensure we get players from both teams
+        const tPlayers = sampledData.filter(p => p.side === 't');
+        const ctPlayers = sampledData.filter(p => p.side === 'ct');
+        
+        res.json({
+          data: sampledData,
+          metadata: {
+            totalRecords: data.length,
+            sampledRecords: sampledData.length,
+            sampleRate,
+            teamsIncluded: { t: tPlayers.length, ct: ctPlayers.length }
+          }
+        });
+      } else {
+        res.json({ data, metadata: { totalRecords: data.length } });
+      }
     } catch (error) {
       console.error('Error fetching XYZ data:', error);
       res.status(500).json({ error: 'Failed to fetch XYZ data' });

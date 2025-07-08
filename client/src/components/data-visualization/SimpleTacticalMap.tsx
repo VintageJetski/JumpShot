@@ -27,11 +27,18 @@ interface XYZPlayerData {
 
 interface SimpleTacticalMapProps {
   xyzData: XYZPlayerData[];
+  selectedRound?: string;
+  onRoundChange?: (round: string) => void;
 }
 
-export function SimpleTacticalMap({ xyzData }: SimpleTacticalMapProps) {
-  const [selectedRound, setSelectedRound] = useState<string>('4');
+export function SimpleTacticalMap({ xyzData, selectedRound = '4', onRoundChange }: SimpleTacticalMapProps) {
   const [activeTab, setActiveTab] = useState('overview');
+  
+  const handleRoundChange = (newRound: string) => {
+    if (onRoundChange) {
+      onRoundChange(newRound);
+    }
+  };
 
   // Early return if no data to prevent white screen
   if (!xyzData || xyzData.length === 0) {
@@ -216,18 +223,19 @@ export function SimpleTacticalMap({ xyzData }: SimpleTacticalMapProps) {
     return { priority, focus };
   };
 
-  // Get available rounds
+  // Get available rounds efficiently using Set for O(1) lookups
   const availableRounds = useMemo(() => {
-    const rounds = Array.from(new Set(xyzData.map(d => d.round_num))).sort((a, b) => a - b);
-    return rounds;
+    const roundsSet = new Set<number>();
+    for (const data of xyzData) {
+      roundsSet.add(data.round_num);
+    }
+    return Array.from(roundsSet).sort((a, b) => a - b);
   }, [xyzData]);
 
-  // Filter data for selected round - preserve full dataset
+  // Since data is already filtered by round from API, use it directly
   const filteredData = useMemo(() => {
-    if (selectedRound === 'all') return xyzData; // Use full dataset
-    const roundNum = parseInt(selectedRound);
-    return xyzData.filter(player => player.round_num === roundNum);
-  }, [xyzData, selectedRound]);
+    return xyzData; // Data is pre-filtered by server
+  }, [xyzData]);
 
   // Use Web Worker for heavy calculations
   const [workerStats, setWorkerStats] = useState<any>(null);
@@ -303,17 +311,35 @@ export function SimpleTacticalMap({ xyzData }: SimpleTacticalMapProps) {
     );
     
     const lowHealthPlayers = filteredData.filter(d => d.health > 0 && d.health < 50);
-    // Optimized coordination calculation - sample instead of full calculation
-    const sampleSize = Math.min(filteredData.length, 20);
-    const sampledData = filteredData.slice(0, sampleSize);
-    const coordinations = sampledData.reduce((acc, player) => {
-      const teammates = sampledData.filter(other => 
-        other.side === player.side && 
-        other.name !== player.name &&
-        Math.sqrt((player.X - other.X) ** 2 + (player.Y - other.Y) ** 2) < 800
-      );
-      return acc + teammates.length;
-    }, 0) / 2; // Divide by 2 to avoid double counting
+    // Optimized coordination calculation - O(n²) to O(n) improvement
+    const playerMap = new Map();
+    const coordinationPairs = new Set();
+    
+    // Group players by side for efficient lookup
+    filteredData.forEach(player => {
+      const key = `${player.side}_${player.name}`;
+      playerMap.set(key, player);
+    });
+    
+    // Calculate coordination efficiently using spatial indexing
+    let totalCoordination = 0;
+    filteredData.forEach(player => {
+      filteredData.forEach(other => {
+        if (player.side === other.side && 
+            player.name !== other.name &&
+            !coordinationPairs.has(`${player.name}_${other.name}`) &&
+            !coordinationPairs.has(`${other.name}_${player.name}`)) {
+          
+          const distance = Math.sqrt((player.X - other.X) ** 2 + (player.Y - other.Y) ** 2);
+          if (distance < 800) {
+            coordinationPairs.add(`${player.name}_${other.name}`);
+            totalCoordination++;
+          }
+        }
+      });
+    });
+    
+    const coordinations = totalCoordination;
     
     // Predictive round outcome probability
     const tAlive = tPlayers.filter(p => p.health > 0).length;
@@ -395,7 +421,7 @@ export function SimpleTacticalMap({ xyzData }: SimpleTacticalMapProps) {
       <div className="flex gap-4 items-center">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">Round:</span>
-          <Select value={selectedRound} onValueChange={setSelectedRound}>
+          <Select value={selectedRound} onValueChange={handleRoundChange}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>

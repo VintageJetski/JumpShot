@@ -118,3 +118,9 @@ Changelog:
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Efficiency Requirements
+- Use direct, targeted edits instead of exploratory file searches
+- Make single-purpose tool calls when possible
+- Avoid unnecessary file exploration when function location is known
+- Prioritize minimal token usage and focused actions

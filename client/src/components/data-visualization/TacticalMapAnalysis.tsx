@@ -703,7 +703,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
   // Draw tactical map
   const drawTacticalMap = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !mapImage || !filteredData.length) return;
+    if (!canvas || !mapImage) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -802,7 +802,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     }
 
     // Draw player positions (skip if showing territory control or individual player trail in heatmap)
-    if (activeTab !== 'territory' && !(activeTab === 'heatmap' && selectedPlayer !== 'all')) {
+    if (activeTab !== 'territory' && !(activeTab === 'heatmap' && selectedPlayer !== 'all') && filteredData.length > 0) {
       filteredData.forEach((point, index) => {
         const pos = coordToMapPercent(point.X, point.Y);
         const x = (pos.x / 100) * canvas.width;
@@ -989,7 +989,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     if (mapImage) {
       drawTacticalMap();
     }
-  }, [mapImage, drawTacticalMap]);
+  }, [mapImage, drawTacticalMap, mappedZones]);
 
   if (!analysisData) {
     return (

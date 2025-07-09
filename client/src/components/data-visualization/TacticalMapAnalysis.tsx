@@ -44,58 +44,58 @@ const INFERNO_MAP_CONFIG = {
     minX: -1675.62, maxX: 2644.97,  // Exact bounds from data
     minY: -755.62, maxY: 3452.23    // Exact bounds from data
   },
-  // Tactical zones mapped to actual CS2 de_inferno coordinates using map images
+  // Tactical zones positioned to match visual Inferno map layout from provided images
   zones: {
     'A_SITE': { 
-      bounds: { minX: 1400, maxX: 2400, minY: 300, maxY: 1200 },
+      bounds: { minX: 1800, maxX: 2500, minY: 500, maxY: 1300 },
       color: '#22c55e', name: 'A Site', priority: 'high'
     },
     'B_SITE': { 
-      bounds: { minX: -1400, maxX: -400, minY: 2800, maxY: 3400 },
+      bounds: { minX: -1400, maxX: -600, minY: 2700, maxY: 3400 },
       color: '#8b5cf6', name: 'B Site', priority: 'high'
     },
     'APARTMENTS': { 
-      bounds: { minX: 200, maxX: 1200, minY: 1800, maxY: 2800 },
+      bounds: { minX: 0, maxX: 1000, minY: 1900, maxY: 2900 },
       color: '#3b82f6', name: 'Apartments', priority: 'medium'
     },
     'MIDDLE': { 
-      bounds: { minX: -400, maxX: 800, minY: 1000, maxY: 2000 },
+      bounds: { minX: 200, maxX: 1200, minY: 1200, maxY: 2000 },
       color: '#eab308', name: 'Middle', priority: 'high'
     },
     'BANANA': { 
-      bounds: { minX: -1400, maxX: -200, minY: 2000, maxY: 2800 },
+      bounds: { minX: -1300, maxX: -200, minY: 1800, maxY: 2700 },
       color: '#f97316', name: 'Banana', priority: 'medium'
     },
     'T_RAMP': { 
-      bounds: { minX: -1400, maxX: -600, minY: 3200, maxY: 3450 },
+      bounds: { minX: -1200, maxX: -500, minY: 3100, maxY: 3450 },
       color: '#ef4444', name: 'T Ramp', priority: 'medium'
     },
     'ARCH_SIDE': { 
-      bounds: { minX: 200, maxX: 1200, minY: 600, maxY: 1400 },
+      bounds: { minX: 600, maxX: 1600, minY: 800, maxY: 1600 },
       color: '#06b6d4', name: 'Arch Side', priority: 'medium'
     },
     'PIT': { 
-      bounds: { minX: 1200, maxX: 2200, minY: 1200, maxY: 2000 },
+      bounds: { minX: 1400, maxX: 2200, minY: 1600, maxY: 2400 },
       color: '#84cc16', name: 'Pit', priority: 'medium'
     },
     'LONG_HALL': { 
-      bounds: { minX: 600, maxX: 1600, minY: 1400, maxY: 2200 },
+      bounds: { minX: 800, maxX: 1800, minY: 2000, maxY: 2800 },
       color: '#64748b', name: 'Long Hall', priority: 'low'
     },
     'CT_SPAWN': { 
-      bounds: { minX: 2200, maxX: 2644, minY: 1800, maxY: 2200 },
+      bounds: { minX: 2300, maxX: 2644, minY: 1900, maxY: 2300 },
       color: '#10b981', name: 'CT Spawn', priority: 'low'
     },
     'T_SPAWN': { 
-      bounds: { minX: -1675, maxX: -1200, minY: 250, maxY: 500 },
+      bounds: { minX: -1675, maxX: -1200, minY: 300, maxY: 600 },
       color: '#dc2626', name: 'T Spawn', priority: 'low'
     },
     'SPEEDWAY': { 
-      bounds: { minX: 800, maxX: 1600, minY: 200, maxY: 800 },
+      bounds: { minX: 1200, maxX: 2000, minY: 200, maxY: 800 },
       color: '#06b6d4', name: 'Speedway', priority: 'medium'
     },
     'CONNECTOR': { 
-      bounds: { minX: -200, maxX: 600, minY: 1400, maxY: 2200 },
+      bounds: { minX: 0, maxX: 800, minY: 1400, maxY: 2200 },
       color: '#9333ea', name: 'Connector', priority: 'medium'
     }
   }
@@ -536,8 +536,8 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
       });
     }
 
-    // Draw player positions (skip if showing individual player trail in heatmap)
-    if (!(activeTab === 'heatmap' && selectedPlayer !== 'all')) {
+    // Draw player positions (skip if showing territory control or individual player trail in heatmap)
+    if (activeTab !== 'territory' && !(activeTab === 'heatmap' && selectedPlayer !== 'all')) {
       filteredData.forEach((point, index) => {
         const pos = coordToMapPercent(point.X, point.Y);
         const x = (pos.x / 100) * canvas.width;

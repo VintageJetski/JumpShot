@@ -977,105 +977,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     }
   }, [filteredData, activeTab, analysisData, mapImage, mappedZones, isMapping]);
 
-  // Auto-position zones based on existing mappings and map layout
-  const autoPositionRemainingZones = () => {
-    const saved = localStorage.getItem('infernoZoneMapping');
-    if (!saved) return;
-    
-    const existingZones = JSON.parse(saved);
-    const newMappedZones = new Map(Object.entries(existingZones));
-    
-    // Define zone relationships and approximate positions based on Inferno map layout
-    const zonePositions = {
-      // T-side areas (left side of map)
-      'T_SPAWN': { x: 80, y: 320, w: 90, h: 80 },
-      'CAR': { x: 200, y: 280, w: 70, h: 60 },
-      'BANANA': { x: 150, y: 380, w: 120, h: 80 },
-      'T_RAMP': { x: 240, y: 340, w: 80, h: 70 },
-      'KITCHEN': { x: 200, y: 420, w: 70, h: 50 },
-      'SPEEDWAY': { x: 120, y: 460, w: 80, h: 40 },
-      'DARK': { x: 80, y: 400, w: 60, h: 50 },
-      'LOGS': { x: 160, y: 500, w: 70, h: 40 },
-      
-      // Mid areas (center of map)
-      'MIDDLE': { x: 350, y: 300, w: 100, h: 80 },
-      'TOP_MID': { x: 350, y: 220, w: 100, h: 60 },
-      'SECOND_MID': { x: 320, y: 380, w: 80, h: 60 },
-      'ARCH': { x: 320, y: 320, w: 70, h: 50 },
-      'CONNECTOR': { x: 380, y: 260, w: 80, h: 60 },
-      'BOILER': { x: 280, y: 380, w: 60, h: 50 },
-      'UNDERPASS': { x: 300, y: 440, w: 80, h: 40 },
-      
-      // Construction/Truck area (upper mid)
-      'CONSTRUCTION': { x: 420, y: 120, w: 100, h: 80 },
-      'SPOOLS': { x: 340, y: 140, w: 70, h: 60 },
-      'GRILL': { x: 380, y: 180, w: 60, h: 50 },
-      'TRUCK': { x: 450, y: 180, w: 70, h: 60 },
-      'MOTO': { x: 520, y: 160, w: 60, h: 50 },
-      
-      // A-site area (right side)
-      'A_SITE': { x: 580, y: 300, w: 120, h: 100 },
-      'QUAD': { x: 520, y: 340, w: 70, h: 60 },
-      'NEWBOX': { x: 580, y: 400, w: 70, h: 50 },
-      'PIT': { x: 620, y: 460, w: 80, h: 60 },
-      'MINI_PIT': { x: 560, y: 480, w: 60, h: 40 },
-      'NINJA': { x: 700, y: 350, w: 50, h: 40 },
-      'DEFAULT': { x: 640, y: 320, w: 60, h: 50 },
-      'SITE': { x: 600, y: 280, w: 80, h: 60 },
-      'TRIPLE': { x: 520, y: 280, w: 60, h: 50 },
-      'QUAD_STACK': { x: 540, y: 400, w: 60, h: 40 },
-      'CORNER': { x: 700, y: 400, w: 50, h: 40 },
-      
-      // A-long area
-      'A_LONG': { x: 480, y: 420, w: 80, h: 60 },
-      'LONG_HALL': { x: 450, y: 480, w: 90, h: 50 },
-      'A_SHORT': { x: 520, y: 480, w: 70, h: 50 },
-      
-      // Library/Apps area
-      'LIBRARY': { x: 460, y: 340, w: 70, h: 60 },
-      'APARTMENTS': { x: 280, y: 480, w: 100, h: 80 },
-      'BALCONY': { x: 200, y: 480, w: 70, h: 50 },
-      'APPS_BALCONY': { x: 240, y: 520, w: 80, h: 40 },
-      'BALCONY_STAIRS': { x: 180, y: 520, w: 60, h: 40 },
-      'STAIRS': { x: 340, y: 520, w: 60, h: 40 },
-      'BRIDGE': { x: 160, y: 540, w: 70, h: 30 },
-      'PORCH': { x: 320, y: 460, w: 60, h: 40 },
-      
-      // CT areas (right side)
-      'CT_SPAWN': { x: 650, y: 180, w: 100, h: 100 },
-      'FOUNTAIN': { x: 600, y: 140, w: 70, h: 60 },
-      'POOL': { x: 680, y: 120, w: 70, h: 50 },
-      'WELL': { x: 580, y: 180, w: 60, h: 50 },
-      'TERRACE': { x: 620, y: 220, w: 70, h: 50 },
-      'GRAVEYARD': { x: 720, y: 200, w: 70, h: 60 },
-      'RUINS': { x: 750, y: 160, w: 60, h: 50 },
-      'COFFINS': { x: 740, y: 260, w: 60, h: 40 },
-      'CHECKERS': { x: 680, y: 280, w: 50, h: 40 },
-      
-      // Oranges area
-      'FIRST_ORANGES': { x: 400, y: 400, w: 70, h: 50 },
-      'SECOND_ORANGES': { x: 420, y: 450, w: 70, h: 50 },
-      'FENCE': { x: 380, y: 450, w: 40, h: 60 },
-      
-      // Additional positions
-      'DEEP': { x: 100, y: 520, w: 60, h: 40 },
-      'CLOSE': { x: 260, y: 360, w: 50, h: 40 },
-      'BOOST': { x: 480, y: 240, w: 50, h: 40 }
-    };
-    
-    // Auto-place zones that don't exist yet
-    zonesToMap.forEach(zone => {
-      if (!newMappedZones.has(zone) && zonePositions[zone]) {
-        newMappedZones.set(zone, zonePositions[zone]);
-      }
-    });
-    
-    setMappedZones(newMappedZones);
-    
-    // Auto-save the complete mapping
-    const zonesObject = Object.fromEntries(newMappedZones);
-    localStorage.setItem('infernoZoneMapping', JSON.stringify(zonesObject));
-  };
+
 
   // Load saved zones on component mount
   useEffect(() => {
@@ -1293,9 +1195,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                           <Button variant="outline" size="sm" onClick={loadMappedZones}>
                             Load Zones
                           </Button>
-                          <Button variant="outline" size="sm" onClick={autoPositionRemainingZones}>
-                            Auto-Complete
-                          </Button>
+
                         </>
                       )}
                     </div>

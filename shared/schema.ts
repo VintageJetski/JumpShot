@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, real, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -317,45 +317,5 @@ export type PlayerStat = typeof playerStats.$inferSelect;
 export const insertTeamSchema = createInsertSchema(teams);
 export type InsertTeam = z.infer<typeof insertTeamSchema>;
 export type Team = typeof teams.$inferSelect;
-
-// XYZ Positional Data table for database persistence
-export const xyzPositionalData = pgTable("xyz_positional_data", {
-  id: serial("id").primaryKey(),
-  health: integer("health").notNull(),
-  flashDuration: real("flash_duration").notNull(),
-  armor: integer("armor").notNull(),
-  side: text("side").notNull(), // 't' or 'ct'
-  pitch: real("pitch").notNull(),
-  x: real("x").notNull(),
-  yaw: real("yaw").notNull(),
-  y: real("y").notNull(),
-  velocityX: real("velocity_x").notNull(),
-  z: real("z").notNull(),
-  velocityY: real("velocity_y").notNull(),
-  velocityZ: real("velocity_z").notNull(),
-  tick: integer("tick").notNull(),
-  userSteamid: text("user_steamid").notNull(),
-  name: text("name").notNull(),
-  roundNum: integer("round_num").notNull(),
-  place: text("place"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// Analytics cache for performance optimization
-export const analyticsCache = pgTable("analytics_cache", {
-  id: serial("id").primaryKey(),
-  cacheKey: text("cache_key").unique().notNull(),
-  data: json("data").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const insertXYZDataSchema = createInsertSchema(xyzPositionalData);
-export type InsertXYZData = z.infer<typeof insertXYZDataSchema>;
-export type XYZData = typeof xyzPositionalData.$inferSelect;
-
-export const insertAnalyticsCacheSchema = createInsertSchema(analyticsCache);
-export type InsertAnalyticsCache = z.infer<typeof insertAnalyticsCacheSchema>;
-export type AnalyticsCache = typeof analyticsCache.$inferSelect;
 
 

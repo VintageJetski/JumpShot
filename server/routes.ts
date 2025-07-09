@@ -205,29 +205,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // XYZ Positional Data endpoints - complete dataset
+  // XYZ Positional Data endpoints
   app.get('/api/xyz/raw', async (req: Request, res: Response) => {
     try {
-      const data = await storage.getXYZData();
-      res.json({ 
-        data, 
-        metadata: { 
-          totalRecords: data.length
-        }
-      });
+      const xyzData = await storage.getXYZData();
+      // Return empty array if data is still loading
+      res.json(xyzData || []);
     } catch (error) {
       console.error('Error fetching XYZ data:', error);
-      res.status(500).json({ error: 'Failed to fetch XYZ data' });
+      res.json([]); // Return empty array instead of error to prevent white screen
     }
   });
 
   app.get('/api/xyz/metrics', async (req: Request, res: Response) => {
     try {
-      // For now, return a simple success response to unblock the UI
-      res.json([]);
+      const metrics = await storage.getPositionalMetrics();
+      // Return empty array if metrics are still being calculated
+      res.json(metrics || []);
     } catch (error) {
       console.error('Error fetching positional metrics:', error);
-      res.json([]);
+      res.json([]); // Return empty array instead of error to prevent white screen
     }
   });
 
@@ -250,174 +247,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching round XYZ data:', error);
       res.status(500).json({ message: 'Failed to fetch round XYZ data' });
-    }
-  });
-
-  // Phase 3: Predictive Analytics endpoints
-  app.get('/api/predictive/match-state', async (req: Request, res: Response) => {
-    try {
-      const { analyzeMatchState } = await import('./predictiveAnalytics.js');
-      const matchState = analyzeMatchState(xyzData);
-      res.json(matchState);
-    } catch (error) {
-      console.error('Error analyzing match state:', error);
-      res.status(500).json({ error: 'Failed to analyze match state' });
-    }
-  });
-
-  app.get('/api/predictive/insights', async (req: Request, res: Response) => {
-    try {
-      const { generatePredictiveInsights } = await import('./predictiveAnalytics.js');
-      const insights = generatePredictiveInsights(xyzData);
-      res.json(insights);
-    } catch (error) {
-      console.error('Error generating predictive insights:', error);
-      res.status(500).json({ error: 'Failed to generate insights' });
-    }
-  });
-
-  app.get('/api/predictive/momentum', async (req: Request, res: Response) => {
-    try {
-      const { calculateMomentumMetrics } = await import('./predictiveAnalytics.js');
-      const momentum = calculateMomentumMetrics(xyzData);
-      res.json(momentum);
-    } catch (error) {
-      console.error('Error calculating momentum:', error);
-      res.status(500).json({ error: 'Failed to calculate momentum' });
-    }
-  });
-
-  app.get('/api/predictive/next-phase', async (req: Request, res: Response) => {
-    try {
-      const { predictNextPhase } = await import('./predictiveAnalytics.js');
-      const nextPhase = predictNextPhase(xyzData);
-      res.json(nextPhase);
-    } catch (error) {
-      console.error('Error predicting next phase:', error);
-      res.status(500).json({ error: 'Failed to predict next phase' });
-    }
-  });
-
-  // Phase 4: Advanced Tactical Intelligence endpoints
-  app.get('/api/tactical/formations', async (req: Request, res: Response) => {
-    try {
-      const { analyzeTacticalFormations } = await import('./tacticalIntelligence.js');
-      const formations = analyzeTacticalFormations(xyzData);
-      res.json(formations);
-    } catch (error) {
-      console.error('Error analyzing formations:', error);
-      res.status(500).json({ error: 'Failed to analyze formations' });
-    }
-  });
-
-  app.get('/api/tactical/map-control', async (req: Request, res: Response) => {
-    try {
-      const { analyzeMapControl } = await import('./tacticalIntelligence.js');
-      const mapControl = analyzeMapControl(xyzData);
-      res.json(mapControl);
-    } catch (error) {
-      console.error('Error analyzing map control:', error);
-      res.status(500).json({ error: 'Failed to analyze map control' });
-    }
-  });
-
-  app.get('/api/tactical/advantage', async (req: Request, res: Response) => {
-    try {
-      const { assessTacticalAdvantage } = await import('./tacticalIntelligence.js');
-      const advantage = assessTacticalAdvantage(xyzData);
-      res.json(advantage);
-    } catch (error) {
-      console.error('Error assessing tactical advantage:', error);
-      res.status(500).json({ error: 'Failed to assess tactical advantage' });
-    }
-  });
-
-  app.get('/api/tactical/execute-timing', async (req: Request, res: Response) => {
-    try {
-      const { predictExecuteTiming } = await import('./tacticalIntelligence.js');
-      const timing = predictExecuteTiming(xyzData);
-      res.json(timing);
-    } catch (error) {
-      console.error('Error predicting execute timing:', error);
-      res.status(500).json({ error: 'Failed to predict execute timing' });
-    }
-  });
-
-  app.get('/api/tactical/information-warfare', async (req: Request, res: Response) => {
-    try {
-      const { analyzeInformationWarfare } = await import('./tacticalIntelligence.js');
-      const warfare = analyzeInformationWarfare(xyzData);
-      res.json(warfare);
-    } catch (error) {
-      console.error('Error analyzing information warfare:', error);
-      res.status(500).json({ error: 'Failed to analyze information warfare' });
-    }
-  });
-
-  app.get('/api/tactical/intelligence', async (req: Request, res: Response) => {
-    try {
-      const { generateTacticalIntelligence } = await import('./tacticalIntelligence.js');
-      const intelligence = generateTacticalIntelligence(xyzData);
-      res.json(intelligence);
-    } catch (error) {
-      console.error('Error generating tactical intelligence:', error);
-      res.status(500).json({ error: 'Failed to generate tactical intelligence' });
-    }
-  });
-
-  // Phase 5: Competitive Intelligence endpoints
-  app.get('/api/intelligence/competitive', async (req: Request, res: Response) => {
-    try {
-      const { analyzeCompetitiveIntelligence } = await import('./competitiveIntelligence.js');
-      const intelligence = analyzeCompetitiveIntelligence(xyzData);
-      res.json(intelligence);
-    } catch (error) {
-      console.error('Error analyzing competitive intelligence:', error);
-      res.status(500).json({ error: 'Failed to analyze competitive intelligence' });
-    }
-  });
-
-  app.get('/api/intelligence/patterns', async (req: Request, res: Response) => {
-    try {
-      const { performPatternRecognition } = await import('./competitiveIntelligence.js');
-      const patterns = performPatternRecognition(xyzData);
-      res.json(patterns);
-    } catch (error) {
-      console.error('Error performing pattern recognition:', error);
-      res.status(500).json({ error: 'Failed to perform pattern recognition' });
-    }
-  });
-
-  app.get('/api/intelligence/match-outcome', async (req: Request, res: Response) => {
-    try {
-      const { predictMatchOutcome } = await import('./competitiveIntelligence.js');
-      const outcome = predictMatchOutcome(xyzData);
-      res.json(outcome);
-    } catch (error) {
-      console.error('Error predicting match outcome:', error);
-      res.status(500).json({ error: 'Failed to predict match outcome' });
-    }
-  });
-
-  app.get('/api/intelligence/recommendations', async (req: Request, res: Response) => {
-    try {
-      const { generateStrategicRecommendations } = await import('./competitiveIntelligence.js');
-      const recommendations = generateStrategicRecommendations(xyzData);
-      res.json(recommendations);
-    } catch (error) {
-      console.error('Error generating strategic recommendations:', error);
-      res.status(500).json({ error: 'Failed to generate strategic recommendations' });
-    }
-  });
-
-  app.get('/api/intelligence/report', async (req: Request, res: Response) => {
-    try {
-      const { generateCompetitiveIntelligenceReport } = await import('./competitiveIntelligence.js');
-      const report = generateCompetitiveIntelligenceReport(xyzData);
-      res.json(report);
-    } catch (error) {
-      console.error('Error generating intelligence report:', error);
-      res.status(500).json({ error: 'Failed to generate intelligence report' });
     }
   });
 

@@ -2,26 +2,6 @@ import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { ErrorBoundary } from "react-error-boundary";
-
-function ErrorFallback({error}: {error: Error}) {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="glassmorphism rounded-xl p-8 text-center">
-          <div className="text-lg text-red-400 mb-2">Application Error</div>
-          <div className="text-sm text-muted-foreground mb-4">{error.message}</div>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Reload Page
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 import NotFound from "@/pages/not-found";
 import PlayersPage from "@/pages/PlayersPage";
 import TeamsPage from "@/pages/TeamsPage";

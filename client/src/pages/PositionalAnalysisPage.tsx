@@ -4,7 +4,7 @@ import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { SimpleTacticalMap } from "@/components/data-visualization/SimpleTacticalMap";
+import { TacticalMapAnalysis } from "@/components/data-visualization/TacticalMapAnalysis";
 import { PlayerWithPIV } from "@shared/types";
 
 interface XYZPlayerData {
@@ -63,48 +63,17 @@ interface PositionalMetrics {
 export default function PositionalAnalysisPage() {
   const [, setLocation] = useLocation();
 
-  // Start with a specific round to prevent initial loading timeout
-  const [selectedRound, setSelectedRound] = useState<string>('4');
-  
-  // Fetch XYZ positional data - complete dataset
-  const { data: xyzResponse, isLoading: isLoadingXYZ, error: xyzError } = useQuery<{
-    data: XYZPlayerData[];
-    metadata: { totalRecords: number };
-  }>({
+  // Fetch XYZ positional data
+  const { data: xyzData = [], isLoading: isLoadingXYZ } = useQuery<XYZPlayerData[]>({
     queryKey: ['/api/xyz/raw'],
-    retry: 1,
-    retryDelay: 2000,
-    staleTime: 300000,
-    gcTime: 600000,
   });
 
-  const xyzData = xyzResponse?.data || [];
-  const metadata = xyzResponse?.metadata;
-
-  // Fetch positional metrics (optional - don't block on this)
-  const { data: positionalMetrics = [] } = useQuery<PositionalMetrics[]>({
+  // Fetch positional metrics
+  const { data: positionalMetrics = [], isLoading: isLoadingMetrics } = useQuery<PositionalMetrics[]>({
     queryKey: ['/api/xyz/metrics'],
-    retry: 1,
-    retryDelay: 1000,
-    staleTime: 60000,
-    enabled: false, // Disable for now to prevent blocking
   });
 
-  const isLoading = isLoadingXYZ;
-  const hasError = xyzError;
-
-  if (hasError) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="glassmorphism rounded-xl p-8 text-center">
-            <div className="text-lg text-red-400 mb-2">Error loading data</div>
-            <div className="text-sm text-muted-foreground">Please refresh the page to try again</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const isLoading = isLoadingXYZ || isLoadingMetrics;
 
   if (isLoading) {
     return (
@@ -156,17 +125,8 @@ export default function PositionalAnalysisPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {metadata && (
-              <div className="mb-4 p-3 bg-white/5 rounded-lg text-sm text-blue-200 border border-white/10">
-                <span>
-                  <strong className="text-white">Round 4:</strong> {metadata.totalRecords.toLocaleString()} positions
-                </span>
-              </div>
-            )}
-            <SimpleTacticalMap 
-              xyzData={xyzData}
-              selectedRound={selectedRound}
-              onRoundChange={setSelectedRound}
+            <TacticalMapAnalysis 
+              xyzData={xyzData} 
             />
           </CardContent>
         </Card>

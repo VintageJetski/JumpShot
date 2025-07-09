@@ -44,55 +44,119 @@ const INFERNO_MAP_CONFIG = {
     minX: -1675.62, maxX: 2644.97,  // Exact bounds from data
     minY: -755.62, maxY: 3452.23    // Exact bounds from data
   },
-  // Tactical zones positioned to match labeled Inferno map - left to right layout
+  // Zone labels positioned to match the reference labeled Inferno map
   zones: {
     'T_SPAWN': { 
       bounds: { minX: -1675, maxX: -1200, minY: 1000, maxY: 2000 },
-      color: '#dc2626', name: 'T Spawn', priority: 'low'
+      color: '#22c55e', name: 'T Spawn', priority: 'low'
     },
-    'B_SITE': { 
-      bounds: { minX: -800, maxX: -200, minY: -400, maxY: 600 },
-      color: '#8b5cf6', name: 'B Site', priority: 'high'
+    'CONSTRUCTION': { 
+      bounds: { minX: -800, maxX: -200, minY: -400, maxY: 200 },
+      color: '#8b5cf6', name: 'Construction', priority: 'high'
     },
-    'T_RAMP': { 
-      bounds: { minX: -1000, maxX: -400, minY: 800, maxY: 1800 },
-      color: '#ef4444', name: 'T Ramp', priority: 'medium'
+    'SPOOLS': { 
+      bounds: { minX: -1200, maxX: -800, minY: -200, maxY: 200 },
+      color: '#dc2626', name: 'Spools', priority: 'medium'
+    },
+    'GRILL': { 
+      bounds: { minX: -600, maxX: -200, minY: -600, maxY: -200 },
+      color: '#f59e0b', name: 'Grill', priority: 'medium'
+    },
+    'TRUCK': { 
+      bounds: { minX: -400, maxX: 200, minY: -800, maxY: -400 },
+      color: '#8b5cf6', name: 'Truck', priority: 'medium'
+    },
+    'CONNECTOR': { 
+      bounds: { minX: -200, maxX: 400, minY: 200, maxY: 600 },
+      color: '#8b5cf6', name: 'Connector', priority: 'medium'
+    },
+    'WELL': { 
+      bounds: { minX: 1200, maxX: 1600, minY: -400, maxY: 0 },
+      color: '#22c55e', name: 'Well', priority: 'medium'
+    },
+    'TERRACE': { 
+      bounds: { minX: 1400, maxX: 1800, minY: -200, maxY: 200 },
+      color: '#22c55e', name: 'Terrace', priority: 'medium'
+    },
+    'CAR': { 
+      bounds: { minX: -1000, maxX: -600, minY: 600, maxY: 1000 },
+      color: '#8b5cf6', name: 'Car', priority: 'medium'
     },
     'BANANA': { 
       bounds: { minX: -1000, maxX: -300, minY: 2000, maxY: 3000 },
-      color: '#f97316', name: 'Banana', priority: 'medium'
+      color: '#eab308', name: 'Banana', priority: 'medium'
+    },
+    'T_RAMP': { 
+      bounds: { minX: -1000, maxX: -400, minY: 800, maxY: 1800 },
+      color: '#22c55e', name: 'T Ramp', priority: 'medium'
+    },
+    'KITCHEN': { 
+      bounds: { minX: -800, maxX: -400, minY: 1200, maxY: 1600 },
+      color: '#22c55e', name: 'Kitchen', priority: 'medium'
     },
     'APARTMENTS': { 
       bounds: { minX: -200, maxX: 600, minY: 2800, maxY: 3452 },
       color: '#3b82f6', name: 'Apartments', priority: 'medium'
     },
+    'BALCONY': { 
+      bounds: { minX: -400, maxX: 200, minY: 1800, maxY: 2400 },
+      color: '#8b5cf6', name: 'Balcony', priority: 'medium'
+    },
+    'SECOND_MID': { 
+      bounds: { minX: 0, maxX: 400, minY: 1200, maxY: 1800 },
+      color: '#f59e0b', name: 'Second Mid', priority: 'medium'
+    },
+    'BRIDGE': { 
+      bounds: { minX: 200, maxX: 600, minY: 2400, maxY: 3000 },
+      color: '#8b5cf6', name: 'Bridge', priority: 'medium'
+    },
+    'STAIRS': { 
+      bounds: { minX: 400, maxX: 800, minY: 2800, maxY: 3200 },
+      color: '#64748b', name: 'Stairs', priority: 'medium'
+    },
+    'ARCH': { 
+      bounds: { minX: 600, maxX: 1000, minY: 1400, maxY: 2000 },
+      color: '#dc2626', name: 'Arch', priority: 'medium'
+    },
+    'QUAD': { 
+      bounds: { minX: 800, maxX: 1200, minY: 1600, maxY: 2200 },
+      color: '#dc2626', name: 'Quad', priority: 'medium'
+    },
     'MIDDLE': { 
-      bounds: { minX: 400, maxX: 1200, minY: 800, maxY: 1800 },
-      color: '#eab308', name: 'Middle', priority: 'high'
+      bounds: { minX: 400, maxX: 1200, minY: 800, maxY: 1400 },
+      color: '#a3a3a3', name: 'Middle', priority: 'high'
     },
-    'CONNECTOR': { 
-      bounds: { minX: 0, maxX: 800, minY: -200, maxY: 800 },
-      color: '#9333ea', name: 'Connector', priority: 'medium'
+    'LIBRARY': { 
+      bounds: { minX: 1000, maxX: 1400, minY: 1200, maxY: 1800 },
+      color: '#8b5cf6', name: 'Library', priority: 'medium'
     },
-    'ARCH_SIDE': { 
-      bounds: { minX: 800, maxX: 1600, minY: 1800, maxY: 2800 },
-      color: '#06b6d4', name: 'Arch Side', priority: 'medium'
+    'A_LONG': { 
+      bounds: { minX: 1200, maxX: 1600, minY: 800, maxY: 1400 },
+      color: '#64748b', name: 'A Long', priority: 'medium'
     },
     'LONG_HALL': { 
       bounds: { minX: 1200, maxX: 2000, minY: -200, maxY: 800 },
-      color: '#64748b', name: 'Long Hall', priority: 'low'
+      color: '#a3a3a3', name: 'Long Hall', priority: 'low'
     },
     'PIT': { 
-      bounds: { minX: 1800, maxX: 2500, minY: 1200, maxY: 2200 },
-      color: '#84cc16', name: 'Pit', priority: 'medium'
+      bounds: { minX: 1800, maxX: 2200, minY: 1200, maxY: 1800 },
+      color: '#a3a3a3', name: 'Pit', priority: 'medium'
+    },
+    'A_SHORT': { 
+      bounds: { minX: 1600, maxX: 2000, minY: 1400, maxY: 2000 },
+      color: '#dc2626', name: 'A Short', priority: 'medium'
     },
     'A_SITE': { 
       bounds: { minX: 1600, maxX: 2400, minY: 400, maxY: 1400 },
       color: '#22c55e', name: 'A Site', priority: 'high'
     },
+    'NEWBOX': { 
+      bounds: { minX: 2000, maxX: 2400, minY: 1200, maxY: 1600 },
+      color: '#dc2626', name: 'Newbox', priority: 'medium'
+    },
     'CT_SPAWN': { 
       bounds: { minX: 2200, maxX: 2644, minY: -200, maxY: 800 },
-      color: '#10b981', name: 'CT Spawn', priority: 'low'
+      color: '#22c55e', name: 'CT Spawn', priority: 'low'
     }
   }
 };
@@ -496,29 +560,83 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
             case 'T_SPAWN':
               x = canvas.width * 0.02; y = canvas.height * 0.35; width = canvas.width * 0.15; height = canvas.height * 0.25;
               break;
-            case 'B_SITE':
+            case 'CONSTRUCTION':
               x = canvas.width * 0.25; y = canvas.height * 0.15; width = canvas.width * 0.18; height = canvas.height * 0.20;
               break;
-            case 'BANANA':
-              x = canvas.width * 0.05; y = canvas.height * 0.65; width = canvas.width * 0.25; height = canvas.height * 0.25;
+            case 'SPOOLS':
+              x = canvas.width * 0.18; y = canvas.height * 0.08; width = canvas.width * 0.12; height = canvas.height * 0.15;
               break;
-            case 'APARTMENTS':
-              x = canvas.width * 0.35; y = canvas.height * 0.75; width = canvas.width * 0.20; height = canvas.height * 0.20;
+            case 'GRILL':
+              x = canvas.width * 0.32; y = canvas.height * 0.05; width = canvas.width * 0.10; height = canvas.height * 0.12;
               break;
-            case 'MIDDLE':
-              x = canvas.width * 0.45; y = canvas.height * 0.45; width = canvas.width * 0.15; height = canvas.height * 0.20;
+            case 'TRUCK':
+              x = canvas.width * 0.45; y = canvas.height * 0.02; width = canvas.width * 0.08; height = canvas.height * 0.10;
               break;
             case 'CONNECTOR':
               x = canvas.width * 0.35; y = canvas.height * 0.40; width = canvas.width * 0.15; height = canvas.height * 0.15;
               break;
-            case 'A_SITE':
-              x = canvas.width * 0.65; y = canvas.height * 0.50; width = canvas.width * 0.18; height = canvas.height * 0.20;
+            case 'WELL':
+              x = canvas.width * 0.72; y = canvas.height * 0.08; width = canvas.width * 0.10; height = canvas.height * 0.12;
               break;
-            case 'PIT':
-              x = canvas.width * 0.70; y = canvas.height * 0.25; width = canvas.width * 0.12; height = canvas.height * 0.15;
+            case 'TERRACE':
+              x = canvas.width * 0.85; y = canvas.height * 0.15; width = canvas.width * 0.12; height = canvas.height * 0.15;
+              break;
+            case 'CAR':
+              x = canvas.width * 0.08; y = canvas.height * 0.55; width = canvas.width * 0.12; height = canvas.height * 0.12;
+              break;
+            case 'BANANA':
+              x = canvas.width * 0.05; y = canvas.height * 0.65; width = canvas.width * 0.25; height = canvas.height * 0.25;
+              break;
+            case 'T_RAMP':
+              x = canvas.width * 0.15; y = canvas.height * 0.45; width = canvas.width * 0.12; height = canvas.height * 0.15;
+              break;
+            case 'KITCHEN':
+              x = canvas.width * 0.12; y = canvas.height * 0.58; width = canvas.width * 0.10; height = canvas.height * 0.12;
+              break;
+            case 'APARTMENTS':
+              x = canvas.width * 0.35; y = canvas.height * 0.75; width = canvas.width * 0.20; height = canvas.height * 0.20;
+              break;
+            case 'BALCONY':
+              x = canvas.width * 0.28; y = canvas.height * 0.68; width = canvas.width * 0.12; height = canvas.height * 0.15;
+              break;
+            case 'SECOND_MID':
+              x = canvas.width * 0.42; y = canvas.height * 0.58; width = canvas.width * 0.12; height = canvas.height * 0.15;
+              break;
+            case 'BRIDGE':
+              x = canvas.width * 0.25; y = canvas.height * 0.82; width = canvas.width * 0.15; height = canvas.height * 0.12;
+              break;
+            case 'STAIRS':
+              x = canvas.width * 0.48; y = canvas.height * 0.88; width = canvas.width * 0.10; height = canvas.height * 0.10;
+              break;
+            case 'ARCH':
+              x = canvas.width * 0.52; y = canvas.height * 0.65; width = canvas.width * 0.12; height = canvas.height * 0.15;
+              break;
+            case 'QUAD':
+              x = canvas.width * 0.58; y = canvas.height * 0.72; width = canvas.width * 0.10; height = canvas.height * 0.12;
+              break;
+            case 'MIDDLE':
+              x = canvas.width * 0.45; y = canvas.height * 0.45; width = canvas.width * 0.15; height = canvas.height * 0.20;
+              break;
+            case 'LIBRARY':
+              x = canvas.width * 0.65; y = canvas.height * 0.68; width = canvas.width * 0.12; height = canvas.height * 0.15;
+              break;
+            case 'A_LONG':
+              x = canvas.width * 0.62; y = canvas.height * 0.52; width = canvas.width * 0.12; height = canvas.height * 0.15;
               break;
             case 'LONG_HALL':
               x = canvas.width * 0.55; y = canvas.height * 0.25; width = canvas.width * 0.20; height = canvas.height * 0.15;
+              break;
+            case 'PIT':
+              x = canvas.width * 0.70; y = canvas.height * 0.55; width = canvas.width * 0.12; height = canvas.height * 0.15;
+              break;
+            case 'A_SHORT':
+              x = canvas.width * 0.75; y = canvas.height * 0.72; width = canvas.width * 0.10; height = canvas.height * 0.12;
+              break;
+            case 'A_SITE':
+              x = canvas.width * 0.65; y = canvas.height * 0.38; width = canvas.width * 0.18; height = canvas.height * 0.20;
+              break;
+            case 'NEWBOX':
+              x = canvas.width * 0.78; y = canvas.height * 0.62; width = canvas.width * 0.10; height = canvas.height * 0.12;
               break;
             case 'CT_SPAWN':
               x = canvas.width * 0.85; y = canvas.height * 0.50; width = canvas.width * 0.12; height = canvas.height * 0.20;

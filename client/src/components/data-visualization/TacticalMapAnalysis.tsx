@@ -37,65 +37,65 @@ interface TacticalMapAnalysisProps {
   xyzData: XYZPlayerData[];
 }
 
-// Enhanced CS2 de_inferno map coordinate mapping with corrected spawn area bounds
+// Accurate CS2 de_inferno map coordinate mapping based on actual round 4 data
 const INFERNO_MAP_CONFIG = {
-  // Updated coordinate bounds to properly show spawn areas (green boxes)
+  // Real coordinate bounds from round 4 data analysis
   bounds: { 
-    minX: -1775.62, maxX: 2593.0,  // Adjusted to include T spawn (bottom left) and CT spawn (top right)
-    minY: -855.61707, maxY: 3552.2346  // Extended boundaries for complete map coverage
+    minX: -1675.62, maxX: 2644.97,  // Exact bounds from data
+    minY: -755.62, maxY: 3452.23    // Exact bounds from data
   },
-  // Real tactical zones mapped to actual CS2 de_inferno coordinates
+  // Tactical zones mapped to actual CS2 de_inferno coordinates using map images
   zones: {
     'A_SITE': { 
-      bounds: { minX: 1800, maxX: 2600, minY: 400, maxY: 1200 },
+      bounds: { minX: 1400, maxX: 2400, minY: 300, maxY: 1200 },
       color: '#22c55e', name: 'A Site', priority: 'high'
     },
     'B_SITE': { 
-      bounds: { minX: -1600, maxX: -800, minY: 2700, maxY: 3400 },
+      bounds: { minX: -1400, maxX: -400, minY: 2800, maxY: 3400 },
       color: '#8b5cf6', name: 'B Site', priority: 'high'
     },
     'APARTMENTS': { 
-      bounds: { minX: 900, maxX: 1800, minY: 1800, maxY: 2800 },
+      bounds: { minX: 200, maxX: 1200, minY: 1800, maxY: 2800 },
       color: '#3b82f6', name: 'Apartments', priority: 'medium'
     },
     'MIDDLE': { 
-      bounds: { minX: -200, maxX: 1000, minY: 1200, maxY: 2000 },
+      bounds: { minX: -400, maxX: 800, minY: 1000, maxY: 2000 },
       color: '#eab308', name: 'Middle', priority: 'high'
     },
     'BANANA': { 
-      bounds: { minX: -1600, maxX: -600, minY: 2000, maxY: 2700 },
+      bounds: { minX: -1400, maxX: -200, minY: 2000, maxY: 2800 },
       color: '#f97316', name: 'Banana', priority: 'medium'
     },
     'T_RAMP': { 
-      bounds: { minX: -1200, maxX: -400, minY: 3200, maxY: 3452 },
+      bounds: { minX: -1400, maxX: -600, minY: 3200, maxY: 3450 },
       color: '#ef4444', name: 'T Ramp', priority: 'medium'
     },
     'ARCH_SIDE': { 
-      bounds: { minX: 600, maxX: 1400, minY: 800, maxY: 1600 },
+      bounds: { minX: 200, maxX: 1200, minY: 600, maxY: 1400 },
       color: '#06b6d4', name: 'Arch Side', priority: 'medium'
     },
     'PIT': { 
-      bounds: { minX: 1200, maxX: 2000, minY: 2400, maxY: 3200 },
+      bounds: { minX: 1200, maxX: 2200, minY: 1200, maxY: 2000 },
       color: '#84cc16', name: 'Pit', priority: 'medium'
     },
     'LONG_HALL': { 
-      bounds: { minX: 800, maxX: 1600, minY: 2800, maxY: 3400 },
+      bounds: { minX: 600, maxX: 1600, minY: 1400, maxY: 2200 },
       color: '#64748b', name: 'Long Hall', priority: 'low'
     },
     'CT_SPAWN': { 
-      bounds: { minX: 2000, maxX: 2644, minY: -755, maxY: 400 },
+      bounds: { minX: 2200, maxX: 2644, minY: 1800, maxY: 2200 },
       color: '#10b981', name: 'CT Spawn', priority: 'low'
     },
     'T_SPAWN': { 
-      bounds: { minX: -1675, maxX: -1000, minY: 3000, maxY: 3452 },
+      bounds: { minX: -1675, maxX: -1200, minY: 250, maxY: 500 },
       color: '#dc2626', name: 'T Spawn', priority: 'low'
     },
     'SPEEDWAY': { 
-      bounds: { minX: 200, maxX: 800, minY: 400, maxY: 1000 },
+      bounds: { minX: 800, maxX: 1600, minY: 200, maxY: 800 },
       color: '#06b6d4', name: 'Speedway', priority: 'medium'
     },
     'CONNECTOR': { 
-      bounds: { minX: -400, maxX: 400, minY: 1600, maxY: 2400 },
+      bounds: { minX: -200, maxX: 600, minY: 1400, maxY: 2200 },
       color: '#9333ea', name: 'Connector', priority: 'medium'
     }
   }

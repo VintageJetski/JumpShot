@@ -468,12 +468,12 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mapImage, setMapImage] = useState<HTMLImageElement | null>(null);
   const [isMapping, setIsMapping] = useState(false);
-  const [currentZoneToMap, setCurrentZoneToMap] = useState<string | null>(null);
   const [mappedZones, setMappedZones] = useState<Map<string, {x: number, y: number, w: number, h: number}>>(new Map());
-  const [isResizing, setIsResizing] = useState(false);
-  const [resizeHandle, setResizeHandle] = useState<string>('');
-  const [dragStart, setDragStart] = useState<{x: number, y: number} | null>(null);
-  const [mousePos, setMousePos] = useState<{x: number, y: number} | null>(null);
+  const [draggedZone, setDraggedZone] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState<{x: number, y: number}>({ x: 0, y: 0 });
+  const [resizingZone, setResizingZone] = useState<string | null>(null);
+  const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Process data for analysis
   const analysisData = useMemo(() => {
@@ -535,43 +535,140 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     'A_SHORT', 'QUAD', 'NEWBOX', 'CT_SPAWN', 'A_SITE'
   ];
 
-  // Handle canvas click for zone mapping
-  const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isMapping || !currentZoneToMap || !canvasRef.current) return;
+  // Get mouse position on canvas
+  const getMousePos = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return { x: 0, y: 0 };
     
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    const x = (event.clientX - rect.left) * scaleX;
-    const y = (event.clientY - rect.top) * scaleY;
-    
-    // Add zone with default size
-    const newMappedZones = new Map(mappedZones);
-    newMappedZones.set(currentZoneToMap, {
-      x: x - 50, // Center the zone on click
-      y: y - 25,
-      w: 100,
-      h: 50
-    });
-    
-    setMappedZones(newMappedZones);
-    setCurrentZoneToMap(null);
-    setMousePos(null);
+    return {
+      x: (event.clientX - rect.left) * scaleX,
+      y: (event.clientY - rect.top) * scaleY
+    };
   };
 
-  // Handle mouse movement for cursor preview
+  // Check if mouse is over a resize handle
+  const getResizeHandle = (mouseX: number, mouseY: number, zone: {x: number, y: number, w: number, h: number}) => {
+    const handleSize = 12;
+    const handles = [
+      { type: 'tl', x: zone.x - handleSize/2, y: zone.y - handleSize/2 },
+      { type: 'tr', x: zone.x + zone.w - handleSize/2, y: zone.y - handleSize/2 },
+      { type: 'bl', x: zone.x - handleSize/2, y: zone.y + zone.h - handleSize/2 },
+      { type: 'br', x: zone.x + zone.w - handleSize/2, y: zone.y + zone.h - handleSize/2 }
+    ];
+    
+    for (const handle of handles) {
+      if (mouseX >= handle.x && mouseX <= handle.x + handleSize &&
+          mouseY >= handle.y && mouseY <= handle.y + handleSize) {
+        return handle.type as 'tl' | 'tr' | 'bl' | 'br';
+      }
+    }
+    return null;
+  };
+
+  // Check if mouse is over a zone
+  const getZoneAtPosition = (mouseX: number, mouseY: number) => {
+    for (const [zoneKey, zone] of mappedZones) {
+      if (mouseX >= zone.x && mouseX <= zone.x + zone.w &&
+          mouseY >= zone.y && mouseY <= zone.y + zone.h) {
+        return zoneKey;
+      }
+    }
+    return null;
+  };
+
+  // Handle mouse down for dragging/resizing
+  const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isMapping || !canvasRef.current) return;
+    
+    const mousePos = getMousePos(event);
+    
+    // Check for resize handles first
+    for (const [zoneKey, zone] of mappedZones) {
+      const handle = getResizeHandle(mousePos.x, mousePos.y, zone);
+      if (handle) {
+        setResizingZone(zoneKey);
+        setResizeHandle(handle);
+        setIsDragging(true);
+        return;
+      }
+    }
+    
+    // Check for zone dragging
+    const zoneKey = getZoneAtPosition(mousePos.x, mousePos.y);
+    if (zoneKey) {
+      const zone = mappedZones.get(zoneKey)!;
+      setDraggedZone(zoneKey);
+      setDragOffset({ x: mousePos.x - zone.x, y: mousePos.y - zone.y });
+      setIsDragging(true);
+    }
+  };
+
+  // Handle mouse move for dragging/resizing
   const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isMapping || !currentZoneToMap || !canvasRef.current) return;
+    if (!isMapping || !canvasRef.current) return;
     
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const x = (event.clientX - rect.left) * scaleX;
-    const y = (event.clientY - rect.top) * scaleY;
+    const mousePos = getMousePos(event);
     
-    setMousePos({ x, y });
+    if (isDragging) {
+      if (resizingZone && resizeHandle) {
+        // Handle resizing
+        const zone = mappedZones.get(resizingZone)!;
+        const newZone = { ...zone };
+        
+        switch (resizeHandle) {
+          case 'tl':
+            newZone.w = zone.w + (zone.x - mousePos.x);
+            newZone.h = zone.h + (zone.y - mousePos.y);
+            newZone.x = mousePos.x;
+            newZone.y = mousePos.y;
+            break;
+          case 'tr':
+            newZone.w = mousePos.x - zone.x;
+            newZone.h = zone.h + (zone.y - mousePos.y);
+            newZone.y = mousePos.y;
+            break;
+          case 'bl':
+            newZone.w = zone.w + (zone.x - mousePos.x);
+            newZone.h = mousePos.y - zone.y;
+            newZone.x = mousePos.x;
+            break;
+          case 'br':
+            newZone.w = mousePos.x - zone.x;
+            newZone.h = mousePos.y - zone.y;
+            break;
+        }
+        
+        // Ensure minimum size
+        newZone.w = Math.max(30, newZone.w);
+        newZone.h = Math.max(20, newZone.h);
+        
+        const newMappedZones = new Map(mappedZones);
+        newMappedZones.set(resizingZone, newZone);
+        setMappedZones(newMappedZones);
+      } else if (draggedZone) {
+        // Handle dragging
+        const newZone = {
+          ...mappedZones.get(draggedZone)!,
+          x: mousePos.x - dragOffset.x,
+          y: mousePos.y - dragOffset.y
+        };
+        
+        const newMappedZones = new Map(mappedZones);
+        newMappedZones.set(draggedZone, newZone);
+        setMappedZones(newMappedZones);
+      }
+    }
+  };
+
+  // Handle mouse up
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setDraggedZone(null);
+    setResizingZone(null);
+    setResizeHandle(null);
   };
 
   // Save mapped zones to localStorage
@@ -659,28 +756,10 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
           ctx.fillRect(zone.x + zone.w - handleSize/2, zone.y + zone.h - handleSize/2, handleSize, handleSize);
         });
         
-        // Show cursor preview for current zone to map
-        if (currentZoneToMap) {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-          ctx.font = '14px sans-serif';
-          ctx.fillText(`Click to place: ${currentZoneToMap.replace('_', ' ')}`, 10, 30);
-          
-          // Draw preview box at mouse position
-          if (mousePos) {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([5, 5]);
-            ctx.strokeRect(mousePos.x - 50, mousePos.y - 25, 100, 50);
-            ctx.setLineDash([]);
-            
-            // Zone name preview
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-            ctx.fillRect(mousePos.x - 48, mousePos.y - 23, currentZoneToMap.length * 7 + 6, 16);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            ctx.font = '11px sans-serif';
-            ctx.fillText(currentZoneToMap.replace('_', ' '), mousePos.x - 45, mousePos.y - 10);
-          }
-        }
+        // Show mapping instructions
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('Drag zones to position them, drag corners to resize', 10, 30);
       } else {
         // Normal territory display with mapped zones
         mappedZones.forEach((zone, key) => {
@@ -1115,17 +1194,32 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                     {/* Zone List for Mapping */}
                     {isMapping && (
                       <div className="grid grid-cols-4 gap-2 mb-4">
-                        {zonesToMap.map(zone => (
-                          <Button
-                            key={zone}
-                            variant={currentZoneToMap === zone ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setCurrentZoneToMap(zone)}
-                            className="text-xs"
-                          >
-                            {zone.replace('_', ' ')}
-                          </Button>
-                        ))}
+                        {zonesToMap.map(zone => {
+                          const isPlaced = mappedZones.has(zone);
+                          return (
+                            <Button
+                              key={zone}
+                              variant={isPlaced ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => {
+                                if (!isPlaced) {
+                                  // Add zone at center of canvas
+                                  const newMappedZones = new Map(mappedZones);
+                                  newMappedZones.set(zone, {
+                                    x: 350, // Center of 800px canvas
+                                    y: 275, // Center of 600px canvas
+                                    w: 100,
+                                    h: 50
+                                  });
+                                  setMappedZones(newMappedZones);
+                                }
+                              }}
+                              className="text-xs"
+                            >
+                              {zone.replace('_', ' ')} {isPlaced ? '✓' : ''}
+                            </Button>
+                          );
+                        })}
                       </div>
                     )}
 
@@ -1135,8 +1229,10 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                         width={800}
                         height={600}
                         className="w-full h-auto max-h-[600px] object-contain"
-                        onClick={handleCanvasClick}
+                        onMouseDown={handleMouseDown}
                         onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
                       />
                       <div className="absolute top-4 left-4 bg-black/50 text-white p-2 rounded text-sm">
                         <div>Territory Control Analysis</div>

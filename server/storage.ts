@@ -2,9 +2,14 @@ import {
   PlayerWithPIV, 
   TeamWithTIR, 
   PlayerRole,
-  TeamRoundMetrics
+  TeamRoundMetrics,
+  xyzPositionalData,
+  analyticsCache,
+  InsertXYZData,
+  InsertAnalyticsCache
 } from "@shared/schema";
 import { XYZPlayerData, PositionalMetrics } from "./xyzDataParser";
+import { eq, sql } from "drizzle-orm";
 
 // Storage interface for the application
 export interface IStorage {
@@ -31,6 +36,12 @@ export interface IStorage {
   getRoundXYZData(roundNum: number): Promise<XYZPlayerData[]>;
   setXYZData(data: XYZPlayerData[]): Promise<void>;
   setPositionalMetrics(metrics: PositionalMetrics[]): Promise<void>;
+  
+  // Database persistence methods
+  loadXYZDataFromDB(): Promise<XYZPlayerData[]>;
+  saveXYZDataToDB(data: XYZPlayerData[]): Promise<void>;
+  getCachedAnalytics(key: string): Promise<any>;
+  setCachedAnalytics(key: string, data: any, expiresInHours?: number): Promise<void>;
   
   // Data initialization
   initializeData(): Promise<void>;
@@ -99,6 +110,20 @@ export class MemoryStorage implements IStorage {
 
   // XYZ Positional Data methods implementation
   async getXYZData(): Promise<XYZPlayerData[]> {
+    // Try cache first, then database, then CSV load
+    if (this.xyzDataCache.length > 0) {
+      return this.xyzDataCache;
+    }
+    
+    // Try loading from database
+    const dbData = await this.loadXYZDataFromDB();
+    if (dbData.length > 0) {
+      this.xyzDataCache = dbData;
+      return dbData;
+    }
+    
+    // Fallback to CSV loading (one-time setup)
+    await this.loadXYZDataFromCSV();
     return this.xyzDataCache;
   }
 
@@ -116,10 +141,142 @@ export class MemoryStorage implements IStorage {
 
   async setXYZData(data: XYZPlayerData[]): Promise<void> {
     this.xyzDataCache = data;
+    // Persist to database for future loads
+    await this.saveXYZDataToDB(data);
   }
 
   async setPositionalMetrics(metrics: PositionalMetrics[]): Promise<void> {
     this.positionalMetricsCache = metrics;
+  }
+
+  // Database persistence methods
+  async loadXYZDataFromDB(): Promise<XYZPlayerData[]> {
+    try {
+      const { db } = await import("./db");
+      const rows = await db.select().from(xyzPositionalData).limit(100000);
+      return rows.map(row => ({
+        health: row.health,
+        flash_duration: row.flashDuration,
+        armor: row.armor,
+        side: row.side as 't' | 'ct',
+        pitch: row.pitch,
+        X: row.x,
+        yaw: row.yaw,
+        Y: row.y,
+        velocity_X: row.velocityX,
+        Z: row.z,
+        velocity_Y: row.velocityY,
+        velocity_Z: row.velocityZ,
+        tick: row.tick,
+        user_steamid: row.userSteamid,
+        name: row.name,
+        round_num: row.roundNum,
+        place: row.place || undefined
+      }));
+    } catch (error) {
+      console.log('No XYZ data in database yet, will load from CSV');
+      return [];
+    }
+  }
+
+  async saveXYZDataToDB(data: XYZPlayerData[]): Promise<void> {
+    try {
+      const { db } = await import("./db");
+      // Check if data already exists
+      const existingCount = await db.select({ count: sql<number>`count(*)` }).from(xyzPositionalData);
+      if (existingCount[0]?.count > 0) {
+        console.log('XYZ data already exists in database, skipping insert');
+        return;
+      }
+
+      console.log(`Saving ${data.length} XYZ records to database...`);
+      
+      // Insert in batches for better performance
+      const batchSize = 1000;
+      for (let i = 0; i < data.length; i += batchSize) {
+        const batch = data.slice(i, i + batchSize);
+        const insertData: InsertXYZData[] = batch.map(record => ({
+          health: record.health,
+          flashDuration: record.flash_duration,
+          armor: record.armor,
+          side: record.side,
+          pitch: record.pitch,
+          x: record.X,
+          yaw: record.yaw,
+          y: record.Y,
+          velocityX: record.velocity_X,
+          z: record.Z,
+          velocityY: record.velocity_Y,
+          velocityZ: record.velocity_Z,
+          tick: record.tick,
+          userSteamid: record.user_steamid,
+          name: record.name,
+          roundNum: record.round_num,
+          place: record.place
+        }));
+        
+        await db.insert(xyzPositionalData).values(insertData);
+        console.log(`Saved batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(data.length/batchSize)}`);
+      }
+      
+      console.log('XYZ data successfully saved to database');
+    } catch (error) {
+      console.error('Failed to save XYZ data to database:', error);
+    }
+  }
+
+  async getCachedAnalytics(key: string): Promise<any> {
+    try {
+      const { db } = await import("./db");
+      const result = await db.select()
+        .from(analyticsCache)
+        .where(eq(analyticsCache.cacheKey, key))
+        .limit(1);
+      
+      if (result.length > 0 && new Date() < result[0].expiresAt) {
+        return result[0].data;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error reading analytics cache:', error);
+      return null;
+    }
+  }
+
+  async setCachedAnalytics(key: string, data: any, expiresInHours: number = 24): Promise<void> {
+    try {
+      const { db } = await import("./db");
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + expiresInHours);
+      
+      await db.insert(analyticsCache)
+        .values({
+          cacheKey: key,
+          data,
+          expiresAt
+        })
+        .onConflictDoUpdate({
+          target: analyticsCache.cacheKey,
+          set: { data, expiresAt }
+        });
+    } catch (error) {
+      console.error('Error saving analytics cache:', error);
+    }
+  }
+
+  async loadXYZDataFromCSV(): Promise<void> {
+    try {
+      const { loadXYZData } = await import("./xyzDataParser");
+      console.log('Loading XYZ data from CSV (one-time setup)...');
+      const data = await loadXYZData();
+      this.xyzDataCache = data;
+      
+      // Save to database for future loads
+      await this.saveXYZDataToDB(data);
+    } catch (error) {
+      console.error('Failed to load XYZ data from CSV:', error);
+      this.xyzDataCache = [];
+    }
   }
 
   // Initialize data by loading from CSV files

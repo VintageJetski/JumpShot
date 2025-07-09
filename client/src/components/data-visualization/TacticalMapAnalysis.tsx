@@ -489,14 +489,43 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
           const total = control.t + control.ct;
           const tPercent = total > 0 ? control.t / total : 0;
           
-          // Calculate zone boundaries properly
-          const topLeft = coordToMapPercent(zone.bounds.minX, zone.bounds.maxY);
-          const bottomRight = coordToMapPercent(zone.bounds.maxX, zone.bounds.minY);
+          // Direct percentage positioning based on visual map layout
+          let x, y, width, height;
           
-          const x = (topLeft.x / 100) * canvas.width;
-          const y = (topLeft.y / 100) * canvas.height;
-          const width = ((bottomRight.x - topLeft.x) / 100) * canvas.width;
-          const height = ((bottomRight.y - topLeft.y) / 100) * canvas.height;
+          switch(zoneKey) {
+            case 'T_SPAWN':
+              x = canvas.width * 0.02; y = canvas.height * 0.35; width = canvas.width * 0.15; height = canvas.height * 0.25;
+              break;
+            case 'B_SITE':
+              x = canvas.width * 0.25; y = canvas.height * 0.15; width = canvas.width * 0.18; height = canvas.height * 0.20;
+              break;
+            case 'BANANA':
+              x = canvas.width * 0.05; y = canvas.height * 0.65; width = canvas.width * 0.25; height = canvas.height * 0.25;
+              break;
+            case 'APARTMENTS':
+              x = canvas.width * 0.35; y = canvas.height * 0.75; width = canvas.width * 0.20; height = canvas.height * 0.20;
+              break;
+            case 'MIDDLE':
+              x = canvas.width * 0.45; y = canvas.height * 0.45; width = canvas.width * 0.15; height = canvas.height * 0.20;
+              break;
+            case 'CONNECTOR':
+              x = canvas.width * 0.35; y = canvas.height * 0.40; width = canvas.width * 0.15; height = canvas.height * 0.15;
+              break;
+            case 'A_SITE':
+              x = canvas.width * 0.65; y = canvas.height * 0.50; width = canvas.width * 0.18; height = canvas.height * 0.20;
+              break;
+            case 'PIT':
+              x = canvas.width * 0.70; y = canvas.height * 0.25; width = canvas.width * 0.12; height = canvas.height * 0.15;
+              break;
+            case 'LONG_HALL':
+              x = canvas.width * 0.55; y = canvas.height * 0.25; width = canvas.width * 0.20; height = canvas.height * 0.15;
+              break;
+            case 'CT_SPAWN':
+              x = canvas.width * 0.85; y = canvas.height * 0.50; width = canvas.width * 0.12; height = canvas.height * 0.20;
+              break;
+            default:
+              x = 0; y = 0; width = 50; height = 50;
+          }
           
           // Draw zone boundary
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';

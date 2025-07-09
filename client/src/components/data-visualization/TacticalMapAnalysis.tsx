@@ -473,6 +473,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeHandle, setResizeHandle] = useState<string>('');
   const [dragStart, setDragStart] = useState<{x: number, y: number} | null>(null);
+  const [mousePos, setMousePos] = useState<{x: number, y: number} | null>(null);
 
   // Process data for analysis
   const analysisData = useMemo(() => {
@@ -554,6 +555,18 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     
     setMappedZones(newMappedZones);
     setCurrentZoneToMap(null);
+  };
+
+  // Handle mouse movement for cursor preview
+  const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isMapping || !currentZoneToMap || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    setMousePos({ x, y });
   };
 
   // Save mapped zones to localStorage
@@ -646,6 +659,22 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
           ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
           ctx.font = '14px sans-serif';
           ctx.fillText(`Click to place: ${currentZoneToMap.replace('_', ' ')}`, 10, 30);
+          
+          // Draw preview box at mouse position
+          if (mousePos) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(mousePos.x - 50, mousePos.y - 25, 100, 50);
+            ctx.setLineDash([]);
+            
+            // Zone name preview
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(mousePos.x - 48, mousePos.y - 23, currentZoneToMap.length * 7 + 6, 16);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.font = '11px sans-serif';
+            ctx.fillText(currentZoneToMap.replace('_', ' '), mousePos.x - 45, mousePos.y - 10);
+          }
         }
       } else {
         // Normal territory display with mapped zones
@@ -1102,6 +1131,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                         height={600}
                         className="w-full h-auto max-h-[600px] object-contain"
                         onClick={handleCanvasClick}
+                        onMouseMove={handleMouseMove}
                       />
                       <div className="absolute top-4 left-4 bg-black/50 text-white p-2 rounded text-sm">
                         <div>Territory Control Analysis</div>

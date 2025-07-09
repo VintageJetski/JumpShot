@@ -470,6 +470,9 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
   const [isMapping, setIsMapping] = useState(false);
   const [currentZoneToMap, setCurrentZoneToMap] = useState<string | null>(null);
   const [mappedZones, setMappedZones] = useState<Map<string, {x: number, y: number, w: number, h: number}>>(new Map());
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeHandle, setResizeHandle] = useState<string>('');
+  const [dragStart, setDragStart] = useState<{x: number, y: number} | null>(null);
 
   // Process data for analysis
   const analysisData = useMemo(() => {
@@ -522,6 +525,52 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     return filtered;
   }, [xyzData, selectedPlayer, currentTick, activeTab]);
 
+  // List of zones to map from reference
+  const zonesToMap = [
+    'T_SPAWN', 'CONSTRUCTION', 'SPOOLS', 'GRILL', 'TRUCK', 'CONNECTOR', 
+    'WELL', 'TERRACE', 'CAR', 'BANANA', 'T_RAMP', 'KITCHEN', 
+    'APARTMENTS', 'BALCONY', 'SECOND_MID', 'BRIDGE', 'STAIRS', 
+    'ARCH', 'LIBRARY', 'A_LONG', 'MIDDLE', 'LONG_HALL', 'PIT', 
+    'A_SHORT', 'QUAD', 'NEWBOX', 'CT_SPAWN', 'A_SITE'
+  ];
+
+  // Handle canvas click for zone mapping
+  const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isMapping || !currentZoneToMap || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    // Add zone with default size
+    const newMappedZones = new Map(mappedZones);
+    newMappedZones.set(currentZoneToMap, {
+      x: x - 50, // Center the zone on click
+      y: y - 25,
+      w: 100,
+      h: 50
+    });
+    
+    setMappedZones(newMappedZones);
+    setCurrentZoneToMap(null);
+  };
+
+  // Save mapped zones to localStorage
+  const saveMappedZones = () => {
+    const zonesObject = Object.fromEntries(mappedZones);
+    localStorage.setItem('infernoZoneMapping', JSON.stringify(zonesObject));
+  };
+
+  // Load mapped zones from localStorage
+  const loadMappedZones = () => {
+    const saved = localStorage.getItem('infernoZoneMapping');
+    if (saved) {
+      const zonesObject = JSON.parse(saved);
+      setMappedZones(new Map(Object.entries(zonesObject)));
+    }
+  };
+
   // Auto-play functionality
   useEffect(() => {
     if (!isPlaying || !analysisData) return;
@@ -548,75 +597,95 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
 
-    // Draw zone boundaries and labels matching reference map layout
+    // Draw manually mapped zones or mapping interface
     if (activeTab === 'territory') {
-      // Zone boundaries positioned to match reference labeled Inferno map exactly
-      const zoneBoundaries = [
-        { key: 'T_SPAWN', name: 'T SPAWN', x: canvas.width * 0.12, y: canvas.height * 0.62, w: canvas.width * 0.10, h: canvas.height * 0.20 },
-        { key: 'CONSTRUCTION', name: 'CONSTRUCTION', x: canvas.width * 0.55, y: canvas.height * 0.08, w: canvas.width * 0.12, h: canvas.height * 0.12 },
-        { key: 'SPOOLS', name: 'SPOOLS', x: canvas.width * 0.45, y: canvas.height * 0.08, w: canvas.width * 0.08, h: canvas.height * 0.10 },
-        { key: 'GRILL', name: 'GRILL', x: canvas.width * 0.48, y: canvas.height * 0.15, w: canvas.width * 0.08, h: canvas.height * 0.08 },
-        { key: 'TRUCK', name: 'TRUCK', x: canvas.width * 0.58, y: canvas.height * 0.15, w: canvas.width * 0.08, h: canvas.height * 0.08 },
-        { key: 'CONNECTOR', name: 'CONNECTOR', x: canvas.width * 0.52, y: canvas.height * 0.25, w: canvas.width * 0.10, h: canvas.height * 0.08 },
-        { key: 'WELL', name: 'WELL', x: canvas.width * 0.70, y: canvas.height * 0.15, w: canvas.width * 0.08, h: canvas.height * 0.12 },
-        { key: 'TERRACE', name: 'TERRACE', x: canvas.width * 0.75, y: canvas.height * 0.30, w: canvas.width * 0.08, h: canvas.height * 0.12 },
-        { key: 'CT_SPAWN', name: 'CT SPAWN', x: canvas.width * 0.85, y: canvas.height * 0.22, w: canvas.width * 0.12, h: canvas.height * 0.25 },
-        { key: 'CAR', name: 'CAR', x: canvas.width * 0.30, y: canvas.height * 0.35, w: canvas.width * 0.08, h: canvas.height * 0.10 },
-        { key: 'BANANA', name: 'BANANA', x: canvas.width * 0.25, y: canvas.height * 0.45, w: canvas.width * 0.12, h: canvas.height * 0.15 },
-        { key: 'T_RAMP', name: 'T RAMP', x: canvas.width * 0.35, y: canvas.height * 0.62, w: canvas.width * 0.08, h: canvas.height * 0.10 },
-        { key: 'KITCHEN', name: 'KITCHEN', x: canvas.width * 0.28, y: canvas.height * 0.72, w: canvas.width * 0.08, h: canvas.height * 0.08 },
-        { key: 'APARTMENTS', name: 'APARTMENTS', x: canvas.width * 0.35, y: canvas.height * 0.85, w: canvas.width * 0.12, h: canvas.height * 0.10 },
-        { key: 'BALCONY', name: 'BALCONY', x: canvas.width * 0.25, y: canvas.height * 0.78, w: canvas.width * 0.08, h: canvas.height * 0.08 },
-        { key: 'SECOND_MID', name: 'SECOND MID', x: canvas.width * 0.40, y: canvas.height * 0.78, w: canvas.width * 0.10, h: canvas.height * 0.08 },
-        { key: 'BRIDGE', name: 'BRIDGE', x: canvas.width * 0.20, y: canvas.height * 0.82, w: canvas.width * 0.08, h: canvas.height * 0.08 },
-        { key: 'STAIRS', name: 'STAIRS', x: canvas.width * 0.48, y: canvas.height * 0.88, w: canvas.width * 0.08, h: canvas.height * 0.08 },
-        { key: 'ARCH', name: 'ARCH', x: canvas.width * 0.48, y: canvas.height * 0.50, w: canvas.width * 0.08, h: canvas.height * 0.08 },
-        { key: 'LIBRARY', name: 'LIBRARY', x: canvas.width * 0.62, y: canvas.height * 0.50, w: canvas.width * 0.08, h: canvas.height * 0.08 },
-        { key: 'A_LONG', name: 'A LONG', x: canvas.width * 0.58, y: canvas.height * 0.62, w: canvas.width * 0.08, h: canvas.height * 0.08 },
-        { key: 'MIDDLE', name: 'MIDDLE', x: canvas.width * 0.52, y: canvas.height * 0.40, w: canvas.width * 0.10, h: canvas.height * 0.12 },
-        { key: 'LONG_HALL', name: 'LONG HALL', x: canvas.width * 0.55, y: canvas.height * 0.88, w: canvas.width * 0.10, h: canvas.height * 0.08 },
-        { key: 'PIT', name: 'PIT', x: canvas.width * 0.70, y: canvas.height * 0.88, w: canvas.width * 0.08, h: canvas.height * 0.08 },
-        { key: 'A_SHORT', name: 'A SHORT', x: canvas.width * 0.62, y: canvas.height * 0.78, w: canvas.width * 0.08, h: canvas.height * 0.08 },
-        { key: 'QUAD', name: 'QUAD', x: canvas.width * 0.52, y: canvas.height * 0.72, w: canvas.width * 0.08, h: canvas.height * 0.08 },
-        { key: 'NEWBOX', name: 'NEWBOX', x: canvas.width * 0.70, y: canvas.height * 0.72, w: canvas.width * 0.08, h: canvas.height * 0.08 }
-      ];
-
-      zoneBoundaries.forEach(zone => {
-        const control = analysisData?.territoryControl.get(zone.key);
-        const total = control ? control.t + control.ct : 0;
-        const tPercent = total > 0 ? control.t / total : 0;
+      if (isMapping) {
+        // Draw mapping interface - show all mapped zones
+        mappedZones.forEach((zone, key) => {
+          const control = analysisData?.territoryControl.get(key);
+          const total = control ? control.t + control.ct : 0;
+          const tPercent = total > 0 ? control.t / total : 0;
+          
+          // Draw zone boundary
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 5]);
+          ctx.strokeRect(zone.x, zone.y, zone.w, zone.h);
+          ctx.setLineDash([]);
+          
+          // Fill zone based on control
+          if (total > 0) {
+            ctx.fillStyle = tPercent > 0.6 ? 'rgba(220, 38, 38, 0.25)' : 
+                           tPercent < 0.4 ? 'rgba(34, 197, 94, 0.25)' : 
+                           'rgba(234, 179, 8, 0.25)';
+            ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
+          }
+          
+          // Zone label
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+          ctx.fillRect(zone.x + 2, zone.y + 2, key.length * 7 + 6, 16);
+          ctx.fillStyle = 'white';
+          ctx.font = '11px sans-serif';
+          ctx.fillText(key.replace('_', ' '), zone.x + 5, zone.y + 13);
+          
+          // Resize handles
+          const handleSize = 8;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+          // Top-left
+          ctx.fillRect(zone.x - handleSize/2, zone.y - handleSize/2, handleSize, handleSize);
+          // Top-right
+          ctx.fillRect(zone.x + zone.w - handleSize/2, zone.y - handleSize/2, handleSize, handleSize);
+          // Bottom-left
+          ctx.fillRect(zone.x - handleSize/2, zone.y + zone.h - handleSize/2, handleSize, handleSize);
+          // Bottom-right
+          ctx.fillRect(zone.x + zone.w - handleSize/2, zone.y + zone.h - handleSize/2, handleSize, handleSize);
+        });
         
-        // Draw zone boundary
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([5, 5]);
-        ctx.strokeRect(zone.x, zone.y, zone.w, zone.h);
-        ctx.setLineDash([]);
-        
-        // Fill zone based on control
-        if (total > 0) {
-          ctx.fillStyle = tPercent > 0.6 ? 'rgba(220, 38, 38, 0.25)' : 
-                         tPercent < 0.4 ? 'rgba(34, 197, 94, 0.25)' : 
-                         'rgba(234, 179, 8, 0.25)';
-          ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
+        // Show cursor preview for current zone to map
+        if (currentZoneToMap) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+          ctx.font = '14px sans-serif';
+          ctx.fillText(`Click to place: ${currentZoneToMap.replace('_', ' ')}`, 10, 30);
         }
-        
-        // Zone label with background
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(zone.x + 2, zone.y + 2, zone.name.length * 7 + 6, 16);
-        ctx.fillStyle = 'white';
-        ctx.font = '11px sans-serif';
-        ctx.fillText(zone.name, zone.x + 5, zone.y + 13);
-        
-        // Control percentage
-        if (total > 0) {
+      } else {
+        // Normal territory display with mapped zones
+        mappedZones.forEach((zone, key) => {
+          const control = analysisData?.territoryControl.get(key);
+          const total = control ? control.t + control.ct : 0;
+          const tPercent = total > 0 ? control.t / total : 0;
+          
+          // Draw zone boundary
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 5]);
+          ctx.strokeRect(zone.x, zone.y, zone.w, zone.h);
+          ctx.setLineDash([]);
+          
+          // Fill zone based on control
+          if (total > 0) {
+            ctx.fillStyle = tPercent > 0.6 ? 'rgba(220, 38, 38, 0.25)' : 
+                           tPercent < 0.4 ? 'rgba(34, 197, 94, 0.25)' : 
+                           'rgba(234, 179, 8, 0.25)';
+            ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
+          }
+          
+          // Zone label with background
           ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-          ctx.fillRect(zone.x + 2, zone.y + zone.h - 18, 40, 16);
-          ctx.fillStyle = tPercent > 0.6 ? '#dc2626' : tPercent < 0.4 ? '#22c55e' : '#eab308';
-          ctx.font = '10px sans-serif';
-          ctx.fillText(`${Math.round(tPercent * 100)}%`, zone.x + 5, zone.y + zone.h - 7);
-        }
-      });
+          ctx.fillRect(zone.x + 2, zone.y + 2, key.length * 7 + 6, 16);
+          ctx.fillStyle = 'white';
+          ctx.font = '11px sans-serif';
+          ctx.fillText(key.replace('_', ' '), zone.x + 5, zone.y + 13);
+          
+          // Control percentage
+          if (total > 0) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(zone.x + 2, zone.y + zone.h - 18, 40, 16);
+            ctx.fillStyle = tPercent > 0.6 ? '#dc2626' : tPercent < 0.4 ? '#22c55e' : '#eab308';
+            ctx.font = '10px sans-serif';
+            ctx.fillText(`${Math.round(tPercent * 100)}%`, zone.x + 5, zone.y + zone.h - 7);
+          }
+        });
+      }
     }
 
     // Draw player positions (skip if showing territory control or individual player trail in heatmap)
@@ -788,6 +857,11 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
       ctx.restore();
     }
   }, [filteredData, activeTab, analysisData, mapImage]);
+
+  // Load saved zones on component mount
+  useEffect(() => {
+    loadMappedZones();
+  }, []);
 
   // Load map image and draw
   useEffect(() => {
@@ -983,17 +1057,56 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
 
                 <TabsContent value="territory" className="mt-4">
                   <div className="space-y-4">
+                    {/* Manual Zone Mapping Controls */}
+                    <div className="flex gap-2 mb-4">
+                      <Button 
+                        variant={isMapping ? "destructive" : "default"} 
+                        size="sm"
+                        onClick={() => setIsMapping(!isMapping)}
+                      >
+                        {isMapping ? 'Exit Mapping' : 'Map Zones'}
+                      </Button>
+                      {isMapping && (
+                        <>
+                          <Button variant="outline" size="sm" onClick={saveMappedZones}>
+                            Save Zones
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={loadMappedZones}>
+                            Load Zones
+                          </Button>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Zone List for Mapping */}
+                    {isMapping && (
+                      <div className="grid grid-cols-4 gap-2 mb-4">
+                        {zonesToMap.map(zone => (
+                          <Button
+                            key={zone}
+                            variant={currentZoneToMap === zone ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentZoneToMap(zone)}
+                            className="text-xs"
+                          >
+                            {zone.replace('_', ' ')}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="relative bg-slate-900 rounded-lg overflow-hidden">
                       <canvas 
                         ref={canvasRef}
                         width={800}
                         height={600}
                         className="w-full h-auto max-h-[600px] object-contain"
+                        onClick={handleCanvasClick}
                       />
                       <div className="absolute top-4 left-4 bg-black/50 text-white p-2 rounded text-sm">
                         <div>Territory Control Analysis</div>
                         <div className="text-xs text-gray-300">
-                          Green: CT Control • Red: T Control • Yellow: Contested
+                          {isMapping ? 'Click to place selected zone' : 'Green: CT Control • Red: T Control • Yellow: Contested'}
                         </div>
                       </div>
                     </div>

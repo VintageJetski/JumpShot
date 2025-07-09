@@ -467,6 +467,9 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
   const [activeTab, setActiveTab] = useState('live');
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mapImage, setMapImage] = useState<HTMLImageElement | null>(null);
+  const [isMapping, setIsMapping] = useState(false);
+  const [currentZoneToMap, setCurrentZoneToMap] = useState<string | null>(null);
+  const [mappedZones, setMappedZones] = useState<Map<string, {x: number, y: number, w: number, h: number}>>(new Map());
 
   // Process data for analysis
   const analysisData = useMemo(() => {

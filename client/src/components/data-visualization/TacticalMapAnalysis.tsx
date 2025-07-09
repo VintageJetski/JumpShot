@@ -969,7 +969,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
       
       ctx.restore();
     }
-  }, [filteredData, activeTab, analysisData, mapImage]);
+  }, [filteredData, activeTab, analysisData, mapImage, mappedZones, isMapping]);
 
   // Load saved zones on component mount
   useEffect(() => {

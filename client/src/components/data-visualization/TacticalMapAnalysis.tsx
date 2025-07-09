@@ -44,54 +44,54 @@ const INFERNO_MAP_CONFIG = {
     minX: -1675.62, maxX: 2644.97,  // Exact bounds from data
     minY: -755.62, maxY: 3452.23    // Exact bounds from data
   },
-  // Tactical zones positioned to visually match the provided Inferno map images
+  // Tactical zones positioned to match labeled Inferno map - left to right layout
   zones: {
     'T_SPAWN': { 
-      bounds: { minX: -1675, maxX: -1300, minY: 2800, maxY: 3200 },
+      bounds: { minX: -1675, maxX: -1200, minY: 1000, maxY: 2000 },
       color: '#dc2626', name: 'T Spawn', priority: 'low'
     },
     'B_SITE': { 
-      bounds: { minX: -1200, maxX: -600, minY: 2400, maxY: 3000 },
+      bounds: { minX: -800, maxX: -200, minY: -400, maxY: 600 },
       color: '#8b5cf6', name: 'B Site', priority: 'high'
     },
     'T_RAMP': { 
-      bounds: { minX: -1000, maxX: -400, minY: 1800, maxY: 2400 },
+      bounds: { minX: -1000, maxX: -400, minY: 800, maxY: 1800 },
       color: '#ef4444', name: 'T Ramp', priority: 'medium'
     },
     'BANANA': { 
-      bounds: { minX: -1200, maxX: -200, minY: 1200, maxY: 1800 },
+      bounds: { minX: -1000, maxX: -300, minY: 2000, maxY: 3000 },
       color: '#f97316', name: 'Banana', priority: 'medium'
     },
     'APARTMENTS': { 
-      bounds: { minX: -400, maxX: 600, minY: 2000, maxY: 2800 },
+      bounds: { minX: -200, maxX: 600, minY: 2800, maxY: 3452 },
       color: '#3b82f6', name: 'Apartments', priority: 'medium'
     },
     'MIDDLE': { 
-      bounds: { minX: 200, maxX: 1000, minY: 800, maxY: 1600 },
+      bounds: { minX: 400, maxX: 1200, minY: 800, maxY: 1800 },
       color: '#eab308', name: 'Middle', priority: 'high'
     },
     'CONNECTOR': { 
-      bounds: { minX: 0, maxX: 800, minY: 1400, maxY: 2000 },
+      bounds: { minX: 0, maxX: 800, minY: -200, maxY: 800 },
       color: '#9333ea', name: 'Connector', priority: 'medium'
     },
     'ARCH_SIDE': { 
-      bounds: { minX: 800, maxX: 1600, minY: 600, maxY: 1400 },
+      bounds: { minX: 800, maxX: 1600, minY: 1800, maxY: 2800 },
       color: '#06b6d4', name: 'Arch Side', priority: 'medium'
     },
-    'A_SITE': { 
-      bounds: { minX: 1400, maxX: 2200, minY: 400, maxY: 1200 },
-      color: '#22c55e', name: 'A Site', priority: 'high'
-    },
-    'PIT': { 
-      bounds: { minX: 1600, maxX: 2400, minY: 1200, maxY: 2000 },
-      color: '#84cc16', name: 'Pit', priority: 'medium'
-    },
     'LONG_HALL': { 
-      bounds: { minX: 1000, maxX: 1800, minY: 1800, maxY: 2600 },
+      bounds: { minX: 1200, maxX: 2000, minY: -200, maxY: 800 },
       color: '#64748b', name: 'Long Hall', priority: 'low'
     },
+    'PIT': { 
+      bounds: { minX: 1800, maxX: 2500, minY: 1200, maxY: 2200 },
+      color: '#84cc16', name: 'Pit', priority: 'medium'
+    },
+    'A_SITE': { 
+      bounds: { minX: 1600, maxX: 2400, minY: 400, maxY: 1400 },
+      color: '#22c55e', name: 'A Site', priority: 'high'
+    },
     'CT_SPAWN': { 
-      bounds: { minX: 2200, maxX: 2644, minY: 0, maxY: 800 },
+      bounds: { minX: 2200, maxX: 2644, minY: -200, maxY: 800 },
       color: '#10b981', name: 'CT Spawn', priority: 'low'
     }
   }

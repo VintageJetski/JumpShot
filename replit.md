@@ -113,6 +113,7 @@ The CS2 Analytics Platform is a comprehensive full-stack application designed to
 
 Changelog:
 - July 07, 2025. Initial setup
+- July 09, 2025. Implemented manual zone mapping interface with drag-and-drop positioning and resizing functionality for CS2 Inferno tactical analysis
 
 # User Preferences
 

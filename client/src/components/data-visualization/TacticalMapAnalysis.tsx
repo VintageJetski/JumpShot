@@ -1077,13 +1077,9 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     localStorage.setItem('infernoZoneMapping', JSON.stringify(zonesObject));
   };
 
-  // Load saved zones on component mount and auto-position remaining
+  // Load saved zones on component mount
   useEffect(() => {
     loadMappedZones();
-    // Auto-position after a brief delay to ensure existing zones are loaded first
-    setTimeout(() => {
-      autoPositionRemainingZones();
-    }, 100);
   }, []);
 
   // Load map image and draw
@@ -1296,6 +1292,9 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                           </Button>
                           <Button variant="outline" size="sm" onClick={loadMappedZones}>
                             Load Zones
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={autoPositionRemainingZones}>
+                            Auto-Complete
                           </Button>
                         </>
                       )}

@@ -205,46 +205,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // XYZ Positional Data endpoints with efficient sampling
+  // XYZ Positional Data endpoints - NO SAMPLING, complete dataset analysis
   app.get('/api/xyz/raw', async (req: Request, res: Response) => {
     try {
-      const { round, sample } = req.query;
+      const { round } = req.query;
       const fullData = await storage.getXYZData();
       
       if (!fullData || fullData.length === 0) {
-        return res.json([]);
+        return res.json({ data: [], metadata: { totalRecords: 0 } });
       }
 
       let data = fullData;
 
-      // Filter by round if specified
+      // Filter by round if specified (essential for performance and meaningful analysis)
       if (round && round !== 'all') {
         const roundNum = parseInt(round as string);
         data = fullData.filter(d => d.round_num === roundNum);
       }
 
-      // Apply intelligent sampling to prevent browser freezing
-      if (sample !== 'false' && data.length > 10000) {
-        // Sample every nth record to maintain spatial distribution
-        const sampleRate = Math.ceil(data.length / 5000);
-        const sampledData = data.filter((_, index) => index % sampleRate === 0);
-        
-        // Ensure we get players from both teams
-        const tPlayers = sampledData.filter(p => p.side === 't');
-        const ctPlayers = sampledData.filter(p => p.side === 'ct');
-        
-        res.json({
-          data: sampledData,
-          metadata: {
-            totalRecords: data.length,
-            sampledRecords: sampledData.length,
-            sampleRate,
-            teamsIncluded: { t: tPlayers.length, ct: ctPlayers.length }
-          }
-        });
-      } else {
-        res.json({ data, metadata: { totalRecords: data.length } });
-      }
+      // Return complete filtered dataset - no sampling
+      res.json({ 
+        data, 
+        metadata: { 
+          totalRecords: data.length,
+          roundFilter: round || 'all',
+          availableRounds: [...new Set(fullData.map(d => d.round_num))].sort((a, b) => a - b)
+        }
+      });
     } catch (error) {
       console.error('Error fetching XYZ data:', error);
       res.status(500).json({ error: 'Failed to fetch XYZ data' });

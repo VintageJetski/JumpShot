@@ -839,36 +839,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                 </div>
               </div>
 
-              {/* ML-Driven Tactical Insights */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Tactical Insights
-                </h4>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {analysisData?.tacticalInsights.map((insight, index) => (
-                    <Card key={index} className="p-2 text-xs">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge 
-                          variant={insight.impact === 'high' ? 'destructive' : insight.impact === 'medium' ? 'default' : 'secondary'}
-                          className="text-xs py-0 px-1"
-                        >
-                          {insight.type}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {(insight.confidence * 100).toFixed(0)}% confidence
-                        </span>
-                      </div>
-                      <p className="text-xs mb-1 font-medium">{insight.description}</p>
-                      <p className="text-xs text-muted-foreground">{insight.recommendation}</p>
-                    </Card>
-                  )) || (
-                    <div className="text-xs text-muted-foreground">
-                      Processing tactical patterns...
-                    </div>
-                  )}
-                </div>
-              </div>
+
             </div>
 
             {/* Map Display */}

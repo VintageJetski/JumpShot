@@ -541,8 +541,10 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (event.clientX - rect.left) * scaleX;
+    const y = (event.clientY - rect.top) * scaleY;
     
     // Add zone with default size
     const newMappedZones = new Map(mappedZones);
@@ -555,6 +557,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     
     setMappedZones(newMappedZones);
     setCurrentZoneToMap(null);
+    setMousePos(null);
   };
 
   // Handle mouse movement for cursor preview
@@ -563,8 +566,10 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (event.clientX - rect.left) * scaleX;
+    const y = (event.clientY - rect.top) * scaleY;
     
     setMousePos({ x, y });
   };

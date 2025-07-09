@@ -545,53 +545,75 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
 
-    // Draw simple zone labels to match reference map
+    // Draw zone boundaries and labels matching reference map layout
     if (activeTab === 'territory') {
-      // Zone labels positioned to match reference labeled Inferno map
-      const zoneLabels = [
-        { name: 'T SPAWN', x: canvas.width * 0.1, y: canvas.height * 0.4 },
-        { name: 'CONSTRUCTION', x: canvas.width * 0.32, y: canvas.height * 0.2 },
-        { name: 'SPOOLS', x: canvas.width * 0.25, y: canvas.height * 0.12 },
-        { name: 'GRILL', x: canvas.width * 0.35, y: canvas.height * 0.08 },
-        { name: 'TRUCK', x: canvas.width * 0.48, y: canvas.height * 0.05 },
-        { name: 'CONNECTOR', x: canvas.width * 0.42, y: canvas.height * 0.32 },
-        { name: 'WELL', x: canvas.width * 0.75, y: canvas.height * 0.12 },
-        { name: 'TERRACE', x: canvas.width * 0.88, y: canvas.height * 0.18 },
-        { name: 'CAR', x: canvas.width * 0.15, y: canvas.height * 0.52 },
-        { name: 'BANANA', x: canvas.width * 0.12, y: canvas.height * 0.75 },
-        { name: 'T RAMP', x: canvas.width * 0.2, y: canvas.height * 0.48 },
-        { name: 'KITCHEN', x: canvas.width * 0.18, y: canvas.height * 0.58 },
-        { name: 'APARTMENTS', x: canvas.width * 0.35, y: canvas.height * 0.82 },
-        { name: 'BALCONY', x: canvas.width * 0.32, y: canvas.height * 0.72 },
-        { name: 'SECOND MID', x: canvas.width * 0.45, y: canvas.height * 0.62 },
-        { name: 'BRIDGE', x: canvas.width * 0.28, y: canvas.height * 0.88 },
-        { name: 'STAIRS', x: canvas.width * 0.52, y: canvas.height * 0.92 },
-        { name: 'ARCH', x: canvas.width * 0.55, y: canvas.height * 0.68 },
-        { name: 'QUAD', x: canvas.width * 0.62, y: canvas.height * 0.75 },
-        { name: 'MIDDLE', x: canvas.width * 0.52, y: canvas.height * 0.52 },
-        { name: 'LIBRARY', x: canvas.width * 0.68, y: canvas.height * 0.72 },
-        { name: 'A LONG', x: canvas.width * 0.65, y: canvas.height * 0.58 },
-        { name: 'LONG HALL', x: canvas.width * 0.65, y: canvas.height * 0.32 },
-        { name: 'PIT', x: canvas.width * 0.75, y: canvas.height * 0.58 },
-        { name: 'A SHORT', x: canvas.width * 0.78, y: canvas.height * 0.75 },
-        { name: 'A SITE', x: canvas.width * 0.72, y: canvas.height * 0.45 },
-        { name: 'NEWBOX', x: canvas.width * 0.82, y: canvas.height * 0.65 },
-        { name: 'CT SPAWN', x: canvas.width * 0.88, y: canvas.height * 0.55 }
+      // Zone boundaries positioned to match reference labeled Inferno map
+      const zoneBoundaries = [
+        { key: 'T_SPAWN', name: 'T SPAWN', x: canvas.width * 0.02, y: canvas.height * 0.35, w: canvas.width * 0.15, h: canvas.height * 0.25 },
+        { key: 'CONSTRUCTION', name: 'CONSTRUCTION', x: canvas.width * 0.25, y: canvas.height * 0.15, w: canvas.width * 0.18, h: canvas.height * 0.20 },
+        { key: 'SPOOLS', name: 'SPOOLS', x: canvas.width * 0.18, y: canvas.height * 0.08, w: canvas.width * 0.12, h: canvas.height * 0.15 },
+        { key: 'GRILL', name: 'GRILL', x: canvas.width * 0.32, y: canvas.height * 0.05, w: canvas.width * 0.10, h: canvas.height * 0.12 },
+        { key: 'TRUCK', name: 'TRUCK', x: canvas.width * 0.45, y: canvas.height * 0.02, w: canvas.width * 0.08, h: canvas.height * 0.10 },
+        { key: 'CONNECTOR', name: 'CONNECTOR', x: canvas.width * 0.35, y: canvas.height * 0.40, w: canvas.width * 0.15, h: canvas.height * 0.15 },
+        { key: 'WELL', name: 'WELL', x: canvas.width * 0.72, y: canvas.height * 0.08, w: canvas.width * 0.10, h: canvas.height * 0.12 },
+        { key: 'TERRACE', name: 'TERRACE', x: canvas.width * 0.85, y: canvas.height * 0.15, w: canvas.width * 0.12, h: canvas.height * 0.15 },
+        { key: 'CAR', name: 'CAR', x: canvas.width * 0.08, y: canvas.height * 0.55, w: canvas.width * 0.12, h: canvas.height * 0.12 },
+        { key: 'BANANA', name: 'BANANA', x: canvas.width * 0.05, y: canvas.height * 0.65, w: canvas.width * 0.25, h: canvas.height * 0.25 },
+        { key: 'T_RAMP', name: 'T RAMP', x: canvas.width * 0.15, y: canvas.height * 0.45, w: canvas.width * 0.12, h: canvas.height * 0.15 },
+        { key: 'KITCHEN', name: 'KITCHEN', x: canvas.width * 0.12, y: canvas.height * 0.58, w: canvas.width * 0.10, h: canvas.height * 0.12 },
+        { key: 'APARTMENTS', name: 'APARTMENTS', x: canvas.width * 0.35, y: canvas.height * 0.75, w: canvas.width * 0.20, h: canvas.height * 0.20 },
+        { key: 'BALCONY', name: 'BALCONY', x: canvas.width * 0.28, y: canvas.height * 0.68, w: canvas.width * 0.12, h: canvas.height * 0.15 },
+        { key: 'SECOND_MID', name: 'SECOND MID', x: canvas.width * 0.42, y: canvas.height * 0.58, w: canvas.width * 0.12, h: canvas.height * 0.15 },
+        { key: 'BRIDGE', name: 'BRIDGE', x: canvas.width * 0.25, y: canvas.height * 0.82, w: canvas.width * 0.15, h: canvas.height * 0.12 },
+        { key: 'STAIRS', name: 'STAIRS', x: canvas.width * 0.48, y: canvas.height * 0.88, w: canvas.width * 0.10, h: canvas.height * 0.10 },
+        { key: 'ARCH', name: 'ARCH', x: canvas.width * 0.52, y: canvas.height * 0.65, w: canvas.width * 0.12, h: canvas.height * 0.15 },
+        { key: 'QUAD', name: 'QUAD', x: canvas.width * 0.58, y: canvas.height * 0.72, w: canvas.width * 0.10, h: canvas.height * 0.12 },
+        { key: 'MIDDLE', name: 'MIDDLE', x: canvas.width * 0.45, y: canvas.height * 0.45, w: canvas.width * 0.15, h: canvas.height * 0.20 },
+        { key: 'LIBRARY', name: 'LIBRARY', x: canvas.width * 0.65, y: canvas.height * 0.68, w: canvas.width * 0.12, h: canvas.height * 0.15 },
+        { key: 'A_LONG', name: 'A LONG', x: canvas.width * 0.62, y: canvas.height * 0.52, w: canvas.width * 0.12, h: canvas.height * 0.15 },
+        { key: 'LONG_HALL', name: 'LONG HALL', x: canvas.width * 0.55, y: canvas.height * 0.25, w: canvas.width * 0.20, h: canvas.height * 0.15 },
+        { key: 'PIT', name: 'PIT', x: canvas.width * 0.70, y: canvas.height * 0.55, w: canvas.width * 0.12, h: canvas.height * 0.15 },
+        { key: 'A_SHORT', name: 'A SHORT', x: canvas.width * 0.75, y: canvas.height * 0.72, w: canvas.width * 0.10, h: canvas.height * 0.12 },
+        { key: 'A_SITE', name: 'A SITE', x: canvas.width * 0.65, y: canvas.height * 0.38, w: canvas.width * 0.18, h: canvas.height * 0.20 },
+        { key: 'NEWBOX', name: 'NEWBOX', x: canvas.width * 0.78, y: canvas.height * 0.62, w: canvas.width * 0.10, h: canvas.height * 0.12 },
+        { key: 'CT_SPAWN', name: 'CT SPAWN', x: canvas.width * 0.85, y: canvas.height * 0.50, w: canvas.width * 0.12, h: canvas.height * 0.20 }
       ];
 
-      // Draw zone labels with background
-      ctx.font = '12px Arial, sans-serif';
-      ctx.textAlign = 'left';
-      
-      zoneLabels.forEach(label => {
-        // Background
-        const textWidth = ctx.measureText(label.name).width;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        ctx.fillRect(label.x - 2, label.y - 14, textWidth + 4, 16);
+      zoneBoundaries.forEach(zone => {
+        const control = analysisData?.territoryControl.get(zone.key);
+        const total = control ? control.t + control.ct : 0;
+        const tPercent = total > 0 ? control.t / total : 0;
         
-        // Text
+        // Draw zone boundary
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.strokeRect(zone.x, zone.y, zone.w, zone.h);
+        ctx.setLineDash([]);
+        
+        // Fill zone based on control
+        if (total > 0) {
+          ctx.fillStyle = tPercent > 0.6 ? 'rgba(220, 38, 38, 0.25)' : 
+                         tPercent < 0.4 ? 'rgba(34, 197, 94, 0.25)' : 
+                         'rgba(234, 179, 8, 0.25)';
+          ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
+        }
+        
+        // Zone label with background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(zone.x + 2, zone.y + 2, zone.name.length * 7 + 6, 16);
         ctx.fillStyle = 'white';
-        ctx.fillText(label.name, label.x, label.y);
+        ctx.font = '11px sans-serif';
+        ctx.fillText(zone.name, zone.x + 5, zone.y + 13);
+        
+        // Control percentage
+        if (total > 0) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fillRect(zone.x + 2, zone.y + zone.h - 18, 40, 16);
+          ctx.fillStyle = tPercent > 0.6 ? '#dc2626' : tPercent < 0.4 ? '#22c55e' : '#eab308';
+          ctx.font = '10px sans-serif';
+          ctx.fillText(`${Math.round(tPercent * 100)}%`, zone.x + 5, zone.y + zone.h - 7);
+        }
       });
     }
 

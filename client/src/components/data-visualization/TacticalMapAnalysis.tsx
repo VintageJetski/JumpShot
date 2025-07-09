@@ -1003,9 +1003,6 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                             </div>
                           </div>
                           <h4 className="font-medium text-sm mb-2">{insight.description}</h4>
-                          <p className="text-xs text-muted-foreground leading-relaxed">
-                            <strong>Recommendation:</strong> {insight.recommendation}
-                          </p>
                         </Card>
                       )) || (
                         <div className="col-span-2 text-center text-muted-foreground">

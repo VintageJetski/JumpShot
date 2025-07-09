@@ -205,31 +205,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // XYZ Positional Data endpoints - NO SAMPLING, complete dataset analysis
+  // XYZ Positional Data endpoints - complete dataset
   app.get('/api/xyz/raw', async (req: Request, res: Response) => {
     try {
-      const { round } = req.query;
-      const fullData = await storage.getXYZData();
-      
-      if (!fullData || fullData.length === 0) {
-        return res.json({ data: [], metadata: { totalRecords: 0 } });
-      }
-
-      let data = fullData;
-
-      // Filter by round if specified (essential for performance and meaningful analysis)
-      if (round && round !== 'all') {
-        const roundNum = parseInt(round as string);
-        data = fullData.filter(d => d.round_num === roundNum);
-      }
-
-      // Return complete filtered dataset - no sampling
+      const data = await storage.getXYZData();
       res.json({ 
         data, 
         metadata: { 
-          totalRecords: data.length,
-          roundFilter: round || 'all',
-          availableRounds: [...new Set(fullData.map(d => d.round_num))].sort((a, b) => a - b)
+          totalRecords: data.length
         }
       });
     } catch (error) {

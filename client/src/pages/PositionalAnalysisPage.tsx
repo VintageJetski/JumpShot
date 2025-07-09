@@ -66,12 +66,12 @@ export default function PositionalAnalysisPage() {
   // Start with a specific round to prevent initial loading timeout
   const [selectedRound, setSelectedRound] = useState<string>('4');
   
-  // Fetch XYZ positional data with round filtering for performance
+  // Fetch XYZ positional data - complete dataset
   const { data: xyzResponse, isLoading: isLoadingXYZ, error: xyzError } = useQuery<{
     data: XYZPlayerData[];
-    metadata: { totalRecords: number; roundFilter: string; availableRounds: number[] };
+    metadata: { totalRecords: number };
   }>({
-    queryKey: ['/api/xyz/raw', { round: selectedRound }],
+    queryKey: ['/api/xyz/raw'],
     retry: 1,
     retryDelay: 2000,
     staleTime: 300000,
@@ -158,27 +158,9 @@ export default function PositionalAnalysisPage() {
           <CardContent>
             {metadata && (
               <div className="mb-4 p-3 bg-white/5 rounded-lg text-sm text-blue-200 border border-white/10">
-                <div className="flex items-center justify-between">
-                  <span>
-                    <strong className="text-white">Round {selectedRound}:</strong> {metadata.totalRecords.toLocaleString()} positions
-                  </span>
-                  {metadata.availableRounds && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs">Available rounds:</span>
-                      <select 
-                        value={selectedRound} 
-                        onChange={(e) => setSelectedRound(e.target.value)}
-                        className="bg-white/10 text-white border border-white/20 rounded px-2 py-1 text-sm"
-                      >
-                        {metadata.availableRounds.map(round => (
-                          <option key={round} value={round.toString()} className="bg-slate-800">
-                            Round {round}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
+                <span>
+                  <strong className="text-white">Round 4:</strong> {metadata.totalRecords.toLocaleString()} positions
+                </span>
               </div>
             )}
             <SimpleTacticalMap 

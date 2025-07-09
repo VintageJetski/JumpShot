@@ -526,13 +526,19 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     return filtered;
   }, [xyzData, selectedPlayer, currentTick, activeTab]);
 
-  // List of zones to map from reference
+  // Complete list of zones from reference map
   const zonesToMap = [
     'T_SPAWN', 'CONSTRUCTION', 'SPOOLS', 'GRILL', 'TRUCK', 'CONNECTOR', 
     'WELL', 'TERRACE', 'CAR', 'BANANA', 'T_RAMP', 'KITCHEN', 
     'APARTMENTS', 'BALCONY', 'SECOND_MID', 'BRIDGE', 'STAIRS', 
     'ARCH', 'LIBRARY', 'A_LONG', 'MIDDLE', 'LONG_HALL', 'PIT', 
-    'A_SHORT', 'QUAD', 'NEWBOX', 'CT_SPAWN', 'A_SITE'
+    'A_SHORT', 'QUAD', 'NEWBOX', 'CT_SPAWN', 'A_SITE',
+    'SPEEDWAY', 'DARK', 'MOTO', 'FOUNTAIN', 'POOL', 'MINI_PIT',
+    'TOP_MID', 'BOILER', 'UNDERPASS', 'GRAVEYARD', 'LOGS',
+    'RUINS', 'COFFINS', 'FIRST_ORANGES', 'SECOND_ORANGES',
+    'FENCE', 'BALCONY_STAIRS', 'APPS_BALCONY', 'PORCH',
+    'DEEP', 'CLOSE', 'DEFAULT', 'SITE', 'TRIPLE', 'QUAD_STACK',
+    'NINJA', 'CORNER', 'CHECKERS', 'BOOST'
   ];
 
   // Get mouse position on canvas

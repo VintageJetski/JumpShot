@@ -1053,6 +1053,93 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
             ctx.fillText('🔥', centerX, centerY + 4);
             ctx.textAlign = 'left';
           }
+          
+          // Additional tactical event markers
+          const analytics = analysisData?.zoneAnalytics.get(key);
+          if (analytics) {
+            const zoneValues = analysisData.tacticalValues.get(key);
+            
+            // CT Map Control indicator (high support activity, low contest)
+            if (analytics.supportActivity > 1500 && zoneValues && zoneValues.contestedIntensity < 0.05) {
+              const markerX = zone.x + zone.w - 20;
+              const markerY = zone.y + 20;
+              
+              // CT control marker
+              ctx.beginPath();
+              ctx.arc(markerX, markerY, 8, 0, 2 * Math.PI);
+              ctx.fillStyle = 'rgba(34, 197, 94, 0.8)'; // Green for CT
+              ctx.fill();
+              ctx.strokeStyle = 'white';
+              ctx.lineWidth = 1;
+              ctx.stroke();
+              
+              ctx.fillStyle = 'white';
+              ctx.font = 'bold 10px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText('🛡️', markerX, markerY + 3);
+            }
+            
+            // T Lurker Control indicator (moderate support activity, no contest)
+            if (analytics.supportActivity > 500 && analytics.supportActivity <= 1500 && 
+                zoneValues && zoneValues.contestedIntensity < 0.05) {
+              const markerX = zone.x + 20;
+              const markerY = zone.y + zone.h - 20;
+              
+              // Lurker control marker
+              ctx.beginPath();
+              ctx.arc(markerX, markerY, 6, 0, 2 * Math.PI);
+              ctx.fillStyle = 'rgba(220, 38, 38, 0.8)'; // Red for T
+              ctx.fill();
+              ctx.strokeStyle = 'white';
+              ctx.lineWidth = 1;
+              ctx.stroke();
+              
+              ctx.fillStyle = 'white';
+              ctx.font = 'bold 8px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText('👁️', markerX, markerY + 2);
+            }
+            
+            // Entry Kill Zone indicator (high entry activity)
+            if (analytics.entryActivity > 0 && zoneValues && zoneValues.contestedIntensity > 0.05) {
+              const markerX = zone.x + zone.w / 2;
+              const markerY = zone.y + 15;
+              
+              // Entry kill marker
+              ctx.beginPath();
+              ctx.arc(markerX, markerY, 6, 0, 2 * Math.PI);
+              ctx.fillStyle = 'rgba(255, 165, 0, 0.9)'; // Orange for entry kills
+              ctx.fill();
+              ctx.strokeStyle = 'white';
+              ctx.lineWidth = 1;
+              ctx.stroke();
+              
+              ctx.fillStyle = 'white';
+              ctx.font = 'bold 8px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText('⚔️', markerX, markerY + 2);
+            }
+            
+            // Rotation Hub indicator (very high support activity)
+            if (analytics.supportActivity > 2000) {
+              const markerX = zone.x + zone.w / 2;
+              const markerY = zone.y + zone.h - 15;
+              
+              // Rotation hub marker
+              ctx.beginPath();
+              ctx.arc(markerX, markerY, 5, 0, 2 * Math.PI);
+              ctx.fillStyle = 'rgba(147, 51, 234, 0.8)'; // Purple for rotations
+              ctx.fill();
+              ctx.strokeStyle = 'white';
+              ctx.lineWidth = 1;
+              ctx.stroke();
+              
+              ctx.fillStyle = 'white';
+              ctx.font = 'bold 8px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText('⚡', markerX, markerY + 2);
+            }
+          }
         });
       }
     }
@@ -1511,6 +1598,65 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                           const primaryZone = sortedZones[0];
                           const hasMainEngagement = primaryZone && primaryZone[1].contestedIntensity > 0.1;
                           
+                          // Generate tactical flow narrative
+                          const generateTacticalFlow = () => {
+                            if (!hasMainEngagement) return "Early Round: Positioning and map control establishment";
+                            
+                            const zoneName = primaryZone[0].replace('_', ' ');
+                            const highActivityZones = sortedZones.filter(([_, values]) => 
+                              analysisData.zoneAnalytics.get(_)?.supportActivity > 1000
+                            );
+                            
+                            // Determine round phase based on contest intensity and activity patterns
+                            if (primaryZone[1].contestedIntensity > 0.15) {
+                              return `Mid Round: Heavy engagement at ${zoneName} with ${highActivityZones.length} support zones active`;
+                            } else {
+                              return `Early Round: Initial contact at ${zoneName} with teams positioning for execution`;
+                            }
+                          };
+                          
+                          // Generate specific tactical events
+                          const generateTacticalEvents = () => {
+                            const events = [];
+                            
+                            if (hasMainEngagement) {
+                              const zoneName = primaryZone[0].replace('_', ' ');
+                              const analytics = analysisData.zoneAnalytics.get(primaryZone[0]);
+                              
+                              if (analytics?.entryActivity > 0) {
+                                events.push(`T entry attempt at ${zoneName}`);
+                              }
+                              if (analytics?.anchorActivity > 0) {
+                                events.push(`CT anchor defense established`);
+                              }
+                            }
+                            
+                            // Check for lurker patterns
+                            const lurkerZones = sortedZones.filter(([zone, values]) => {
+                              const analytics = analysisData.zoneAnalytics.get(zone);
+                              return analytics && analytics.supportActivity > 500 && values.contestedIntensity < 0.05;
+                            });
+                            
+                            if (lurkerZones.length > 0) {
+                              events.push(`T lurker control in ${lurkerZones[0][0].replace('_', ' ')}`);
+                            }
+                            
+                            // Check for rotation patterns
+                            const rotationZones = sortedZones.filter(([zone, values]) => {
+                              const analytics = analysisData.zoneAnalytics.get(zone);
+                              return analytics && analytics.supportActivity > 1500;
+                            });
+                            
+                            if (rotationZones.length > 1) {
+                              events.push(`CT rotation network active`);
+                            }
+                            
+                            return events;
+                          };
+                          
+                          const tacticalFlow = generateTacticalFlow();
+                          const tacticalEvents = generateTacticalEvents();
+                          
                           if (hasMainEngagement) {
                             const zoneName = primaryZone[0].replace('_', ' ');
                             const intensity = (primaryZone[1].contestedIntensity * 100).toFixed(1);
@@ -1518,11 +1664,50 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                             return (
                               <div>
                                 <div className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                                  🔥 {zoneName} EXECUTE DETECTED
+                                  🔥 {zoneName.toUpperCase()} EXECUTE DETECTED
                                 </div>
+                                
+                                {/* Timeline Context */}
+                                <div className="mb-3 p-2 bg-black/30 rounded text-sm text-blue-200">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-xs bg-blue-600 px-2 py-1 rounded">TIMELINE</span>
+                                    <span>{tacticalFlow}</span>
+                                  </div>
+                                  {tacticalEvents.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-1">
+                                      {tacticalEvents.map((event, i) => (
+                                        <span key={i} className="text-xs bg-orange-600/50 px-2 py-1 rounded">
+                                          {event}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Tactical Flow Diagram */}
+                                <div className="mb-3 p-2 bg-black/30 rounded text-xs">
+                                  <div className="text-blue-200 mb-2 font-medium">ROUND STORY:</div>
+                                  <div className="flex items-center justify-between text-gray-300">
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-red-400">T SIDE:</span>
+                                      <span>Setup →</span>
+                                      <span className="bg-red-600/30 px-2 py-1 rounded">{zoneName}</span>
+                                      <span>→ Execute</span>
+                                    </div>
+                                    <div className="text-gray-500">VS</div>
+                                    <div className="flex items-center gap-1">
+                                      <span>Defense ←</span>
+                                      <span className="bg-green-600/30 px-2 py-1 rounded">Rotate</span>
+                                      <span>← Setup</span>
+                                      <span className="text-green-400">:CT SIDE</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                
                                 <div className="text-sm text-blue-200 mb-3">
                                   Primary engagement at {zoneName} ({intensity}% intensity) with support positioning across other zones
                                 </div>
+                                
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                                   {sortedZones.slice(0, 8).map(([zone, values]) => {
                                     const analytics = analysisData.zoneAnalytics.get(zone);
@@ -1559,8 +1744,14 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                                 <div className="text-lg font-bold text-white mb-2">
                                   🎯 POSITIONING PHASE
                                 </div>
+                                <div className="mb-3 p-2 bg-black/30 rounded text-sm text-blue-200">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs bg-blue-600 px-2 py-1 rounded">TIMELINE</span>
+                                    <span>Early Round: Teams establishing map control with minimal direct engagement</span>
+                                  </div>
+                                </div>
                                 <div className="text-sm text-blue-200">
-                                  Teams establishing map control with minimal direct engagement
+                                  Teams establishing initial positions and gathering information
                                 </div>
                               </div>
                             );
@@ -1586,6 +1777,35 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                           {isMapping ? 'Drag zones to position them, drag corners to resize' : 'Real-time tactical intelligence from accurate zone mapping'}
                         </div>
                       </div>
+                      
+                      {/* Tactical Markers Legend */}
+                      {!isMapping && analysisData?.tacticalValues && (
+                        <div className="absolute top-4 right-4 bg-black/70 text-white p-3 rounded text-xs max-w-xs">
+                          <div className="font-medium mb-2">Tactical Markers</div>
+                          <div className="grid grid-cols-2 gap-1 text-xs">
+                            <div className="flex items-center gap-1">
+                              <span className="w-3 h-3 bg-orange-500 rounded-full flex items-center justify-center text-xs">🔥</span>
+                              <span>Primary Combat</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center text-xs">🛡️</span>
+                              <span>CT Map Control</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="w-3 h-3 bg-red-500 rounded-full flex items-center justify-center text-xs">👁️</span>
+                              <span>T Lurker Control</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="w-3 h-3 bg-orange-400 rounded-full flex items-center justify-center text-xs">⚔️</span>
+                              <span>Entry Kill Zone</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="w-3 h-3 bg-purple-500 rounded-full flex items-center justify-center text-xs">⚡</span>
+                              <span>Rotation Hub</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Advanced Zone Analytics - Sorted by Contest Intensity */}

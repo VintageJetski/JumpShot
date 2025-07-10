@@ -1168,7 +1168,24 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                           <Button variant="outline" size="sm" onClick={loadMappedZones}>
                             Load Zones
                           </Button>
-
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            onClick={() => {
+                              // Remove zones positioned in top-left corner (likely duplicates/clutter)
+                              const newMappedZones = new Map();
+                              mappedZones.forEach((zone, key) => {
+                                // Keep zones that are properly positioned (not in top-left clutter area)
+                                if (zone.x > 100 || zone.y > 100) {
+                                  newMappedZones.set(key, zone);
+                                }
+                              });
+                              setMappedZones(newMappedZones);
+                              saveMappedZones();
+                            }}
+                          >
+                            Clear Top-Left
+                          </Button>
                         </>
                       )}
                     </div>

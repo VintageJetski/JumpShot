@@ -271,10 +271,11 @@ function calculateMovementMetrics(data: XYZPlayerData[]) {
   return playerMovement;
 }
 
-// Enhanced role-based tactical insights
+// Enhanced role-based tactical insights using advanced zone analytics
 function generateEnhancedTacticalInsights(
   movementMetrics: Map<string, any>, 
-  territoryControl: Map<string, { t: number, ct: number }>,
+  zoneAnalytics: Map<string, any>,
+  tacticalValues: Map<string, any>,
   data: XYZPlayerData[]
 ): TacticalInsight[] {
   const insights: TacticalInsight[] = [];
@@ -402,21 +403,24 @@ function generateEnhancedTacticalInsights(
     });
   }
   
-  // IGL tactical calling analysis
-  const highTrafficZones = Array.from(territoryControl.entries())
-    .sort((a, b) => (b[1].t + b[1].ct) - (a[1].t + a[1].ct))
-    .slice(0, 3);
-  
-  if (highTrafficZones.length > 0) {
-    const zoneFocus = highTrafficZones[0][1];
-    const tactical = zoneFocus.t > zoneFocus.ct ? 'T-sided' : 'CT-sided';
-    insights.push({
-      type: 'positioning',
-      description: `${tactical} tactical focus in ${INFERNO_MAP_CONFIG.zones[highTrafficZones[0][0] as keyof typeof INFERNO_MAP_CONFIG.zones]?.name}`,
-      confidence: 0.85,
-      impact: 'high',
-      recommendation: `IGL should adapt strategy based on ${tactical} dominance patterns`
-    });
+  // Advanced zone-based tactical analysis using real analytics
+  if (zoneAnalytics.size > 0) {
+    const highActivityZones = Array.from(zoneAnalytics.entries())
+      .sort((a, b) => (b[1].dwellTime.t + b[1].dwellTime.ct) - (a[1].dwellTime.t + a[1].dwellTime.ct))
+      .slice(0, 3);
+    
+    if (highActivityZones.length > 0) {
+      const topZone = highActivityZones[0];
+      const zoneFocus = topZone[1];
+      const tactical = zoneFocus.dwellTime.t > zoneFocus.dwellTime.ct ? 'T-sided' : 'CT-sided';
+      insights.push({
+        type: 'positioning',
+        description: `${tactical} tactical focus in ${topZone[0].replace('_', ' ')}`,
+        confidence: 0.85,
+        impact: 'high',
+        recommendation: `IGL should adapt strategy based on ${tactical} dominance patterns`
+      });
+    }
   }
   
   // Anchor player defensive analysis
@@ -440,23 +444,237 @@ function generateEnhancedTacticalInsights(
   return insights;
 }
 
-// Territory control analysis
-function calculateTerritoryControl(data: XYZPlayerData[]) {
-  const territoryControl = new Map<string, { t: number, ct: number }>();
-  
-  Object.keys(INFERNO_MAP_CONFIG.zones).forEach(zone => {
-    territoryControl.set(zone, { t: 0, ct: 0 });
+// Advanced Zone Analytics using accurate zone mapping
+function calculateAdvancedZoneAnalytics(data: XYZPlayerData[], mappedZones: Map<string, {x: number, y: number, w: number, h: number}>) {
+  const zoneAnalytics = new Map<string, {
+    // Real-time occupation
+    simultaneousPresence: number;
+    contestedMoments: number;
+    
+    // Combat-weighted control
+    fightOutcomes: { tWins: number, ctWins: number };
+    firstBloods: { t: number, ct: number };
+    
+    // Time-contextual phases
+    earlyRoundControl: { t: number, ct: number };  // 0-30s
+    midRoundControl: { t: number, ct: number };    // 30-90s
+    lateRoundControl: { t: number, ct: number };   // 90s+
+    
+    // Role-based activity
+    awperActivity: number;
+    entryActivity: number;
+    supportActivity: number;
+    anchorActivity: number;
+    
+    // Tactical values
+    dwellTime: { t: number, ct: number };
+    rotationThroughput: number;
+    denialSuccess: { t: number, ct: number };
+  }>();
+
+  // Initialize analytics for all mapped zones
+  mappedZones.forEach((zone, zoneName) => {
+    zoneAnalytics.set(zoneName, {
+      simultaneousPresence: 0,
+      contestedMoments: 0,
+      fightOutcomes: { tWins: 0, ctWins: 0 },
+      firstBloods: { t: 0, ct: 0 },
+      earlyRoundControl: { t: 0, ct: 0 },
+      midRoundControl: { t: 0, ct: 0 },
+      lateRoundControl: { t: 0, ct: 0 },
+      awperActivity: 0,
+      entryActivity: 0,
+      supportActivity: 0,
+      anchorActivity: 0,
+      dwellTime: { t: 0, ct: 0 },
+      rotationThroughput: 0,
+      denialSuccess: { t: 0, ct: 0 }
+    });
   });
 
+  // Group data by tick to analyze simultaneous presence
+  const tickGroups = new Map<number, XYZPlayerData[]>();
   data.forEach(point => {
-    const zone = getPlayerZone(point.X, point.Y);
-    if (territoryControl.has(zone)) {
-      const control = territoryControl.get(zone)!;
-      control[point.side]++;
+    if (!tickGroups.has(point.tick)) {
+      tickGroups.set(point.tick, []);
     }
+    tickGroups.get(point.tick)!.push(point);
   });
 
-  return territoryControl;
+  // Get round duration for time-based analysis
+  const ticks = Array.from(tickGroups.keys()).sort((a, b) => a - b);
+  const minTick = ticks[0] || 0;
+  const maxTick = ticks[ticks.length - 1] || 0;
+  const roundDuration = maxTick - minTick;
+
+  // Analyze each tick for zone activity
+  tickGroups.forEach((tickData, tick) => {
+    const roundTime = tick - minTick;
+    const roundPhase = roundTime < roundDuration * 0.25 ? 'early' : 
+                     roundTime < roundDuration * 0.75 ? 'mid' : 'late';
+
+    // Check each zone for activity this tick
+    mappedZones.forEach((zoneRect, zoneName) => {
+      const playersInZone = tickData.filter(player => 
+        isPlayerInZone(player.X, player.Y, zoneRect)
+      );
+
+      const tPlayers = playersInZone.filter(p => p.side === 't');
+      const ctPlayers = playersInZone.filter(p => p.side === 'ct');
+
+      const analytics = zoneAnalytics.get(zoneName)!;
+
+      // Simultaneous presence and contested moments
+      if (tPlayers.length > 0 && ctPlayers.length > 0) {
+        analytics.simultaneousPresence++;
+        analytics.contestedMoments++;
+      }
+
+      // Dwell time calculation
+      analytics.dwellTime.t += tPlayers.length;
+      analytics.dwellTime.ct += ctPlayers.length;
+
+      // Time-contextual control
+      if (roundPhase === 'early') {
+        analytics.earlyRoundControl.t += tPlayers.length;
+        analytics.earlyRoundControl.ct += ctPlayers.length;
+      } else if (roundPhase === 'mid') {
+        analytics.midRoundControl.t += tPlayers.length;
+        analytics.midRoundControl.ct += ctPlayers.length;
+      } else {
+        analytics.lateRoundControl.t += tPlayers.length;
+        analytics.lateRoundControl.ct += ctPlayers.length;
+      }
+
+      // Role-based activity detection
+      playersInZone.forEach(player => {
+        // AWPer detection (high velocity players in long-range zones)
+        if (['A_SITE', 'LIBRARY', 'PIT', 'LONG_HALL'].includes(zoneName)) {
+          const velocity = Math.sqrt(player.velocity_X ** 2 + player.velocity_Y ** 2);
+          if (velocity < 100) { // Stationary AWP positioning
+            analytics.awperActivity++;
+          }
+        }
+
+        // Entry fragger detection (high velocity in chokepoints)
+        if (['BANANA', 'APARTMENTS', 'MIDDLE', 'T_RAMP'].includes(zoneName)) {
+          const velocity = Math.sqrt(player.velocity_X ** 2 + player.velocity_Y ** 2);
+          if (velocity > 200 && player.side === 't') {
+            analytics.entryActivity++;
+          }
+        }
+
+        // Support activity (utility usage indicators)
+        if (player.flash_duration > 0 || player.armor > 0) {
+          analytics.supportActivity++;
+        }
+
+        // Anchor activity (static CT positioning on sites)
+        if (['A_SITE', 'B_SITE'].includes(zoneName) && player.side === 'ct') {
+          const velocity = Math.sqrt(player.velocity_X ** 2 + player.velocity_Y ** 2);
+          if (velocity < 50) {
+            analytics.anchorActivity++;
+          }
+        }
+      });
+
+      // Combat outcomes (approximated by health changes)
+      const damagedPlayers = playersInZone.filter(p => p.health < 100 && p.health > 0);
+      const deadPlayers = playersInZone.filter(p => p.health <= 0);
+      
+      deadPlayers.forEach(player => {
+        if (player.side === 't') {
+          analytics.fightOutcomes.ctWins++;
+        } else {
+          analytics.fightOutcomes.tWins++;
+        }
+      });
+
+      // Rotation throughput (players moving through zone quickly)
+      const fastMovingPlayers = playersInZone.filter(p => {
+        const velocity = Math.sqrt(p.velocity_X ** 2 + p.velocity_Y ** 2);
+        return velocity > 250;
+      });
+      analytics.rotationThroughput += fastMovingPlayers.length;
+    });
+  });
+
+  return zoneAnalytics;
+}
+
+// Helper function to check if player coordinates are within mapped zone
+function isPlayerInZone(playerX: number, playerY: number, zoneRect: {x: number, y: number, w: number, h: number}): boolean {
+  // Convert player world coordinates to canvas coordinates
+  const pos = coordToMapPercent(playerX, playerY);
+  const canvasX = (pos.x / 100) * 800; // Canvas width
+  const canvasY = (pos.y / 100) * 600; // Canvas height
+  
+  return canvasX >= zoneRect.x && 
+         canvasX <= zoneRect.x + zoneRect.w &&
+         canvasY >= zoneRect.y && 
+         canvasY <= zoneRect.y + zoneRect.h;
+}
+
+// Calculate tactical zone values for strategic decision making
+function calculateTacticalZoneValues(zoneAnalytics: Map<string, any>) {
+  const tacticalValues = new Map<string, {
+    controlValue: number;
+    contestedIntensity: number;
+    strategicImportance: number;
+    roleEfficiency: number;
+    recommendation: string;
+  }>();
+
+  zoneAnalytics.forEach((analytics, zoneName) => {
+    // Control Value: Based on who holds the zone when it matters
+    const totalLateControl = analytics.lateRoundControl.t + analytics.lateRoundControl.ct;
+    const controlValue = totalLateControl > 0 ? 
+      Math.abs(analytics.lateRoundControl.t - analytics.lateRoundControl.ct) / totalLateControl : 0;
+
+    // Contested Intensity: How much fighting happens here
+    const totalPresence = analytics.dwellTime.t + analytics.dwellTime.ct;
+    const contestedIntensity = totalPresence > 0 ? analytics.contestedMoments / totalPresence : 0;
+
+    // Strategic Importance: Based on zone type and activity
+    let strategicImportance = 0;
+    if (['A_SITE', 'B_SITE'].includes(zoneName)) {
+      strategicImportance = 0.9; // Bomb sites are critical
+    } else if (['BANANA', 'APARTMENTS', 'MIDDLE'].includes(zoneName)) {
+      strategicImportance = 0.8; // Major chokepoints
+    } else if (['CT_SPAWN', 'T_SPAWN'].includes(zoneName)) {
+      strategicImportance = 0.3; // Spawn areas less critical mid-round
+    } else {
+      strategicImportance = 0.6; // Other tactical positions
+    }
+
+    // Role Efficiency: How well roles are being executed in this zone
+    const totalRoleActivity = analytics.awperActivity + analytics.entryActivity + 
+                             analytics.supportActivity + analytics.anchorActivity;
+    const roleEfficiency = totalRoleActivity > 0 ? 
+      Math.max(analytics.awperActivity, analytics.entryActivity, analytics.supportActivity, analytics.anchorActivity) / totalRoleActivity : 0;
+
+    // Generate tactical recommendation
+    let recommendation = '';
+    if (contestedIntensity > 0.7) {
+      recommendation = 'High-contest zone - coordinate utility usage';
+    } else if (controlValue > 0.8) {
+      recommendation = 'Strong control established - maintain positioning';
+    } else if (roleEfficiency < 0.4) {
+      recommendation = 'Poor role execution - reassign player positions';
+    } else {
+      recommendation = 'Balanced activity - monitor for opportunities';
+    }
+
+    tacticalValues.set(zoneName, {
+      controlValue,
+      contestedIntensity,
+      strategicImportance,
+      roleEfficiency,
+      recommendation
+    });
+  });
+
+  return tacticalValues;
 }
 
 export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
@@ -475,13 +693,18 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
   const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Process data for analysis
+  // Process data for analysis using accurate zone mapping
   const analysisData = useMemo(() => {
-    if (!xyzData.length) return null;
+    if (!xyzData.length || mappedZones.size === 0) return null;
 
     const movementMetrics = calculateMovementMetrics(xyzData);
-    const territoryControl = calculateTerritoryControl(xyzData);
-    const tacticalInsights = generateEnhancedTacticalInsights(movementMetrics, territoryControl, xyzData);
+    
+    // Advanced zone analytics using accurately mapped zones
+    const zoneAnalytics = calculateAdvancedZoneAnalytics(xyzData, mappedZones);
+    const tacticalValues = calculateTacticalZoneValues(zoneAnalytics);
+    
+    // Enhanced tactical insights based on zone analytics
+    const tacticalInsights = generateEnhancedTacticalInsights(movementMetrics, zoneAnalytics, tacticalValues, xyzData);
     
     const ticks = Array.from(new Set(xyzData.map(d => d.tick))).sort((a, b) => a - b);
     const players = Array.from(new Set(xyzData.map(d => d.name)));
@@ -499,7 +722,8 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     
     return {
       movementMetrics,
-      territoryControl,
+      zoneAnalytics,
+      tacticalValues,
       tacticalInsights,
       ticks,
       players,
@@ -507,7 +731,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
       heatmapData,
       gridSize
     };
-  }, [xyzData]);
+  }, [xyzData, mappedZones]);
 
   // Filter data for current view
   const filteredData = useMemo(() => {
@@ -1234,34 +1458,60 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
                       />
                       <div className="absolute top-4 left-4 bg-black/50 text-white p-2 rounded text-sm">
-                        <div>Territory Control Analysis</div>
+                        <div>Advanced Zone Analytics</div>
                         <div className="text-xs text-gray-300">
-                          {isMapping ? 'Click to place selected zone' : 'Green: CT Control • Red: T Control • Yellow: Contested'}
+                          {isMapping ? 'Drag zones to position them, drag corners to resize' : 'Real-time tactical intelligence from accurate zone mapping'}
                         </div>
                       </div>
                     </div>
 
-                    {/* Territory Control Stats */}
+                    {/* Advanced Zone Analytics */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                      {Array.from(analysisData.territoryControl.entries()).map(([zone, control]) => {
-                        const total = control.t + control.ct;
-                        const tPercent = total > 0 ? (control.t / total) * 100 : 0;
-                        const zoneName = INFERNO_MAP_CONFIG.zones[zone as keyof typeof INFERNO_MAP_CONFIG.zones]?.name || zone;
+                      {analysisData?.tacticalValues && Array.from(analysisData.tacticalValues.entries()).map(([zone, values]) => {
+                        const analytics = analysisData.zoneAnalytics.get(zone);
+                        if (!analytics) return null;
+                        
+                        const displayName = zone === 'SITE' ? 'B SITE' : zone.replace('_', ' ');
+                        const contestedPercent = values.contestedIntensity * 100;
+                        const controlPercent = values.controlValue * 100;
                         
                         return (
                           <Card key={zone} className="p-3">
-                            <div className="text-sm font-medium mb-2">{zoneName}</div>
-                            <div className="space-y-1">
+                            <div className="text-sm font-medium mb-2">{displayName}</div>
+                            <div className="space-y-2">
+                              {/* Strategic Importance */}
                               <div className="flex justify-between text-xs">
-                                <span className="text-red-500">T: {control.t}</span>
-                                <span className="text-green-500">CT: {control.ct}</span>
+                                <span>Strategic Value:</span>
+                                <span className="font-medium">{(values.strategicImportance * 100).toFixed(0)}%</span>
                               </div>
-                              <Progress 
-                                value={tPercent} 
-                                className="h-2"
-                              />
-                              <div className="text-xs text-center text-muted-foreground">
-                                {tPercent > 60 ? 'T Control' : tPercent < 40 ? 'CT Control' : 'Contested'}
+                              
+                              {/* Contest Intensity */}
+                              <div>
+                                <div className="flex justify-between text-xs mb-1">
+                                  <span>Contest Intensity:</span>
+                                  <span className={contestedPercent > 50 ? 'text-red-500' : 'text-green-500'}>
+                                    {contestedPercent.toFixed(1)}%
+                                  </span>
+                                </div>
+                                <Progress value={contestedPercent} className="h-1" />
+                              </div>
+                              
+                              {/* Role Activity */}
+                              <div className="text-xs">
+                                <div className="flex justify-between">
+                                  <span>AWP:</span><span>{analytics.awperActivity}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Entry:</span><span>{analytics.entryActivity}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Support:</span><span>{analytics.supportActivity}</span>
+                                </div>
+                              </div>
+                              
+                              {/* Tactical Recommendation */}
+                              <div className="text-xs text-muted-foreground bg-slate-100 p-1 rounded">
+                                {values.recommendation}
                               </div>
                             </div>
                           </Card>

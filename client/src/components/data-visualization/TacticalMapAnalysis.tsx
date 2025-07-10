@@ -1510,7 +1510,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                               </div>
                               
                               {/* Tactical Recommendation */}
-                              <div className="text-xs text-muted-foreground bg-slate-100 p-1 rounded">
+                              <div className="text-xs text-slate-800 bg-slate-100 p-2 rounded border">
                                 {values.recommendation}
                               </div>
                             </div>

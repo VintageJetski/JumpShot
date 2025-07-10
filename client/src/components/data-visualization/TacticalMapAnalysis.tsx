@@ -631,20 +631,26 @@ function calculateTacticalZoneValues(zoneAnalytics: Map<string, any>) {
     const controlValue = totalLateControl > 0 ? 
       Math.abs(analytics.lateRoundControl.t - analytics.lateRoundControl.ct) / totalLateControl : 0;
 
-    // Contested Intensity: How much fighting happens here
+    // Contested Intensity: Combined fighting + presence (includes lurker control)
     const totalPresence = analytics.dwellTime.t + analytics.dwellTime.ct;
-    const contestedIntensity = totalPresence > 0 ? analytics.contestedMoments / totalPresence : 0;
+    const presenceIntensity = totalPresence > 0 ? analytics.simultaneousPresence / totalPresence : 0;
+    const combatWeight = analytics.contestedMoments > 0 ? 0.7 : 0; // Combat gets 70% weight
+    const presenceWeight = presenceIntensity > 0 ? 0.3 : 0; // Non-combat presence gets 30% weight
+    const contestedIntensity = combatWeight * (analytics.contestedMoments / Math.max(totalPresence, 1)) + 
+                               presenceWeight * presenceIntensity;
 
-    // Strategic Importance: Based on zone type and activity
+    // Strategic Importance: Based on CS2 tactical reality
     let strategicImportance = 0;
-    if (['A_SITE', 'B_SITE'].includes(zoneName)) {
-      strategicImportance = 0.9; // Bomb sites are critical
-    } else if (['BANANA', 'APARTMENTS', 'MIDDLE'].includes(zoneName)) {
-      strategicImportance = 0.8; // Major chokepoints
+    if (['BANANA', 'APARTMENTS', 'MIDDLE'].includes(zoneName)) {
+      strategicImportance = 0.95; // Major chokepoints - control the round flow
+    } else if (['A_SITE', 'B_SITE'].includes(zoneName)) {
+      strategicImportance = 0.70; // Bomb sites - important but chokepoints dictate access
+    } else if (['PIT', 'ARCH', 'LIBRARY', 'LONG_HALL', 'A_SHORT'].includes(zoneName)) {
+      strategicImportance = 0.70; // Key angles for map control
     } else if (['CT_SPAWN', 'T_SPAWN'].includes(zoneName)) {
-      strategicImportance = 0.3; // Spawn areas less critical mid-round
+      strategicImportance = 0.0; // Spawns offer no strategic value mid-round
     } else {
-      strategicImportance = 0.6; // Other tactical positions
+      strategicImportance = 0.60; // Support positions
     }
 
     // Role Efficiency: How well roles are being executed in this zone
@@ -1465,9 +1471,12 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                       </div>
                     </div>
 
-                    {/* Advanced Zone Analytics */}
+                    {/* Advanced Zone Analytics - Sorted by Contest Intensity */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                      {analysisData?.tacticalValues && Array.from(analysisData.tacticalValues.entries()).map(([zone, values]) => {
+                      {analysisData?.tacticalValues && Array.from(analysisData.tacticalValues.entries())
+                        .filter(([zone, values]) => values.strategicImportance > 0) // Exclude spawns (0% strategic value)
+                        .sort((a, b) => b[1].contestedIntensity - a[1].contestedIntensity) // Sort by contest intensity (highest first)
+                        .map(([zone, values]) => {
                         const analytics = analysisData.zoneAnalytics.get(zone);
                         if (!analytics) return null;
                         

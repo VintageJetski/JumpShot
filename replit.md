@@ -114,10 +114,18 @@ The CS2 Analytics Platform is a comprehensive full-stack application designed to
 Changelog:
 - July 07, 2025. Initial setup
 - July 09, 2025. Implemented manual zone mapping interface with drag-and-drop positioning and resizing functionality for CS2 Inferno tactical analysis
+- July 10, 2025. Implemented refined strategic value weighting system based on CS2 tactical importance. Enhanced contest intensity calculations to include non-combat presence for tactical advantage detection. Added contest intensity + presence-based sorting to surface most tactically interesting zones. Removed spawn zones entirely from strategic calculations (0% value as they offer no mid-round tactical value).
 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Tactical Analysis Principles
+- Major chokepoints (Banana, Apartments, Middle) are MORE important than bomb sites as they control round flow and rotations
+- Controlling chokepoints dictates rotations and site executes, making them the most critical areas
+- Strategic value weightings: Major chokepoints 95%, Bomb sites 70%, Key angles 70%, Support positions 60%, Spawns 0%
+- Key insight: Presence in zones without combat still provides tactical advantage (lurker control)
+- Display priority: Sort zones by contest intensity (highest first) to highlight where real tactical decisions occur
 
 ## Efficiency Requirements
 - Use direct, targeted edits instead of exploratory file searches

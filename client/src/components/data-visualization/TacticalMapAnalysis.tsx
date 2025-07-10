@@ -776,15 +776,6 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
           ctx.fillStyle = 'white';
           ctx.font = '11px sans-serif';
           ctx.fillText(displayName, zone.x + 5, zone.y + 13);
-          
-          // Control percentage
-          if (total > 0) {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-            ctx.fillRect(zone.x + 2, zone.y + zone.h - 18, 40, 16);
-            ctx.fillStyle = tPercent > 0.6 ? '#dc2626' : tPercent < 0.4 ? '#22c55e' : '#eab308';
-            ctx.font = '10px sans-serif';
-            ctx.fillText(`${Math.round(tPercent * 100)}%`, zone.x + 5, zone.y + zone.h - 7);
-          }
         });
       }
     }

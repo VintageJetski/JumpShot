@@ -987,25 +987,72 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
         ctx.fillText('Drag zones to position them, drag corners to resize', 10, 30);
       } else {
         // Normal territory display with mapped zones
+        // Find highest contest intensity zone for marker
+        let highestContestZone = null;
+        let highestContestIntensity = 0;
+        if (analysisData?.tacticalValues) {
+          Array.from(analysisData.tacticalValues.entries()).forEach(([zoneName, values]) => {
+            if (values.contestedIntensity > highestContestIntensity) {
+              highestContestIntensity = values.contestedIntensity;
+              highestContestZone = zoneName;
+            }
+          });
+        }
+
         mappedZones.forEach((zone, key) => {
-          // Draw zone boundary
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-          ctx.lineWidth = 2;
-          ctx.setLineDash([5, 5]);
+          const isHighestContest = key === highestContestZone && highestContestIntensity > 0.05;
+          
+          // Draw zone boundary (highlight if highest contest)
+          if (isHighestContest) {
+            ctx.strokeStyle = 'rgba(255, 69, 0, 0.9)'; // Orange-red for combat zone
+            ctx.lineWidth = 3;
+            ctx.setLineDash([]);
+          } else {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+          }
           ctx.strokeRect(zone.x, zone.y, zone.w, zone.h);
           ctx.setLineDash([]);
           
-          // Neutral zone fill (no red/green coloring)
-          ctx.fillStyle = 'rgba(100, 100, 100, 0.1)';
+          // Zone fill (highlight combat zone)
+          if (isHighestContest) {
+            ctx.fillStyle = 'rgba(255, 69, 0, 0.2)'; // Orange glow for combat
+          } else {
+            ctx.fillStyle = 'rgba(100, 100, 100, 0.1)';
+          }
           ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
           
           // Zone label with background
           const displayName = key === 'SITE' ? 'B SITE' : key.replace('_', ' ');
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fillStyle = isHighestContest ? 'rgba(255, 69, 0, 0.9)' : 'rgba(0, 0, 0, 0.7)';
           ctx.fillRect(zone.x + 2, zone.y + 2, displayName.length * 7 + 6, 16);
           ctx.fillStyle = 'white';
           ctx.font = '11px sans-serif';
           ctx.fillText(displayName, zone.x + 5, zone.y + 13);
+          
+          // Combat intensity marker
+          if (isHighestContest) {
+            const centerX = zone.x + zone.w / 2;
+            const centerY = zone.y + zone.h / 2;
+            
+            // Pulsing combat marker
+            const pulseSize = 8 + Math.sin(Date.now() / 300) * 3;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, pulseSize, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(255, 69, 0, 0.8)';
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Combat icon
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('🔥', centerX, centerY + 4);
+            ctx.textAlign = 'left';
+          }
         });
       }
     }
@@ -1449,6 +1496,76 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                             </Button>
                           );
                         })}
+                      </div>
+                    )}
+
+                    {/* Round Story Header */}
+                    {analysisData?.tacticalValues && (
+                      <div className="mb-4 p-4 bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-lg border border-blue-500/20">
+                        {(() => {
+                          // Find the zone with highest contest intensity
+                          const sortedZones = Array.from(analysisData.tacticalValues.entries())
+                            .filter(([zone, values]) => values.strategicImportance > 0)
+                            .sort((a, b) => b[1].contestedIntensity - a[1].contestedIntensity);
+                          
+                          const primaryZone = sortedZones[0];
+                          const hasMainEngagement = primaryZone && primaryZone[1].contestedIntensity > 0.1;
+                          
+                          if (hasMainEngagement) {
+                            const zoneName = primaryZone[0].replace('_', ' ');
+                            const intensity = (primaryZone[1].contestedIntensity * 100).toFixed(1);
+                            
+                            return (
+                              <div>
+                                <div className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                                  🔥 {zoneName} EXECUTE DETECTED
+                                </div>
+                                <div className="text-sm text-blue-200 mb-3">
+                                  Primary engagement at {zoneName} ({intensity}% intensity) with support positioning across other zones
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                                  {sortedZones.slice(0, 8).map(([zone, values]) => {
+                                    const analytics = analysisData.zoneAnalytics.get(zone);
+                                    if (!analytics) return null;
+                                    
+                                    let icon = '👁️'; // Default: information gathering
+                                    let role = 'Info gathering';
+                                    
+                                    if (values.contestedIntensity > 0.1) {
+                                      icon = '🔥';
+                                      role = 'Active combat';
+                                    } else if (analytics.supportActivity > 1000) {
+                                      icon = '⚡';
+                                      role = 'Rotation prep';
+                                    } else if (analytics.anchorActivity > 0) {
+                                      icon = '🛡️';
+                                      role = 'Anchor position';
+                                    }
+                                    
+                                    return (
+                                      <div key={zone} className="flex items-center gap-1 text-gray-300">
+                                        <span>{icon}</span>
+                                        <span className="font-medium">{zone.replace('_', ' ')}</span>
+                                        <span className="text-xs text-gray-400">({role})</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <div>
+                                <div className="text-lg font-bold text-white mb-2">
+                                  🎯 POSITIONING PHASE
+                                </div>
+                                <div className="text-sm text-blue-200">
+                                  Teams establishing map control with minimal direct engagement
+                                </div>
+                              </div>
+                            );
+                          }
+                        })()}
                       </div>
                     )}
 

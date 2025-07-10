@@ -526,19 +526,15 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     return filtered;
   }, [xyzData, selectedPlayer, currentTick, activeTab]);
 
-  // Complete list of zones from reference map
+  // Active zones from reference map (removed unnecessary zones dumped in top-left)
   const zonesToMap = [
-    'T_SPAWN', 'CONSTRUCTION', 'SPOOLS', 'GRILL', 'TRUCK', 'CONNECTOR', 
-    'WELL', 'TERRACE', 'CAR', 'BANANA', 'T_RAMP', 'KITCHEN', 
-    'APARTMENTS', 'BALCONY', 'SECOND_MID', 'BRIDGE', 'STAIRS', 
-    'ARCH', 'LIBRARY', 'A_LONG', 'MIDDLE', 'LONG_HALL', 'PIT', 
-    'A_SHORT', 'QUAD', 'NEWBOX', 'CT_SPAWN', 'A_SITE',
-    'SPEEDWAY', 'DARK', 'MOTO', 'FOUNTAIN', 'POOL', 'MINI_PIT',
-    'TOP_MID', 'BOILER', 'UNDERPASS', 'GRAVEYARD', 'LOGS',
-    'RUINS', 'COFFINS', 'FIRST_ORANGES', 'SECOND_ORANGES',
-    'FENCE', 'BALCONY_STAIRS', 'APPS_BALCONY', 'PORCH',
-    'DEEP', 'CLOSE', 'DEFAULT', 'SITE', 'TRIPLE', 'QUAD_STACK',
-    'NINJA', 'CORNER', 'CHECKERS', 'BOOST'
+    'T_SPAWN', 'CONSTRUCTION', 'GRILL', 'TRUCK', 'CONNECTOR', 
+    'WELL', 'TERRACE', 'BANANA', 'T_RAMP', 'KITCHEN', 
+    'APARTMENTS', 'BALCONY', 'SECOND_ORANGES', 'BRIDGE', 'STAIRS', 
+    'ARCH', 'LIBRARY', 'A_LONG', 'MIDDLE', 'TOP_MID', 'PIT', 
+    'A_SHORT', 'QUAD', 'NEWBOX', 'CT_SPAWN', 'A_SITE', 'B_SITE',
+    'BOILER', 'SPEEDWAY', 'GRAVEYARD', 'MOTO', 'CLOSE', 'TRIPLE',
+    'LONG_HALL', 'CUBBY', 'SANDBAGS'
   ];
 
   // Get mouse position on canvas
@@ -723,10 +719,6 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
       if (isMapping) {
         // Draw mapping interface - show all mapped zones
         mappedZones.forEach((zone, key) => {
-          const control = analysisData?.territoryControl.get(key);
-          const total = control ? control.t + control.ct : 0;
-          const tPercent = total > 0 ? control.t / total : 0;
-          
           // Draw zone boundary
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
           ctx.lineWidth = 2;
@@ -734,20 +726,17 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
           ctx.strokeRect(zone.x, zone.y, zone.w, zone.h);
           ctx.setLineDash([]);
           
-          // Fill zone based on control
-          if (total > 0) {
-            ctx.fillStyle = tPercent > 0.6 ? 'rgba(220, 38, 38, 0.25)' : 
-                           tPercent < 0.4 ? 'rgba(34, 197, 94, 0.25)' : 
-                           'rgba(234, 179, 8, 0.25)';
-            ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
-          }
+          // Neutral zone fill (no red/green coloring)
+          ctx.fillStyle = 'rgba(100, 100, 100, 0.1)';
+          ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
           
           // Zone label
+          const displayName = key === 'SITE' ? 'B SITE' : key.replace('_', ' ');
           ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-          ctx.fillRect(zone.x + 2, zone.y + 2, key.length * 7 + 6, 16);
+          ctx.fillRect(zone.x + 2, zone.y + 2, displayName.length * 7 + 6, 16);
           ctx.fillStyle = 'white';
           ctx.font = '11px sans-serif';
-          ctx.fillText(key.replace('_', ' '), zone.x + 5, zone.y + 13);
+          ctx.fillText(displayName, zone.x + 5, zone.y + 13);
           
           // Resize handles
           const handleSize = 8;
@@ -769,10 +758,6 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
       } else {
         // Normal territory display with mapped zones
         mappedZones.forEach((zone, key) => {
-          const control = analysisData?.territoryControl.get(key);
-          const total = control ? control.t + control.ct : 0;
-          const tPercent = total > 0 ? control.t / total : 0;
-          
           // Draw zone boundary
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
           ctx.lineWidth = 2;
@@ -780,20 +765,17 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
           ctx.strokeRect(zone.x, zone.y, zone.w, zone.h);
           ctx.setLineDash([]);
           
-          // Fill zone based on control
-          if (total > 0) {
-            ctx.fillStyle = tPercent > 0.6 ? 'rgba(220, 38, 38, 0.25)' : 
-                           tPercent < 0.4 ? 'rgba(34, 197, 94, 0.25)' : 
-                           'rgba(234, 179, 8, 0.25)';
-            ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
-          }
+          // Neutral zone fill (no red/green coloring)
+          ctx.fillStyle = 'rgba(100, 100, 100, 0.1)';
+          ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
           
           // Zone label with background
+          const displayName = key === 'SITE' ? 'B SITE' : key.replace('_', ' ');
           ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-          ctx.fillRect(zone.x + 2, zone.y + 2, key.length * 7 + 6, 16);
+          ctx.fillRect(zone.x + 2, zone.y + 2, displayName.length * 7 + 6, 16);
           ctx.fillStyle = 'white';
           ctx.font = '11px sans-serif';
-          ctx.fillText(key.replace('_', ' '), zone.x + 5, zone.y + 13);
+          ctx.fillText(displayName, zone.x + 5, zone.y + 13);
           
           // Control percentage
           if (total > 0) {

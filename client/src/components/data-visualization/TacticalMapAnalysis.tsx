@@ -191,6 +191,90 @@ function getPlayerZone(x: number, y: number): string {
   return 'UNKNOWN';
 }
 
+// Get authentic tactical events from real data analysis
+function getAuthenticTacticalEvents(zoneName: string, data: XYZPlayerData[]): Array<{
+  icon: string;
+  color: string;
+  size?: number;
+  fontSize?: string;
+  x?: number;
+  y?: number;
+}> {
+  const events: Array<{
+    icon: string;
+    color: string;
+    size?: number;
+    fontSize?: string;
+    x?: number;
+    y?: number;
+  }> = [];
+
+  // Filter data for this zone
+  const zoneData = data.filter(point => {
+    const zone = getPlayerZone(point.X, point.Y);
+    return zone === zoneName;
+  });
+
+  if (zoneData.length === 0) return events;
+
+  // Analyze actual combat events (health drops)
+  const combatEvents = zoneData.filter(point => point.health < 100);
+  if (combatEvents.length >= 2) {
+    // Multiple players with health damage = combat zone
+    const tCombat = combatEvents.filter(p => p.side === 't').length;
+    const ctCombat = combatEvents.filter(p => p.side === 'ct').length;
+    
+    if (tCombat > 0 && ctCombat > 0) {
+      // Real duel occurred
+      events.push({
+        icon: '⚔️',
+        color: 'rgba(255, 165, 0, 0.9)',
+        size: 8,
+        fontSize: 'bold 10px sans-serif',
+        x: 10,
+        y: 15
+      });
+    }
+  }
+
+  // Analyze utility usage (flash/smoke effects)
+  const utilityEvents = zoneData.filter(point => point.flash_duration > 0);
+  if (utilityEvents.length > 0) {
+    events.push({
+      icon: '💨',
+      color: 'rgba(147, 51, 234, 0.8)',
+      size: 6,
+      x: -10,
+      y: 25
+    });
+  }
+
+  // Analyze territory control patterns
+  const tPresence = zoneData.filter(p => p.side === 't').length;
+  const ctPresence = zoneData.filter(p => p.side === 'ct').length;
+  
+  // Only show control markers if there's significant presence disparity
+  if (tPresence > ctPresence * 2 && tPresence > 10) {
+    events.push({
+      icon: '🏴',
+      color: 'rgba(220, 38, 38, 0.8)',
+      size: 6,
+      x: 15,
+      y: 35
+    });
+  } else if (ctPresence > tPresence * 2 && ctPresence > 10) {
+    events.push({
+      icon: '🛡️',
+      color: 'rgba(34, 197, 94, 0.8)',
+      size: 6,
+      x: 15,
+      y: 35
+    });
+  }
+
+  return events;
+}
+
 // ML-driven tactical insights from authentic CS2 data
 interface TacticalInsight {
   type: 'positioning' | 'rotation' | 'engagement' | 'utility' | 'economic';
@@ -1076,92 +1160,28 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
             ctx.textAlign = 'left';
           }
           
-          // Additional tactical event markers
-          const analytics = analysisData?.zoneAnalytics.get(key);
-          if (analytics) {
-            const zoneValues = analysisData.tacticalValues.get(key);
+          // Authentic tactical event markers based on real data
+          const authenticEvents = getAuthenticTacticalEvents(key, filteredData);
+          
+          authenticEvents.forEach((event, index) => {
+            const markerX = zone.x + (event.x || zone.w / 2);
+            const markerY = zone.y + (event.y || 20 + index * 25);
             
-            // CT Map Control indicator (high support activity, low contest)
-            if (analytics.supportActivity > 1500 && zoneValues && zoneValues.contestedIntensity < 0.05) {
-              const markerX = zone.x + zone.w - 20;
-              const markerY = zone.y + 20;
-              
-              // CT control marker
-              ctx.beginPath();
-              ctx.arc(markerX, markerY, 8, 0, 2 * Math.PI);
-              ctx.fillStyle = 'rgba(34, 197, 94, 0.8)'; // Green for CT
-              ctx.fill();
-              ctx.strokeStyle = 'white';
-              ctx.lineWidth = 1;
-              ctx.stroke();
-              
-              ctx.fillStyle = 'white';
-              ctx.font = 'bold 10px sans-serif';
-              ctx.textAlign = 'center';
-              ctx.fillText('🛡️', markerX, markerY + 3);
-            }
+            // Draw marker background
+            ctx.beginPath();
+            ctx.arc(markerX, markerY, event.size || 6, 0, 2 * Math.PI);
+            ctx.fillStyle = event.color;
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 1;
+            ctx.stroke();
             
-            // T Lurker Control indicator (moderate support activity, no contest)
-            if (analytics.supportActivity > 500 && analytics.supportActivity <= 1500 && 
-                zoneValues && zoneValues.contestedIntensity < 0.05) {
-              const markerX = zone.x + 20;
-              const markerY = zone.y + zone.h - 20;
-              
-              // Lurker control marker
-              ctx.beginPath();
-              ctx.arc(markerX, markerY, 6, 0, 2 * Math.PI);
-              ctx.fillStyle = 'rgba(220, 38, 38, 0.8)'; // Red for T
-              ctx.fill();
-              ctx.strokeStyle = 'white';
-              ctx.lineWidth = 1;
-              ctx.stroke();
-              
-              ctx.fillStyle = 'white';
-              ctx.font = 'bold 8px sans-serif';
-              ctx.textAlign = 'center';
-              ctx.fillText('👁️', markerX, markerY + 2);
-            }
-            
-            // Entry Kill Zone indicator (high entry activity)
-            if (analytics.entryActivity > 0 && zoneValues && zoneValues.contestedIntensity > 0.05) {
-              const markerX = zone.x + zone.w / 2;
-              const markerY = zone.y + 15;
-              
-              // Entry kill marker
-              ctx.beginPath();
-              ctx.arc(markerX, markerY, 6, 0, 2 * Math.PI);
-              ctx.fillStyle = 'rgba(255, 165, 0, 0.9)'; // Orange for entry kills
-              ctx.fill();
-              ctx.strokeStyle = 'white';
-              ctx.lineWidth = 1;
-              ctx.stroke();
-              
-              ctx.fillStyle = 'white';
-              ctx.font = 'bold 8px sans-serif';
-              ctx.textAlign = 'center';
-              ctx.fillText('⚔️', markerX, markerY + 2);
-            }
-            
-            // Rotation Hub indicator (very high support activity)
-            if (analytics.supportActivity > 2000) {
-              const markerX = zone.x + zone.w / 2;
-              const markerY = zone.y + zone.h - 15;
-              
-              // Rotation hub marker
-              ctx.beginPath();
-              ctx.arc(markerX, markerY, 5, 0, 2 * Math.PI);
-              ctx.fillStyle = 'rgba(147, 51, 234, 0.8)'; // Purple for rotations
-              ctx.fill();
-              ctx.strokeStyle = 'white';
-              ctx.lineWidth = 1;
-              ctx.stroke();
-              
-              ctx.fillStyle = 'white';
-              ctx.font = 'bold 8px sans-serif';
-              ctx.textAlign = 'center';
-              ctx.fillText('⚡', markerX, markerY + 2);
-            }
-          }
+            // Draw event icon
+            ctx.fillStyle = 'white';
+            ctx.font = event.fontSize || 'bold 8px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(event.icon, markerX, markerY + 2);
+          });
         });
       }
     }

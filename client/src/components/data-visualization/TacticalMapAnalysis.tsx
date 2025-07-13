@@ -700,8 +700,8 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
   const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Process data for analysis using accurate zone mapping
-  const analysisData = useMemo(() => {
+  // Process data for analysis using accurate zone mapping (old version - will be replaced)
+  const oldAnalysisData = useMemo(() => {
     if (!xyzData.length || mappedZones.size === 0) return null;
 
     const movementMetrics = calculateMovementMetrics(xyzData);
@@ -1370,26 +1370,27 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     loadMappedZones();
   }, []);
 
-  // Force load default zones if none exist after mount
-  useEffect(() => {
-    if (mappedZones.size === 0) {
-      setTimeout(() => {
-        const defaultZones = new Map([
-          ['BANANA', { x: 162, y: 280, w: 80, h: 60 }],
-          ['APARTMENTS', { x: 210, y: 180, w: 70, h: 50 }],
-          ['MIDDLE', { x: 320, y: 250, w: 60, h: 40 }],
-          ['A_SITE', { x: 380, y: 150, w: 80, h: 70 }],
-          ['B_SITE', { x: 120, y: 320, w: 90, h: 80 }],
-          ['T_SPAWN', { x: 50, y: 50, w: 60, h: 50 }],
-          ['CT_SPAWN', { x: 450, y: 400, w: 70, h: 60 }],
-          ['ARCH', { x: 280, y: 320, w: 50, h: 40 }],
-          ['LIBRARY', { x: 350, y: 200, w: 60, h: 45 }],
-          ['BALCONY', { x: 240, y: 200, w: 40, h: 30 }]
-        ]);
-        setMappedZones(defaultZones);
-      }, 1000);
+  // Create analysis data from xyzData and mappedZones
+  const analysisData = useMemo(() => {
+    if (!xyzData || xyzData.length === 0 || mappedZones.size === 0) {
+      return null;
     }
-  }, [mappedZones.size]);
+
+    const zoneAnalytics = calculateZoneAnalytics(xyzData, mappedZones);
+    
+    return {
+      zoneAnalytics,
+      totalDataPoints: xyzData.length,
+      uniquePlayers: new Set(xyzData.map(d => d.name)).size,
+      roundsCovered: new Set(xyzData.map(d => d.round_num)).size,
+      tickRange: {
+        min: Math.min(...xyzData.map(d => d.tick)),
+        max: Math.max(...xyzData.map(d => d.tick))
+      }
+    };
+  }, [xyzData, mappedZones]);
+
+
 
   // Load map image and draw
   useEffect(() => {
@@ -1406,7 +1407,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     }
   }, [mapImage, drawTacticalMap, mappedZones]);
 
-  if (!analysisData && activeTab !== 'territory' && activeTab !== 'heatmap') {
+  if (!analysisData) {
     return (
       <Card>
         <CardHeader>

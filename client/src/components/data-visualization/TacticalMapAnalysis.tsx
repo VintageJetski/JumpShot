@@ -51,7 +51,7 @@ const INFERNO_MAP_CONFIG = {
       color: '#22c55e', name: 'T Spawn', priority: 'low'
     },
     'CONSTRUCTION': { 
-      bounds: { minX: -800, maxX: -200, minY: -400, maxY: 200 },
+      bounds: { minX: -1200, maxX: -800, minY: -600, maxY: -200 },
       color: '#8b5cf6', name: 'Construction', priority: 'high'
     },
     'SPOOLS': { 
@@ -95,7 +95,7 @@ const INFERNO_MAP_CONFIG = {
       color: '#22c55e', name: 'Kitchen', priority: 'medium'
     },
     'APARTMENTS': { 
-      bounds: { minX: -200, maxX: 600, minY: 2800, maxY: 3452 },
+      bounds: { minX: -800, maxX: -200, minY: -400, maxY: 200 },
       color: '#3b82f6', name: 'Apartments', priority: 'medium'
     },
     'BALCONY': { 

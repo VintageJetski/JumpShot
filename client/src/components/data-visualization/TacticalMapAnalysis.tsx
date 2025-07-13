@@ -969,7 +969,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
 
   // Auto-play functionality
   useEffect(() => {
-    if (!isPlaying || !analysisData) return;
+    if (!isPlaying || !analysisData || !analysisData.ticks) return;
 
     const interval = setInterval(() => {
       setCurrentTick(prev => {
@@ -1377,12 +1377,14 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     }
 
     const zoneAnalytics = calculateZoneAnalytics(xyzData, mappedZones);
+    const ticks = [...new Set(xyzData.map(d => d.tick))].sort((a, b) => a - b);
     
     return {
       zoneAnalytics,
       totalDataPoints: xyzData.length,
       uniquePlayers: new Set(xyzData.map(d => d.name)).size,
       roundsCovered: new Set(xyzData.map(d => d.round_num)).size,
+      ticks,
       tickRange: {
         min: Math.min(...xyzData.map(d => d.tick)),
         max: Math.max(...xyzData.map(d => d.tick))

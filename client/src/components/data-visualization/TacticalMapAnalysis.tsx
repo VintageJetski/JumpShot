@@ -685,6 +685,7 @@ function calculateTacticalZoneValues(zoneAnalytics: Map<string, any>) {
 
 export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
   const [selectedPlayer, setSelectedPlayer] = useState<string>('all');
+  const [selectedRound, setSelectedRound] = useState<string>('round_4');
   const [currentTick, setCurrentTick] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
@@ -699,26 +700,41 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
   const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Get available rounds from data
+  const availableRounds = useMemo(() => {
+    if (!xyzData.length) return [];
+    const uniqueRounds = Array.from(new Set(xyzData.map(d => d.round_num)))
+      .sort((a, b) => a - b);
+    return uniqueRounds;
+  }, [xyzData]);
+
   // Process data for analysis using accurate zone mapping
   const analysisData = useMemo(() => {
     if (!xyzData.length || mappedZones.size === 0) return null;
 
-    const movementMetrics = calculateMovementMetrics(xyzData);
+    // Filter data by selected round first
+    let processedData = xyzData;
+    if (selectedRound !== 'all_rounds') {
+      const roundNum = parseInt(selectedRound.replace('round_', ''));
+      processedData = xyzData.filter(d => d.round_num === roundNum);
+    }
+
+    const movementMetrics = calculateMovementMetrics(processedData);
     
     // Advanced zone analytics using accurately mapped zones
-    const zoneAnalytics = calculateAdvancedZoneAnalytics(xyzData, mappedZones);
+    const zoneAnalytics = calculateAdvancedZoneAnalytics(processedData, mappedZones);
     const tacticalValues = calculateTacticalZoneValues(zoneAnalytics);
     
     // Enhanced tactical insights based on zone analytics
-    const tacticalInsights = generateEnhancedTacticalInsights(movementMetrics, zoneAnalytics, tacticalValues, xyzData);
+    const tacticalInsights = generateEnhancedTacticalInsights(movementMetrics, zoneAnalytics, tacticalValues, processedData);
     
-    const ticks = Array.from(new Set(xyzData.map(d => d.tick))).sort((a, b) => a - b);
-    const players = Array.from(new Set(xyzData.map(d => d.name)));
+    const ticks = Array.from(new Set(processedData.map(d => d.tick))).sort((a, b) => a - b);
+    const players = Array.from(new Set(processedData.map(d => d.name)));
     
     // Generate heatmap data
     const heatmapData = new Map<string, number>();
     const gridSize = 50;
-    xyzData.forEach(point => {
+    processedData.forEach(point => {
       const pos = coordToMapPercent(point.X, point.Y);
       const gridX = Math.floor((pos.x / 100) * gridSize);
       const gridY = Math.floor((pos.y / 100) * gridSize);
@@ -733,17 +749,23 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
       tacticalInsights,
       ticks,
       players,
-      totalDataPoints: xyzData.length,
+      totalDataPoints: processedData.length,
       heatmapData,
       gridSize
     };
-  }, [xyzData, mappedZones]);
+  }, [xyzData, mappedZones, selectedRound]);
 
   // Filter data for current view
   const filteredData = useMemo(() => {
     if (!xyzData.length) return [];
     
     let filtered = xyzData;
+    
+    // Filter by selected round
+    if (selectedRound !== 'all_rounds') {
+      const roundNum = parseInt(selectedRound.replace('round_', ''));
+      filtered = filtered.filter(d => d.round_num === roundNum);
+    }
     
     if (selectedPlayer !== 'all') {
       filtered = filtered.filter(d => d.name === selectedPlayer);
@@ -754,7 +776,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     }
     
     return filtered;
-  }, [xyzData, selectedPlayer, currentTick, activeTab]);
+  }, [xyzData, selectedPlayer, selectedRound, currentTick, activeTab]);
 
   // Active zones from reference map (removed unnecessary zones dumped in top-left)
   const zonesToMap = [
@@ -1381,6 +1403,24 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                     <SelectItem value="all">All Players</SelectItem>
                     {analysisData.players.map(player => (
                       <SelectItem key={player} value={player}>{player}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Round Selection */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Select Round</label>
+                <Select value={selectedRound} onValueChange={setSelectedRound}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all_rounds">All Rounds</SelectItem>
+                    {availableRounds.map(round => (
+                      <SelectItem key={round} value={`round_${round}`}>
+                        Round {round}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

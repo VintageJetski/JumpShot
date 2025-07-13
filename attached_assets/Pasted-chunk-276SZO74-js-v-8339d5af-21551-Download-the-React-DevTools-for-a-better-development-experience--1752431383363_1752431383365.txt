@@ -1,0 +1,59 @@
+chunk-276SZO74.js?v=8339d5af:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+TacticalMapAnalysis.tsx:1016 📊 DATA FILTERING: {selectedRound: 'round_4', totalPoints: 90840, uniqueRounds: Array(1)}
+TacticalMapAnalysis.tsx:1027 DEBUG ROUND FILTER - Round 4: {beforeFilter: 90840, afterFilter: 90840, matchingRounds: Array(1)}
+TacticalMapAnalysis.tsx:1052 DEBUG FILTERING - Final result: {finalPoints: 90840, sampleData: Array(3)}
+positional-analysis:1 Unchecked runtime.lastError: The message port closed before a response was received.
+positional-analysis:1 Unchecked runtime.lastError: The message port closed before a response was received.
+TacticalMapAnalysis.tsx:1016 📊 DATA FILTERING: {selectedRound: 'round_4', totalPoints: 90840, uniqueRounds: Array(1)}
+TacticalMapAnalysis.tsx:1027 DEBUG ROUND FILTER - Round 4: {beforeFilter: 90840, afterFilter: 90840, matchingRounds: Array(1)}
+TacticalMapAnalysis.tsx:1052 DEBUG FILTERING - Final result: {finalPoints: 90840, sampleData: Array(3)}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS ARCH: {dataPoints: 1711, playerNames: Array(2), zoneBounds: {…}, tPresence: 0, ctPresence: 1711, …}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS CT_SPAWN: {dataPoints: 3622, playerNames: Array(1), zoneBounds: {…}, tPresence: 0, ctPresence: 3622, …}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS A_SITE: {dataPoints: 1744, playerNames: Array(3), zoneBounds: {…}, tPresence: 0, ctPresence: 1744, …}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS PIT: {dataPoints: 984, playerNames: Array(2), zoneBounds: {…}, tPresence: 0, ctPresence: 984, …}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS LONG_HALL: {dataPoints: 9580, playerNames: Array(6), zoneBounds: {…}, tPresence: 6790, ctPresence: 2790, …}
+TacticalMapAnalysis.tsx:273 ⚔️ REAL COMBAT in LONG_HALL: {actualDeaths: 1, deathDetails: Array(1)}
+TacticalMapAnalysis.tsx:410 👁️ LURKER DETECTED: LONG_HALL - rain alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS CAR: {dataPoints: 135, playerNames: Array(3), zoneBounds: {…}, tPresence: 135, ctPresence: 0, …}
+TacticalMapAnalysis.tsx:410 👁️ LURKER DETECTED: CAR - frozen alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS APARTMENTS: {dataPoints: 740, playerNames: Array(2), zoneBounds: {…}, tPresence: 740, ctPresence: 0, …}
+TacticalMapAnalysis.tsx:410 👁️ LURKER DETECTED: APARTMENTS - ropz alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS SECOND_MID: {dataPoints: 13652, playerNames: Array(5), zoneBounds: {…}, tPresence: 10487, ctPresence: 3165, …}
+TacticalMapAnalysis.tsx:273 ⚔️ REAL COMBAT in SECOND_MID: {actualDeaths: 2, deathDetails: Array(2)}
+TacticalMapAnalysis.tsx:410 👁️ LURKER DETECTED: SECOND_MID - frozen alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS A_LONG: {dataPoints: 557, playerNames: Array(1), zoneBounds: {…}, tPresence: 0, ctPresence: 557, …}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS CONSTRUCTION: {dataPoints: 307, playerNames: Array(1), zoneBounds: {…}, tPresence: 307, ctPresence: 0, …}
+TacticalMapAnalysis.tsx:334 🚨 CONSTRUCTION ZONE ISSUE - ropz coordinates: {totalPoints: 307, actualCoordinates: Array(10), constructionZoneBounds: {…}, allZoneDefinitions: {…}, playerShouldBeInApartments: 'ropz should be lurking in APARTMENTS according to heatmap'}
+TacticalMapAnalysis.tsx:356 🔍 COORDINATE ZONE OVERLAP TEST: {testCoordinate: Array(2), matchingZones: Array(1), shouldBeInApartments: 'Based on heatmap visual'}
+TacticalMapAnalysis.tsx:371 🔧 ZONE BOUNDARY RECONSTRUCTION DATA: {ropzCoordinates: Array(20), currentConstructionBounds: {…}, currentApartmentsBounds: {…}, coordinateRange: {…}}
+TacticalMapAnalysis.tsx:379 📍 ACTUAL COORDINATES (first 5): (5) [Array(2), Array(2), Array(2), Array(2), Array(2)]
+TacticalMapAnalysis.tsx:380 📏 COORDINATE RANGE: {minX: -1199.6115, maxX: -800.41174, minY: -383.97668, maxY: -300.06995}
+TacticalMapAnalysis.tsx:381 🏗️ CONSTRUCTION BOUNDS: {minX: -1200, maxX: -800, minY: -600, maxY: -200}
+TacticalMapAnalysis.tsx:382 🏠 APARTMENTS BOUNDS: {minX: -800, maxX: -200, minY: -400, maxY: 200}
+TacticalMapAnalysis.tsx:410 👁️ LURKER DETECTED: CONSTRUCTION - ropz alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS GRILL: {dataPoints: 214, playerNames: Array(1), zoneBounds: {…}, tPresence: 214, ctPresence: 0, …}
+TacticalMapAnalysis.tsx:410 👁️ LURKER DETECTED: GRILL - ropz alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS WELL: {dataPoints: 2859, playerNames: Array(4), zoneBounds: {…}, tPresence: 42, ctPresence: 2817, …}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS BRIDGE: {dataPoints: 324, playerNames: Array(2), zoneBounds: {…}, tPresence: 0, ctPresence: 324, …}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS TERRACE: {dataPoints: 5493, playerNames: Array(3), zoneBounds: {…}, tPresence: 0, ctPresence: 5493, …}
+TacticalMapAnalysis.tsx:273 ⚔️ REAL COMBAT in TERRACE: {actualDeaths: 1, deathDetails: Array(1)}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS STAIRS: {dataPoints: 948, playerNames: Array(2), zoneBounds: {…}, tPresence: 0, ctPresence: 948, …}
+TacticalMapAnalysis.tsx:1016 📊 DATA FILTERING: {selectedRound: 'round_4', totalPoints: 90840, uniqueRounds: Array(1)}
+TacticalMapAnalysis.tsx:1027 DEBUG ROUND FILTER - Round 4: {beforeFilter: 90840, afterFilter: 90840, matchingRounds: Array(1)}
+TacticalMapAnalysis.tsx:1037 DEBUG PLAYER FILTER - Player ropz: {beforeFilter: 90840, afterFilter: 9084}
+TacticalMapAnalysis.tsx:1052 DEBUG FILTERING - Final result: {finalPoints: 9084, sampleData: Array(3)}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS LONG_HALL: {dataPoints: 1941, playerNames: Array(1), zoneBounds: {…}, tPresence: 1941, ctPresence: 0, …}
+TacticalMapAnalysis.tsx:410 👁️ LURKER DETECTED: LONG_HALL - ropz alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS APARTMENTS: {dataPoints: 135, playerNames: Array(1), zoneBounds: {…}, tPresence: 135, ctPresence: 0, …}
+TacticalMapAnalysis.tsx:410 👁️ LURKER DETECTED: APARTMENTS - ropz alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS CONSTRUCTION: {dataPoints: 307, playerNames: Array(1), zoneBounds: {…}, tPresence: 307, ctPresence: 0, …}
+TacticalMapAnalysis.tsx:334 🚨 CONSTRUCTION ZONE ISSUE - ropz coordinates: {totalPoints: 307, actualCoordinates: Array(10), constructionZoneBounds: {…}, allZoneDefinitions: {…}, playerShouldBeInApartments: 'ropz should be lurking in APARTMENTS according to heatmap'}
+TacticalMapAnalysis.tsx:356 🔍 COORDINATE ZONE OVERLAP TEST: {testCoordinate: Array(2), matchingZones: Array(1), shouldBeInApartments: 'Based on heatmap visual'}
+TacticalMapAnalysis.tsx:371 🔧 ZONE BOUNDARY RECONSTRUCTION DATA: {ropzCoordinates: Array(20), currentConstructionBounds: {…}, currentApartmentsBounds: {…}, coordinateRange: {…}}
+TacticalMapAnalysis.tsx:379 📍 ACTUAL COORDINATES (first 5): (5) [Array(2), Array(2), Array(2), Array(2), Array(2)]
+TacticalMapAnalysis.tsx:380 📏 COORDINATE RANGE: {minX: -1199.6115, maxX: -800.41174, minY: -383.97668, maxY: -300.06995}
+TacticalMapAnalysis.tsx:381 🏗️ CONSTRUCTION BOUNDS: {minX: -1200, maxX: -800, minY: -600, maxY: -200}
+TacticalMapAnalysis.tsx:382 🏠 APARTMENTS BOUNDS: {minX: -800, maxX: -200, minY: -400, maxY: 200}
+TacticalMapAnalysis.tsx:410 👁️ LURKER DETECTED: CONSTRUCTION - ropz alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS GRILL: {dataPoints: 214, playerNames: Array(1), zoneBounds: {…}, tPresence: 214, ctPresence: 0, …}
+TacticalMapAnalysis.tsx:410 👁️ LURKER DETECTED: GRILL - ropz alone 100.0% of time

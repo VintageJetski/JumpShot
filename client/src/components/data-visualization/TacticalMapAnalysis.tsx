@@ -700,8 +700,8 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
   const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Process data for analysis using accurate zone mapping (old version - will be replaced)
-  const oldAnalysisData = useMemo(() => {
+  // Process data for analysis using accurate zone mapping
+  const analysisData = useMemo(() => {
     if (!xyzData.length || mappedZones.size === 0) return null;
 
     const movementMetrics = calculateMovementMetrics(xyzData);
@@ -1370,27 +1370,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     loadMappedZones();
   }, []);
 
-  // Create analysis data from xyzData and mappedZones
-  const analysisData = useMemo(() => {
-    if (!xyzData || xyzData.length === 0 || mappedZones.size === 0) {
-      return null;
-    }
 
-    const zoneAnalytics = calculateZoneAnalytics(xyzData, mappedZones);
-    const ticks = [...new Set(xyzData.map(d => d.tick))].sort((a, b) => a - b);
-    
-    return {
-      zoneAnalytics,
-      totalDataPoints: xyzData.length,
-      uniquePlayers: new Set(xyzData.map(d => d.name)).size,
-      roundsCovered: new Set(xyzData.map(d => d.round_num)).size,
-      ticks,
-      tickRange: {
-        min: Math.min(...xyzData.map(d => d.tick)),
-        max: Math.max(...xyzData.map(d => d.tick))
-      }
-    };
-  }, [xyzData, mappedZones]);
 
 
 

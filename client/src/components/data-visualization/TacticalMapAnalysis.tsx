@@ -185,9 +185,19 @@ function getPlayerZone(x: number, y: number, mappedZones?: Map<string, {x: numbe
   // If no mapped zones provided, try to load from localStorage
   if (!mappedZones) {
     const saved = localStorage.getItem('infernoZoneMapping');
+    
     if (saved) {
-      const zonesObject = JSON.parse(saved);
-      mappedZones = new Map(Object.entries(zonesObject));
+      try {
+        const zonesObject = JSON.parse(saved);
+        mappedZones = new Map(Object.entries(zonesObject));
+        
+        // Log zone loading success
+        console.log('✅ ZONES LOADED FROM LOCALSTORAGE:', mappedZones.size, 'zones');
+      } catch (error) {
+        console.error('❌ ERROR PARSING ZONES FROM LOCALSTORAGE:', error);
+      }
+    } else {
+      console.log('⚠️ NO MANUAL ZONES FOUND - USING HARDCODED FALLBACK');
     }
   }
   
@@ -716,6 +726,20 @@ function generateEnhancedTacticalInsights(
 
 // Advanced Zone Analytics using accurate zone mapping
 function calculateAdvancedZoneAnalytics(data: XYZPlayerData[], mappedZones: Map<string, {x: number, y: number, w: number, h: number}>) {
+  // Always try to load manually mapped zones first
+  let actualMappedZones = mappedZones;
+  if (!actualMappedZones || actualMappedZones.size === 0) {
+    const saved = localStorage.getItem('infernoZoneMapping');
+    if (saved) {
+      try {
+        const zonesObject = JSON.parse(saved);
+        actualMappedZones = new Map(Object.entries(zonesObject));
+        console.log('🗺️ ZONE ANALYTICS - Loaded zones from localStorage:', actualMappedZones.size);
+      } catch (error) {
+        console.error('❌ ERROR LOADING ZONES:', error);
+      }
+    }
+  }
   const zoneAnalytics = new Map<string, {
     // Real-time occupation
     simultaneousPresence: number;
@@ -743,7 +767,7 @@ function calculateAdvancedZoneAnalytics(data: XYZPlayerData[], mappedZones: Map<
   }>();
 
   // Initialize analytics for all mapped zones
-  mappedZones.forEach((zone, zoneName) => {
+  actualMappedZones.forEach((zone, zoneName) => {
     zoneAnalytics.set(zoneName, {
       simultaneousPresence: 0,
       contestedMoments: 0,
@@ -784,7 +808,7 @@ function calculateAdvancedZoneAnalytics(data: XYZPlayerData[], mappedZones: Map<
                      roundTime < roundDuration * 0.75 ? 'mid' : 'late';
 
     // Check each zone for activity this tick
-    mappedZones.forEach((zoneRect, zoneName) => {
+    actualMappedZones.forEach((zoneRect, zoneName) => {
       const playersInZone = tickData.filter(player => 
         isPlayerInZone(player.X, player.Y, zoneRect)
       );
@@ -879,10 +903,23 @@ function isPlayerInZone(playerX: number, playerY: number, zoneRect: {x: number, 
   const canvasX = (pos.x / 100) * 800; // Canvas width
   const canvasY = (pos.y / 100) * 600; // Canvas height
   
-  return canvasX >= zoneRect.x && 
+  const isInZone = canvasX >= zoneRect.x && 
          canvasX <= zoneRect.x + zoneRect.w &&
          canvasY >= zoneRect.y && 
          canvasY <= zoneRect.y + zoneRect.h;
+  
+  // Debug logging for coordinate conversion
+  if (playerX === -1675.62 && Math.abs(playerY - 351.695) < 1) { // ropz's coordinates
+    console.log('🎯 ROPZ COORDINATE DEBUG:', {
+      worldCoords: { x: playerX, y: playerY },
+      mapPercent: pos,
+      canvasCoords: { x: canvasX, y: canvasY },
+      zoneRect,
+      isInZone
+    });
+  }
+  
+  return isInZone;
 }
 
 // Calculate tactical zone values for strategic decision making
@@ -1228,6 +1265,13 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     setDraggedZone(null);
     setResizingZone(null);
     setResizeHandle(null);
+    
+    // Auto-save zones after any modification
+    setTimeout(() => {
+      const zonesObject = Object.fromEntries(mappedZones);
+      localStorage.setItem('infernoZoneMapping', JSON.stringify(zonesObject));
+      console.log('✅ AUTO-SAVED', mappedZones.size, 'ZONES TO LOCALSTORAGE');
+    }, 100);
   };
 
   // Save mapped zones to localStorage
@@ -1240,10 +1284,24 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
   const loadMappedZones = () => {
     const saved = localStorage.getItem('infernoZoneMapping');
     if (saved) {
-      const zonesObject = JSON.parse(saved);
-      setMappedZones(new Map(Object.entries(zonesObject)));
+      try {
+        const zonesObject = JSON.parse(saved);
+        setMappedZones(new Map(Object.entries(zonesObject)));
+        console.log('✅ LOADED', Object.keys(zonesObject).length, 'ZONES FROM LOCALSTORAGE');
+      } catch (error) {
+        console.error('❌ ERROR LOADING ZONES:', error);
+      }
+    } else {
+      console.log('ℹ️ NO SAVED ZONES FOUND');
     }
   };
+
+  // Auto-load zones when Territory tab becomes active
+  useEffect(() => {
+    if (activeTab === 'territory') {
+      loadMappedZones();
+    }
+  }, [activeTab]);
 
   // Auto-play functionality
   useEffect(() => {

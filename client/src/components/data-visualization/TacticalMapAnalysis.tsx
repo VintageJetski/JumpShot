@@ -215,21 +215,16 @@ function getAuthenticTacticalEvents(zoneName: string, data: XYZPlayerData[]): Ar
     return zone === zoneName;
   });
 
-  // DEBUG: Log zone analysis
-  console.log(`DEBUG ZONE ${zoneName}:`, {
-    totalDataPoints: data.length,
-    zoneDataPoints: zoneData.length,
-    playerCount: new Set(zoneData.map(p => p.steamId)).size,
-    tickRange: zoneData.length > 0 ? {
-      min: Math.min(...zoneData.map(p => p.tick)),
-      max: Math.max(...zoneData.map(p => p.tick))
-    } : null,
-    healthEvents: zoneData.filter(p => p.health <= 0).length,
-    sides: {
-      tCount: zoneData.filter(p => p.side === 't').length,
-      ctCount: zoneData.filter(p => p.side === 'ct').length
-    }
-  });
+  // DEBUG: Only log zones with significant activity
+  if (zoneData.length > 50 || zoneData.filter(p => p.health <= 0).length > 0) {
+    console.log(`🔍 ZONE ANALYSIS ${zoneName}:`, {
+      dataPoints: zoneData.length,
+      players: new Set(zoneData.map(p => p.steamId)).size,
+      deaths: zoneData.filter(p => p.health <= 0).length,
+      tPresence: zoneData.filter(p => p.side === 't').length,
+      ctPresence: zoneData.filter(p => p.side === 'ct').length
+    });
+  }
 
   if (zoneData.length === 0) return events;
 
@@ -237,24 +232,18 @@ function getAuthenticTacticalEvents(zoneName: string, data: XYZPlayerData[]): Ar
   const deathEvents = zoneData.filter(point => point.health <= 0);
   const healthDropEvents = zoneData.filter(point => point.health < 100 && point.health > 0);
   
-  // DEBUG: Combat analysis
-  console.log(`DEBUG COMBAT ${zoneName}:`, {
-    deathEvents: deathEvents.length,
-    healthDropEvents: healthDropEvents.length,
-    deathDetails: deathEvents.map(p => ({
-      player: p.steamId,
-      side: p.side,
-      tick: p.tick,
-      health: p.health,
-      position: [p.X, p.Y]
-    })),
-    healthDropDetails: healthDropEvents.slice(0, 5).map(p => ({
-      player: p.steamId,
-      side: p.side,
-      tick: p.tick,
-      health: p.health
-    }))
-  });
+  // DEBUG: Only log significant combat events
+  if (deathEvents.length > 0) {
+    console.log(`⚔️ COMBAT in ${zoneName}:`, {
+      deaths: deathEvents.length,
+      deathDetails: deathEvents.map(p => ({
+        player: p.name || p.steamId,
+        side: p.side,
+        tick: p.tick,
+        health: p.health
+      }))
+    });
+  }
 
   if (deathEvents.length >= 1) {
     // Check if deaths from both sides occurred
@@ -335,13 +324,7 @@ function getAuthenticTacticalEvents(zoneName: string, data: XYZPlayerData[]): Ar
       
       // If alone for significant portion, it's lurking
       if (aloneCount > sampleTicks.length * 0.6) {
-        console.log(`DEBUG LURKER DETECTED in ${zoneName}:`, {
-          player: playerId,
-          totalPoints: playerPoints.length,
-          sampleSize: sampleTicks.length,
-          aloneCount,
-          alonePercentage: (aloneCount / sampleTicks.length * 100).toFixed(1)
-        });
+        console.log(`👁️ LURKER DETECTED: ${zoneName} - Player alone ${(aloneCount / sampleTicks.length * 100).toFixed(1)}% of time`);
         
         events.push({
           icon: '👁️',
@@ -946,19 +929,11 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     
     let filtered = xyzData;
     
-    // DEBUG: Initial data analysis
-    console.log('DEBUG FILTERING - Initial data:', {
-      totalPoints: xyzData.length,
+    // DEBUG: Focus on round filtering issue
+    console.log('📊 DATA FILTERING:', {
       selectedRound,
-      selectedPlayer,
-      activeTab,
-      currentTick,
-      uniqueRounds: [...new Set(xyzData.map(d => d.round_num))],
-      uniquePlayers: [...new Set(xyzData.map(d => d.name))],
-      tickRange: {
-        min: Math.min(...xyzData.map(d => d.tick)),
-        max: Math.max(...xyzData.map(d => d.tick))
-      }
+      totalPoints: xyzData.length,
+      uniqueRounds: [...new Set(xyzData.map(d => d.round_num))]
     });
     
     // Filter by selected round

@@ -215,17 +215,56 @@ function getAuthenticTacticalEvents(zoneName: string, data: XYZPlayerData[]): Ar
     return zone === zoneName;
   });
 
+  // DEBUG: Log zone analysis
+  console.log(`DEBUG ZONE ${zoneName}:`, {
+    totalDataPoints: data.length,
+    zoneDataPoints: zoneData.length,
+    playerCount: new Set(zoneData.map(p => p.steamId)).size,
+    tickRange: zoneData.length > 0 ? {
+      min: Math.min(...zoneData.map(p => p.tick)),
+      max: Math.max(...zoneData.map(p => p.tick))
+    } : null,
+    healthEvents: zoneData.filter(p => p.health <= 0).length,
+    sides: {
+      tCount: zoneData.filter(p => p.side === 't').length,
+      ctCount: zoneData.filter(p => p.side === 'ct').length
+    }
+  });
+
   if (zoneData.length === 0) return events;
 
-  // Analyze actual combat events (health drops)
-  const combatEvents = zoneData.filter(point => point.health < 100);
-  if (combatEvents.length >= 2) {
-    // Multiple players with health damage = combat zone
-    const tCombat = combatEvents.filter(p => p.side === 't').length;
-    const ctCombat = combatEvents.filter(p => p.side === 'ct').length;
+  // Analyze actual combat events (death events and health drops)
+  const deathEvents = zoneData.filter(point => point.health <= 0);
+  const healthDropEvents = zoneData.filter(point => point.health < 100 && point.health > 0);
+  
+  // DEBUG: Combat analysis
+  console.log(`DEBUG COMBAT ${zoneName}:`, {
+    deathEvents: deathEvents.length,
+    healthDropEvents: healthDropEvents.length,
+    deathDetails: deathEvents.map(p => ({
+      player: p.steamId,
+      side: p.side,
+      tick: p.tick,
+      health: p.health,
+      position: [p.X, p.Y]
+    })),
+    healthDropDetails: healthDropEvents.slice(0, 5).map(p => ({
+      player: p.steamId,
+      side: p.side,
+      tick: p.tick,
+      health: p.health
+    }))
+  });
+
+  if (deathEvents.length >= 1) {
+    // Check if deaths from both sides occurred
+    const tDeaths = deathEvents.filter(p => p.side === 't').length;
+    const ctDeaths = deathEvents.filter(p => p.side === 'ct').length;
     
-    if (tCombat > 0 && ctCombat > 0) {
-      // Real duel occurred
+    console.log(`DEBUG DEATH ANALYSIS ${zoneName}:`, { tDeaths, ctDeaths });
+    
+    if (tDeaths > 0 && ctDeaths > 0) {
+      // Real duel with casualties on both sides
       events.push({
         icon: '⚔️',
         color: 'rgba(255, 165, 0, 0.9)',
@@ -233,6 +272,15 @@ function getAuthenticTacticalEvents(zoneName: string, data: XYZPlayerData[]): Ar
         fontSize: 'bold 10px sans-serif',
         x: 10,
         y: 15
+      });
+    } else if (tDeaths > 0 || ctDeaths > 0) {
+      // One-sided engagement
+      events.push({
+        icon: '💥',
+        color: 'rgba(220, 38, 38, 0.8)',
+        size: 6,
+        x: 15,
+        y: 25
       });
     }
   }
@@ -252,6 +300,59 @@ function getAuthenticTacticalEvents(zoneName: string, data: XYZPlayerData[]): Ar
   // Analyze territory control patterns
   const tPresence = zoneData.filter(p => p.side === 't').length;
   const ctPresence = zoneData.filter(p => p.side === 'ct').length;
+  
+  // Analyze lurker patterns (T players alone in advanced zones)
+  const tPlayers = zoneData.filter(p => p.side === 't');
+  const uniqueTPlayers = [...new Set(tPlayers.map(p => p.steamId))];
+  
+  // For each T player in this zone, check if they're isolated from teammates
+  uniqueTPlayers.forEach(playerId => {
+    const playerPoints = tPlayers.filter(p => p.steamId === playerId);
+    if (playerPoints.length > 50) { // Significant presence duration
+      
+      // Check if player is alone by sampling ticks and checking teammate distances
+      const sampleTicks = playerPoints.filter((_, i) => i % 10 === 0); // Sample every 10th point
+      let aloneCount = 0;
+      
+      sampleTicks.forEach(point => {
+        // Find all teammates at same tick
+        const teammates = data.filter(d => 
+          d.tick === point.tick && 
+          d.side === 't' && 
+          d.steamId !== playerId
+        );
+        
+        // Calculate distances to teammates
+        const distances = teammates.map(mate => 
+          Math.sqrt(Math.pow(point.X - mate.X, 2) + Math.pow(point.Y - mate.Y, 2))
+        );
+        
+        // If no teammates within 500 units, player is isolated
+        if (distances.length === 0 || Math.min(...distances) > 500) {
+          aloneCount++;
+        }
+      });
+      
+      // If alone for significant portion, it's lurking
+      if (aloneCount > sampleTicks.length * 0.6) {
+        console.log(`DEBUG LURKER DETECTED in ${zoneName}:`, {
+          player: playerId,
+          totalPoints: playerPoints.length,
+          sampleSize: sampleTicks.length,
+          aloneCount,
+          alonePercentage: (aloneCount / sampleTicks.length * 100).toFixed(1)
+        });
+        
+        events.push({
+          icon: '👁️',
+          color: 'rgba(255, 193, 7, 0.9)',
+          size: 7,
+          x: 25,
+          y: 45
+        });
+      }
+    }
+  });
   
   // Only show control markers if there's significant presence disparity
   if (tPresence > ctPresence * 2 && tPresence > 10) {
@@ -845,19 +946,62 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     
     let filtered = xyzData;
     
+    // DEBUG: Initial data analysis
+    console.log('DEBUG FILTERING - Initial data:', {
+      totalPoints: xyzData.length,
+      selectedRound,
+      selectedPlayer,
+      activeTab,
+      currentTick,
+      uniqueRounds: [...new Set(xyzData.map(d => d.round_num))],
+      uniquePlayers: [...new Set(xyzData.map(d => d.name))],
+      tickRange: {
+        min: Math.min(...xyzData.map(d => d.tick)),
+        max: Math.max(...xyzData.map(d => d.tick))
+      }
+    });
+    
     // Filter by selected round
     if (selectedRound !== 'all_rounds') {
       const roundNum = parseInt(selectedRound.replace('round_', ''));
+      const beforeFilter = filtered.length;
       filtered = filtered.filter(d => d.round_num === roundNum);
+      console.log(`DEBUG ROUND FILTER - Round ${roundNum}:`, {
+        beforeFilter,
+        afterFilter: filtered.length,
+        matchingRounds: filtered.length > 0 ? [...new Set(filtered.map(d => d.round_num))] : []
+      });
     }
     
     if (selectedPlayer !== 'all') {
+      const beforeFilter = filtered.length;
       filtered = filtered.filter(d => d.name === selectedPlayer);
+      console.log(`DEBUG PLAYER FILTER - Player ${selectedPlayer}:`, {
+        beforeFilter,
+        afterFilter: filtered.length
+      });
     }
     
     if (activeTab === 'live' && currentTick > 0) {
+      const beforeFilter = filtered.length;
       filtered = filtered.filter(d => d.tick === currentTick);
+      console.log(`DEBUG TICK FILTER - Tick ${currentTick}:`, {
+        beforeFilter,
+        afterFilter: filtered.length
+      });
     }
+    
+    console.log('DEBUG FILTERING - Final result:', {
+      finalPoints: filtered.length,
+      sampleData: filtered.slice(0, 3).map(d => ({
+        player: d.name,
+        side: d.side,
+        round: d.round_num,
+        tick: d.tick,
+        health: d.health,
+        position: [d.X, d.Y]
+      }))
+    });
     
     return filtered;
   }, [xyzData, selectedPlayer, selectedRound, currentTick, activeTab]);

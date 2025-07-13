@@ -1389,7 +1389,8 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     }
   }, [mapImage, drawTacticalMap, mappedZones]);
 
-  if (!analysisData) {
+  // Allow Territory tab to render even without full analysisData
+  if (!analysisData && activeTab !== 'territory') {
     return (
       <Card>
         <CardHeader>
@@ -1417,7 +1418,10 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
             CS2 Inferno - Tactical Analysis
           </CardTitle>
           <CardDescription>
-            Analyzing {analysisData.totalDataPoints.toLocaleString()} authentic position records
+            {analysisData 
+              ? `Analyzing ${analysisData.totalDataPoints.toLocaleString()} authentic position records`
+              : "Loading tactical analysis data..."
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>

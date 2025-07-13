@@ -215,15 +215,16 @@ function getAuthenticTacticalEvents(zoneName: string, data: XYZPlayerData[]): Ar
     return zone === zoneName;
   });
 
-  // DEBUG: Only log zones with significant activity, with special focus on CONSTRUCTION
-  if (zoneData.length > 50 || zoneData.filter(p => p.health <= 0).length > 0 || zoneName === 'CONSTRUCTION') {
+  // DEBUG: Only log zones with significant activity, with special focus on CONSTRUCTION and APARTMENTS
+  if (zoneData.length > 50 || zoneData.filter(p => p.health <= 0).length > 0 || zoneName === 'CONSTRUCTION' || zoneName === 'APARTMENTS') {
     const uniquePlayers = [...new Set(zoneData.map(p => p.name || p.steamId))];
     console.log(`🔍 ZONE ANALYSIS ${zoneName}:`, {
       dataPoints: zoneData.length,
       playerNames: uniquePlayers,
       zoneBounds: INFERNO_MAP_CONFIG.zones[zoneName],
       tPresence: zoneData.filter(p => p.side === 't').length,
-      ctPresence: zoneData.filter(p => p.side === 'ct').length
+      ctPresence: zoneData.filter(p => p.side === 'ct').length,
+      sampleCoordinates: zoneData.slice(0, 3).map(p => [p.X, p.Y])
     });
   }
 
@@ -338,7 +339,24 @@ function getAuthenticTacticalEvents(zoneName: string, data: XYZPlayerData[]): Ar
             recalculatedZone: getPlayerZone(p.X, p.Y)
           })),
           constructionZoneBounds: INFERNO_MAP_CONFIG.zones.CONSTRUCTION,
+          allZoneDefinitions: INFERNO_MAP_CONFIG.zones,
           playerShouldBeInApartments: 'ropz should be lurking in APARTMENTS according to heatmap'
+        });
+        
+        // Test coordinate against all zones to see which ones claim these coordinates
+        const testCoord = playerPoints[0];
+        const zoneMatches = Object.keys(INFERNO_MAP_CONFIG.zones).filter(zoneName => {
+          const zone = INFERNO_MAP_CONFIG.zones[zoneName];
+          return testCoord.X >= zone.bounds.minX && 
+                 testCoord.X <= zone.bounds.maxX && 
+                 testCoord.Y >= zone.bounds.minY && 
+                 testCoord.Y <= zone.bounds.maxY;
+        });
+        
+        console.log(`🔍 COORDINATE ZONE OVERLAP TEST:`, {
+          testCoordinate: [testCoord.X, testCoord.Y],
+          matchingZones: zoneMatches,
+          shouldBeInApartments: 'Based on heatmap visual'
         });
       }
       

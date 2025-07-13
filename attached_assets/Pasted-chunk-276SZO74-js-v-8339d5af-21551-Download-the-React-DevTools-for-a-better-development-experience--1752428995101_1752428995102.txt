@@ -1,0 +1,30 @@
+chunk-276SZO74.js?v=8339d5af:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+TacticalMapAnalysis.tsx:975 📊 DATA FILTERING: {selectedRound: 'round_4', totalPoints: 90840, uniqueRounds: Array(1)}
+TacticalMapAnalysis.tsx:986 DEBUG ROUND FILTER - Round 4: {beforeFilter: 90840, afterFilter: 90840, matchingRounds: Array(1)}
+TacticalMapAnalysis.tsx:1011 DEBUG FILTERING - Final result: {finalPoints: 90840, sampleData: Array(3)}
+positional-analysis:1 Unchecked runtime.lastError: The message port closed before a response was received.
+positional-analysis:1 Unchecked runtime.lastError: The message port closed before a response was received.
+TacticalMapAnalysis.tsx:975 📊 DATA FILTERING: {selectedRound: 'round_4', totalPoints: 90840, uniqueRounds: Array(1)}
+TacticalMapAnalysis.tsx:986 DEBUG ROUND FILTER - Round 4: {beforeFilter: 90840, afterFilter: 90840, matchingRounds: Array(1)}
+TacticalMapAnalysis.tsx:1011 DEBUG FILTERING - Final result: {finalPoints: 90840, sampleData: Array(3)}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS ARCH: {dataPoints: 1711, playerNames: Array(2), zoneBounds: {…}, tPresence: 0, ctPresence: 1711}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS CT_SPAWN: {dataPoints: 3622, playerNames: Array(1), zoneBounds: {…}, tPresence: 0, ctPresence: 3622}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS A_SITE: {dataPoints: 1744, playerNames: Array(3), zoneBounds: {…}, tPresence: 0, ctPresence: 1744}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS PIT: {dataPoints: 984, playerNames: Array(2), zoneBounds: {…}, tPresence: 0, ctPresence: 984}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS LONG_HALL: {dataPoints: 9580, playerNames: Array(6), zoneBounds: {…}, tPresence: 6790, ctPresence: 2790}
+TacticalMapAnalysis.tsx:272 ⚔️ REAL COMBAT in LONG_HALL: {actualDeaths: 1, deathDetails: Array(1)}
+TacticalMapAnalysis.tsx:369 👁️ LURKER DETECTED: LONG_HALL - rain alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS CAR: {dataPoints: 135, playerNames: Array(3), zoneBounds: {…}, tPresence: 135, ctPresence: 0}
+TacticalMapAnalysis.tsx:369 👁️ LURKER DETECTED: CAR - frozen alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS APARTMENTS: {dataPoints: 1127, playerNames: Array(2), zoneBounds: {…}, tPresence: 0, ctPresence: 1127}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS SECOND_MID: {dataPoints: 13652, playerNames: Array(5), zoneBounds: {…}, tPresence: 10487, ctPresence: 3165}
+TacticalMapAnalysis.tsx:272 ⚔️ REAL COMBAT in SECOND_MID: {actualDeaths: 2, deathDetails: Array(2)}
+TacticalMapAnalysis.tsx:369 👁️ LURKER DETECTED: SECOND_MID - frozen alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS A_LONG: {dataPoints: 557, playerNames: Array(1), zoneBounds: {…}, tPresence: 0, ctPresence: 557}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS CONSTRUCTION: {dataPoints: 954, playerNames: Array(2), zoneBounds: {…}, tPresence: 954, ctPresence: 0}
+TacticalMapAnalysis.tsx:333 🔍 COORDINATE ANALYSIS ropz in CONSTRUCTION: {totalPoints: 954, sampleCoordinates: Array(5), zoneDefinition: {…}}
+TacticalMapAnalysis.tsx:369 👁️ LURKER DETECTED: CONSTRUCTION - ropz alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS WELL: {dataPoints: 2859, playerNames: Array(4), zoneBounds: {…}, tPresence: 42, ctPresence: 2817}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS BRIDGE: {dataPoints: 185, playerNames: Array(1), zoneBounds: {…}, tPresence: 0, ctPresence: 185}
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS TERRACE: {dataPoints: 5493, playerNames: Array(3), zoneBounds: {…}, tPresence: 0, ctPresence: 5493}
+TacticalMapAnalysis.tsx:272 ⚔️ REAL COMBAT in TERRACE: {actualDeaths: 1, deathDetails: Array(1)}

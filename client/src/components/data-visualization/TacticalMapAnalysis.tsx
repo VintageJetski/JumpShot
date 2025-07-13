@@ -329,15 +329,16 @@ function getAuthenticTacticalEvents(zoneName: string, data: XYZPlayerData[]): Ar
       
       // DEBUG: Show detailed coordinate analysis for specific players
       const playerName = playerPoints[0]?.name || 'Unknown';
-      if (playerName === 'ropz' || zoneName === 'CONSTRUCTION') {
-        console.log(`🔍 COORDINATE ANALYSIS ${playerName} in ${zoneName}:`, {
+      if (playerName === 'ropz' && zoneName === 'CONSTRUCTION') {
+        console.log(`🚨 CONSTRUCTION ZONE ISSUE - ropz coordinates:`, {
           totalPoints: playerPoints.length,
-          sampleCoordinates: playerPoints.slice(0, 5).map(p => ({
+          actualCoordinates: playerPoints.slice(0, 10).map(p => ({
             tick: p.tick,
             coordinates: [p.X, p.Y],
-            zone: getPlayerZone(p.X, p.Y)
+            recalculatedZone: getPlayerZone(p.X, p.Y)
           })),
-          zoneDefinition: INFERNO_MAP_CONFIG.zones[zoneName]
+          constructionZoneBounds: INFERNO_MAP_CONFIG.zones.CONSTRUCTION,
+          playerShouldBeInApartments: 'ropz should be lurking in APARTMENTS according to heatmap'
         });
       }
       

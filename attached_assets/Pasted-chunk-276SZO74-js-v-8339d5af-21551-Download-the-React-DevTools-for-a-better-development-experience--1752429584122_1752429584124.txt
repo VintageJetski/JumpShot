@@ -1,0 +1,39 @@
+chunk-276SZO74.js?v=8339d5af:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+TacticalMapAnalysis.tsx:976 📊 DATA FILTERING: Object
+TacticalMapAnalysis.tsx:987 DEBUG ROUND FILTER - Round 4: Object
+TacticalMapAnalysis.tsx:1012 DEBUG FILTERING - Final result: Object
+positional-analysis:1 Unchecked runtime.lastError: The message port closed before a response was received.
+positional-analysis:1 Unchecked runtime.lastError: The message port closed before a response was received.
+TacticalMapAnalysis.tsx:976 📊 DATA FILTERING: Object
+TacticalMapAnalysis.tsx:987 DEBUG ROUND FILTER - Round 4: Object
+TacticalMapAnalysis.tsx:1012 DEBUG FILTERING - Final result: Object
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS ARCH: Object
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS CT_SPAWN: Object
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS A_SITE: Object
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS PIT: Object
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS LONG_HALL: Object
+TacticalMapAnalysis.tsx:272 ⚔️ REAL COMBAT in LONG_HALL: Object
+TacticalMapAnalysis.tsx:370 👁️ LURKER DETECTED: LONG_HALL - rain alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS CAR: Object
+TacticalMapAnalysis.tsx:370 👁️ LURKER DETECTED: CAR - frozen alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS APARTMENTS: Object
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS SECOND_MID: Object
+TacticalMapAnalysis.tsx:272 ⚔️ REAL COMBAT in SECOND_MID: Object
+TacticalMapAnalysis.tsx:370 👁️ LURKER DETECTED: SECOND_MID - frozen alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS A_LONG: Object
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS CONSTRUCTION: Object
+TacticalMapAnalysis.tsx:333 🚨 CONSTRUCTION ZONE ISSUE - ropz coordinates: Object
+TacticalMapAnalysis.tsx:370 👁️ LURKER DETECTED: CONSTRUCTION - ropz alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS WELL: Object
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS BRIDGE: Object
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS TERRACE: Object
+TacticalMapAnalysis.tsx:272 ⚔️ REAL COMBAT in TERRACE: Object
+TacticalMapAnalysis.tsx:976 📊 DATA FILTERING: Object
+TacticalMapAnalysis.tsx:987 DEBUG ROUND FILTER - Round 4: Object
+TacticalMapAnalysis.tsx:997 DEBUG PLAYER FILTER - Player ropz: Object
+TacticalMapAnalysis.tsx:1012 DEBUG FILTERING - Final result: Object
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS LONG_HALL: Object
+TacticalMapAnalysis.tsx:370 👁️ LURKER DETECTED: LONG_HALL - ropz alone 100.0% of time
+TacticalMapAnalysis.tsx:221 🔍 ZONE ANALYSIS CONSTRUCTION: Object
+TacticalMapAnalysis.tsx:333 🚨 CONSTRUCTION ZONE ISSUE - ropz coordinates: ObjectactualCoordinates: (10) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]constructionZoneBounds: {bounds: {…}, color: '#8b5cf6', name: 'Construction', priority: 'high'}playerShouldBeInApartments: "ropz should be lurking in APARTMENTS according to heatmap"totalPoints: 349[[Prototype]]: Objectconstructor: ƒ Object()hasOwnProperty: ƒ hasOwnProperty()isPrototypeOf: ƒ isPrototypeOf()propertyIsEnumerable: ƒ propertyIsEnumerable()toLocaleString: ƒ toLocaleString()toString: ƒ toString()valueOf: ƒ valueOf()__defineGetter__: ƒ __defineGetter__()__defineSetter__: ƒ __defineSetter__()__lookupGetter__: ƒ __lookupGetter__()__lookupSetter__: ƒ __lookupSetter__()__proto__: (...)get __proto__: ƒ __proto__()set __proto__: ƒ __proto__()
+TacticalMapAnalysis.tsx:370 👁️ LURKER DETECTED: CONSTRUCTION - ropz alone 100.0% of time

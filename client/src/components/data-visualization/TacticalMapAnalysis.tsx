@@ -685,6 +685,7 @@ function calculateTacticalZoneValues(zoneAnalytics: Map<string, any>) {
 
 export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
   const [selectedPlayer, setSelectedPlayer] = useState<string>('all');
+  const [selectedRound, setSelectedRound] = useState<string>('4');
   const [currentTick, setCurrentTick] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
@@ -745,16 +746,24 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     
     let filtered = xyzData;
     
-    if (selectedPlayer !== 'all') {
+    // Player filtering applies to all tabs except territory (which shows all players)
+    if (selectedPlayer !== 'all' && activeTab !== 'territory') {
       filtered = filtered.filter(d => d.name === selectedPlayer);
     }
     
+    // Round filtering - for now only round 4 is available
+    if (selectedRound !== 'all' && selectedRound !== '4') {
+      // Future: filter by round when we have multi-round data
+      // filtered = filtered.filter(d => d.round === parseInt(selectedRound));
+    }
+    
+    // Tick filtering only for live tab
     if (activeTab === 'live' && currentTick > 0) {
       filtered = filtered.filter(d => d.tick === currentTick);
     }
     
     return filtered;
-  }, [xyzData, selectedPlayer, currentTick, activeTab]);
+  }, [xyzData, selectedPlayer, selectedRound, currentTick, activeTab]);
 
   // Active zones from reference map (removed unnecessary zones dumped in top-left)
   const zonesToMap = [
@@ -1144,8 +1153,8 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
       }
     }
 
-    // Draw player positions (skip if showing territory control or individual player trail in heatmap)
-    if (activeTab !== 'territory' && !(activeTab === 'heatmap' && selectedPlayer !== 'all') && filteredData.length > 0) {
+    // Draw player positions (skip individual player trail in heatmap, but always show positions for territory and other tabs)
+    if (!(activeTab === 'heatmap' && selectedPlayer !== 'all') && filteredData.length > 0) {
       filteredData.forEach((point, index) => {
         const pos = coordToMapPercent(point.X, point.Y);
         const x = (pos.x / 100) * canvas.width;
@@ -1382,6 +1391,20 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                     {analysisData.players.map(player => (
                       <SelectItem key={player} value={player}>{player}</SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Round Selection */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Select Round</label>
+                <Select value={selectedRound} onValueChange={setSelectedRound}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Rounds</SelectItem>
+                    <SelectItem value="4">Round 4</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -360,17 +360,26 @@ function getAuthenticTacticalEvents(zoneName: string, data: XYZPlayerData[]): Ar
         });
         
         // Extract actual coordinate values for zone boundary reconstruction
+        const actualCoords = playerPoints.slice(0, 20).map(p => [p.X, p.Y]);
+        const coordRange = {
+          minX: Math.min(...playerPoints.map(p => p.X)),
+          maxX: Math.max(...playerPoints.map(p => p.X)),
+          minY: Math.min(...playerPoints.map(p => p.Y)),
+          maxY: Math.max(...playerPoints.map(p => p.Y))
+        };
+        
         console.log(`🔧 ZONE BOUNDARY RECONSTRUCTION DATA:`, {
-          ropzCoordinates: playerPoints.slice(0, 20).map(p => [p.X, p.Y]),
+          ropzCoordinates: actualCoords,
           currentConstructionBounds: INFERNO_MAP_CONFIG.zones.CONSTRUCTION.bounds,
           currentApartmentsBounds: INFERNO_MAP_CONFIG.zones.APARTMENTS.bounds,
-          coordinateRange: {
-            minX: Math.min(...playerPoints.map(p => p.X)),
-            maxX: Math.max(...playerPoints.map(p => p.X)),
-            minY: Math.min(...playerPoints.map(p => p.Y)),
-            maxY: Math.max(...playerPoints.map(p => p.Y))
-          }
+          coordinateRange: coordRange
         });
+        
+        // Show the actual values for immediate debugging
+        console.log(`📍 ACTUAL COORDINATES (first 5):`, actualCoords.slice(0, 5));
+        console.log(`📏 COORDINATE RANGE:`, coordRange);
+        console.log(`🏗️ CONSTRUCTION BOUNDS:`, INFERNO_MAP_CONFIG.zones.CONSTRUCTION.bounds);
+        console.log(`🏠 APARTMENTS BOUNDS:`, INFERNO_MAP_CONFIG.zones.APARTMENTS.bounds);
       }
       
       // Check if player is alone by sampling ticks and checking teammate distances

@@ -995,14 +995,6 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
 
     // Draw manually mapped zones or mapping interface
     if (activeTab === 'territory') {
-      // If no zones are mapped yet, show basic map with message
-      if (mappedZones.size === 0) {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.font = '16px sans-serif';
-        ctx.fillText('Loading zone mapping data...', 10, 50);
-        return;
-      }
-      
       if (isMapping) {
         // Draw mapping interface - show all mapped zones
         mappedZones.forEach((zone, key) => {

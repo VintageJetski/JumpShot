@@ -205,6 +205,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Zone mapping endpoint
+  app.get('/api/zone-mapping', async (req: Request, res: Response) => {
+    try {
+      const fs = await import('fs').then(m => m.promises);
+      const { parse } = await import('csv-parse/sync');
+      const path = await import('path');
+      
+      const csvPath = path.join(process.cwd(), 'attached_assets', 'round_4_mapping_1751911522059.csv');
+      const fileContent = await fs.readFile(csvPath, 'utf-8');
+      const records = parse(fileContent, {
+        columns: true,
+        skip_empty_lines: true
+      });
+      
+      res.json(records);
+    } catch (error) {
+      console.error('Error loading zone mapping:', error);
+      res.status(500).json({ error: 'Failed to load zone mapping' });
+    }
+  });
+
   // XYZ Positional Data endpoints
   app.get('/api/xyz/raw', async (req: Request, res: Response) => {
     try {

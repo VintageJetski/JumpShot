@@ -918,12 +918,36 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     localStorage.setItem('infernoZoneMapping', JSON.stringify(zonesObject));
   };
 
-  // Load mapped zones from localStorage
-  const loadMappedZones = () => {
+  // Load mapped zones from localStorage or CSV
+  const loadMappedZones = async () => {
+    // First try localStorage
     const saved = localStorage.getItem('infernoZoneMapping');
     if (saved) {
       const zonesObject = JSON.parse(saved);
       setMappedZones(new Map(Object.entries(zonesObject)));
+      return;
+    }
+    
+    // If no saved zones, load from CSV
+    try {
+      const response = await fetch('/api/zone-mapping');
+      if (response.ok) {
+        const csvZones = await response.json();
+        if (csvZones.length > 0) {
+          const zonesMap = new Map();
+          csvZones.forEach((zone: any) => {
+            zonesMap.set(zone.zone_name, {
+              x: parseFloat(zone.x) || 0,
+              y: parseFloat(zone.y) || 0,
+              w: parseFloat(zone.width) || 50,
+              h: parseFloat(zone.height) || 50
+            });
+          });
+          setMappedZones(zonesMap);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load zones from CSV:', error);
     }
   };
 
@@ -955,6 +979,14 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
 
     // Draw manually mapped zones or mapping interface
     if (activeTab === 'territory') {
+      // If no zones are mapped yet, show basic map with message
+      if (mappedZones.size === 0) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.font = '16px sans-serif';
+        ctx.fillText('Loading zone mapping data...', 10, 50);
+        return;
+      }
+      
       if (isMapping) {
         // Draw mapping interface - show all mapped zones
         mappedZones.forEach((zone, key) => {
@@ -1345,7 +1377,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     }
   }, [mapImage, drawTacticalMap, mappedZones]);
 
-  if (!analysisData) {
+  if (!analysisData && activeTab !== 'territory') {
     return (
       <Card>
         <CardHeader>
@@ -1388,7 +1420,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Players</SelectItem>
-                    {analysisData.players.map(player => (
+                    {(analysisData?.players || []).map(player => (
                       <SelectItem key={player} value={player}>{player}</SelectItem>
                     ))}
                   </SelectContent>

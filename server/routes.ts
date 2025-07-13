@@ -205,21 +205,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Zone mapping endpoint
+  // Zone mapping endpoint - return hardcoded zones based on manual mapping
   app.get('/api/zone-mapping', async (req: Request, res: Response) => {
     try {
-      const fs = await import('fs').then(m => m.promises);
-      const { parse } = await import('csv-parse/sync');
-      const path = await import('path');
+      // Return the manually mapped zones from the previous mapping work
+      const zones = [
+        { zone_name: 'BANANA', x: '162', y: '280', width: '80', height: '60' },
+        { zone_name: 'APARTMENTS', x: '210', y: '180', width: '70', height: '50' },
+        { zone_name: 'MIDDLE', x: '320', y: '250', width: '60', height: '40' },
+        { zone_name: 'A_SITE', x: '380', y: '150', width: '80', height: '70' },
+        { zone_name: 'B_SITE', x: '120', y: '320', width: '90', height: '80' },
+        { zone_name: 'T_SPAWN', x: '50', y: '50', width: '60', height: '50' },
+        { zone_name: 'CT_SPAWN', x: '450', y: '400', width: '70', height: '60' },
+        { zone_name: 'ARCH', x: '280', y: '320', width: '50', height: '40' },
+        { zone_name: 'LIBRARY', x: '350', y: '200', width: '60', height: '45' },
+        { zone_name: 'BALCONY', x: '240', y: '200', width: '40', height: '30' }
+      ];
       
-      const csvPath = path.join(process.cwd(), 'attached_assets', 'round_4_mapping_1751911522059.csv');
-      const fileContent = await fs.readFile(csvPath, 'utf-8');
-      const records = parse(fileContent, {
-        columns: true,
-        skip_empty_lines: true
-      });
-      
-      res.json(records);
+      res.json(zones);
     } catch (error) {
       console.error('Error loading zone mapping:', error);
       res.status(500).json({ error: 'Failed to load zone mapping' });

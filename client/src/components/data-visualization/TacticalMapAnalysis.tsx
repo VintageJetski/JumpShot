@@ -928,7 +928,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
       return;
     }
     
-    // If no saved zones, load from CSV
+    // If no saved zones, load default zones or from API
     try {
       const response = await fetch('/api/zone-mapping');
       if (response.ok) {
@@ -944,11 +944,27 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
             });
           });
           setMappedZones(zonesMap);
+          return;
         }
       }
     } catch (error) {
-      console.error('Failed to load zones from CSV:', error);
+      console.error('Failed to load zones from API:', error);
     }
+    
+    // Fall back to default zones if API fails
+    const defaultZones = new Map([
+      ['BANANA', { x: 162, y: 280, w: 80, h: 60 }],
+      ['APARTMENTS', { x: 210, y: 180, w: 70, h: 50 }],
+      ['MIDDLE', { x: 320, y: 250, w: 60, h: 40 }],
+      ['A_SITE', { x: 380, y: 150, w: 80, h: 70 }],
+      ['B_SITE', { x: 120, y: 320, w: 90, h: 80 }],
+      ['T_SPAWN', { x: 50, y: 50, w: 60, h: 50 }],
+      ['CT_SPAWN', { x: 450, y: 400, w: 70, h: 60 }],
+      ['ARCH', { x: 280, y: 320, w: 50, h: 40 }],
+      ['LIBRARY', { x: 350, y: 200, w: 60, h: 45 }],
+      ['BALCONY', { x: 240, y: 200, w: 40, h: 30 }]
+    ]);
+    setMappedZones(defaultZones);
   };
 
   // Auto-play functionality

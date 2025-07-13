@@ -228,29 +228,56 @@ function getAuthenticTacticalEvents(zoneName: string, data: XYZPlayerData[]): Ar
 
   if (zoneData.length === 0) return events;
 
-  // Analyze actual combat events (death events and health drops)
-  const deathEvents = zoneData.filter(point => point.health <= 0);
-  const healthDropEvents = zoneData.filter(point => point.health < 100 && point.health > 0);
+  // Analyze actual combat events - focus on health transitions, not persistent health=0
+  // Group by player and look for health drops indicating actual combat
+  const playerHealthMap = new Map<string, Array<{tick: number, health: number}>>();
   
-  // DEBUG: Only log significant combat events
-  if (deathEvents.length > 0) {
-    console.log(`⚔️ COMBAT in ${zoneName}:`, {
-      deaths: deathEvents.length,
-      deathDetails: deathEvents.map(p => ({
-        player: p.name || p.steamId,
-        side: p.side,
-        tick: p.tick,
-        health: p.health
-      }))
+  zoneData.forEach(point => {
+    const key = point.steamId || point.name;
+    if (!playerHealthMap.has(key)) {
+      playerHealthMap.set(key, []);
+    }
+    playerHealthMap.get(key)!.push({tick: point.tick, health: point.health});
+  });
+
+  // Detect actual death events (health drops to 0 from >0)
+  const actualDeathEvents: Array<{player: string, side: string, tick: number}> = [];
+  
+  playerHealthMap.forEach((healthHistory, player) => {
+    // Sort by tick to analyze sequence
+    const sorted = healthHistory.sort((a, b) => a.tick - b.tick);
+    
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = sorted[i-1];
+      const curr = sorted[i];
+      
+      // Death occurred if health dropped from >0 to 0
+      if (prev.health > 0 && curr.health === 0) {
+        const playerData = zoneData.find(p => (p.steamId || p.name) === player);
+        if (playerData) {
+          actualDeathEvents.push({
+            player,
+            side: playerData.side,
+            tick: curr.tick
+          });
+        }
+        break; // Only count first death per player
+      }
+    }
+  });
+
+  // DEBUG: Only log real death events
+  if (actualDeathEvents.length > 0) {
+    console.log(`⚔️ REAL COMBAT in ${zoneName}:`, {
+      actualDeaths: actualDeathEvents.length,
+      deathDetails: actualDeathEvents
     });
   }
 
-  if (deathEvents.length >= 1) {
+  if (actualDeathEvents.length >= 1) {
     // Check if deaths from both sides occurred
-    const tDeaths = deathEvents.filter(p => p.side === 't').length;
-    const ctDeaths = deathEvents.filter(p => p.side === 'ct').length;
-    
-    console.log(`DEBUG DEATH ANALYSIS ${zoneName}:`, { tDeaths, ctDeaths });
+    const tDeaths = actualDeathEvents.filter(d => d.side === 't').length;
+    const ctDeaths = actualDeathEvents.filter(d => d.side === 'ct').length;
     
     if (tDeaths > 0 && ctDeaths > 0) {
       // Real duel with casualties on both sides

@@ -1,0 +1,28 @@
+chunk-276SZO74.js?v=8339d5af:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+TacticalMapAnalysis.tsx:933 📊 DATA FILTERING: {selectedRound: 'round_4', totalPoints: 90840, uniqueRounds: Array(1)}selectedRound: "round_4"totalPoints: 90840uniqueRounds: Array(1)0: 4length: 1[[Prototype]]: Array(0)at: ƒ at()concat: ƒ concat()constructor: ƒ Array()copyWithin: ƒ copyWithin()entries: ƒ entries()every: ƒ every()fill: ƒ fill()filter: ƒ filter()find: ƒ find()findIndex: ƒ findIndex()findLast: ƒ findLast()findLastIndex: ƒ findLastIndex()flat: ƒ flat()flatMap: ƒ flatMap()forEach: ƒ forEach()includes: ƒ includes()indexOf: ƒ indexOf()join: ƒ join()keys: ƒ keys()lastIndexOf: ƒ lastIndexOf()length: 0map: ƒ map()pop: ƒ pop()push: ƒ push()reduce: ƒ reduce()reduceRight: ƒ reduceRight()reverse: ƒ reverse()shift: ƒ shift()slice: ƒ slice()some: ƒ some()sort: ƒ sort()splice: ƒ splice()toLocaleString: ƒ toLocaleString()toReversed: ƒ toReversed()toSorted: ƒ toSorted()toSpliced: ƒ toSpliced()toString: ƒ toString()unshift: ƒ unshift()values: ƒ values()with: ƒ with()Symbol(Symbol.iterator): ƒ values()Symbol(Symbol.unscopables): {at: true, copyWithin: true, entries: true, fill: true, find: true, …}[[Prototype]]: Objectconstructor: ƒ Object()hasOwnProperty: ƒ hasOwnProperty()isPrototypeOf: ƒ isPrototypeOf()propertyIsEnumerable: ƒ propertyIsEnumerable()toLocaleString: ƒ toLocaleString()toString: ƒ toString()valueOf: ƒ valueOf()__defineGetter__: ƒ __defineGetter__()__defineSetter__: ƒ __defineSetter__()__lookupGetter__: ƒ __lookupGetter__()__lookupSetter__: ƒ __lookupSetter__()__proto__: (...)get __proto__: ƒ __proto__()set __proto__: ƒ __proto__()[[Prototype]]: Objectconstructor: ƒ Object()hasOwnProperty: ƒ hasOwnProperty()isPrototypeOf: ƒ isPrototypeOf()propertyIsEnumerable: ƒ propertyIsEnumerable()toLocaleString: ƒ toLocaleString()toString: ƒ toString()valueOf: ƒ valueOf()__defineGetter__: ƒ __defineGetter__()__defineSetter__: ƒ __defineSetter__()__lookupGetter__: ƒ __lookupGetter__()__lookupSetter__: ƒ __lookupSetter__()__proto__: (...)get __proto__: ƒ __proto__()set __proto__: ƒ __proto__()
+TacticalMapAnalysis.tsx:944 DEBUG ROUND FILTER - Round 4: {beforeFilter: 90840, afterFilter: 90840, matchingRounds: Array(1)}
+TacticalMapAnalysis.tsx:969 DEBUG FILTERING - Final result: {finalPoints: 90840, sampleData: Array(3)}
+positional-analysis:1 Unchecked runtime.lastError: The message port closed before a response was received.
+positional-analysis:1 Unchecked runtime.lastError: The message port closed before a response was received.
+TacticalMapAnalysis.tsx:933 📊 DATA FILTERING: {selectedRound: 'round_4', totalPoints: 90840, uniqueRounds: Array(1)}
+TacticalMapAnalysis.tsx:944 DEBUG ROUND FILTER - Round 4: {beforeFilter: 90840, afterFilter: 90840, matchingRounds: Array(1)}
+TacticalMapAnalysis.tsx:954 DEBUG PLAYER FILTER - Player ropz: {beforeFilter: 90840, afterFilter: 9084}
+TacticalMapAnalysis.tsx:969 DEBUG FILTERING - Final result: {finalPoints: 9084, sampleData: Array(3)}
+TacticalMapAnalysis.tsx:933 📊 DATA FILTERING: {selectedRound: 'round_4', totalPoints: 90840, uniqueRounds: Array(1)}
+TacticalMapAnalysis.tsx:944 DEBUG ROUND FILTER - Round 4: {beforeFilter: 90840, afterFilter: 90840, matchingRounds: Array(1)}
+TacticalMapAnalysis.tsx:954 DEBUG PLAYER FILTER - Player ropz: {beforeFilter: 90840, afterFilter: 9084}
+TacticalMapAnalysis.tsx:969 DEBUG FILTERING - Final result: {finalPoints: 9084, sampleData: Array(3)}
+TacticalMapAnalysis.tsx:220 🔍 ZONE ANALYSIS LONG_HALL: {dataPoints: 1941, players: 1, deaths: 0, tPresence: 1941, ctPresence: 0}
+TacticalMapAnalysis.tsx:327 👁️ LURKER DETECTED: LONG_HALL - Player alone 100.0% of time
+TacticalMapAnalysis.tsx:220 🔍 ZONE ANALYSIS CONSTRUCTION: {dataPoints: 349, players: 1, deaths: 0, tPresence: 349, ctPresence: 0}
+TacticalMapAnalysis.tsx:327 👁️ LURKER DETECTED: CONSTRUCTION - Player alone 100.0% of time
+TacticalMapAnalysis.tsx:933 📊 DATA FILTERING: {selectedRound: 'round_4', totalPoints: 90840, uniqueRounds: Array(1)}
+TacticalMapAnalysis.tsx:944 DEBUG ROUND FILTER - Round 4: {beforeFilter: 90840, afterFilter: 90840, matchingRounds: Array(1)}
+TacticalMapAnalysis.tsx:954 DEBUG PLAYER FILTER - Player rain: {beforeFilter: 90840, afterFilter: 9084}
+TacticalMapAnalysis.tsx:969 DEBUG FILTERING - Final result: {finalPoints: 9084, sampleData: Array(3)}
+TacticalMapAnalysis.tsx:220 🔍 ZONE ANALYSIS LONG_HALL: {dataPoints: 4641, players: 1, deaths: 4049, tPresence: 4641, ctPresence: 0}
+TacticalMapAnalysis.tsx:237 ⚔️ COMBAT in LONG_HALL: {deaths: 4049, deathDetails: Array(4049)}
+TacticalMapAnalysis.tsx:253 DEBUG DEATH ANALYSIS LONG_HALL: {tDeaths: 4049, ctDeaths: 0}
+TacticalMapAnalysis.tsx:327 👁️ LURKER DETECTED: LONG_HALL - Player alone 100.0% of time
+TacticalMapAnalysis.tsx:220 🔍 ZONE ANALYSIS CONSTRUCTION: {dataPoints: 605, players: 1, deaths: 0, tPresence: 605, ctPresence: 0}
+TacticalMapAnalysis.tsx:327 👁️ LURKER DETECTED: CONSTRUCTION - Player alone 100.0% of time

@@ -685,7 +685,6 @@ function calculateTacticalZoneValues(zoneAnalytics: Map<string, any>) {
 
 export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
   const [selectedPlayer, setSelectedPlayer] = useState<string>('all');
-  const [selectedRound, setSelectedRound] = useState<string>('4');
   const [currentTick, setCurrentTick] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
@@ -746,24 +745,16 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     
     let filtered = xyzData;
     
-    // Player filtering applies to all tabs except territory (which shows all players)
-    if (selectedPlayer !== 'all' && activeTab !== 'territory') {
+    if (selectedPlayer !== 'all') {
       filtered = filtered.filter(d => d.name === selectedPlayer);
     }
     
-    // Round filtering - for now only round 4 is available
-    if (selectedRound !== 'all' && selectedRound !== '4') {
-      // Future: filter by round when we have multi-round data
-      // filtered = filtered.filter(d => d.round === parseInt(selectedRound));
-    }
-    
-    // Tick filtering only for live tab
     if (activeTab === 'live' && currentTick > 0) {
       filtered = filtered.filter(d => d.tick === currentTick);
     }
     
     return filtered;
-  }, [xyzData, selectedPlayer, selectedRound, currentTick, activeTab]);
+  }, [xyzData, selectedPlayer, currentTick, activeTab]);
 
   // Active zones from reference map (removed unnecessary zones dumped in top-left)
   const zonesToMap = [
@@ -918,58 +909,18 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     localStorage.setItem('infernoZoneMapping', JSON.stringify(zonesObject));
   };
 
-  // Load mapped zones from localStorage or CSV
-  const loadMappedZones = async () => {
-    // First try localStorage
+  // Load mapped zones from localStorage
+  const loadMappedZones = () => {
     const saved = localStorage.getItem('infernoZoneMapping');
     if (saved) {
       const zonesObject = JSON.parse(saved);
       setMappedZones(new Map(Object.entries(zonesObject)));
-      return;
     }
-    
-    // If no saved zones, load default zones or from API
-    try {
-      const response = await fetch('/api/zone-mapping');
-      if (response.ok) {
-        const csvZones = await response.json();
-        if (csvZones.length > 0) {
-          const zonesMap = new Map();
-          csvZones.forEach((zone: any) => {
-            zonesMap.set(zone.zone_name, {
-              x: parseFloat(zone.x) || 0,
-              y: parseFloat(zone.y) || 0,
-              w: parseFloat(zone.width) || 50,
-              h: parseFloat(zone.height) || 50
-            });
-          });
-          setMappedZones(zonesMap);
-          return;
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load zones from API:', error);
-    }
-    
-    // Fall back to default zones if API fails
-    const defaultZones = new Map([
-      ['BANANA', { x: 162, y: 280, w: 80, h: 60 }],
-      ['APARTMENTS', { x: 210, y: 180, w: 70, h: 50 }],
-      ['MIDDLE', { x: 320, y: 250, w: 60, h: 40 }],
-      ['A_SITE', { x: 380, y: 150, w: 80, h: 70 }],
-      ['B_SITE', { x: 120, y: 320, w: 90, h: 80 }],
-      ['T_SPAWN', { x: 50, y: 50, w: 60, h: 50 }],
-      ['CT_SPAWN', { x: 450, y: 400, w: 70, h: 60 }],
-      ['ARCH', { x: 280, y: 320, w: 50, h: 40 }],
-      ['LIBRARY', { x: 350, y: 200, w: 60, h: 45 }],
-      ['BALCONY', { x: 240, y: 200, w: 40, h: 30 }]
-    ]);
-    setMappedZones(defaultZones);
   };
 
   // Auto-play functionality
   useEffect(() => {
-    if (!isPlaying || !analysisData || !analysisData.ticks) return;
+    if (!isPlaying || !analysisData) return;
 
     const interval = setInterval(() => {
       setCurrentTick(prev => {
@@ -1193,8 +1144,8 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
       }
     }
 
-    // Draw player positions (skip individual player trail in heatmap, but always show positions for territory and other tabs)
-    if (!(activeTab === 'heatmap' && selectedPlayer !== 'all') && filteredData.length > 0) {
+    // Draw player positions (skip if showing territory control or individual player trail in heatmap)
+    if (activeTab !== 'territory' && !(activeTab === 'heatmap' && selectedPlayer !== 'all') && filteredData.length > 0) {
       filteredData.forEach((point, index) => {
         const pos = coordToMapPercent(point.X, point.Y);
         const x = (pos.x / 100) * canvas.width;
@@ -1370,10 +1321,6 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     loadMappedZones();
   }, []);
 
-
-
-
-
   // Load map image and draw
   useEffect(() => {
     const img = new Image();
@@ -1389,8 +1336,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     }
   }, [mapImage, drawTacticalMap, mappedZones]);
 
-  // Allow Territory tab to render even without full analysisData
-  if (!analysisData && activeTab !== 'territory') {
+  if (!analysisData) {
     return (
       <Card>
         <CardHeader>
@@ -1418,10 +1364,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
             CS2 Inferno - Tactical Analysis
           </CardTitle>
           <CardDescription>
-            {analysisData 
-              ? `Analyzing ${analysisData.totalDataPoints.toLocaleString()} authentic position records`
-              : "Loading tactical analysis data..."
-            }
+            Analyzing {analysisData.totalDataPoints.toLocaleString()} authentic position records
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -1436,23 +1379,9 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Players</SelectItem>
-                    {(analysisData?.players || []).map(player => (
+                    {analysisData.players.map(player => (
                       <SelectItem key={player} value={player}>{player}</SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Round Selection */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Select Round</label>
-                <Select value={selectedRound} onValueChange={setSelectedRound}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Rounds</SelectItem>
-                    <SelectItem value="4">Round 4</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

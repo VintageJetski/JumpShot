@@ -358,6 +358,19 @@ function getAuthenticTacticalEvents(zoneName: string, data: XYZPlayerData[]): Ar
           matchingZones: zoneMatches,
           shouldBeInApartments: 'Based on heatmap visual'
         });
+        
+        // Extract actual coordinate values for zone boundary reconstruction
+        console.log(`🔧 ZONE BOUNDARY RECONSTRUCTION DATA:`, {
+          ropzCoordinates: playerPoints.slice(0, 20).map(p => [p.X, p.Y]),
+          currentConstructionBounds: INFERNO_MAP_CONFIG.zones.CONSTRUCTION.bounds,
+          currentApartmentsBounds: INFERNO_MAP_CONFIG.zones.APARTMENTS.bounds,
+          coordinateRange: {
+            minX: Math.min(...playerPoints.map(p => p.X)),
+            maxX: Math.max(...playerPoints.map(p => p.X)),
+            minY: Math.min(...playerPoints.map(p => p.Y)),
+            maxY: Math.max(...playerPoints.map(p => p.Y))
+          }
+        });
       }
       
       // Check if player is alone by sampling ticks and checking teammate distances

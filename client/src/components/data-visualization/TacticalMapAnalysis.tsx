@@ -215,12 +215,13 @@ function getAuthenticTacticalEvents(zoneName: string, data: XYZPlayerData[]): Ar
     return zone === zoneName;
   });
 
-  // DEBUG: Only log zones with significant activity
-  if (zoneData.length > 50 || zoneData.filter(p => p.health <= 0).length > 0) {
+  // DEBUG: Only log zones with significant activity, with special focus on CONSTRUCTION
+  if (zoneData.length > 50 || zoneData.filter(p => p.health <= 0).length > 0 || zoneName === 'CONSTRUCTION') {
+    const uniquePlayers = [...new Set(zoneData.map(p => p.name || p.steamId))];
     console.log(`🔍 ZONE ANALYSIS ${zoneName}:`, {
       dataPoints: zoneData.length,
-      players: new Set(zoneData.map(p => p.steamId)).size,
-      deaths: zoneData.filter(p => p.health <= 0).length,
+      playerNames: uniquePlayers,
+      zoneBounds: INFERNO_MAP_CONFIG.zones[zoneName],
       tPresence: zoneData.filter(p => p.side === 't').length,
       ctPresence: zoneData.filter(p => p.side === 'ct').length
     });
@@ -326,6 +327,20 @@ function getAuthenticTacticalEvents(zoneName: string, data: XYZPlayerData[]): Ar
     const playerPoints = tPlayers.filter(p => p.steamId === playerId);
     if (playerPoints.length > 50) { // Significant presence duration
       
+      // DEBUG: Show detailed coordinate analysis for specific players
+      const playerName = playerPoints[0]?.name || 'Unknown';
+      if (playerName === 'ropz' || zoneName === 'CONSTRUCTION') {
+        console.log(`🔍 COORDINATE ANALYSIS ${playerName} in ${zoneName}:`, {
+          totalPoints: playerPoints.length,
+          sampleCoordinates: playerPoints.slice(0, 5).map(p => ({
+            tick: p.tick,
+            coordinates: [p.X, p.Y],
+            zone: getPlayerZone(p.X, p.Y)
+          })),
+          zoneDefinition: INFERNO_MAP_CONFIG.zones[zoneName]
+        });
+      }
+      
       // Check if player is alone by sampling ticks and checking teammate distances
       const sampleTicks = playerPoints.filter((_, i) => i % 10 === 0); // Sample every 10th point
       let aloneCount = 0;
@@ -351,7 +366,7 @@ function getAuthenticTacticalEvents(zoneName: string, data: XYZPlayerData[]): Ar
       
       // If alone for significant portion, it's lurking
       if (aloneCount > sampleTicks.length * 0.6) {
-        console.log(`👁️ LURKER DETECTED: ${zoneName} - Player alone ${(aloneCount / sampleTicks.length * 100).toFixed(1)}% of time`);
+        console.log(`👁️ LURKER DETECTED: ${zoneName} - ${playerName} alone ${(aloneCount / sampleTicks.length * 100).toFixed(1)}% of time`);
         
         events.push({
           icon: '👁️',

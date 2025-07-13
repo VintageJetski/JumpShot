@@ -180,8 +180,27 @@ function coordToMapPercent(x: number, y: number): { x: number, y: number } {
   };
 }
 
-// Determine which zone a player is in
-function getPlayerZone(x: number, y: number): string {
+// Determine which zone a player is in using manually mapped zones
+function getPlayerZone(x: number, y: number, mappedZones?: Map<string, {x: number, y: number, w: number, h: number}>): string {
+  // If no mapped zones provided, try to load from localStorage
+  if (!mappedZones) {
+    const saved = localStorage.getItem('infernoZoneMapping');
+    if (saved) {
+      const zonesObject = JSON.parse(saved);
+      mappedZones = new Map(Object.entries(zonesObject));
+    }
+  }
+  
+  // Use manually mapped zones if available
+  if (mappedZones && mappedZones.size > 0) {
+    for (const [zoneKey, zoneRect] of mappedZones) {
+      if (isPlayerInZone(x, y, zoneRect)) {
+        return zoneKey;
+      }
+    }
+  }
+  
+  // Fallback to hardcoded zones only if no manual mapping exists
   for (const [zoneKey, zone] of Object.entries(INFERNO_MAP_CONFIG.zones)) {
     if (x >= zone.bounds.minX && x <= zone.bounds.maxX && 
         y >= zone.bounds.minY && y <= zone.bounds.maxY) {
@@ -209,7 +228,7 @@ function getAuthenticTacticalEvents(zoneName: string, data: XYZPlayerData[]): Ar
     y?: number;
   }> = [];
 
-  // Filter data for this zone
+  // Filter data for this zone using manually mapped zones
   const zoneData = data.filter(point => {
     const zone = getPlayerZone(point.X, point.Y);
     return zone === zoneName;

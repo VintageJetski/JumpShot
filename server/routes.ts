@@ -35,11 +35,9 @@ async function initializeDataIfNeeded() {
         
         console.log(`Loaded ${rawXYZData.length} XYZ position records`);
         
-        // Store raw XYZ data in storage and process metrics
+        // Store raw XYZ data in storage (skip heavy processing for now)
         await storage.setXYZData(rawXYZData);
-        
-        // Store empty metrics to unblock the API - frontend handles tactical analysis
-        await storage.setPositionalMetrics([]);
+        await storage.setPositionalMetrics([]); // Empty for now to unblock the API
         
         console.log(`Stored ${rawXYZData.length} XYZ records for API access`);
       } catch (error) {

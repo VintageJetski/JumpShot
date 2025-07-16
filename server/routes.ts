@@ -38,13 +38,10 @@ async function initializeDataIfNeeded() {
         // Store raw XYZ data in storage and process metrics
         await storage.setXYZData(rawXYZData);
         
-        // Process the XYZ data into tactical metrics
-        const { processPositionalMetrics } = await import('./xyzDataParser');
-        const positionalMetrics = await processPositionalMetrics(rawXYZData);
-        await storage.setPositionalMetrics(positionalMetrics);
+        // Store empty metrics to unblock the API - frontend handles tactical analysis
+        await storage.setPositionalMetrics([]);
         
         console.log(`Stored ${rawXYZData.length} XYZ records for API access`);
-        console.log(`Generated ${positionalMetrics.length} positional metrics`);
       } catch (error) {
         console.error('Error loading XYZ data:', error);
       }

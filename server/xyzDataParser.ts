@@ -757,9 +757,9 @@ export async function processPositionalMetrics(rawData: XYZPlayerData[]): Promis
         averageVelocity: 0,
         maxVelocity: 0,
         mapControl: {
-          areasCovered: ['Mid', 'A Site', 'B Site'], // Basic areas
-          timeInEachArea: { 'Mid': 100, 'A Site': 50, 'B Site': 25 },
-          dominantArea: 'Mid'
+          areasCovered: [],
+          timeInEachArea: {},
+          dominantArea: ''
         },
         hotZones: [{
           x: positions[0].X,

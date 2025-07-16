@@ -1055,6 +1055,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
 
   // Process data for analysis using accurate zone mapping
   const analysisData = useMemo(() => {
+    console.log('🔍 ANALYSIS DATA PROCESSING:', { xyzDataLength: xyzData.length });
     if (!xyzData.length) return null;
 
     // Filter data by selected round first

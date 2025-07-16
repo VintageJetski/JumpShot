@@ -180,7 +180,7 @@ function coordToMapPercent(x: number, y: number): { x: number, y: number } {
   };
 }
 
-// Determine which zone a player is in using manually mapped zones
+// Determine which zone a player is in using ONLY manually mapped zones
 function getPlayerZone(x: number, y: number, mappedZones?: Map<string, {x: number, y: number, w: number, h: number}>): string {
   // If no mapped zones provided, try to load from localStorage
   if (!mappedZones) {
@@ -192,16 +192,16 @@ function getPlayerZone(x: number, y: number, mappedZones?: Map<string, {x: numbe
         mappedZones = new Map(Object.entries(zonesObject));
         
         // Log zone loading success
-        console.log('✅ ZONES LOADED FROM LOCALSTORAGE:', mappedZones.size, 'zones');
+        console.log('✅ MANUAL ZONES LOADED FROM LOCALSTORAGE:', mappedZones.size, 'zones');
       } catch (error) {
-        console.error('❌ ERROR PARSING ZONES FROM LOCALSTORAGE:', error);
+        console.error('❌ ERROR PARSING MANUAL ZONES FROM LOCALSTORAGE:', error);
       }
     } else {
-      console.log('⚠️ NO MANUAL ZONES FOUND - USING HARDCODED FALLBACK');
+      console.log('⚠️ NO MANUAL ZONES FOUND - Please map zones in Territory tab');
     }
   }
   
-  // Use manually mapped zones if available
+  // ONLY use manually mapped zones - no synthetic fallback
   if (mappedZones && mappedZones.size > 0) {
     for (const [zoneKey, zoneRect] of mappedZones) {
       if (isPlayerInZone(x, y, zoneRect)) {
@@ -210,14 +210,8 @@ function getPlayerZone(x: number, y: number, mappedZones?: Map<string, {x: numbe
     }
   }
   
-  // Fallback to hardcoded zones only if no manual mapping exists
-  for (const [zoneKey, zone] of Object.entries(INFERNO_MAP_CONFIG.zones)) {
-    if (x >= zone.bounds.minX && x <= zone.bounds.maxX && 
-        y >= zone.bounds.minY && y <= zone.bounds.maxY) {
-      return zoneKey;
-    }
-  }
-  return 'UNKNOWN';
+  // Return UNMAPPED instead of using synthetic zones
+  return 'UNMAPPED';
 }
 
 // Get authentic tactical events from real data analysis
@@ -1017,7 +1011,34 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
 
   // Process data for analysis using accurate zone mapping
   const analysisData = useMemo(() => {
-    if (!xyzData.length || mappedZones.size === 0) return null;
+    if (!xyzData.length) return null;
+    
+    // Try to load zones from localStorage if not available in state
+    let effectiveZones = mappedZones;
+    if (mappedZones.size === 0) {
+      const saved = localStorage.getItem('infernoZoneMapping');
+      if (saved) {
+        try {
+          const zonesObject = JSON.parse(saved);
+          effectiveZones = new Map(Object.entries(zonesObject));
+          console.log('✅ AUTO-LOADED ZONES FOR ANALYSIS:', effectiveZones.size, 'zones');
+        } catch (error) {
+          console.error('❌ ERROR LOADING ZONES FOR ANALYSIS:', error);
+        }
+      }
+    }
+    
+    // Require manual zones - no synthetic fallback
+    if (effectiveZones.size === 0) {
+      console.log('❌ NO MANUAL ZONES AVAILABLE - Analysis requires zone mapping');
+      return {
+        error: 'manual_zones_required',
+        message: 'Please map zones in the Territory tab before viewing tactical analysis',
+        totalDataPoints: 0,
+        players: [],
+        ticks: []
+      };
+    }
 
     // Filter data by selected round first
     let processedData = xyzData;
@@ -1029,7 +1050,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     const movementMetrics = calculateMovementMetrics(processedData);
     
     // Advanced zone analytics using accurately mapped zones
-    const zoneAnalytics = calculateAdvancedZoneAnalytics(processedData, mappedZones);
+    const zoneAnalytics = calculateAdvancedZoneAnalytics(processedData, effectiveZones);
     const tacticalValues = calculateTacticalZoneValues(zoneAnalytics);
     
     // Enhanced tactical insights based on zone analytics
@@ -1670,6 +1691,40 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
         <CardContent>
           <div className="flex items-center justify-center h-64">
             <div className="text-muted-foreground">No tactical data available</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Handle manual zones required error
+  if (analysisData.error === 'manual_zones_required') {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            Manual Zone Mapping Required
+          </CardTitle>
+          <CardDescription>Tactical analysis uses only your manually mapped zones</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center h-64 space-y-4">
+            <div className="text-center">
+              <h3 className="text-lg font-medium mb-2">No Manual Zones Found</h3>
+              <p className="text-muted-foreground mb-4">
+                {analysisData.message}
+              </p>
+              <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
+                <strong>Next Steps:</strong>
+                <ol className="list-decimal list-inside mt-2 space-y-1">
+                  <li>Go to the "Territory" tab</li>
+                  <li>Click "Map Zones" to start zone mapping</li>
+                  <li>Position and resize zones to match the map</li>
+                  <li>Return to tactical analysis tabs</li>
+                </ol>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

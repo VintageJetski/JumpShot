@@ -120,6 +120,11 @@ Changelog:
 
 Preferred communication style: Simple, everyday language.
 
+## Data Authenticity Requirements
+- **Exclusive Manual Zone Usage**: Tactical analysis must only use manually mapped zones from user's Territory tab work
+- **No Synthetic Fallbacks**: Never use hardcoded/synthetic zone data as fallback - system should require manual mapping
+- **Authentic Data Only**: All analysis must be based on real player positioning data, not placeholder or mock data
+
 ## Tactical Analysis Principles
 - Major chokepoints (Banana, Apartments, Middle) are MORE important than bomb sites as they control round flow and rotations
 - Controlling chokepoints dictates rotations and site executes, making them the most critical areas

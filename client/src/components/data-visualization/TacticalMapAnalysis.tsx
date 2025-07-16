@@ -1663,6 +1663,29 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     loadMappedZones();
   }, []);
 
+  // Load zones immediately on mount for analysis with comprehensive debugging
+  useEffect(() => {
+    console.log('🔍 COMPONENT MOUNT - Checking localStorage for zones...');
+    const saved = localStorage.getItem('infernoZoneMapping');
+    console.log('🔍 RAW LOCALSTORAGE VALUE:', saved);
+    
+    if (saved) {
+      try {
+        const zonesObject = JSON.parse(saved);
+        const loadedZones = new Map(Object.entries(zonesObject));
+        setMappedZones(loadedZones);
+        console.log('✅ AUTO-LOADED FOR ANALYSIS:', loadedZones.size, 'zones');
+        console.log('🗺️ LOADED ZONE NAMES:', Array.from(loadedZones.keys()));
+      } catch (error) {
+        console.error('❌ ERROR AUTO-LOADING ZONES FOR ANALYSIS:', error);
+      }
+    } else {
+      console.log('❌ NO ZONES FOUND IN LOCALSTORAGE');
+      // Check all localStorage keys to see what exists
+      console.log('🔍 ALL LOCALSTORAGE KEYS:', Object.keys(localStorage));
+    }
+  }, []);
+
   // Load map image and draw
   useEffect(() => {
     const img = new Image();

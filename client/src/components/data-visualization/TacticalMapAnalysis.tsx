@@ -766,25 +766,47 @@ function calculateAdvancedZoneAnalytics(data: XYZPlayerData[], mappedZones: Map<
     denialSuccess: { t: number, ct: number };
   }>();
 
-  // Initialize analytics for all mapped zones
-  actualMappedZones.forEach((zone, zoneName) => {
-    zoneAnalytics.set(zoneName, {
-      simultaneousPresence: 0,
-      contestedMoments: 0,
-      fightOutcomes: { tWins: 0, ctWins: 0 },
-      firstBloods: { t: 0, ct: 0 },
-      earlyRoundControl: { t: 0, ct: 0 },
-      midRoundControl: { t: 0, ct: 0 },
-      lateRoundControl: { t: 0, ct: 0 },
-      awperActivity: 0,
-      entryActivity: 0,
-      supportActivity: 0,
-      anchorActivity: 0,
-      dwellTime: { t: 0, ct: 0 },
-      rotationThroughput: 0,
-      denialSuccess: { t: 0, ct: 0 }
+  // If no manually mapped zones, initialize with hardcoded zones for fallback
+  if (!actualMappedZones || actualMappedZones.size === 0) {
+    Object.keys(INFERNO_MAP_CONFIG.zones).forEach(zoneName => {
+      zoneAnalytics.set(zoneName, {
+        simultaneousPresence: 0,
+        contestedMoments: 0,
+        fightOutcomes: { tWins: 0, ctWins: 0 },
+        firstBloods: { t: 0, ct: 0 },
+        earlyRoundControl: { t: 0, ct: 0 },
+        midRoundControl: { t: 0, ct: 0 },
+        lateRoundControl: { t: 0, ct: 0 },
+        awperActivity: 0,
+        entryActivity: 0,
+        supportActivity: 0,
+        anchorActivity: 0,
+        dwellTime: { t: 0, ct: 0 },
+        rotationThroughput: 0,
+        denialSuccess: { t: 0, ct: 0 }
+      });
     });
-  });
+  } else {
+    // Initialize analytics for all manually mapped zones
+    actualMappedZones.forEach((zone, zoneName) => {
+      zoneAnalytics.set(zoneName, {
+        simultaneousPresence: 0,
+        contestedMoments: 0,
+        fightOutcomes: { tWins: 0, ctWins: 0 },
+        firstBloods: { t: 0, ct: 0 },
+        earlyRoundControl: { t: 0, ct: 0 },
+        midRoundControl: { t: 0, ct: 0 },
+        lateRoundControl: { t: 0, ct: 0 },
+        awperActivity: 0,
+        entryActivity: 0,
+        supportActivity: 0,
+        anchorActivity: 0,
+        dwellTime: { t: 0, ct: 0 },
+        rotationThroughput: 0,
+        denialSuccess: { t: 0, ct: 0 }
+      });
+    });
+  }
 
   // Group data by tick to analyze simultaneous presence
   const tickGroups = new Map<number, XYZPlayerData[]>();
@@ -808,92 +830,108 @@ function calculateAdvancedZoneAnalytics(data: XYZPlayerData[], mappedZones: Map<
                      roundTime < roundDuration * 0.75 ? 'mid' : 'late';
 
     // Check each zone for activity this tick
-    actualMappedZones.forEach((zoneRect, zoneName) => {
-      const playersInZone = tickData.filter(player => 
-        isPlayerInZone(player.X, player.Y, zoneRect)
-      );
-
-      const tPlayers = playersInZone.filter(p => p.side === 't');
-      const ctPlayers = playersInZone.filter(p => p.side === 'ct');
-
-      const analytics = zoneAnalytics.get(zoneName)!;
-
-      // Simultaneous presence and contested moments
-      if (tPlayers.length > 0 && ctPlayers.length > 0) {
-        analytics.simultaneousPresence++;
-        analytics.contestedMoments++;
-      }
-
-      // Dwell time calculation
-      analytics.dwellTime.t += tPlayers.length;
-      analytics.dwellTime.ct += ctPlayers.length;
-
-      // Time-contextual control
-      if (roundPhase === 'early') {
-        analytics.earlyRoundControl.t += tPlayers.length;
-        analytics.earlyRoundControl.ct += ctPlayers.length;
-      } else if (roundPhase === 'mid') {
-        analytics.midRoundControl.t += tPlayers.length;
-        analytics.midRoundControl.ct += ctPlayers.length;
-      } else {
-        analytics.lateRoundControl.t += tPlayers.length;
-        analytics.lateRoundControl.ct += ctPlayers.length;
-      }
-
-      // Role-based activity detection
-      playersInZone.forEach(player => {
-        // AWPer detection (high velocity players in long-range zones)
-        if (['A_SITE', 'LIBRARY', 'PIT', 'LONG_HALL'].includes(zoneName)) {
-          const velocity = Math.sqrt(player.velocity_X ** 2 + player.velocity_Y ** 2);
-          if (velocity < 100) { // Stationary AWP positioning
-            analytics.awperActivity++;
-          }
-        }
-
-        // Entry fragger detection (high velocity in chokepoints)
-        if (['BANANA', 'APARTMENTS', 'MIDDLE', 'T_RAMP'].includes(zoneName)) {
-          const velocity = Math.sqrt(player.velocity_X ** 2 + player.velocity_Y ** 2);
-          if (velocity > 200 && player.side === 't') {
-            analytics.entryActivity++;
-          }
-        }
-
-        // Support activity (utility usage indicators)
-        if (player.flash_duration > 0 || player.armor > 0) {
-          analytics.supportActivity++;
-        }
-
-        // Anchor activity (static CT positioning on sites)
-        if (['A_SITE', 'B_SITE'].includes(zoneName) && player.side === 'ct') {
-          const velocity = Math.sqrt(player.velocity_X ** 2 + player.velocity_Y ** 2);
-          if (velocity < 50) {
-            analytics.anchorActivity++;
-          }
-        }
+    if (actualMappedZones && actualMappedZones.size > 0) {
+      // Use manually mapped zones
+      actualMappedZones.forEach((zoneRect, zoneName) => {
+        const playersInZone = tickData.filter(player => 
+          isPlayerInZone(player.X, player.Y, zoneRect)
+        );
+        processZoneActivity(playersInZone, zoneName, roundPhase, zoneAnalytics, tickData);
       });
-
-      // Combat outcomes (approximated by health changes)
-      const damagedPlayers = playersInZone.filter(p => p.health < 100 && p.health > 0);
-      const deadPlayers = playersInZone.filter(p => p.health <= 0);
-      
-      deadPlayers.forEach(player => {
-        if (player.side === 't') {
-          analytics.fightOutcomes.ctWins++;
-        } else {
-          analytics.fightOutcomes.tWins++;
-        }
+    } else {
+      // Use hardcoded zones as fallback
+      Object.keys(INFERNO_MAP_CONFIG.zones).forEach(zoneName => {
+        const playersInZone = tickData.filter(player => {
+          const zone = INFERNO_MAP_CONFIG.zones[zoneName];
+          return player.X >= zone.bounds.minX && player.X <= zone.bounds.maxX && 
+                 player.Y >= zone.bounds.minY && player.Y <= zone.bounds.maxY;
+        });
+        processZoneActivity(playersInZone, zoneName, roundPhase, zoneAnalytics, tickData);
       });
-
-      // Rotation throughput (players moving through zone quickly)
-      const fastMovingPlayers = playersInZone.filter(p => {
-        const velocity = Math.sqrt(p.velocity_X ** 2 + p.velocity_Y ** 2);
-        return velocity > 250;
-      });
-      analytics.rotationThroughput += fastMovingPlayers.length;
-    });
+    }
   });
 
   return zoneAnalytics;
+}
+
+// Helper function to process zone activity (to avoid code duplication)
+function processZoneActivity(playersInZone: XYZPlayerData[], zoneName: string, roundPhase: string, zoneAnalytics: Map<string, any>, tickData: XYZPlayerData[]) {
+  const tPlayers = playersInZone.filter(p => p.side === 't');
+  const ctPlayers = playersInZone.filter(p => p.side === 'ct');
+
+  const analytics = zoneAnalytics.get(zoneName)!;
+
+  // Simultaneous presence and contested moments
+  if (tPlayers.length > 0 && ctPlayers.length > 0) {
+    analytics.simultaneousPresence++;
+    analytics.contestedMoments++;
+  }
+
+  // Dwell time calculation
+  analytics.dwellTime.t += tPlayers.length;
+  analytics.dwellTime.ct += ctPlayers.length;
+
+  // Time-contextual control
+  if (roundPhase === 'early') {
+    analytics.earlyRoundControl.t += tPlayers.length;
+    analytics.earlyRoundControl.ct += ctPlayers.length;
+  } else if (roundPhase === 'mid') {
+    analytics.midRoundControl.t += tPlayers.length;
+    analytics.midRoundControl.ct += ctPlayers.length;
+  } else {
+    analytics.lateRoundControl.t += tPlayers.length;
+    analytics.lateRoundControl.ct += ctPlayers.length;
+  }
+
+  // Role-based activity detection
+  playersInZone.forEach(player => {
+    // AWPer detection (stationary players in long-range zones)
+    if (['A_SITE', 'LIBRARY', 'PIT', 'LONG_HALL'].includes(zoneName)) {
+      const velocity = Math.sqrt(player.velocity_X ** 2 + player.velocity_Y ** 2);
+      if (velocity < 100) {
+        analytics.awperActivity++;
+      }
+    }
+
+    // Entry fragger detection (high velocity in chokepoints)
+    if (['BANANA', 'APARTMENTS', 'MIDDLE', 'T_RAMP'].includes(zoneName)) {
+      const velocity = Math.sqrt(player.velocity_X ** 2 + player.velocity_Y ** 2);
+      if (velocity > 200 && player.side === 't') {
+        analytics.entryActivity++;
+      }
+    }
+
+    // Support activity (utility usage indicators)
+    if (player.flash_duration > 0 || player.armor > 0) {
+      analytics.supportActivity++;
+    }
+
+    // Anchor activity (static CT positioning on sites)
+    if (['A_SITE', 'B_SITE'].includes(zoneName) && player.side === 'ct') {
+      const velocity = Math.sqrt(player.velocity_X ** 2 + player.velocity_Y ** 2);
+      if (velocity < 50) {
+        analytics.anchorActivity++;
+      }
+    }
+  });
+
+  // Combat outcomes (approximated by health changes)
+  const deadPlayers = playersInZone.filter(p => p.health <= 0);
+  
+  deadPlayers.forEach(player => {
+    if (player.side === 't') {
+      analytics.fightOutcomes.ctWins++;
+    } else {
+      analytics.fightOutcomes.tWins++;
+    }
+  });
+
+  // Rotation throughput (players moving through zone quickly)
+  const fastMovingPlayers = playersInZone.filter(p => {
+    const velocity = Math.sqrt(p.velocity_X ** 2 + p.velocity_Y ** 2);
+    return velocity > 250;
+  });
+  analytics.rotationThroughput += fastMovingPlayers.length;
 }
 
 // Helper function to check if player coordinates are within mapped zone
@@ -1017,7 +1055,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
 
   // Process data for analysis using accurate zone mapping
   const analysisData = useMemo(() => {
-    if (!xyzData.length || mappedZones.size === 0) return null;
+    if (!xyzData.length) return null;
 
     // Filter data by selected round first
     let processedData = xyzData;

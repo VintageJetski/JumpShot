@@ -1675,7 +1675,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     }
   }, [mapImage, drawTacticalMap, mappedZones]);
 
-  if (!analysisData) {
+  if (!analysisData && !isInMappingMode) {
     return (
       <Card>
         <CardHeader>
@@ -1703,7 +1703,10 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
             CS2 Inferno - Tactical Analysis
           </CardTitle>
           <CardDescription>
-            Analyzing {analysisData.totalDataPoints.toLocaleString()} authentic position records
+            {analysisData 
+              ? `Analyzing ${analysisData.totalDataPoints.toLocaleString()} authentic position records`
+              : 'Zone mapping mode - tactical analysis disabled for performance'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -1718,9 +1721,9 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Players</SelectItem>
-                    {analysisData.players.map(player => (
+                    {analysisData?.players?.map(player => (
                       <SelectItem key={player} value={player}>{player}</SelectItem>
-                    ))}
+                    )) || []}
                   </SelectContent>
                 </Select>
               </div>
@@ -1757,7 +1760,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => setCurrentTick(analysisData.ticks[0] || 0)}
+                    onClick={() => setCurrentTick(analysisData?.ticks?.[0] || 0)}
                   >
                     <RotateCcw className="h-4 w-4" />
                   </Button>
@@ -1777,13 +1780,13 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
 
                 <div>
                   <label className="text-xs text-muted-foreground">
-                    Tick: {currentTick} / {analysisData.ticks[analysisData.ticks.length - 1] || 0}
+                    Tick: {currentTick} / {analysisData?.ticks?.[analysisData.ticks.length - 1] || 0}
                   </label>
                   <Slider
                     value={[currentTick]}
                     onValueChange={([value]) => setCurrentTick(value)}
-                    min={analysisData.ticks[0] || 0}
-                    max={analysisData.ticks[analysisData.ticks.length - 1] || 0}
+                    min={analysisData?.ticks?.[0] || 0}
+                    max={analysisData?.ticks?.[analysisData.ticks.length - 1] || 0}
                     step={1}
                     className="mt-1"
                   />

@@ -740,6 +740,23 @@ function calculateAdvancedZoneAnalytics(data: XYZPlayerData[], mappedZones: Map<
       }
     }
   }
+  
+  // If still no manual zones, create basic fallback zones for interface functionality
+  if (!actualMappedZones || actualMappedZones.size === 0) {
+    actualMappedZones = new Map();
+    // Add basic zones so the interface works while user sets up manual zones
+    Object.entries(INFERNO_MAP_CONFIG.zones).forEach(([zoneName, zone]) => {
+      const bounds = zone.bounds;
+      const pos1 = coordToMapPercent(bounds.minX, bounds.minY);
+      const pos2 = coordToMapPercent(bounds.maxX, bounds.maxY);
+      actualMappedZones.set(zoneName, {
+        x: (pos1.x / 100) * 800,
+        y: (pos1.y / 100) * 600,
+        w: Math.abs((pos2.x - pos1.x) / 100) * 800,
+        h: Math.abs((pos2.y - pos1.y) / 100) * 600
+      });
+    });
+  }
   const zoneAnalytics = new Map<string, {
     // Real-time occupation
     simultaneousPresence: number;
@@ -1017,7 +1034,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
 
   // Process data for analysis using accurate zone mapping
   const analysisData = useMemo(() => {
-    if (!xyzData.length || mappedZones.size === 0) return null;
+    if (!xyzData.length) return null;
 
     // Filter data by selected round first
     let processedData = xyzData;
@@ -1028,7 +1045,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
 
     const movementMetrics = calculateMovementMetrics(processedData);
     
-    // Advanced zone analytics using accurately mapped zones
+    // Advanced zone analytics using accurately mapped zones (or fallback zones if none mapped)
     const zoneAnalytics = calculateAdvancedZoneAnalytics(processedData, mappedZones);
     const tacticalValues = calculateTacticalZoneValues(zoneAnalytics);
     

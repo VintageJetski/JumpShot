@@ -1018,6 +1018,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
   const [mapImage, setMapImage] = useState<HTMLImageElement | null>(null);
   const [isMapping, setIsMapping] = useState(false);
   const [mappedZones, setMappedZones] = useState<Map<string, {x: number, y: number, w: number, h: number}>>(new Map());
+  const [draftZones, setDraftZones] = useState<Map<string, {x: number, y: number, w: number, h: number}>>(new Map());
   const [draggedZone, setDraggedZone] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState<{x: number, y: number}>({ x: 0, y: 0 });
   const [resizingZone, setResizingZone] = useState<string | null>(null);
@@ -1184,7 +1185,8 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
 
   // Check if mouse is over a zone
   const getZoneAtPosition = (mouseX: number, mouseY: number) => {
-    for (const [zoneKey, zone] of mappedZones) {
+    const currentZones = isInMappingMode ? draftZones : mappedZones;
+    for (const [zoneKey, zone] of currentZones) {
       if (mouseX >= zone.x && mouseX <= zone.x + zone.w &&
           mouseY >= zone.y && mouseY <= zone.y + zone.h) {
         return zoneKey;
@@ -1199,8 +1201,11 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     
     const mousePos = getMousePos(event);
     
+    // Use draft zones during mapping, mapped zones otherwise
+    const currentZones = isInMappingMode ? draftZones : mappedZones;
+    
     // Check for resize handles first
-    for (const [zoneKey, zone] of mappedZones) {
+    for (const [zoneKey, zone] of currentZones) {
       const handle = getResizeHandle(mousePos.x, mousePos.y, zone);
       if (handle) {
         setResizingZone(zoneKey);
@@ -1213,7 +1218,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     // Check for zone dragging
     const zoneKey = getZoneAtPosition(mousePos.x, mousePos.y);
     if (zoneKey) {
-      const zone = mappedZones.get(zoneKey)!;
+      const zone = currentZones.get(zoneKey)!;
       setDraggedZone(zoneKey);
       setDragOffset({ x: mousePos.x - zone.x, y: mousePos.y - zone.y });
       setIsDragging(true);
@@ -1227,9 +1232,13 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     const mousePos = getMousePos(event);
     
     if (isDragging) {
+      // Use draft zones during mapping, mapped zones otherwise
+      const currentZones = isInMappingMode ? draftZones : mappedZones;
+      const setCurrentZones = isInMappingMode ? setDraftZones : setMappedZones;
+      
       if (resizingZone && resizeHandle) {
         // Handle resizing
-        const zone = mappedZones.get(resizingZone)!;
+        const zone = currentZones.get(resizingZone)!;
         const newZone = { ...zone };
         
         switch (resizeHandle) {
@@ -1259,20 +1268,20 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
         newZone.w = Math.max(30, newZone.w);
         newZone.h = Math.max(20, newZone.h);
         
-        const newMappedZones = new Map(mappedZones);
-        newMappedZones.set(resizingZone, newZone);
-        setMappedZones(newMappedZones);
+        const newZones = new Map(currentZones);
+        newZones.set(resizingZone, newZone);
+        setCurrentZones(newZones);
       } else if (draggedZone) {
         // Handle dragging
         const newZone = {
-          ...mappedZones.get(draggedZone)!,
+          ...currentZones.get(draggedZone)!,
           x: mousePos.x - dragOffset.x,
           y: mousePos.y - dragOffset.y
         };
         
-        const newMappedZones = new Map(mappedZones);
-        newMappedZones.set(draggedZone, newZone);
-        setMappedZones(newMappedZones);
+        const newZones = new Map(currentZones);
+        newZones.set(draggedZone, newZone);
+        setCurrentZones(newZones);
       }
     }
   };
@@ -1284,12 +1293,14 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
     setResizingZone(null);
     setResizeHandle(null);
     
-    // Auto-save zones after any modification
-    setTimeout(() => {
-      const zonesObject = Object.fromEntries(mappedZones);
-      localStorage.setItem('infernoZoneMapping', JSON.stringify(zonesObject));
-      console.log('✅ AUTO-SAVED', mappedZones.size, 'ZONES TO LOCALSTORAGE');
-    }, 100);
+    // Only auto-save when not in mapping mode (immediate mode)
+    if (!isInMappingMode) {
+      setTimeout(() => {
+        const zonesObject = Object.fromEntries(mappedZones);
+        localStorage.setItem('infernoZoneMapping', JSON.stringify(zonesObject));
+        console.log('✅ AUTO-SAVED', mappedZones.size, 'ZONES TO LOCALSTORAGE');
+      }, 100);
+    }
   };
 
   // Save mapped zones to localStorage
@@ -1349,9 +1360,12 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
 
     // Draw manually mapped zones or mapping interface
     if (activeTab === 'territory') {
+      // Use draft zones during mapping, mapped zones otherwise
+      const currentZones = isInMappingMode ? draftZones : mappedZones;
+      
       if (isMapping) {
-        // Draw mapping interface - show all mapped zones
-        mappedZones.forEach((zone, key) => {
+        // Draw mapping interface - show all zones
+        currentZones.forEach((zone, key) => {
           // Draw zone boundary
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
           ctx.lineWidth = 2;
@@ -1402,7 +1416,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
           });
         }
 
-        mappedZones.forEach((zone, key) => {
+        currentZones.forEach((zone, key) => {
           const isHighestContest = key === highestContestZone && highestContestIntensity > 0.05;
           
           // Draw zone boundary (highlight if highest contest)
@@ -1895,6 +1909,20 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                           const newMappingState = !isMapping;
                           setIsMapping(newMappingState);
                           setIsInMappingMode(newMappingState);
+                          
+                          if (newMappingState) {
+                            // Entering mapping mode - initialize draft with current zones
+                            setDraftZones(new Map(mappedZones));
+                          } else {
+                            // Exiting mapping mode - commit draft to main state
+                            setMappedZones(new Map(draftZones));
+                            // Auto-save the committed zones
+                            setTimeout(() => {
+                              const zonesObject = Object.fromEntries(draftZones);
+                              localStorage.setItem('infernoZoneMapping', JSON.stringify(zonesObject));
+                              console.log('✅ COMMITTED & SAVED', draftZones.size, 'ZONES FROM DRAFT');
+                            }, 100);
+                          }
                         }}
                       >
                         {isMapping ? 'Exit Mapping' : 'Map Zones'}
@@ -1912,15 +1940,14 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                             size="sm" 
                             onClick={() => {
                               // Remove zones positioned in top-left corner (likely duplicates/clutter)
-                              const newMappedZones = new Map();
-                              mappedZones.forEach((zone, key) => {
+                              const newDraftZones = new Map();
+                              draftZones.forEach((zone, key) => {
                                 // Keep zones that are properly positioned (not in top-left clutter area)
                                 if (zone.x > 100 || zone.y > 100) {
-                                  newMappedZones.set(key, zone);
+                                  newDraftZones.set(key, zone);
                                 }
                               });
-                              setMappedZones(newMappedZones);
-                              saveMappedZones();
+                              setDraftZones(newDraftZones);
                             }}
                           >
                             Clear Top-Left
@@ -1933,7 +1960,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                     {isMapping && (
                       <div className="grid grid-cols-4 gap-2 mb-4">
                         {zonesToMap.map(zone => {
-                          const isPlaced = mappedZones.has(zone);
+                          const isPlaced = draftZones.has(zone);
                           return (
                             <Button
                               key={zone}
@@ -1942,14 +1969,14 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                               onClick={() => {
                                 if (!isPlaced) {
                                   // Add zone at center of canvas
-                                  const newMappedZones = new Map(mappedZones);
-                                  newMappedZones.set(zone, {
+                                  const newDraftZones = new Map(draftZones);
+                                  newDraftZones.set(zone, {
                                     x: 350, // Center of 800px canvas
                                     y: 275, // Center of 600px canvas
                                     w: 100,
                                     h: 50
                                   });
-                                  setMappedZones(newMappedZones);
+                                  setDraftZones(newDraftZones);
                                 }
                               }}
                               className="text-xs"

@@ -1023,6 +1023,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
   const [resizingZone, setResizingZone] = useState<string | null>(null);
   const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isInMappingMode, setIsInMappingMode] = useState(false);
 
   // Get available rounds from data
   const availableRounds = useMemo(() => {
@@ -1034,7 +1035,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
 
   // Process data for analysis using accurate zone mapping
   const analysisData = useMemo(() => {
-    if (!xyzData.length) return null;
+    if (!xyzData.length || isInMappingMode) return null;
 
     // Filter data by selected round first
     let processedData = xyzData;
@@ -1077,7 +1078,7 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
       heatmapData,
       gridSize
     };
-  }, [xyzData, mappedZones, selectedRound]);
+  }, [xyzData, mappedZones, selectedRound, isInMappingMode]);
 
   // Filter data for current view
   const filteredData = useMemo(() => {
@@ -1872,11 +1873,26 @@ export function TacticalMapAnalysis({ xyzData }: TacticalMapAnalysisProps) {
                 <TabsContent value="territory" className="mt-4">
                   <div className="space-y-4">
                     {/* Manual Zone Mapping Controls */}
+                    {isInMappingMode && (
+                      <div className="bg-orange-900/20 border border-orange-500/30 p-3 rounded-lg mb-4">
+                        <div className="flex items-center gap-2 text-orange-200">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                          <span className="font-medium">Mapping Mode Active</span>
+                        </div>
+                        <p className="text-xs text-orange-300 mt-1">
+                          Tactical analysis disabled for performance. Exit mapping mode to re-enable analysis.
+                        </p>
+                      </div>
+                    )}
                     <div className="flex gap-2 mb-4">
                       <Button 
                         variant={isMapping ? "destructive" : "default"} 
                         size="sm"
-                        onClick={() => setIsMapping(!isMapping)}
+                        onClick={() => {
+                          const newMappingState = !isMapping;
+                          setIsMapping(newMappingState);
+                          setIsInMappingMode(newMappingState);
+                        }}
                       >
                         {isMapping ? 'Exit Mapping' : 'Map Zones'}
                       </Button>

@@ -2,21 +2,28 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion } from 'framer-motion';
+import infernoMapPath from '@assets/CS2_inferno_radar_1749672397531.webp';
 
 interface XYZPlayerData {
-  tick: number;
-  round: number;
-  name: string;
-  steamId: string;
-  side: 't' | 'ct';
-  X: number;
-  Y: number;
   health: number;
-  armor: number;
   flash_duration: number;
+  place?: string;
+  armor: number;
+  side: 't' | 'ct';
+  pitch: number;
+  X: number;
+  yaw: number;
+  Y: number;
   velocity_X: number;
+  Z: number;
   velocity_Y: number;
+  velocity_Z: number;
+  tick: number;
+  user_steamid: string;
+  name: string;
+  round_num: number;
 }
 
 interface Zone {
@@ -26,19 +33,77 @@ interface Zone {
   h: number;
 }
 
-function coordToMapPercent(x: number, y: number) {
-  const MAP_BOUNDS = {
+const INFERNO_MAP_CONFIG = {
+  bounds: {
     minX: -2217.69, maxX: 2217.69,
     minY: -755.62, maxY: 3452.23
-  };
-  
-  const mapX = (x - MAP_BOUNDS.minX) / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX);
-  const mapY = (y - MAP_BOUNDS.minY) / (MAP_BOUNDS.maxY - MAP_BOUNDS.minY);
+  },
+  zones: {
+    'APARTMENTS': { 
+      bounds: { minX: -800, maxX: -200, minY: -400, maxY: 200 },
+      color: '#3b82f6', name: 'Apartments', priority: 'high'
+    },
+    'BANANA': { 
+      bounds: { minX: -1000, maxX: -300, minY: 2000, maxY: 3000 },
+      color: '#eab308', name: 'Banana', priority: 'medium'
+    },
+    'MIDDLE': { 
+      bounds: { minX: 400, maxX: 1200, minY: 800, maxY: 1400 },
+      color: '#a3a3a3', name: 'Middle', priority: 'high'
+    },
+    'CONSTRUCTION': { 
+      bounds: { minX: -600, maxX: -200, minY: -800, maxY: -400 },
+      color: '#8b5cf6', name: 'Construction', priority: 'high'
+    },
+    'ARCH': { 
+      bounds: { minX: 600, maxX: 1000, minY: 1400, maxY: 2000 },
+      color: '#dc2626', name: 'Arch', priority: 'medium'
+    },
+    'QUAD': { 
+      bounds: { minX: 800, maxX: 1200, minY: 1600, maxY: 2200 },
+      color: '#dc2626', name: 'Quad', priority: 'medium'
+    }
+  }
+};
+
+function coordToMapPercent(x: number, y: number) {
+  const mapX = (x - INFERNO_MAP_CONFIG.bounds.minX) / (INFERNO_MAP_CONFIG.bounds.maxX - INFERNO_MAP_CONFIG.bounds.minX);
+  const mapY = (y - INFERNO_MAP_CONFIG.bounds.minY) / (INFERNO_MAP_CONFIG.bounds.maxY - INFERNO_MAP_CONFIG.bounds.minY);
   
   return { 
     x: Math.max(0, Math.min(100, mapX * 100)), 
     y: Math.max(0, Math.min(100, (1 - mapY) * 100)) 
   };
+}
+
+function getPlayerZone(x: number, y: number, mappedZones?: Map<string, Zone>): string {
+  if (!mappedZones) {
+    const saved = localStorage.getItem('infernoZoneMapping');
+    if (saved) {
+      try {
+        const zonesObject = JSON.parse(saved);
+        mappedZones = new Map(Object.entries(zonesObject));
+      } catch (error) {
+        console.error('Error loading zones:', error);
+      }
+    }
+  }
+  
+  if (mappedZones && mappedZones.size > 0) {
+    for (const [zoneKey, zoneRect] of mappedZones) {
+      if (isPlayerInZone(x, y, zoneRect)) {
+        return zoneKey;
+      }
+    }
+  }
+  
+  for (const [zoneKey, zone] of Object.entries(INFERNO_MAP_CONFIG.zones)) {
+    if (x >= zone.bounds.minX && x <= zone.bounds.maxX && 
+        y >= zone.bounds.minY && y <= zone.bounds.maxY) {
+      return zoneKey;
+    }
+  }
+  return 'UNKNOWN';
 }
 
 function isPlayerInZone(x: number, y: number, zone: Zone): boolean {
@@ -59,7 +124,7 @@ export default function TerritoryPage() {
     queryKey: ['/api/xyz/raw'],
   });
 
-  const roundData = xyzData.filter(d => d.round === 4);
+  const roundData = xyzData.filter(d => d.round_num === 4);
 
   const zonesToMap = ['APARTMENTS', 'BANANA', 'MIDDLE', 'CONSTRUCTION', 'ARCH', 'QUAD'];
 
@@ -93,7 +158,7 @@ export default function TerritoryPage() {
     }>();
 
     mappedZones.forEach((zone, zoneName) => {
-      const zoneData = roundData.filter(point => {
+      const zoneData = filteredData.filter(point => {
         const pos = coordToMapPercent(point.X, point.Y);
         const canvasX = (pos.x / 100) * 800;
         const canvasY = (pos.y / 100) * 600;
@@ -106,7 +171,7 @@ export default function TerritoryPage() {
       
       // Contest intensity based on mixed presence and activity
       const mixedPresence = Math.min(tPresence, ctPresence);
-      const activityLevel = totalPresence / Math.max(roundData.length / 10, 1);
+      const activityLevel = totalPresence / Math.max(filteredData.length / 10, 1);
       const contestIntensity = (mixedPresence * activityLevel) / Math.max(totalPresence, 1);
 
       analytics.set(zoneName, {
@@ -250,20 +315,27 @@ export default function TerritoryPage() {
     }, 100);
   };
 
-  // Canvas drawing
+  // Load map image
+  const [mapImage, setMapImage] = useState<HTMLImageElement | null>(null);
+  
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => setMapImage(img);
+    img.src = infernoMapPath;
+  }, []);
+
+  // Canvas drawing with proper map background
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !mapImage) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
+    // Clear and draw background map
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw background
-    ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
 
     if (isMapping) {
       // Draw mapping interface
@@ -350,7 +422,16 @@ export default function TerritoryPage() {
         }
       });
     }
-  }, [mappedZones, isMapping, zoneAnalytics, highestContestZone, highestContestIntensity]);
+  }, [mappedZones, isMapping, zoneAnalytics, highestContestZone, highestContestIntensity, mapImage]);
+
+  // Add selectedRound state for round selection
+  const [selectedRound, setSelectedRound] = useState('round_4');
+  
+  // Filter data based on selected round
+  const filteredData = xyzData.filter(d => {
+    const roundMatch = selectedRound === 'all' || d.round_num === parseInt(selectedRound.split('_')[1]);
+    return roundMatch;
+  });
 
   return (
     <motion.div 
@@ -375,6 +456,19 @@ export default function TerritoryPage() {
               <CardTitle>Zone Mapping Controls</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Round</label>
+                <Select value={selectedRound} onValueChange={setSelectedRound}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="round_4">Round 4</SelectItem>
+                    <SelectItem value="all">All Rounds</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <Button 
                 variant={isMapping ? "destructive" : "default"} 
                 size="sm"

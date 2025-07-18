@@ -3,22 +3,29 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, RotateCcw } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Play, Pause, RotateCcw, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
+import infernoMapPath from '@assets/CS2_inferno_radar_1749672397531.webp';
 
 interface XYZPlayerData {
-  tick: number;
-  round: number;
-  name: string;
-  steamId: string;
-  side: 't' | 'ct';
-  X: number;
-  Y: number;
   health: number;
-  armor: number;
   flash_duration: number;
+  place?: string;
+  armor: number;
+  side: 't' | 'ct';
+  pitch: number;
+  X: number;
+  yaw: number;
+  Y: number;
   velocity_X: number;
+  Z: number;
   velocity_Y: number;
+  velocity_Z: number;
+  tick: number;
+  user_steamid: string;
+  name: string;
+  round_num: number;
 }
 
 function coordToMapPercent(x: number, y: number) {
@@ -42,15 +49,23 @@ export default function LiveViewPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTick, setCurrentTick] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [mapImage, setMapImage] = useState<HTMLImageElement | null>(null);
 
   const { data: xyzData = [] } = useQuery<XYZPlayerData[]>({
     queryKey: ['/api/xyz/raw'],
-    refetchInterval: isPlaying ? 1000 / playbackSpeed : false,
   });
 
-  const roundData = xyzData.filter(d => d.round === parseInt(selectedRound.split('_')[1]));
+  const roundData = xyzData.filter(d => d.round_num === parseInt(selectedRound.split('_')[1]));
   const ticks = [...new Set(roundData.map(d => d.tick))].sort((a, b) => a - b);
   const currentData = roundData.filter(d => d.tick === (ticks[currentTick] || ticks[0]));
+
+  // Load map image
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => setMapImage(img);
+    img.src = infernoMapPath;
+  }, []);
 
   useEffect(() => {
     if (isPlaying && currentTick < ticks.length - 1) {
@@ -65,17 +80,14 @@ export default function LiveViewPage() {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !mapImage) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
+    // Clear canvas and draw map background
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw background (simplified inferno layout)
-    ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
     
     // Draw players
     currentData.forEach(point => {
@@ -118,7 +130,7 @@ export default function LiveViewPage() {
       ctx.strokeText(point.name, x, y + 25);
       ctx.fillText(point.name, x, y + 25);
     });
-  }, [currentData]);
+  }, [currentData, mapImage]);
 
   return (
     <motion.div 

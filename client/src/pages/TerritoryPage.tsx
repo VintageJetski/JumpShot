@@ -439,51 +439,136 @@ export default function TerritoryPage() {
         });
       }
       
-      // Draw zone analytics with territory control
-      if (!isMapping && zoneAnalytics.size > 0) {
-        zoneAnalytics.forEach((analytics, zoneName) => {
-          const zone = mappedZones.get(zoneName);
-          if (!zone) return;
+      // Draw manually mapped zones or mapping interface (exact copy from original)
+      if (isMapping) {
+        // Draw mapping interface - show all mapped zones with resize handles
+        mappedZones.forEach((zone, key) => {
+          // Draw zone boundary
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 5]);
+          ctx.strokeRect(zone.x, zone.y, zone.w, zone.h);
+          ctx.setLineDash([]);
           
-          // Territory control visualization
-          let zoneColor = 'rgba(128, 128, 128, 0.3)'; // Neutral gray
-          if (analytics.territoryControl === 'T') {
-            zoneColor = 'rgba(220, 38, 38, 0.4)'; // T red
-          } else if (analytics.territoryControl === 'CT') {
-            zoneColor = 'rgba(37, 99, 235, 0.4)'; // CT blue
-          } else if (analytics.territoryControl === 'Contested') {
-            zoneColor = 'rgba(255, 165, 0, 0.5)'; // Contested orange
-          }
-          
-          ctx.fillStyle = zoneColor;
+          // Neutral zone fill (no red/green coloring)
+          ctx.fillStyle = 'rgba(100, 100, 100, 0.1)';
           ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
           
-          // Zone border
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 2;
+          // Zone label
+          const displayName = key === 'SITE' ? 'B SITE' : key.replace('_', ' ');
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+          ctx.fillRect(zone.x + 2, zone.y + 2, displayName.length * 7 + 6, 16);
+          ctx.fillStyle = 'white';
+          ctx.font = '11px sans-serif';
+          ctx.fillText(displayName, zone.x + 5, zone.y + 13);
+          
+          // Resize handles
+          const handleSize = 8;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+          // Top-left
+          ctx.fillRect(zone.x - handleSize/2, zone.y - handleSize/2, handleSize, handleSize);
+          // Top-right
+          ctx.fillRect(zone.x + zone.w - handleSize/2, zone.y - handleSize/2, handleSize, handleSize);
+          // Bottom-left
+          ctx.fillRect(zone.x - handleSize/2, zone.y + zone.h - handleSize/2, handleSize, handleSize);
+          // Bottom-right
+          ctx.fillRect(zone.x + zone.w - handleSize/2, zone.y + zone.h - handleSize/2, handleSize, handleSize);
+        });
+        
+        // Show mapping instructions
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('Drag zones to position them, drag corners to resize', 10, 30);
+      } else {
+        // Normal territory display with mapped zones and sophisticated analytics
+        // Find highest contest intensity zone for marker
+        let highestContestZone = null;
+        let highestContestIntensity = 0;
+        zoneAnalytics.forEach((analytics, zoneName) => {
+          if (analytics.contestIntensity > highestContestIntensity) {
+            highestContestIntensity = analytics.contestIntensity;
+            highestContestZone = zoneName;
+          }
+        });
+
+        mappedZones.forEach((zone, key) => {
+          const analytics = zoneAnalytics.get(key);
+          const isHighestContest = key === highestContestZone && highestContestIntensity > 0.05;
+          
+          // Draw zone boundary (highlight if highest contest)
+          if (isHighestContest) {
+            ctx.strokeStyle = 'rgba(255, 69, 0, 0.9)'; // Orange-red for combat zone
+            ctx.lineWidth = 3;
+            ctx.setLineDash([]);
+          } else {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+          }
           ctx.strokeRect(zone.x, zone.y, zone.w, zone.h);
+          ctx.setLineDash([]);
           
-          // Zone name and control info
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 12px Arial';
-          ctx.strokeStyle = '#000000';
-          ctx.lineWidth = 3;
-          ctx.strokeText(zoneName, zone.x + 5, zone.y + 15);
-          ctx.fillText(zoneName, zone.x + 5, zone.y + 15);
+          // Zone fill (highlight combat zone)
+          if (isHighestContest) {
+            ctx.fillStyle = 'rgba(255, 69, 0, 0.2)'; // Orange glow for combat
+          } else {
+            ctx.fillStyle = 'rgba(100, 100, 100, 0.1)';
+          }
+          ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
           
-          // Contest intensity indicator
-          if (analytics.contestIntensity > 0.2) {
-            ctx.fillStyle = '#ff6b35';
+          // Zone label with background
+          const displayName = key === 'SITE' ? 'B SITE' : key.replace('_', ' ');
+          ctx.fillStyle = isHighestContest ? 'rgba(255, 69, 0, 0.9)' : 'rgba(0, 0, 0, 0.7)';
+          ctx.fillRect(zone.x + 2, zone.y + 2, displayName.length * 7 + 6, 16);
+          ctx.fillStyle = 'white';
+          ctx.font = '11px sans-serif';
+          ctx.fillText(displayName, zone.x + 5, zone.y + 13);
+          
+          // Combat intensity marker with pulsing animation
+          if (isHighestContest) {
+            const centerX = zone.x + zone.w / 2;
+            const centerY = zone.y + zone.h / 2;
+            
+            // Pulsing combat marker
+            const pulseSize = 8 + Math.sin(Date.now() / 300) * 3;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, pulseSize, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(255, 69, 0, 0.8)';
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Combat icon
+            ctx.fillStyle = 'white';
             ctx.font = 'bold 14px sans-serif';
-            ctx.fillText('⚔️', zone.x + zone.w - 20, zone.y + 20);
+            ctx.textAlign = 'center';
+            ctx.fillText('🔥', centerX, centerY + 4);
+            ctx.textAlign = 'left';
           }
           
-          // Tactical events icons
-          analytics.tacticalEvents.forEach((event, index) => {
-            ctx.fillStyle = event.color;
-            ctx.font = '12px sans-serif';
-            ctx.fillText(event.icon, zone.x + 10 + (index * 15), zone.y + zone.h - 10);
-          });
+          // Tactical events based on analytics
+          if (analytics && analytics.tacticalEvents.length > 0) {
+            analytics.tacticalEvents.forEach((event, index) => {
+              const markerX = zone.x + (event.x || zone.w / 2);
+              const markerY = zone.y + (event.y || 20 + index * 25);
+              
+              // Draw marker background
+              ctx.beginPath();
+              ctx.arc(markerX, markerY, 6, 0, 2 * Math.PI);
+              ctx.fillStyle = event.color;
+              ctx.fill();
+              ctx.strokeStyle = 'white';
+              ctx.lineWidth = 1;
+              ctx.stroke();
+              
+              // Draw event icon
+              ctx.fillStyle = 'white';
+              ctx.font = 'bold 8px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText(event.icon, markerX, markerY + 2);
+            });
+          }
         });
       }
       
@@ -543,57 +628,103 @@ export default function TerritoryPage() {
     img.src = infernoRadarPath;
   }, [currentTickData, mappedZones, isMapping, zoneAnalytics]);
 
-  // Mouse handlers for zone mapping
-  const handleCanvasMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isMapping) return;
+  // Handle mouse down for dragging/resizing (exact copy from original)
+  const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isMapping || !canvasRef.current) return;
     
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const mousePos = getMousePos(event);
     
-    const rect = canvas.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
-    const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
-    
-    // Check if clicking on existing zone
-    for (const [zoneName, zone] of mappedZones) {
-      if (isPlayerInZone(x, y, zone)) {
+    // Check for resize handles first
+    for (const [zoneKey, zone] of mappedZones) {
+      const handle = getResizeHandle(mousePos.x, mousePos.y, zone);
+      if (handle) {
+        setResizingZone(zoneKey);
+        setResizeHandle(handle);
         setIsDragging(true);
-        setDraggedZone(zoneName);
-        setDragOffset({ x: x - zone.x, y: y - zone.y });
         return;
       }
     }
-  }, [isMapping, mappedZones]);
-
-  const handleCanvasMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging || !draggedZone) return;
     
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
-    const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
-    
-    const currentZone = mappedZones.get(draggedZone);
-    if (currentZone) {
-      setMappedZones(prev => new Map(prev).set(draggedZone, {
-        ...currentZone,
-        x: x - dragOffset.x,
-        y: y - dragOffset.y
-      }));
+    // Check for zone dragging
+    const zoneKey = getZoneAtPosition(mousePos.x, mousePos.y);
+    if (zoneKey) {
+      const zone = mappedZones.get(zoneKey)!;
+      setDraggedZone(zoneKey);
+      setDragOffset({ x: mousePos.x - zone.x, y: mousePos.y - zone.y });
+      setIsDragging(true);
     }
-  }, [isDragging, draggedZone, dragOffset, mappedZones]);
+  };
 
-  const handleCanvasMouseUp = useCallback(() => {
+  // Handle mouse move for dragging/resizing (exact copy from original)
+  const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isMapping || !canvasRef.current) return;
+    
+    const mousePos = getMousePos(event);
+    
     if (isDragging) {
-      setIsDragging(false);
-      setDraggedZone(null);
-      setTimeout(() => {
-        saveMappedZones();
-      }, 100);
+      if (resizingZone && resizeHandle) {
+        // Handle resizing
+        const zone = mappedZones.get(resizingZone);
+        if (zone) {
+          const newZone = { ...zone };
+          
+          switch (resizeHandle) {
+            case 'tl':
+              newZone.w += newZone.x - mousePos.x;
+              newZone.h += newZone.y - mousePos.y;
+              newZone.x = mousePos.x;
+              newZone.y = mousePos.y;
+              break;
+            case 'tr':
+              newZone.w = mousePos.x - newZone.x;
+              newZone.h += newZone.y - mousePos.y;
+              newZone.y = mousePos.y;
+              break;
+            case 'bl':
+              newZone.w += newZone.x - mousePos.x;
+              newZone.h = mousePos.y - newZone.y;
+              newZone.x = mousePos.x;
+              break;
+            case 'br':
+              newZone.w = mousePos.x - newZone.x;
+              newZone.h = mousePos.y - newZone.y;
+              break;
+          }
+          
+          // Ensure minimum size
+          newZone.w = Math.max(20, newZone.w);
+          newZone.h = Math.max(20, newZone.h);
+          
+          setMappedZones(prev => new Map(prev).set(resizingZone, newZone));
+        }
+      } else if (draggedZone) {
+        // Handle dragging
+        const zone = mappedZones.get(draggedZone);
+        if (zone) {
+          setMappedZones(prev => new Map(prev).set(draggedZone, {
+            ...zone,
+            x: mousePos.x - dragOffset.x,
+            y: mousePos.y - dragOffset.y
+          }));
+        }
+      }
     }
-  }, [isDragging]);
+  };
+
+  // Handle mouse up (exact copy from original)
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setDraggedZone(null);
+    setResizingZone(null);
+    setResizeHandle(null);
+    
+    // Auto-save zones after any modification
+    setTimeout(() => {
+      const zonesObject = Object.fromEntries(mappedZones);
+      localStorage.setItem('infernoZoneMapping', JSON.stringify(zonesObject));
+      console.log('✅ AUTO-SAVED', mappedZones.size, 'ZONES TO LOCALSTORAGE');
+    }, 100);
+  };
 
   // Get unique players for dropdown
   const uniquePlayers = useMemo(() => {
@@ -739,10 +870,10 @@ export default function TerritoryPage() {
                 height={600}
                 className="w-full border rounded-lg bg-gray-900 cursor-pointer"
                 style={{ maxWidth: '100%', height: 'auto' }}
-                onMouseDown={handleCanvasMouseDown}
-                onMouseMove={handleCanvasMouseMove}
-                onMouseUp={handleCanvasMouseUp}
-                onMouseLeave={handleCanvasMouseUp}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
               />
             </CardContent>
           </Card>

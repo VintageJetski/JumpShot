@@ -274,6 +274,48 @@ export default function TerritoryPage() {
     return null;
   }, [mappedZones]);
 
+  // Hardcoded zone coordinates from user's manual mapping (replaces localStorage dependency)
+  const INFERNO_ZONES = {
+    'T_SPAWN': { x: 50, y: 520, w: 120, h: 80 },
+    'CONSTRUCTION': { x: 470, y: 90, w: 100, h: 50 },
+    'GRILL': { x: 620, y: 150, w: 80, h: 60 },
+    'TRUCK': { x: 750, y: 580, w: 70, h: 50 },
+    'WELL': { x: 280, y: 130, w: 60, h: 60 },
+    'TERRACE': { x: 680, y: 220, w: 90, h: 50 },
+    'BANANA': { x: 250, y: 270, w: 200, h: 150 },
+    'T_RAMP': { x: 280, y: 450, w: 80, h: 50 },
+    'KITCHEN': { x: 220, y: 530, w: 80, h: 60 },
+    'APARTMENTS': { x: 550, y: 580, w: 100, h: 80 },
+    'BALCONY': { x: 750, y: 620, w: 70, h: 40 },
+    'SECOND_ORANGES': { x: 410, y: 200, w: 120, h: 50 },
+    'BRIDGE': { x: 350, y: 580, w: 60, h: 40 },
+    'STAIRS': { x: 570, y: 680, w: 60, h: 50 },
+    'ARCH': { x: 680, y: 360, w: 70, h: 60 },
+    'LIBRARY': { x: 750, y: 360, w: 100, h: 80 },
+    'A_LONG': { x: 650, y: 450, w: 120, h: 60 },
+    'MIDDLE': { x: 420, y: 480, w: 80, h: 50 },
+    'TOP_MID': { x: 650, y: 420, w: 80, h: 50 },
+    'PIT': { x: 150, y: 350, w: 60, h: 50 },
+    'A_SHORT': { x: 650, y: 580, w: 80, h: 60 },
+    'NEWBOX': { x: 470, y: 200, w: 70, h: 50 },
+    'CT_SPAWN': { x: 750, y: 200, w: 120, h: 80 },
+    'A_SITE': { x: 720, y: 520, w: 100, h: 80 },
+    'B_SITE': { x: 420, y: 150, w: 100, h: 80 },
+    'BOILER': { x: 650, y: 320, w: 60, h: 40 },
+    'SPEEDWAY': { x: 120, y: 420, w: 80, h: 50 },
+    'GRAVEYARD': { x: 720, y: 480, w: 80, h: 50 },
+    'MOTO': { x: 750, y: 450, w: 60, h: 40 },
+    'LONG_HALL': { x: 550, y: 650, w: 100, h: 50 },
+    'CUBBY': { x: 620, y: 680, w: 60, h: 40 },
+    'SANDBAGS': { x: 520, y: 280, w: 80, h: 50 },
+    '2ND_MID': { x: 520, y: 420, w: 70, h: 50 },
+    'DARK': { x: 420, y: 120, w: 70, h: 50 },
+    'T_APPS': { x: 280, y: 680, w: 100, h: 60 },
+    'COFFINS': { x: 470, y: 120, w: 70, h: 50 },
+    'UNDERPASS': { x: 420, y: 520, w: 90, h: 50 },
+    'CT': { x: 720, y: 150, w: 60, h: 50 }
+  };
+
   // Updated zones list with user modifications
   const zonesToMap = [
     'T_SPAWN', 'CONSTRUCTION', 'GRILL', 'TRUCK', 
@@ -286,19 +328,30 @@ export default function TerritoryPage() {
     'T_APPS', 'COFFINS', 'UNDERPASS', 'CT'
   ];
 
-  // Load zones from localStorage on mount
+  // Initialize with hardcoded zones, fallback to localStorage for manual mapping
   useEffect(() => {
-    const saved = localStorage.getItem('infernoZoneMapping');
-    if (saved) {
-      try {
-        const zonesObject = JSON.parse(saved);
-        setMappedZones(new Map(Object.entries(zonesObject)));
-        console.log('✅ LOADED', Object.keys(zonesObject).length, 'ZONES FROM LOCALSTORAGE');
-      } catch (error) {
-        console.error('Error loading zones:', error);
+    // Always start with hardcoded zones for analysis
+    const hardcodedZones = new Map(Object.entries(INFERNO_ZONES));
+    
+    // If in mapping mode, try to load manual overrides from localStorage
+    if (isMapping) {
+      const saved = localStorage.getItem('infernoZoneMapping');
+      if (saved) {
+        try {
+          const zonesObject = JSON.parse(saved);
+          const manualZones = new Map(Object.entries(zonesObject));
+          setMappedZones(manualZones);
+          console.log('✅ LOADED MANUAL ZONES:', manualZones.size, 'zones for editing');
+          return;
+        } catch (error) {
+          console.error('Error loading manual zones:', error);
+        }
       }
     }
-  }, []);
+    
+    setMappedZones(hardcodedZones);
+    console.log('✅ LOADED HARDCODED ZONES:', hardcodedZones.size, 'zones for analysis');
+  }, [isMapping]);
 
   // Save zones to localStorage (exact copy from original)
   const saveMappedZones = () => {
@@ -558,96 +611,9 @@ export default function TerritoryPage() {
         ctx.font = '14px sans-serif';
         ctx.fillText('Drag zones to position them, drag corners to resize', 10, 30);
       } else {
-        // Normal territory display with mapped zones and sophisticated analytics
-        // Find highest contest intensity zone for marker
-        let highestContestZone = null;
-        let highestContestIntensity = 0;
-        zoneAnalytics.forEach((analytics, zoneName) => {
-          if (analytics.contestIntensity > highestContestIntensity) {
-            highestContestIntensity = analytics.contestIntensity;
-            highestContestZone = zoneName;
-          }
-        });
-
-        mappedZones.forEach((zone, key) => {
-          const analytics = zoneAnalytics.get(key);
-          const isHighestContest = key === highestContestZone && highestContestIntensity > 0.05;
-          
-          // Draw zone boundary (highlight if highest contest)
-          if (isHighestContest) {
-            ctx.strokeStyle = 'rgba(255, 69, 0, 0.9)'; // Orange-red for combat zone
-            ctx.lineWidth = 3;
-            ctx.setLineDash([]);
-          } else {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([5, 5]);
-          }
-          ctx.strokeRect(zone.x, zone.y, zone.w, zone.h);
-          ctx.setLineDash([]);
-          
-          // Zone fill (highlight combat zone)
-          if (isHighestContest) {
-            ctx.fillStyle = 'rgba(255, 69, 0, 0.2)'; // Orange glow for combat
-          } else {
-            ctx.fillStyle = 'rgba(100, 100, 100, 0.1)';
-          }
-          ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
-          
-          // Zone label with background
-          const displayName = key === 'SITE' ? 'B SITE' : key.replace('_', ' ');
-          ctx.fillStyle = isHighestContest ? 'rgba(255, 69, 0, 0.9)' : 'rgba(0, 0, 0, 0.7)';
-          ctx.fillRect(zone.x + 2, zone.y + 2, displayName.length * 7 + 6, 16);
-          ctx.fillStyle = 'white';
-          ctx.font = '11px sans-serif';
-          ctx.fillText(displayName, zone.x + 5, zone.y + 13);
-          
-          // Combat intensity marker with pulsing animation
-          if (isHighestContest) {
-            const centerX = zone.x + zone.w / 2;
-            const centerY = zone.y + zone.h / 2;
-            
-            // Pulsing combat marker
-            const pulseSize = 8 + Math.sin(Date.now() / 300) * 3;
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, pulseSize, 0, 2 * Math.PI);
-            ctx.fillStyle = 'rgba(255, 69, 0, 0.8)';
-            ctx.fill();
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            
-            // Combat icon
-            ctx.fillStyle = 'white';
-            ctx.font = 'bold 14px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('🔥', centerX, centerY + 4);
-            ctx.textAlign = 'left';
-          }
-          
-          // Tactical events based on analytics
-          if (analytics && analytics.tacticalEvents.length > 0) {
-            analytics.tacticalEvents.forEach((event, index) => {
-              const markerX = zone.x + (event.x || zone.w / 2);
-              const markerY = zone.y + (event.y || 20 + index * 25);
-              
-              // Draw marker background
-              ctx.beginPath();
-              ctx.arc(markerX, markerY, 6, 0, 2 * Math.PI);
-              ctx.fillStyle = event.color;
-              ctx.fill();
-              ctx.strokeStyle = 'white';
-              ctx.lineWidth = 1;
-              ctx.stroke();
-              
-              // Draw event icon
-              ctx.fillStyle = 'white';
-              ctx.font = 'bold 8px sans-serif';
-              ctx.textAlign = 'center';
-              ctx.fillText(event.icon, markerX, markerY + 2);
-            });
-          }
-        });
+        // Normal territory display - CLEAN VIEW with no zone boxes
+        // Zones are used invisibly for data analysis only
+        // No visual zone elements drawn in normal view
       }
       
       // Draw player positions with death markers and health
@@ -892,114 +858,39 @@ export default function TerritoryPage() {
             </CardContent>
           </Card>
 
-          {/* Dynamic Round Narrative Analysis */}
+          {/* Simple Role-Based Territory Analysis */}
           {(() => {
             if (zoneAnalytics.size === 0) return null;
             
-            // Find highest contest intensity zone from actual data
-            let primaryZone = null;
-            let maxIntensity = 0;
-            zoneAnalytics.forEach((analytics, zoneName) => {
-              if (analytics.contestIntensity > maxIntensity) {
-                maxIntensity = analytics.contestIntensity;
-                primaryZone = { name: zoneName, analytics };
-              }
-            });
-            
-            if (!primaryZone || maxIntensity < 0.05) return null; // No significant activity
-            
-            // Count active support zones
-            const activeSupportZones = Array.from(zoneAnalytics.entries())
-              .filter(([_, analytics]) => analytics.totalPresence > 0 && analytics.contestIntensity < maxIntensity)
-              .length;
-            
-            // Generate tactical badges based on real data
-            const tacticalEvents = [];
-            zoneAnalytics.forEach((analytics, zoneName) => {
-              if (analytics.tPresence > analytics.ctPresence && analytics.contestIntensity > 0.02) {
-                tacticalEvents.push({ zone: zoneName, type: 'T entry attempt', variant: 'destructive' });
-              } else if (analytics.ctPresence > analytics.tPresence && analytics.totalPresence > 2) {
-                tacticalEvents.push({ zone: zoneName, type: 'CT rotation network', variant: 'default' });
-              } else if (analytics.contestIntensity > 0.1) {
-                tacticalEvents.push({ zone: zoneName, type: 'Active contest', variant: 'secondary' });
-              }
-            });
-            
-            // Generate zone activity list with icons
-            const zoneActivities = Array.from(zoneAnalytics.entries())
+            // Find zones with player activity
+            const activeZones = Array.from(zoneAnalytics.entries())
               .filter(([_, analytics]) => analytics.totalPresence > 0)
-              .sort((a, b) => b[1].contestIntensity - a[1].contestIntensity)
-              .slice(0, 4)
-              .map(([zoneName, analytics]) => {
-                let icon = '👁️', description = 'Info gathering', color = 'text-blue-400';
-                if (analytics.contestIntensity > 0.1) {
-                  icon = '🔥'; description = 'Active combat'; color = 'text-orange-400';
-                } else if (analytics.totalPresence > 2) {
-                  icon = '⚡'; description = 'Rotation prep'; color = 'text-yellow-400';
-                }
-                return { zone: zoneName, icon, description, color };
-              });
+              .sort((a, b) => b[1].totalPresence - a[1].totalPresence)
+              .slice(0, 3);
+            
+            if (activeZones.length === 0) return null;
             
             return (
-              <Card className="bg-gradient-to-br from-orange-950/20 to-red-950/20 border-orange-500/20">
+              <Card>
                 <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">🔥</span>
-                    <CardTitle className="text-orange-300">
-                      {primaryZone.name.replace('_', ' ')} ENGAGEMENT DETECTED
-                    </CardTitle>
-                  </div>
+                  <CardTitle className="text-sm">Territory Activity</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    <Badge className="bg-blue-600">AUTHENTIC DATA</Badge>
-                    <p className="text-sm text-gray-300">
-                      Round {selectedRound.replace('_', ' ')}: Heavy engagement at {primaryZone.name.replace('_', ' ')} ({activeSupportZones} support zones active)
-                    </p>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      {tacticalEvents.slice(0, 3).map((event, idx) => (
-                        <Badge key={idx} variant={event.variant as any} className="text-xs">
-                          {event.type} at {event.zone.replace('_', ' ')}
-                        </Badge>
-                      ))}
-                    </div>
-                    
-                    <div className="mt-4">
-                      <h4 className="font-semibold text-sm text-orange-300 mb-2">ROUND ANALYSIS:</h4>
-                      <div className="grid grid-cols-2 gap-4 text-xs">
-                        <div>
-                          <span className="text-red-400 font-medium">T SIDE:</span> {
-                            primaryZone.analytics.tPresence > primaryZone.analytics.ctPresence ? 
-                            'Executing → Control → Hold' : 'Setup → Probe → Support'
-                          }
-                        </div>
-                        <div>
-                          <span className="text-blue-400 font-medium">CT SIDE:</span> {
-                            primaryZone.analytics.ctPresence > primaryZone.analytics.tPresence ?
-                            'Defense ← Rotate ← Setup' : 'Fallback ← Rotate ← Reinforce'
-                          }
+                  <div className="space-y-2">
+                    {activeZones.map(([zoneName, analytics]) => (
+                      <div key={zoneName} className="flex justify-between items-center text-sm">
+                        <span className="font-medium">{zoneName.replace('_', ' ')}</span>
+                        <div className="flex gap-2 text-xs">
+                          <span className="text-red-400">T: {analytics.tPresence}</span>
+                          <span className="text-blue-400">CT: {analytics.ctPresence}</span>
+                          <span className={`${analytics.territoryControl === 'T' ? 'text-red-400' : 
+                                          analytics.territoryControl === 'CT' ? 'text-blue-400' : 
+                                          analytics.territoryControl === 'Contested' ? 'text-orange-400' : 'text-gray-400'}`}>
+                            ({analytics.territoryControl})
+                          </span>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div className="mt-4 p-3 bg-gray-800/50 rounded">
-                      <p className="text-xs text-gray-400">
-                        Primary engagement at {primaryZone.name.replace('_', ' ')} ({(maxIntensity * 100).toFixed(1)}% intensity) - {primaryZone.analytics.territoryControl} controlled
-                      </p>
-                      
-                      {zoneActivities.length > 0 && (
-                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                          {zoneActivities.map((activity, idx) => (
-                            <div key={idx} className="flex items-center gap-1">
-                              <span>{activity.icon}</span> 
-                              <span className={activity.color}>{activity.zone.replace('_', ' ')}</span> 
-                              <span className="text-gray-400">({activity.description})</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>

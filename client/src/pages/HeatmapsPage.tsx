@@ -1,13 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { TrendingUp, MapPin } from 'lucide-react';
-import { motion } from 'framer-motion';
-import infernoMapPath from '@assets/CS2_inferno_radar_1749672397531.webp';
+import { Badge } from '@/components/ui/badge';
+import { Target, TrendingUp } from 'lucide-react';
+
+// Import map assets
+import infernoRadarPath from '@assets/CS2_inferno_radar_1749672397531.webp';
 
 interface XYZPlayerData {
   health: number;
@@ -29,14 +29,17 @@ interface XYZPlayerData {
   round_num: number;
 }
 
-function coordToMapPercent(x: number, y: number) {
-  const MAP_BOUNDS = {
-    minX: -2217.69, maxX: 2217.69,
+// Accurate CS2 de_inferno map coordinate mapping
+const INFERNO_MAP_CONFIG = {
+  bounds: { 
+    minX: -1675.62, maxX: 2644.97,
     minY: -755.62, maxY: 3452.23
-  };
-  
-  const mapX = (x - MAP_BOUNDS.minX) / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX);
-  const mapY = (y - MAP_BOUNDS.minY) / (MAP_BOUNDS.maxY - MAP_BOUNDS.minY);
+  }
+};
+
+function coordToMapPercent(x: number, y: number) {
+  const mapX = (x - INFERNO_MAP_CONFIG.bounds.minX) / (INFERNO_MAP_CONFIG.bounds.maxX - INFERNO_MAP_CONFIG.bounds.minX);
+  const mapY = (y - INFERNO_MAP_CONFIG.bounds.minY) / (INFERNO_MAP_CONFIG.bounds.maxY - INFERNO_MAP_CONFIG.bounds.minY);
   
   return { 
     x: Math.max(0, Math.min(100, mapX * 100)), 
@@ -46,125 +49,138 @@ function coordToMapPercent(x: number, y: number) {
 
 export default function HeatmapsPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [selectedRound, setSelectedRound] = useState('round_4');
-  const [selectedPlayer, setSelectedPlayer] = useState('all');
-  const [selectedSide, setSelectedSide] = useState('all');
-  const [heatIntensity, setHeatIntensity] = useState([20]);
-  const [showDeaths, setShowDeaths] = useState(false);
-  const [mapImage, setMapImage] = useState<HTMLImageElement | null>(null);
-
+  
+  // Data fetching
   const { data: xyzData = [] } = useQuery<XYZPlayerData[]>({
     queryKey: ['/api/xyz/raw'],
   });
 
-  // Filter data based on selections
-  const filteredData = xyzData.filter(d => {
-    if (selectedRound !== 'all' && d.round_num !== parseInt(selectedRound.split('_')[1])) return false;
-    if (selectedPlayer !== 'all' && d.name !== selectedPlayer) return false;
-    if (selectedSide !== 'all' && d.side !== selectedSide) return false;
-    if (!showDeaths && d.health <= 0) return false;
-    return true;
-  });
+  // State for filtering and controls
+  const [selectedRound, setSelectedRound] = useState('round_4');
+  const [selectedPlayer, setSelectedPlayer] = useState('all');
+  const [selectedTeam, setSelectedTeam] = useState('all');
+  const [heatmapIntensity, setHeatmapIntensity] = useState(50);
+  const [currentTick, setCurrentTick] = useState(0);
 
-  // Get unique players for selection
-  const uniquePlayers = [...new Set(xyzData.map(d => d.name))].sort();
+  // Filtered data based on current selections
+  const filteredData = useMemo(() => {
+    let data = xyzData;
+    
+    // Round filter
+    if (selectedRound !== 'all') {
+      const roundNum = parseInt(selectedRound.split('_')[1]);
+      data = data.filter(d => d.round_num === roundNum);
+    }
+    
+    // Player filter
+    if (selectedPlayer !== 'all') {
+      data = data.filter(d => d.name === selectedPlayer);
+    }
+    
+    // Team filter
+    if (selectedTeam !== 'all') {
+      data = data.filter(d => d.side === selectedTeam);
+    }
+    
+    return data;
+  }, [xyzData, selectedRound, selectedPlayer, selectedTeam]);
 
-  // Load map image
-  useEffect(() => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => setMapImage(img);
-    img.src = infernoMapPath;
-  }, []);
+  // Get unique ticks for timeline
+  const uniqueTicks = useMemo(() => {
+    const ticks = [...new Set(filteredData.map(d => d.tick))].sort((a, b) => a - b);
+    return ticks;
+  }, [filteredData]);
 
-  // Generate heatmap
+  // Heatmap data processing
+  const heatmapData = useMemo(() => {
+    const grid = Array(40).fill(null).map(() => Array(30).fill(0));
+    const maxIntensity = heatmapIntensity / 10;
+    
+    filteredData.forEach(point => {
+      const pos = coordToMapPercent(point.X, point.Y);
+      const gridX = Math.floor((pos.x / 100) * 40);
+      const gridY = Math.floor((pos.y / 100) * 30);
+      
+      if (gridX >= 0 && gridX < 40 && gridY >= 0 && gridY < 30) {
+        grid[gridY][gridX] += 1;
+      }
+    });
+    
+    // Normalize grid values
+    const maxValue = Math.max(...grid.flat());
+    if (maxValue > 0) {
+      for (let y = 0; y < 30; y++) {
+        for (let x = 0; x < 40; x++) {
+          grid[y][x] = (grid[y][x] / maxValue) * maxIntensity;
+        }
+      }
+    }
+    
+    return grid;
+  }, [filteredData, heatmapIntensity]);
+
+  // Canvas rendering
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !mapImage || filteredData.length === 0) return;
+    if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear and draw background
+    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
-
-    // Create heatmap grid
-    const gridSize = 20;
-    const heatGrid = Array(Math.ceil(canvas.height / gridSize))
-      .fill(null)
-      .map(() => Array(Math.ceil(canvas.width / gridSize)).fill(0));
-
-    // Fill heatmap grid with position data
-    filteredData.forEach(point => {
-      const pos = coordToMapPercent(point.X, point.Y);
-      const x = Math.floor((pos.x / 100) * canvas.width / gridSize);
-      const y = Math.floor((pos.y / 100) * canvas.height / gridSize);
+    
+    // Draw background
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       
-      if (x >= 0 && x < heatGrid[0].length && y >= 0 && y < heatGrid.length) {
-        heatGrid[y][x]++;
-      }
-    });
-
-    // Find max value for normalization
-    const maxValue = Math.max(...heatGrid.flat());
-    
-    if (maxValue === 0) return;
-
-    // Draw heatmap
-    const intensityMultiplier = heatIntensity[0] / 10;
-    
-    for (let y = 0; y < heatGrid.length; y++) {
-      for (let x = 0; x < heatGrid[y].length; x++) {
-        const value = heatGrid[y][x];
-        if (value > 0) {
-          const normalizedValue = (value / maxValue) * intensityMultiplier;
-          const alpha = Math.min(0.8, normalizedValue);
-          
-          // Color gradient from blue (cold) to red (hot)
-          let r, g, b;
-          if (normalizedValue < 0.5) {
-            r = 0;
-            g = Math.floor(255 * normalizedValue * 2);
-            b = 255;
-          } else {
-            r = Math.floor(255 * (normalizedValue - 0.5) * 2);
-            g = Math.floor(255 * (1 - normalizedValue));
-            b = 0;
+      // Draw heatmap
+      const cellWidth = canvas.width / 40;
+      const cellHeight = canvas.height / 30;
+      
+      for (let y = 0; y < 30; y++) {
+        for (let x = 0; x < 40; x++) {
+          const intensity = heatmapData[y][x];
+          if (intensity > 0) {
+            const alpha = Math.min(intensity, 1);
+            ctx.fillStyle = `rgba(255, 0, 0, ${alpha * 0.7})`;
+            ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
           }
-
-          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-          ctx.fillRect(x * gridSize, y * gridSize, gridSize, gridSize);
         }
       }
-    }
+    };
+    img.src = infernoRadarPath;
+  }, [heatmapData]);
 
-    // Draw data points as small dots
-    filteredData.forEach(point => {
-      const pos = coordToMapPercent(point.X, point.Y);
-      const x = (pos.x / 100) * canvas.width;
-      const y = (pos.y / 100) * canvas.height;
+  // Get unique players for dropdown
+  const uniquePlayers = useMemo(() => {
+    return [...new Set(xyzData.map(d => d.name))].sort();
+  }, [xyzData]);
 
-      ctx.beginPath();
-      ctx.arc(x, y, 1, 0, 2 * Math.PI);
-      ctx.fillStyle = point.side === 't' ? 'rgba(220, 38, 38, 0.6)' : 'rgba(37, 99, 235, 0.6)';
-      ctx.fill();
-    });
-
-  }, [mapImage, filteredData, heatIntensity, showDeaths]);
+  // Calculate statistics
+  const statistics = useMemo(() => {
+    const totalPositions = filteredData.length;
+    const uniquePositions = new Set(filteredData.map(d => `${d.X},${d.Y}`)).size;
+    const averageHealth = filteredData.length > 0 ? 
+      filteredData.reduce((sum, d) => sum + d.health, 0) / filteredData.length : 0;
+    
+    return {
+      totalPositions,
+      uniquePositions,
+      averageHealth: Math.round(averageHealth)
+    };
+  }, [filteredData]);
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="p-8 space-y-6"
-    >
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
           Position Heatmaps
         </h1>
         <p className="text-muted-foreground">
-          Analyze player positioning patterns and area control
+          Density analysis of player positions using authentic Round 4 data
         </p>
       </div>
 
@@ -173,10 +189,7 @@ export default function HeatmapsPage() {
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                Heatmap Controls
-              </CardTitle>
+              <CardTitle>Heatmap Controls</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -188,6 +201,20 @@ export default function HeatmapsPage() {
                   <SelectContent>
                     <SelectItem value="round_4">Round 4</SelectItem>
                     <SelectItem value="all">All Rounds</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Team</label>
+                <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Both Teams</SelectItem>
+                    <SelectItem value="t">Terrorist</SelectItem>
+                    <SelectItem value="ct">Counter-Terrorist</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -208,70 +235,53 @@ export default function HeatmapsPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-2 block">Side</label>
-                <Select value={selectedSide} onValueChange={setSelectedSide}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Both Teams</SelectItem>
-                    <SelectItem value="t">Terrorists</SelectItem>
-                    <SelectItem value="ct">Counter-Terrorists</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-2 block">
-                  Heat Intensity: {heatIntensity[0]}
-                </label>
+                <label className="text-sm font-medium mb-2 block">Intensity: {heatmapIntensity}%</label>
                 <Slider
-                  value={heatIntensity}
-                  onValueChange={setHeatIntensity}
-                  min={1}
-                  max={50}
-                  step={1}
+                  value={[heatmapIntensity]}
+                  onValueChange={([value]) => setHeatmapIntensity(value)}
+                  min={10}
+                  max={100}
+                  step={10}
                   className="w-full"
                 />
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="show-deaths"
-                  checked={showDeaths}
-                  onCheckedChange={setShowDeaths}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Timeline</label>
+                <Slider
+                  value={[currentTick]}
+                  onValueChange={([value]) => setCurrentTick(value)}
+                  min={0}
+                  max={Math.max(0, uniqueTicks.length - 1)}
+                  step={1}
+                  className="w-full"
                 />
-                <label htmlFor="show-deaths" className="text-sm font-medium">
-                  Include Death Positions
-                </label>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Tick: {uniqueTicks[currentTick] || 0}
+                </div>
               </div>
             </CardContent>
           </Card>
 
+          {/* Statistics */}
           <Card>
             <CardHeader>
               <CardTitle>Statistics</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Data Points:</span>
-                  <Badge variant="outline">{filteredData.length.toLocaleString()}</Badge>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span>Total Positions:</span>
+                  <Badge variant="secondary">{statistics.totalPositions}</Badge>
                 </div>
-                <div className="flex justify-between">
-                  <span>Players:</span>
-                  <Badge variant="outline">{new Set(filteredData.map(d => d.name)).size}</Badge>
+                <div className="flex justify-between text-sm">
+                  <span>Unique Positions:</span>
+                  <Badge variant="outline">{statistics.uniquePositions}</Badge>
                 </div>
-                <div className="flex justify-between">
-                  <span>T Positions:</span>
-                  <Badge variant="outline" className="text-red-600">
-                    {filteredData.filter(d => d.side === 't').length.toLocaleString()}
-                  </Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span>CT Positions:</span>
-                  <Badge variant="outline" className="text-blue-600">
-                    {filteredData.filter(d => d.side === 'ct').length.toLocaleString()}
+                <div className="flex justify-between text-sm">
+                  <span>Avg Health:</span>
+                  <Badge variant={statistics.averageHealth > 75 ? "default" : "destructive"}>
+                    {statistics.averageHealth}%
                   </Badge>
                 </div>
               </div>
@@ -279,36 +289,30 @@ export default function HeatmapsPage() {
           </Card>
         </div>
 
-        {/* Heatmap Canvas */}
+        {/* Main Canvas */}
         <div className="lg:col-span-3">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-                Position Heatmap - {selectedPlayer === 'all' ? 'All Players' : selectedPlayer}
+                <Target className="w-5 h-5" />
+                Position Heatmap
               </CardTitle>
               <CardDescription>
-                {selectedSide === 'all' ? 'Both teams' : selectedSide.toUpperCase()} • {selectedRound === 'all' ? 'All rounds' : 'Round 4'}
+                Red intensity shows player position density over time
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="relative border rounded-lg overflow-hidden bg-gray-900">
-                <canvas
-                  ref={canvasRef}
-                  width={800}
-                  height={600}
-                  className="w-full h-auto"
-                />
-                {filteredData.length === 0 && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                    <p className="text-white text-lg">No data matches current filters</p>
-                  </div>
-                )}
-              </div>
+              <canvas
+                ref={canvasRef}
+                width={800}
+                height={600}
+                className="w-full border rounded-lg bg-gray-900"
+                style={{ maxWidth: '100%', height: 'auto' }}
+              />
             </CardContent>
           </Card>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

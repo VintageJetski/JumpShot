@@ -1,11 +1,14 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Target, Shield, Users, Zap, TrendingUp, Activity } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Shield, Zap, Activity, Users } from 'lucide-react';
+
+// Import map assets
+import infernoRadarPath from '@assets/CS2_inferno_radar_1749672397531.webp';
 
 interface XYZPlayerData {
   health: number;
@@ -27,43 +30,25 @@ interface XYZPlayerData {
   round_num: number;
 }
 
-interface PlayerStatsData {
+interface PlayerData {
   id: string;
   name: string;
   team: string;
   role: string;
-  tRole: string;
-  ctRole: string;
-  isIGL: boolean;
   piv: number;
-  ctPIV: number;
-  tPIV: number;
-  kd: number;
-  primaryMetric: {
-    name: string;
-    value: number;
-  };
 }
 
-const ZONE_STRATEGIC_VALUES = {
-  'APARTMENTS': 0.95,
-  'BANANA': 0.85, 
-  'MIDDLE': 0.95,
-  'CONSTRUCTION': 0.95,
-  'ARCH': 0.70,
-  'QUAD': 0.70,
-  'A_SITE': 0.70,
-  'B_SITE': 0.70,
+// Accurate CS2 de_inferno map coordinate mapping
+const INFERNO_MAP_CONFIG = {
+  bounds: { 
+    minX: -1675.62, maxX: 2644.97,
+    minY: -755.62, maxY: 3452.23
+  }
 };
 
 function coordToMapPercent(x: number, y: number) {
-  const MAP_BOUNDS = {
-    minX: -2217.69, maxX: 2217.69,
-    minY: -755.62, maxY: 3452.23
-  };
-  
-  const mapX = (x - MAP_BOUNDS.minX) / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX);
-  const mapY = (y - MAP_BOUNDS.minY) / (MAP_BOUNDS.maxY - MAP_BOUNDS.minY);
+  const mapX = (x - INFERNO_MAP_CONFIG.bounds.minX) / (INFERNO_MAP_CONFIG.bounds.maxX - INFERNO_MAP_CONFIG.bounds.minX);
+  const mapY = (y - INFERNO_MAP_CONFIG.bounds.minY) / (INFERNO_MAP_CONFIG.bounds.maxY - INFERNO_MAP_CONFIG.bounds.minY);
   
   return { 
     x: Math.max(0, Math.min(100, mapX * 100)), 
@@ -71,375 +56,347 @@ function coordToMapPercent(x: number, y: number) {
   };
 }
 
-function getPlayerZone(x: number, y: number): string {
-  // Approximate zone detection based on coordinates
-  if (x >= -800 && x <= -200 && y >= -400 && y <= 200) return 'APARTMENTS';
-  if (x >= -1000 && x <= -300 && y >= 2000 && y <= 3000) return 'BANANA';
-  if (x >= 400 && x <= 1200 && y >= 800 && y <= 1400) return 'MIDDLE';
-  if (x >= -600 && x <= -200 && y >= -800 && y <= -400) return 'CONSTRUCTION';
-  if (x >= 600 && x <= 1000 && y >= 1400 && y <= 2000) return 'ARCH';
-  if (x >= 800 && x <= 1200 && y >= 1600 && y <= 2200) return 'QUAD';
-  return 'OTHER';
-}
-
 export default function TacticalInsightsPage() {
-  const [selectedRound, setSelectedRound] = useState('round_4');
-  const [selectedTeam, setSelectedTeam] = useState('all');
-
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // Data fetching
   const { data: xyzData = [] } = useQuery<XYZPlayerData[]>({
     queryKey: ['/api/xyz/raw'],
   });
 
-  const { data: playersData = [] } = useQuery<PlayerStatsData[]>({
+  const { data: playersData = [] } = useQuery<PlayerData[]>({
     queryKey: ['/api/players'],
   });
 
-  // Filter data based on selections
-  const filteredData = xyzData.filter(d => {
-    if (selectedRound !== 'all' && d.round_num !== parseInt(selectedRound.split('_')[1])) return false;
-    return true;
-  });
+  // State for filtering and controls
+  const [selectedRound, setSelectedRound] = useState('round_4');
+  const [selectedTeam, setSelectedTeam] = useState('all');
+  const [currentTick, setCurrentTick] = useState(0);
+  const [insightType, setInsightType] = useState('positioning');
 
-  // Calculate tactical insights
-  const tacticalInsights = useMemo(() => {
-    if (filteredData.length === 0) return null;
-
-    // Zone control analysis
-    const zoneControl = new Map<string, { t: number; ct: number; contests: number }>();
+  // Filtered data based on current selections
+  const filteredData = useMemo(() => {
+    let data = xyzData;
     
-    filteredData.forEach(point => {
-      const zone = getPlayerZone(point.X, point.Y);
-      if (!zoneControl.has(zone)) {
-        zoneControl.set(zone, { t: 0, ct: 0, contests: 0 });
-      }
-      
-      const control = zoneControl.get(zone)!;
-      if (point.side === 't') control.t++;
-      else control.ct++;
-    });
+    // Round filter
+    if (selectedRound !== 'all') {
+      const roundNum = parseInt(selectedRound.split('_')[1]);
+      data = data.filter(d => d.round_num === roundNum);
+    }
+    
+    // Team filter
+    if (selectedTeam !== 'all') {
+      data = data.filter(d => d.side === selectedTeam);
+    }
+    
+    return data;
+  }, [xyzData, selectedRound, selectedTeam]);
 
-    // Calculate contest levels
-    zoneControl.forEach((control, zone) => {
-      const total = control.t + control.ct;
-      if (total > 0) {
-        const balance = Math.min(control.t, control.ct) / total;
-        control.contests = balance;
-      }
-    });
+  // Get unique ticks for timeline
+  const uniqueTicks = useMemo(() => {
+    const ticks = [...new Set(filteredData.map(d => d.tick))].sort((a, b) => a - b);
+    return ticks;
+  }, [filteredData]);
 
-    // Player role analysis
-    const roleDistribution = new Map<string, number>();
-    const teamAnalysis = new Map<string, {
-      avgPIV: number;
-      players: number;
-      roles: string[];
-    }>();
+  // Current tick data
+  const currentTickData = useMemo(() => {
+    if (uniqueTicks.length === 0) return [];
+    const targetTick = uniqueTicks[currentTick] || uniqueTicks[0];
+    return filteredData.filter(d => d.tick === targetTick);
+  }, [filteredData, currentTick, uniqueTicks]);
 
-    playersData.forEach(player => {
-      roleDistribution.set(player.role, (roleDistribution.get(player.role) || 0) + 1);
-      
-      if (!teamAnalysis.has(player.team)) {
-        teamAnalysis.set(player.team, { avgPIV: 0, players: 0, roles: [] });
-      }
-      
-      const team = teamAnalysis.get(player.team)!;
-      team.avgPIV += player.piv;
-      team.players++;
-      team.roles.push(player.role);
-    });
-
-    teamAnalysis.forEach((team) => {
-      team.avgPIV = team.avgPIV / team.players;
-    });
-
-    // Movement patterns
-    const movementMetrics = {
-      avgVelocity: 0,
-      rushingPlayers: 0,
-      staticPlayers: 0,
-      flanking: 0
+  // Tactical insights calculations
+  const tacticalInsights = useMemo(() => {
+    const insights = {
+      teamPositioning: new Map<string, number>(),
+      playerPerformance: new Map<string, {health: number, piv: number}>(),
+      tacticalFlow: [],
+      keyMoments: []
     };
 
-    let totalVelocity = 0;
-    filteredData.forEach(point => {
-      const velocity = Math.sqrt(point.velocity_X ** 2 + point.velocity_Y ** 2);
-      totalVelocity += velocity;
+    // Team positioning analysis
+    const teamPositions = filteredData.reduce((acc, point) => {
+      const key = `${point.side}_${Math.floor(point.tick / 1000)}`;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push({ x: point.X, y: point.Y });
+      return acc;
+    }, {} as Record<string, Array<{x: number, y: number}>>);
+
+    // Calculate team spread for each time segment
+    Object.entries(teamPositions).forEach(([key, positions]) => {
+      const [side, timeSegment] = key.split('_');
+      const avgX = positions.reduce((sum, p) => sum + p.x, 0) / positions.length;
+      const avgY = positions.reduce((sum, p) => sum + p.y, 0) / positions.length;
+      const spread = Math.sqrt(positions.reduce((sum, p) => 
+        sum + Math.pow(p.x - avgX, 2) + Math.pow(p.y - avgY, 2), 0) / positions.length);
       
-      if (velocity > 200) movementMetrics.rushingPlayers++;
-      if (velocity < 10) movementMetrics.staticPlayers++;
+      insights.teamPositioning.set(key, spread);
     });
 
-    movementMetrics.avgVelocity = totalVelocity / filteredData.length;
+    // Player performance analysis
+    filteredData.forEach(point => {
+      const playerData = playersData.find(p => p.name === point.name);
+      if (playerData) {
+        insights.playerPerformance.set(point.name, {
+          health: point.health,
+          piv: playerData.piv
+        });
+      }
+    });
 
-    return {
-      zoneControl,
-      roleDistribution,
-      teamAnalysis,
-      movementMetrics,
-      totalDataPoints: filteredData.length
-    };
+    return insights;
   }, [filteredData, playersData]);
 
-  const uniqueTeams = [...new Set(playersData.map(p => p.team))];
+  // Canvas rendering
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-  if (!tacticalInsights) {
-    return (
-      <div className="p-8 flex items-center justify-center">
-        <p className="text-muted-foreground">Loading tactical insights...</p>
-      </div>
-    );
-  }
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-  const topContestedZones = Array.from(tacticalInsights.zoneControl.entries())
-    .filter(([zone]) => zone !== 'OTHER')
-    .sort((a, b) => b[1].contests - a[1].contests)
-    .slice(0, 5);
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw background
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      // Draw tactical insights based on selected type
+      if (insightType === 'positioning') {
+        // Draw team positioning analysis
+        currentTickData.forEach(point => {
+          const pos = coordToMapPercent(point.X, point.Y);
+          const x = (pos.x / 100) * canvas.width;
+          const y = (pos.y / 100) * canvas.height;
 
-  const topTeams = Array.from(tacticalInsights.teamAnalysis.entries())
-    .sort((a, b) => b[1].avgPIV - a[1].avgPIV)
-    .slice(0, 5);
+          // Player dot with tactical importance
+          const playerData = playersData.find(p => p.name === point.name);
+          const importance = playerData ? playerData.piv : 0.1;
+          const radius = 4 + (importance * 8);
+
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, 2 * Math.PI);
+          ctx.fillStyle = point.side === 't' ? '#dc2626' : '#2563eb';
+          ctx.globalAlpha = 0.7 + (importance * 0.3);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = 'white';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // PIV indicator
+          if (playerData && playerData.piv > 0.15) {
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('★', x, y - radius - 5);
+          }
+        });
+      } else if (insightType === 'movement') {
+        // Draw movement patterns
+        const playerPaths = new Map<string, Array<{x: number, y: number}>>();
+        
+        filteredData.forEach(point => {
+          if (!playerPaths.has(point.name)) {
+            playerPaths.set(point.name, []);
+          }
+          const pos = coordToMapPercent(point.X, point.Y);
+          playerPaths.get(point.name)!.push({
+            x: (pos.x / 100) * canvas.width,
+            y: (pos.y / 100) * canvas.height
+          });
+        });
+
+        // Draw paths
+        playerPaths.forEach((path, playerName) => {
+          if (path.length < 2) return;
+          
+          const point = currentTickData.find(p => p.name === playerName);
+          if (!point) return;
+
+          ctx.strokeStyle = point.side === 't' ? '#dc2626' : '#2563eb';
+          ctx.lineWidth = 2;
+          ctx.globalAlpha = 0.6;
+          ctx.beginPath();
+          ctx.moveTo(path[0].x, path[0].y);
+          for (let i = 1; i < path.length; i++) {
+            ctx.lineTo(path[i].x, path[i].y);
+          }
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        });
+      }
+    };
+    img.src = infernoRadarPath;
+  }, [currentTickData, playersData, insightType, filteredData]);
+
+  // Get top performers
+  const topPerformers = useMemo(() => {
+    return Array.from(tacticalInsights.playerPerformance.entries())
+      .sort((a, b) => b[1].piv - a[1].piv)
+      .slice(0, 5);
+  }, [tacticalInsights]);
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="p-8 space-y-6"
-    >
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
           Tactical Insights
         </h1>
         <p className="text-muted-foreground">
-          Advanced tactical analysis and strategic intelligence
+          Advanced tactical analysis using authentic PIV data and positional intelligence
         </p>
       </div>
 
-      {/* Controls */}
-      <div className="flex gap-4 justify-center">
-        <Select value={selectedRound} onValueChange={setSelectedRound}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="round_4">Round 4</SelectItem>
-            <SelectItem value="all">All Rounds</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Teams</SelectItem>
-            {uniqueTeams.map(team => (
-              <SelectItem key={team} value={team}>{team}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Zone Control Analysis */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="w-5 h-5" />
-              Zone Contest Analysis
-            </CardTitle>
-            <CardDescription>
-              Most contested tactical areas based on {tacticalInsights.totalDataPoints.toLocaleString()} data points
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {topContestedZones.map(([zone, data]) => {
-                const total = data.t + data.ct;
-                const tPercent = (data.t / total) * 100;
-                const ctPercent = (data.ct / total) * 100;
-                const contestLevel = data.contests * 100;
-                const strategicValue = ZONE_STRATEGIC_VALUES[zone as keyof typeof ZONE_STRATEGIC_VALUES] || 0.5;
-
-                return (
-                  <div key={zone} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={contestLevel > 30 ? "destructive" : contestLevel > 15 ? "default" : "secondary"}>
-                          {zone}
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">
-                          Contest: {contestLevel.toFixed(1)}%
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          Strategic Value: {(strategicValue * 100).toFixed(0)}%
-                        </span>
-                      </div>
-                      <span className="text-sm font-medium">{total.toLocaleString()} positions</span>
-                    </div>
-                    <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-muted">
-                      <div 
-                        className="bg-red-500" 
-                        style={{ width: `${tPercent}%` }}
-                      />
-                      <div 
-                        className="bg-blue-500" 
-                        style={{ width: `${ctPercent}%` }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>T: {tPercent.toFixed(1)}%</span>
-                      <span>CT: {ctPercent.toFixed(1)}%</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Movement Analysis */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5" />
-              Movement Patterns
-            </CardTitle>
-            <CardDescription>
-              Player mobility and positioning behavior
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Average Velocity</span>
-                <Badge variant="outline">
-                  {tacticalInsights.movementMetrics.avgVelocity.toFixed(0)} u/s
-                </Badge>
-              </div>
-              
-              <div className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span>Rushing Players</span>
-                  <span>{tacticalInsights.movementMetrics.rushingPlayers.toLocaleString()}</span>
-                </div>
-                <Progress value={(tacticalInsights.movementMetrics.rushingPlayers / tacticalInsights.totalDataPoints) * 100} />
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Controls Panel */}
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Analysis Controls</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Round</label>
+                <Select value={selectedRound} onValueChange={setSelectedRound}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="round_4">Round 4</SelectItem>
+                    <SelectItem value="all">All Rounds</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span>Static Positions</span>
-                  <span>{tacticalInsights.movementMetrics.staticPlayers.toLocaleString()}</span>
-                </div>
-                <Progress value={(tacticalInsights.movementMetrics.staticPlayers / tacticalInsights.totalDataPoints) * 100} />
+              <div>
+                <label className="text-sm font-medium mb-2 block">Team</label>
+                <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Both Teams</SelectItem>
+                    <SelectItem value="t">Terrorist</SelectItem>
+                    <SelectItem value="ct">Counter-Terrorist</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Team Performance */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Team Performance Rankings
-            </CardTitle>
-            <CardDescription>
-              Teams ranked by average Player Impact Value (PIV)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {topTeams.map(([team, data], index) => (
-                <div key={team} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div className="flex items-center gap-3">
-                    <Badge variant={index < 3 ? "default" : "secondary"}>
-                      #{index + 1}
-                    </Badge>
-                    <div>
-                      <p className="font-medium">{team}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {data.players} players • Roles: {[...new Set(data.roles)].join(', ')}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-lg">{data.avgPIV.toFixed(2)}</p>
-                    <p className="text-sm text-muted-foreground">PIV</p>
-                  </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Insight Type</label>
+                <Select value={insightType} onValueChange={setInsightType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="positioning">Tactical Positioning</SelectItem>
+                    <SelectItem value="movement">Movement Patterns</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Timeline</label>
+                <Slider
+                  value={[currentTick]}
+                  onValueChange={([value]) => setCurrentTick(value)}
+                  min={0}
+                  max={Math.max(0, uniqueTicks.length - 1)}
+                  step={1}
+                  className="w-full"
+                />
+                <div className="text-xs text-muted-foreground mt-1">
+                  Tick: {uniqueTicks[currentTick] || 0}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Role Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5" />
-              Role Distribution
-            </CardTitle>
-            <CardDescription>
-              Player role composition across teams
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {Array.from(tacticalInsights.roleDistribution.entries())
-                .sort((a, b) => b[1] - a[1])
-                .map(([role, count]) => (
-                  <div key={role} className="flex justify-between items-center">
-                    <span className="text-sm font-medium">{role}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-20 h-2 bg-muted rounded-full">
-                        <div 
-                          className="h-full bg-primary rounded-full"
-                          style={{ 
-                            width: `${(count / Math.max(...tacticalInsights.roleDistribution.values())) * 100}%` 
-                          }}
-                        />
-                      </div>
-                      <Badge variant="outline">{count}</Badge>
+          {/* Top Performers */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Performers</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {topPerformers.map(([playerName, stats], index) => (
+                  <div key={playerName} className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">#{index + 1} {playerName}</span>
+                      <Badge variant="secondary">
+                        PIV: {(stats.piv * 100).toFixed(1)}
+                      </Badge>
                     </div>
+                    <Progress value={stats.piv * 100} className="h-2" />
                   </div>
                 ))}
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Data Summary */}
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Analysis Summary
-            </CardTitle>
-            <CardDescription>
-              Key tactical insights from {selectedRound === 'all' ? 'all rounds' : 'round 4'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-              <div className="p-4 border rounded-lg">
-                <p className="text-2xl font-bold text-primary">{tacticalInsights.totalDataPoints.toLocaleString()}</p>
-                <p className="text-sm text-muted-foreground">Total Positions</p>
+          {/* Tactical Metrics */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Tactical Metrics</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span>Active Players:</span>
+                  <Badge variant="secondary">{currentTickData.length}</Badge>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>High PIV Players:</span>
+                  <Badge variant="default">
+                    {currentTickData.filter(p => {
+                      const playerData = playersData.find(pd => pd.name === p.name);
+                      return playerData && playerData.piv > 0.15;
+                    }).length}
+                  </Badge>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Avg Health:</span>
+                  <Badge variant="outline">
+                    {currentTickData.length > 0 ? 
+                      Math.round(currentTickData.reduce((sum, p) => sum + p.health, 0) / currentTickData.length) : 0}%
+                  </Badge>
+                </div>
               </div>
-              <div className="p-4 border rounded-lg">
-                <p className="text-2xl font-bold text-primary">{tacticalInsights.zoneControl.size}</p>
-                <p className="text-sm text-muted-foreground">Zones Analyzed</p>
-              </div>
-              <div className="p-4 border rounded-lg">
-                <p className="text-2xl font-bold text-primary">{tacticalInsights.teamAnalysis.size}</p>
-                <p className="text-sm text-muted-foreground">Teams</p>
-              </div>
-              <div className="p-4 border rounded-lg">
-                <p className="text-2xl font-bold text-primary">{tacticalInsights.roleDistribution.size}</p>
-                <p className="text-sm text-muted-foreground">Player Roles</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Canvas */}
+        <div className="lg:col-span-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5" />
+                Tactical Analysis Map
+              </CardTitle>
+              <CardDescription>
+                {insightType === 'positioning' ? 
+                  'PIV-weighted player positions with tactical importance indicators' :
+                  'Movement patterns and flow analysis of player positioning'
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <canvas
+                ref={canvasRef}
+                width={800}
+                height={600}
+                className="w-full border rounded-lg bg-gray-900"
+                style={{ maxWidth: '100%', height: 'auto' }}
+              />
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

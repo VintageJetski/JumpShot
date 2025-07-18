@@ -21,6 +21,10 @@ import AdvancedAnalyticsPage from "@/pages/AdvancedAnalyticsPage";
 import DashboardPage from "@/pages/DashboardPage";
 import VentionStyleMockup from "@/pages/VentionStyleMockup";
 import PositionalAnalysisPage from "@/pages/PositionalAnalysisPage";
+import LiveViewPage from "@/pages/LiveViewPage";
+import HeatmapPage from "@/pages/HeatmapPage";
+import TerritoryPage from "@/pages/TerritoryPage";
+import TacticalInsightsPage from "@/pages/TacticalInsightsPage";
 import Layout from "@/components/layout/Layout";
 
 function Router() {
@@ -41,6 +45,10 @@ function Router() {
         <Route path="/statistical-analysis" component={StatisticalAnalysisPage} />
         <Route path="/data-visualization" component={DataVisualizationPage} />
         <Route path="/positional-analysis" component={PositionalAnalysisPage} />
+        <Route path="/live-view" component={LiveViewPage} />
+        <Route path="/heatmap" component={HeatmapPage} />
+        <Route path="/territory" component={TerritoryPage} />
+        <Route path="/tactical-insights" component={TacticalInsightsPage} />
         <Route path="/advanced-analytics" component={AdvancedAnalyticsPage} />
         <Route path="/dashboard" component={DashboardPage} />
         <Route path="/vention-mockup" component={VentionStyleMockup} />

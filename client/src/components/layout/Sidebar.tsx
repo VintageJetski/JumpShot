@@ -22,7 +22,11 @@ import {
   Network,
   FolderOpen,
   Grid,
-  MapPin
+  MapPin,
+  Play,
+  Flame,
+  Map,
+  Lightbulb
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -129,7 +133,7 @@ export default function Sidebar() {
 
   // Group paths for checking active status
   const analyticsRoutes = ['/players', '/teams', '/player-comparisons', '/advanced-analytics'];
-  const visualizationRoutes = ['/statistical-analysis', '/data-visualization', '/match-infographic', '/positional-analysis'];
+  const visualizationRoutes = ['/statistical-analysis', '/data-visualization', '/match-infographic', '/positional-analysis', '/live-view', '/heatmap', '/territory', '/tactical-insights'];
 
   return (
     <aside className="hidden md:block w-64 glassmorphism border-r border-white/5 p-5 h-full overflow-y-auto">
@@ -270,8 +274,40 @@ export default function Sidebar() {
               <MenuItem 
                 href="/positional-analysis" 
                 icon={<MapPin />} 
-                label="Positional Analysis" 
+                label="Positional Analysis (Overview)" 
                 isActive={isActive("/positional-analysis")}
+                indent
+              />
+              
+              <MenuItem 
+                href="/live-view" 
+                icon={<Play />} 
+                label="Live Round Analysis" 
+                isActive={isActive("/live-view")}
+                indent
+              />
+              
+              <MenuItem 
+                href="/heatmap" 
+                icon={<Flame />} 
+                label="Movement Heatmaps" 
+                isActive={isActive("/heatmap")}
+                indent
+              />
+              
+              <MenuItem 
+                href="/territory" 
+                icon={<Map />} 
+                label="Territory Control" 
+                isActive={isActive("/territory")}
+                indent
+              />
+              
+              <MenuItem 
+                href="/tactical-insights" 
+                icon={<Lightbulb />} 
+                label="Tactical Insights" 
+                isActive={isActive("/tactical-insights")}
                 indent
               />
             </CollapsibleContent>

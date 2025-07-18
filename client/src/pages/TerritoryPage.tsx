@@ -230,6 +230,50 @@ export default function TerritoryPage() {
   const [resizingZone, setResizingZone] = useState<string | null>(null);
   const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | null>(null);
 
+  // Get mouse position on canvas (exact copy from original)
+  const getMousePos = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return { x: 0, y: 0 };
+    
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+      x: (event.clientX - rect.left) * scaleX,
+      y: (event.clientY - rect.top) * scaleY
+    };
+  }, []);
+
+  // Check if mouse is over a resize handle (exact copy from original)
+  const getResizeHandle = useCallback((mouseX: number, mouseY: number, zone: {x: number, y: number, w: number, h: number}) => {
+    const handleSize = 12;
+    const handles = [
+      { type: 'tl', x: zone.x - handleSize/2, y: zone.y - handleSize/2 },
+      { type: 'tr', x: zone.x + zone.w - handleSize/2, y: zone.y - handleSize/2 },
+      { type: 'bl', x: zone.x - handleSize/2, y: zone.y + zone.h - handleSize/2 },
+      { type: 'br', x: zone.x + zone.w - handleSize/2, y: zone.y + zone.h - handleSize/2 }
+    ];
+    
+    for (const handle of handles) {
+      if (mouseX >= handle.x && mouseX <= handle.x + handleSize &&
+          mouseY >= handle.y && mouseY <= handle.y + handleSize) {
+        return handle.type as 'tl' | 'tr' | 'bl' | 'br';
+      }
+    }
+    return null;
+  }, []);
+
+  // Check if mouse is over a zone (exact copy from original)
+  const getZoneAtPosition = useCallback((mouseX: number, mouseY: number) => {
+    for (const [zoneKey, zone] of mappedZones) {
+      if (mouseX >= zone.x && mouseX <= zone.x + zone.w &&
+          mouseY >= zone.y && mouseY <= zone.y + zone.h) {
+        return zoneKey;
+      }
+    }
+    return null;
+  }, [mappedZones]);
+
   // Load zones from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('infernoZoneMapping');

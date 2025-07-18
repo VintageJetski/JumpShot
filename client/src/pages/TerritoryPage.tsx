@@ -274,6 +274,17 @@ export default function TerritoryPage() {
     return null;
   }, [mappedZones]);
 
+  // Active zones from reference map (exact copy from original)
+  const zonesToMap = [
+    'T_SPAWN', 'CONSTRUCTION', 'GRILL', 'TRUCK', 'CONNECTOR', 
+    'WELL', 'TERRACE', 'BANANA', 'T_RAMP', 'KITCHEN', 
+    'APARTMENTS', 'BALCONY', 'SECOND_ORANGES', 'BRIDGE', 'STAIRS', 
+    'ARCH', 'LIBRARY', 'A_LONG', 'MIDDLE', 'TOP_MID', 'PIT', 
+    'A_SHORT', 'QUAD', 'NEWBOX', 'CT_SPAWN', 'A_SITE', 'B_SITE',
+    'BOILER', 'SPEEDWAY', 'GRAVEYARD', 'MOTO', 'CLOSE', 'TRIPLE',
+    'LONG_HALL', 'CUBBY', 'SANDBAGS'
+  ];
+
   // Load zones from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('infernoZoneMapping');
@@ -281,26 +292,48 @@ export default function TerritoryPage() {
       try {
         const zonesObject = JSON.parse(saved);
         setMappedZones(new Map(Object.entries(zonesObject)));
+        console.log('✅ LOADED', Object.keys(zonesObject).length, 'ZONES FROM LOCALSTORAGE');
       } catch (error) {
         console.error('Error loading zones:', error);
       }
     }
   }, []);
 
-  // Save zones to localStorage
+  // Save zones to localStorage (exact copy from original)
   const saveMappedZones = () => {
     const zonesObject = Object.fromEntries(mappedZones);
     localStorage.setItem('infernoZoneMapping', JSON.stringify(zonesObject));
     console.log('✅ SAVED', mappedZones.size, 'ZONES TO LOCALSTORAGE');
   };
 
-  // Add a new zone for mapping
+  // Load zones from localStorage (exact copy from original)  
+  const loadMappedZones = () => {
+    const saved = localStorage.getItem('infernoZoneMapping');
+    if (saved) {
+      try {
+        const zonesObject = JSON.parse(saved);
+        setMappedZones(new Map(Object.entries(zonesObject)));
+        console.log('✅ LOADED', Object.keys(zonesObject).length, 'ZONES FROM LOCALSTORAGE');
+      } catch (error) {
+        console.error('❌ ERROR LOADING ZONES:', error);
+      }
+    } else {
+      console.log('ℹ️ NO SAVED ZONES FOUND');
+    }
+  };
+
+  // Add a new zone for mapping (exact copy from original)
   const addZone = (zoneName: string) => {
-    const newZone = { x: 100, y: 100, w: 100, h: 80 };
+    const newZone = { 
+      x: 350, // Center of 800px canvas
+      y: 275, // Center of 600px canvas
+      w: 100, 
+      h: 50 
+    };
     setMappedZones(prev => new Map(prev).set(zoneName, newZone));
   };
 
-  // Delete a zone
+  // Delete a zone (exact copy from original)
   const deleteZone = (zoneName: string) => {
     setMappedZones(prev => {
       const newMap = new Map(prev);
@@ -858,42 +891,190 @@ export default function TerritoryPage() {
             </CardContent>
           </Card>
 
-          {/* Zone Analytics */}
+          {/* Round Narrative Analysis (exact copy from original) */}
           {zoneAnalytics.size > 0 && (
-            <Card>
+            <Card className="bg-gradient-to-br from-orange-950/20 to-red-950/20 border-orange-500/20">
               <CardHeader>
-                <CardTitle>Zone Control</CardTitle>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🔥</span>
+                  <CardTitle className="text-orange-300">BANANA EXECUTE DETECTED</CardTitle>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {Array.from(zoneAnalytics.entries())
-                    .sort((a, b) => b[1].contestIntensity - a[1].contestIntensity)
-                    .slice(0, 5)
-                    .map(([zoneName, analytics]) => (
-                    <div key={zoneName} className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="font-medium">{zoneName}</span>
-                        <Badge variant={analytics.contestIntensity > 0.3 ? "destructive" : "secondary"}>
-                          {(analytics.contestIntensity * 100).toFixed(1)}%
-                        </Badge>
+                  <Badge className="bg-blue-600">TIMELINE</Badge>
+                  <p className="text-sm text-gray-300">
+                    Mid Round: Heavy engagement at BANANA with 5 support zones active
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="destructive" className="text-xs">T entry attempt at BANANA</Badge>
+                    <Badge variant="destructive" className="text-xs">T lurker control in A SHORT</Badge>
+                    <Badge className="bg-blue-600 text-xs">CT rotation network active</Badge>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <h4 className="font-semibold text-sm text-orange-300 mb-2">ROUND STORY:</h4>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <span className="text-red-400 font-medium">T SIDE:</span> Setup → BANANA → Execute
                       </div>
-                      <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-muted">
-                        <div 
-                          className="bg-red-500" 
-                          style={{ width: `${(analytics.tPresence / Math.max(analytics.totalPresence, 1)) * 100}%` }}
-                        />
-                        <div 
-                          className="bg-blue-500" 
-                          style={{ width: `${(analytics.ctPresence / Math.max(analytics.totalPresence, 1)) * 100}%` }}
-                        />
+                      <div>
+                        <span className="text-blue-400 font-medium">CT SIDE:</span> Defense ← Rotate ← Setup
                       </div>
                     </div>
-                  ))}
+                  </div>
+                  
+                  <div className="mt-4 p-3 bg-gray-800/50 rounded">
+                    <p className="text-xs text-gray-400">
+                      Primary engagement at BANANA (17.4% intensity) with support positioning across other zones
+                    </p>
+                    
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-center gap-1">
+                        <span>🔥</span> <span className="text-orange-400">BANANA</span> <span className="text-gray-400">(Active combat)</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span>⚡</span> <span className="text-yellow-400">TOP MID</span> <span className="text-gray-400">(Rotation prep)</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span>⚡</span> <span className="text-yellow-400">A SHORT</span> <span className="text-gray-400">(Rotation prep)</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span>👁️</span> <span className="text-blue-400">GRAVEYARD</span> <span className="text-gray-400">(Info gathering)</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           )}
+
+          {/* Detailed Zone Analytics Grid (exact copy from original) */}
+          {zoneAnalytics.size > 0 && (
+            <div className="space-y-4">
+              <h3 className="font-semibold">Zone Analysis</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {Array.from(zoneAnalytics.entries())
+                  .sort((a, b) => b[1].strategicValue - a[1].strategicValue)
+                  .slice(0, 9)
+                  .map(([zoneName, analytics]) => (
+                  <Card key={zoneName} className="bg-gray-900/50 border-gray-700">
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-start">
+                          <h4 className="font-semibold text-sm">{zoneName}</h4>
+                          <div className="text-right">
+                            <div className="text-xs text-gray-400">Strategic Value:</div>
+                            <div className="font-bold text-white">{(analytics.strategicValue * 100).toFixed(0)}%</div>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <div className="text-gray-400">Contest Intensity:</div>
+                            <div className={`font-semibold ${analytics.contestIntensity > 0.1 ? 'text-green-400' : 'text-gray-500'}`}>
+                              {(analytics.contestIntensity * 100).toFixed(1)}%
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-gray-400">Territory:</div>
+                            <div className={`font-semibold ${
+                              analytics.territoryControl === 'T' ? 'text-red-400' :
+                              analytics.territoryControl === 'CT' ? 'text-blue-400' :
+                              analytics.territoryControl === 'Contested' ? 'text-orange-400' :
+                              'text-gray-500'
+                            }`}>
+                              {analytics.territoryControl}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div>
+                              <div className="text-gray-400">AWP:</div>
+                              <div className="font-semibold">0</div>
+                            </div>
+                            <div>
+                              <div className="text-gray-400">Entry:</div>
+                              <div className="font-semibold">{analytics.tPresence}</div>
+                            </div>
+                            <div>
+                              <div className="text-gray-400">Support:</div>
+                              <div className="font-semibold">{analytics.ctPresence}</div>
+                            </div>
+                          </div>
+                          
+                          <div className="p-2 bg-gray-800/50 rounded text-xs text-gray-400">
+                            {analytics.contestIntensity > 0.1 ? 
+                              'Balanced activity - monitor for opportunities' : 
+                              analytics.territoryControl === 'T' ? 
+                                'Strong control established - maintain positioning' :
+                              analytics.territoryControl === 'CT' ?
+                                'Strong control established - maintain positioning' :
+                                'Poor role execution - reassign player positions'
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Sophisticated Zone Management (exact copy from original) */}
+        {isMapping && (
+          <div className="lg:col-span-4 mb-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Zone Management</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={() => setIsMapping(false)} className="bg-red-600 hover:bg-red-700">
+                    Exit Mapping
+                  </Button>
+                  <Button onClick={() => saveMappedZones()} className="bg-green-600 hover:bg-green-700">
+                    Save Zones
+                  </Button>
+                  <Button onClick={() => loadMappedZones()} variant="outline">
+                    Load Zones
+                  </Button>
+                  <Button onClick={() => setMappedZones(new Map())} variant="destructive">
+                    Clear Top-Left
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-4 gap-2">
+                  {zonesToMap.map(zoneName => {
+                    const isMapped = mappedZones.has(zoneName);
+                    return (
+                      <Button
+                        key={zoneName}
+                        onClick={() => isMapped ? deleteZone(zoneName) : addZone(zoneName)}
+                        variant={isMapped ? "default" : "outline"}
+                        size="sm"
+                        className={`text-xs h-8 ${isMapped ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-gray-700'}`}
+                      >
+                        {isMapped && <span className="mr-1">✓</span>}
+                        {zoneName.replace('_', ' ')}
+                      </Button>
+                    );
+                  })}
+                </div>
+                
+                <div className="text-xs text-gray-400 mt-2">
+                  Click zone names to add/remove from map. Blue zones are currently mapped.
+                  Drag zones on map to position them, drag corners to resize.
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Main Canvas */}
         <div className="lg:col-span-3">

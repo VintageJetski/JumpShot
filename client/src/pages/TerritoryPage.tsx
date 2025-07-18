@@ -274,15 +274,16 @@ export default function TerritoryPage() {
     return null;
   }, [mappedZones]);
 
-  // Active zones from reference map (exact copy from original)
+  // Updated zones list with user modifications
   const zonesToMap = [
-    'T_SPAWN', 'CONSTRUCTION', 'GRILL', 'TRUCK', 'CONNECTOR', 
+    'T_SPAWN', 'CONSTRUCTION', 'GRILL', 'TRUCK', 
     'WELL', 'TERRACE', 'BANANA', 'T_RAMP', 'KITCHEN', 
     'APARTMENTS', 'BALCONY', 'SECOND_ORANGES', 'BRIDGE', 'STAIRS', 
     'ARCH', 'LIBRARY', 'A_LONG', 'MIDDLE', 'TOP_MID', 'PIT', 
-    'A_SHORT', 'QUAD', 'NEWBOX', 'CT_SPAWN', 'A_SITE', 'B_SITE',
-    'BOILER', 'SPEEDWAY', 'GRAVEYARD', 'MOTO', 'CLOSE', 'TRIPLE',
-    'LONG_HALL', 'CUBBY', 'SANDBAGS'
+    'A_SHORT', 'NEWBOX', 'CT_SPAWN', 'A_SITE', 'B_SITE',
+    'BOILER', 'SPEEDWAY', 'GRAVEYARD', 'MOTO', 
+    'LONG_HALL', 'CUBBY', 'SANDBAGS', '2ND_MID', 'DARK', 
+    'T_APPS', 'COFFINS', 'UNDERPASS', 'CT'
   ];
 
   // Load zones from localStorage on mount

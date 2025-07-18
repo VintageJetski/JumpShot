@@ -133,10 +133,17 @@ const INFERNO_MAP_CONFIG = {
   }
 };
 
-// Convert CS2 coordinates to map percentages
-function coordToMapPercent(x: number, y: number) {
-  const mapX = (x - INFERNO_MAP_CONFIG.bounds.minX) / (INFERNO_MAP_CONFIG.bounds.maxX - INFERNO_MAP_CONFIG.bounds.minX);
-  const mapY = (y - INFERNO_MAP_CONFIG.bounds.minY) / (INFERNO_MAP_CONFIG.bounds.maxY - INFERNO_MAP_CONFIG.bounds.minY);
+// Convert CS2 coordinates to map percentage with proper scaling
+function coordToMapPercent(x: number, y: number): { x: number, y: number } {
+  const { bounds } = INFERNO_MAP_CONFIG;
+  
+  // Apply padding to ensure all coordinates fit within the visible map area
+  const padding = 0.1; // 10% padding
+  const width = bounds.maxX - bounds.minX;
+  const height = bounds.maxY - bounds.minY;
+  
+  const mapX = ((x - bounds.minX) / width) * (1 - 2 * padding) + padding;
+  const mapY = ((y - bounds.minY) / height) * (1 - 2 * padding) + padding;
   
   // Invert Y coordinate for proper map orientation
   return { 
@@ -185,8 +192,17 @@ function getPlayerZone(x: number, y: number, mappedZones?: Map<string, {x: numbe
   return 'UNKNOWN';
 }
 
-function isPlayerInZone(x: number, y: number, zone: {x: number, y: number, w: number, h: number}): boolean {
-  return x >= zone.x && x <= zone.x + zone.w && y >= zone.y && y <= zone.y + zone.h;
+// Helper function to check if player coordinates are within mapped zone
+function isPlayerInZone(playerX: number, playerY: number, zoneRect: {x: number, y: number, w: number, h: number}): boolean {
+  // Convert player world coordinates to canvas coordinates
+  const pos = coordToMapPercent(playerX, playerY);
+  const canvasX = (pos.x / 100) * 800; // Canvas width
+  const canvasY = (pos.y / 100) * 600; // Canvas height
+  
+  return canvasX >= zoneRect.x && 
+         canvasX <= zoneRect.x + zoneRect.w &&
+         canvasY >= zoneRect.y && 
+         canvasY <= zoneRect.y + zoneRect.h;
 }
 
 export default function TerritoryPage() {
@@ -211,6 +227,8 @@ export default function TerritoryPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [draggedZone, setDraggedZone] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [resizingZone, setResizingZone] = useState<string | null>(null);
+  const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | null>(null);
 
   // Load zones from localStorage on mount
   useEffect(() => {
@@ -230,6 +248,21 @@ export default function TerritoryPage() {
     const zonesObject = Object.fromEntries(mappedZones);
     localStorage.setItem('infernoZoneMapping', JSON.stringify(zonesObject));
     console.log('✅ SAVED', mappedZones.size, 'ZONES TO LOCALSTORAGE');
+  };
+
+  // Add a new zone for mapping
+  const addZone = (zoneName: string) => {
+    const newZone = { x: 100, y: 100, w: 100, h: 80 };
+    setMappedZones(prev => new Map(prev).set(zoneName, newZone));
+  };
+
+  // Delete a zone
+  const deleteZone = (zoneName: string) => {
+    setMappedZones(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(zoneName);
+      return newMap;
+    });
   };
 
   // Filtered data based on current selections
@@ -263,36 +296,111 @@ export default function TerritoryPage() {
     return filteredData.filter(d => d.tick === targetTick);
   }, [filteredData, currentTick, uniqueTicks]);
 
-  // Zone analytics
+  // Zone analytics with tactical insights
   const zoneAnalytics = useMemo(() => {
     const analytics = new Map<string, {
       totalPresence: number;
       tPresence: number;
       ctPresence: number;
       contestIntensity: number;
+      territoryControl: 'T' | 'CT' | 'Contested' | 'Neutral';
+      tacticalEvents: Array<{icon: string, color: string, description: string}>;
+      strategicValue: number;
     }>();
 
     mappedZones.forEach((zone, zoneName) => {
       const zoneData = filteredData.filter(point => {
-        const pos = coordToMapPercent(point.X, point.Y);
-        const canvasX = (pos.x / 100) * 800;
-        const canvasY = (pos.y / 100) * 600;
-        return isPlayerInZone(canvasX, canvasY, zone);
+        return isPlayerInZone(point.X, point.Y, zone);
       });
 
       const tPresence = zoneData.filter(p => p.side === 't').length;
       const ctPresence = zoneData.filter(p => p.side === 'ct').length;
       const totalPresence = zoneData.length;
       
-      const mixedPresence = Math.min(tPresence, ctPresence);
-      const activityLevel = totalPresence / Math.max(filteredData.length / 10, 1);
-      const contestIntensity = (mixedPresence * activityLevel) / Math.max(totalPresence, 1);
+      // Calculate contest intensity based on simultaneous presence
+      const tickGroups = new Map<number, {t: number, ct: number}>();
+      zoneData.forEach(point => {
+        if (!tickGroups.has(point.tick)) {
+          tickGroups.set(point.tick, { t: 0, ct: 0 });
+        }
+        if (point.side === 't') {
+          tickGroups.get(point.tick)!.t++;
+        } else {
+          tickGroups.get(point.tick)!.ct++;
+        }
+      });
+      
+      let contestedTicks = 0;
+      tickGroups.forEach(counts => {
+        if (counts.t > 0 && counts.ct > 0) {
+          contestedTicks++;
+        }
+      });
+      
+      const contestIntensity = tickGroups.size > 0 ? contestedTicks / tickGroups.size : 0;
+
+      // Determine territory control
+      let territoryControl: 'T' | 'CT' | 'Contested' | 'Neutral';
+      if (contestIntensity > 0.3) {
+        territoryControl = 'Contested';
+      } else if (tPresence > ctPresence * 2) {
+        territoryControl = 'T';
+      } else if (ctPresence > tPresence * 2) {
+        territoryControl = 'CT';
+      } else {
+        territoryControl = 'Neutral';
+      }
+
+      // Tactical events detection
+      const tacticalEvents: Array<{icon: string, color: string, description: string}> = [];
+      
+      // Death events
+      const deadPlayers = zoneData.filter(p => p.health <= 0);
+      if (deadPlayers.length > 0) {
+        tacticalEvents.push({
+          icon: '💀',
+          color: '#dc2626',
+          description: `${deadPlayers.length} eliminations`
+        });
+      }
+
+      // Utility usage
+      const flashedPlayers = zoneData.filter(p => p.flash_duration > 0);
+      if (flashedPlayers.length > 5) {
+        tacticalEvents.push({
+          icon: '💨',
+          color: '#8b5cf6',
+          description: 'Heavy utility usage'
+        });
+      }
+
+      // High activity
+      if (zoneData.length > 100) {
+        tacticalEvents.push({
+          icon: '⚡',
+          color: '#eab308',
+          description: 'High activity zone'
+        });
+      }
+
+      // Strategic value based on zone importance
+      let strategicValue = 0.5; // Default
+      if (['BANANA', 'APARTMENTS', 'MIDDLE'].includes(zoneName)) {
+        strategicValue = 0.95; // Major chokepoints
+      } else if (['A_SITE', 'B_SITE'].includes(zoneName)) {
+        strategicValue = 0.85; // Bomb sites
+      } else if (zoneName.includes('SPAWN')) {
+        strategicValue = 0.1; // Spawns
+      }
 
       analytics.set(zoneName, {
         totalPresence,
         tPresence,
         ctPresence,
-        contestIntensity
+        contestIntensity,
+        territoryControl,
+        tacticalEvents,
+        strategicValue
       });
     });
 
@@ -331,38 +439,78 @@ export default function TerritoryPage() {
         });
       }
       
-      // Draw zone analytics
+      // Draw zone analytics with territory control
       if (!isMapping && zoneAnalytics.size > 0) {
         zoneAnalytics.forEach((analytics, zoneName) => {
           const zone = mappedZones.get(zoneName);
           if (!zone) return;
           
-          const centerX = zone.x + zone.w / 2;
-          const centerY = zone.y + zone.h / 2;
-          
-          // Contest intensity visualization
-          if (analytics.contestIntensity > 0.1) {
-            ctx.fillStyle = `rgba(255, 165, 0, ${analytics.contestIntensity})`;
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, 15, 0, 2 * Math.PI);
-            ctx.fill();
-            
-            ctx.fillStyle = '#000000';
-            ctx.font = 'bold 16px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('🔥', centerX, centerY + 4);
-            ctx.textAlign = 'left';
+          // Territory control visualization
+          let zoneColor = 'rgba(128, 128, 128, 0.3)'; // Neutral gray
+          if (analytics.territoryControl === 'T') {
+            zoneColor = 'rgba(220, 38, 38, 0.4)'; // T red
+          } else if (analytics.territoryControl === 'CT') {
+            zoneColor = 'rgba(37, 99, 235, 0.4)'; // CT blue
+          } else if (analytics.territoryControl === 'Contested') {
+            zoneColor = 'rgba(255, 165, 0, 0.5)'; // Contested orange
           }
+          
+          ctx.fillStyle = zoneColor;
+          ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
+          
+          // Zone border
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(zone.x, zone.y, zone.w, zone.h);
+          
+          // Zone name and control info
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 12px Arial';
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 3;
+          ctx.strokeText(zoneName, zone.x + 5, zone.y + 15);
+          ctx.fillText(zoneName, zone.x + 5, zone.y + 15);
+          
+          // Contest intensity indicator
+          if (analytics.contestIntensity > 0.2) {
+            ctx.fillStyle = '#ff6b35';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.fillText('⚔️', zone.x + zone.w - 20, zone.y + 20);
+          }
+          
+          // Tactical events icons
+          analytics.tacticalEvents.forEach((event, index) => {
+            ctx.fillStyle = event.color;
+            ctx.font = '12px sans-serif';
+            ctx.fillText(event.icon, zone.x + 10 + (index * 15), zone.y + zone.h - 10);
+          });
         });
       }
       
-      // Draw player positions
+      // Draw player positions with death markers and health
       currentTickData.forEach(point => {
         const pos = coordToMapPercent(point.X, point.Y);
         const x = (pos.x / 100) * canvas.width;
         const y = (pos.y / 100) * canvas.height;
 
-        // Player dot
+        // Death marker for dead players
+        if (point.health <= 0) {
+          ctx.fillStyle = '#dc2626';
+          ctx.font = 'bold 16px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('💀', x, y + 4);
+          
+          // Player name for dead players
+          ctx.fillStyle = 'white';
+          ctx.font = '10px Arial';
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 3;
+          ctx.strokeText(point.name, x, y + 20);
+          ctx.fillText(point.name, x, y + 20);
+          return;
+        }
+
+        // Player dot for alive players
         ctx.beginPath();
         ctx.arc(x, y, 6, 0, 2 * Math.PI);
         ctx.fillStyle = point.side === 't' ? '#dc2626' : '#2563eb';
@@ -375,6 +523,11 @@ export default function TerritoryPage() {
         if (point.health < 100) {
           ctx.fillStyle = point.health > 50 ? '#22c55e' : point.health > 25 ? '#eab308' : '#dc2626';
           ctx.fillRect(x - 8, y - 15, 16 * (point.health / 100), 3);
+          
+          // Health border
+          ctx.strokeStyle = 'white';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x - 8, y - 15, 16, 3);
         }
 
         // Player name
@@ -488,6 +641,30 @@ export default function TerritoryPage() {
               >
                 {isMapping ? 'Stop Mapping' : 'Start Zone Mapping'}
               </Button>
+              
+              {isMapping && (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => addZone('NEW_ZONE')}
+                    >
+                      Add Zone
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={saveMappedZones}
+                    >
+                      Save Zones
+                    </Button>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Zones: {mappedZones.size} mapped
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="text-sm font-medium mb-2 block">Timeline</label>

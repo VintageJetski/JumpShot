@@ -38,10 +38,19 @@ const INFERNO_MAP_CONFIG = {
   }
 };
 
-function coordToMapPercent(x: number, y: number) {
-  const mapX = (x - INFERNO_MAP_CONFIG.bounds.minX) / (INFERNO_MAP_CONFIG.bounds.maxX - INFERNO_MAP_CONFIG.bounds.minX);
-  const mapY = (y - INFERNO_MAP_CONFIG.bounds.minY) / (INFERNO_MAP_CONFIG.bounds.maxY - INFERNO_MAP_CONFIG.bounds.minY);
+// Convert CS2 coordinates to map percentage with proper scaling
+function coordToMapPercent(x: number, y: number): { x: number, y: number } {
+  const { bounds } = INFERNO_MAP_CONFIG;
   
+  // Apply padding to ensure all coordinates fit within the visible map area
+  const padding = 0.1; // 10% padding
+  const width = bounds.maxX - bounds.minX;
+  const height = bounds.maxY - bounds.minY;
+  
+  const mapX = ((x - bounds.minX) / width) * (1 - 2 * padding) + padding;
+  const mapY = ((y - bounds.minY) / height) * (1 - 2 * padding) + padding;
+  
+  // Invert Y coordinate for proper map orientation
   return { 
     x: Math.max(0, Math.min(100, mapX * 100)), 
     y: Math.max(0, Math.min(100, (1 - mapY) * 100)) 
@@ -116,7 +125,24 @@ export default function LiveViewPage() {
         const x = (pos.x / 100) * canvas.width;
         const y = (pos.y / 100) * canvas.height;
 
-        // Player dot
+        // Death marker for dead players
+        if (point.health <= 0) {
+          ctx.fillStyle = '#dc2626';
+          ctx.font = 'bold 16px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('💀', x, y + 4);
+          
+          // Player name for dead players
+          ctx.fillStyle = 'white';
+          ctx.font = '10px Arial';
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 3;
+          ctx.strokeText(point.name, x, y + 20);
+          ctx.fillText(point.name, x, y + 20);
+          return;
+        }
+
+        // Player dot for alive players
         ctx.beginPath();
         ctx.arc(x, y, 6, 0, 2 * Math.PI);
         ctx.fillStyle = point.side === 't' ? '#dc2626' : '#2563eb';
@@ -129,6 +155,11 @@ export default function LiveViewPage() {
         if (point.health < 100) {
           ctx.fillStyle = point.health > 50 ? '#22c55e' : point.health > 25 ? '#eab308' : '#dc2626';
           ctx.fillRect(x - 8, y - 15, 16 * (point.health / 100), 3);
+          
+          // Health border
+          ctx.strokeStyle = 'white';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x - 8, y - 15, 16, 3);
         }
 
         // Player name

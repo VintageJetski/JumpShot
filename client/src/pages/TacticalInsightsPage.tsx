@@ -46,10 +46,19 @@ const INFERNO_MAP_CONFIG = {
   }
 };
 
-function coordToMapPercent(x: number, y: number) {
-  const mapX = (x - INFERNO_MAP_CONFIG.bounds.minX) / (INFERNO_MAP_CONFIG.bounds.maxX - INFERNO_MAP_CONFIG.bounds.minX);
-  const mapY = (y - INFERNO_MAP_CONFIG.bounds.minY) / (INFERNO_MAP_CONFIG.bounds.maxY - INFERNO_MAP_CONFIG.bounds.minY);
+// Convert CS2 coordinates to map percentage with proper scaling
+function coordToMapPercent(x: number, y: number): { x: number, y: number } {
+  const { bounds } = INFERNO_MAP_CONFIG;
   
+  // Apply padding to ensure all coordinates fit within the visible map area
+  const padding = 0.1; // 10% padding
+  const width = bounds.maxX - bounds.minX;
+  const height = bounds.maxY - bounds.minY;
+  
+  const mapX = ((x - bounds.minX) / width) * (1 - 2 * padding) + padding;
+  const mapY = ((y - bounds.minY) / height) * (1 - 2 * padding) + padding;
+  
+  // Invert Y coordinate for proper map orientation
   return { 
     x: Math.max(0, Math.min(100, mapX * 100)), 
     y: Math.max(0, Math.min(100, (1 - mapY) * 100)) 

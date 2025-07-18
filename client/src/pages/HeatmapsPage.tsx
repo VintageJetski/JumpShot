@@ -37,10 +37,19 @@ const INFERNO_MAP_CONFIG = {
   }
 };
 
-function coordToMapPercent(x: number, y: number) {
-  const mapX = (x - INFERNO_MAP_CONFIG.bounds.minX) / (INFERNO_MAP_CONFIG.bounds.maxX - INFERNO_MAP_CONFIG.bounds.minX);
-  const mapY = (y - INFERNO_MAP_CONFIG.bounds.minY) / (INFERNO_MAP_CONFIG.bounds.maxY - INFERNO_MAP_CONFIG.bounds.minY);
+// Convert CS2 coordinates to map percentage with proper scaling
+function coordToMapPercent(x: number, y: number): { x: number, y: number } {
+  const { bounds } = INFERNO_MAP_CONFIG;
   
+  // Apply padding to ensure all coordinates fit within the visible map area
+  const padding = 0.1; // 10% padding
+  const width = bounds.maxX - bounds.minX;
+  const height = bounds.maxY - bounds.minY;
+  
+  const mapX = ((x - bounds.minX) / width) * (1 - 2 * padding) + padding;
+  const mapY = ((y - bounds.minY) / height) * (1 - 2 * padding) + padding;
+  
+  // Invert Y coordinate for proper map orientation
   return { 
     x: Math.max(0, Math.min(100, mapX * 100)), 
     y: Math.max(0, Math.min(100, (1 - mapY) * 100)) 
@@ -135,23 +144,71 @@ export default function HeatmapsPage() {
     img.onload = () => {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       
-      // Draw heatmap
-      const cellWidth = canvas.width / 40;
-      const cellHeight = canvas.height / 30;
+      // Draw heatmap with proper grid system
+      const gridWidth = 50;
+      const gridHeight = 50;
+      const cellWidth = canvas.width / gridWidth;
+      const cellHeight = canvas.height / gridHeight;
       
-      for (let y = 0; y < 30; y++) {
-        for (let x = 0; x < 40; x++) {
-          const intensity = heatmapData[y][x];
-          if (intensity > 0) {
-            const alpha = Math.min(intensity, 1);
-            ctx.fillStyle = `rgba(255, 0, 0, ${alpha * 0.7})`;
+      // Create intensity grid from filtered data
+      const intensityGrid = Array(gridHeight).fill(null).map(() => Array(gridWidth).fill(0));
+      
+      filteredData.forEach(point => {
+        const pos = coordToMapPercent(point.X, point.Y);
+        const gridX = Math.floor((pos.x / 100) * gridWidth);
+        const gridY = Math.floor((pos.y / 100) * gridHeight);
+        
+        if (gridX >= 0 && gridX < gridWidth && gridY >= 0 && gridY < gridHeight) {
+          intensityGrid[gridY][gridX] += 1;
+        }
+      });
+      
+      // Find max intensity for normalization
+      const maxIntensity = Math.max(...intensityGrid.flat());
+      
+      // Draw heatmap cells
+      for (let y = 0; y < gridHeight; y++) {
+        for (let x = 0; x < gridWidth; x++) {
+          const intensity = intensityGrid[y][x];
+          if (intensity > 0 && maxIntensity > 0) {
+            const normalizedIntensity = intensity / maxIntensity;
+            const alpha = Math.min(normalizedIntensity * (heatmapIntensity / 100), 0.8);
+            
+            // Color based on team filter
+            let color = 'rgba(255, 0, 0'; // Default red
+            if (selectedTeam === 't') {
+              color = 'rgba(220, 38, 38'; // T red
+            } else if (selectedTeam === 'ct') {
+              color = 'rgba(37, 99, 235'; // CT blue
+            }
+            
+            ctx.fillStyle = `${color}, ${alpha})`;
             ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
           }
         }
       }
+      
+      // Draw current tick timeline indicator if timeline is active
+      if (uniqueTicks.length > 0) {
+        const currentTickProgress = currentTick / Math.max(uniqueTicks.length - 1, 1);
+        const timelineY = canvas.height - 20;
+        
+        // Timeline background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(20, timelineY, canvas.width - 40, 10);
+        
+        // Timeline progress
+        ctx.fillStyle = '#3b82f6';
+        ctx.fillRect(20, timelineY, (canvas.width - 40) * currentTickProgress, 10);
+        
+        // Timeline text
+        ctx.fillStyle = 'white';
+        ctx.font = '12px Arial';
+        ctx.fillText(`Tick: ${uniqueTicks[currentTick] || 0}`, 25, timelineY - 5);
+      }
     };
     img.src = infernoRadarPath;
-  }, [heatmapData]);
+  }, [filteredData, heatmapIntensity, selectedTeam, currentTick, uniqueTicks]);
 
   // Get unique players for dropdown
   const uniquePlayers = useMemo(() => {

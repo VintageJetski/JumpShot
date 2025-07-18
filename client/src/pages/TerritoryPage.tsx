@@ -892,64 +892,119 @@ export default function TerritoryPage() {
             </CardContent>
           </Card>
 
-          {/* Round Narrative Analysis (exact copy from original) */}
-          {zoneAnalytics.size > 0 && (
-            <Card className="bg-gradient-to-br from-orange-950/20 to-red-950/20 border-orange-500/20">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">🔥</span>
-                  <CardTitle className="text-orange-300">BANANA EXECUTE DETECTED</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <Badge className="bg-blue-600">TIMELINE</Badge>
-                  <p className="text-sm text-gray-300">
-                    Mid Round: Heavy engagement at BANANA with 5 support zones active
-                  </p>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="destructive" className="text-xs">T entry attempt at BANANA</Badge>
-                    <Badge variant="destructive" className="text-xs">T lurker control in A SHORT</Badge>
-                    <Badge className="bg-blue-600 text-xs">CT rotation network active</Badge>
+          {/* Dynamic Round Narrative Analysis */}
+          {(() => {
+            if (zoneAnalytics.size === 0) return null;
+            
+            // Find highest contest intensity zone from actual data
+            let primaryZone = null;
+            let maxIntensity = 0;
+            zoneAnalytics.forEach((analytics, zoneName) => {
+              if (analytics.contestIntensity > maxIntensity) {
+                maxIntensity = analytics.contestIntensity;
+                primaryZone = { name: zoneName, analytics };
+              }
+            });
+            
+            if (!primaryZone || maxIntensity < 0.05) return null; // No significant activity
+            
+            // Count active support zones
+            const activeSupportZones = Array.from(zoneAnalytics.entries())
+              .filter(([_, analytics]) => analytics.totalPresence > 0 && analytics.contestIntensity < maxIntensity)
+              .length;
+            
+            // Generate tactical badges based on real data
+            const tacticalEvents = [];
+            zoneAnalytics.forEach((analytics, zoneName) => {
+              if (analytics.tPresence > analytics.ctPresence && analytics.contestIntensity > 0.02) {
+                tacticalEvents.push({ zone: zoneName, type: 'T entry attempt', variant: 'destructive' });
+              } else if (analytics.ctPresence > analytics.tPresence && analytics.totalPresence > 2) {
+                tacticalEvents.push({ zone: zoneName, type: 'CT rotation network', variant: 'default' });
+              } else if (analytics.contestIntensity > 0.1) {
+                tacticalEvents.push({ zone: zoneName, type: 'Active contest', variant: 'secondary' });
+              }
+            });
+            
+            // Generate zone activity list with icons
+            const zoneActivities = Array.from(zoneAnalytics.entries())
+              .filter(([_, analytics]) => analytics.totalPresence > 0)
+              .sort((a, b) => b[1].contestIntensity - a[1].contestIntensity)
+              .slice(0, 4)
+              .map(([zoneName, analytics]) => {
+                let icon = '👁️', description = 'Info gathering', color = 'text-blue-400';
+                if (analytics.contestIntensity > 0.1) {
+                  icon = '🔥'; description = 'Active combat'; color = 'text-orange-400';
+                } else if (analytics.totalPresence > 2) {
+                  icon = '⚡'; description = 'Rotation prep'; color = 'text-yellow-400';
+                }
+                return { zone: zoneName, icon, description, color };
+              });
+            
+            return (
+              <Card className="bg-gradient-to-br from-orange-950/20 to-red-950/20 border-orange-500/20">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">🔥</span>
+                    <CardTitle className="text-orange-300">
+                      {primaryZone.name.replace('_', ' ')} ENGAGEMENT DETECTED
+                    </CardTitle>
                   </div>
-                  
-                  <div className="mt-4">
-                    <h4 className="font-semibold text-sm text-orange-300 mb-2">ROUND STORY:</h4>
-                    <div className="grid grid-cols-2 gap-4 text-xs">
-                      <div>
-                        <span className="text-red-400 font-medium">T SIDE:</span> Setup → BANANA → Execute
-                      </div>
-                      <div>
-                        <span className="text-blue-400 font-medium">CT SIDE:</span> Defense ← Rotate ← Setup
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 p-3 bg-gray-800/50 rounded">
-                    <p className="text-xs text-gray-400">
-                      Primary engagement at BANANA (17.4% intensity) with support positioning across other zones
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <Badge className="bg-blue-600">AUTHENTIC DATA</Badge>
+                    <p className="text-sm text-gray-300">
+                      Round {selectedRound.replace('_', ' ')}: Heavy engagement at {primaryZone.name.replace('_', ' ')} ({activeSupportZones} support zones active)
                     </p>
                     
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex items-center gap-1">
-                        <span>🔥</span> <span className="text-orange-400">BANANA</span> <span className="text-gray-400">(Active combat)</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span>⚡</span> <span className="text-yellow-400">TOP MID</span> <span className="text-gray-400">(Rotation prep)</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span>⚡</span> <span className="text-yellow-400">A SHORT</span> <span className="text-gray-400">(Rotation prep)</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span>👁️</span> <span className="text-blue-400">GRAVEYARD</span> <span className="text-gray-400">(Info gathering)</span>
+                    <div className="flex flex-wrap gap-2">
+                      {tacticalEvents.slice(0, 3).map((event, idx) => (
+                        <Badge key={idx} variant={event.variant as any} className="text-xs">
+                          {event.type} at {event.zone.replace('_', ' ')}
+                        </Badge>
+                      ))}
+                    </div>
+                    
+                    <div className="mt-4">
+                      <h4 className="font-semibold text-sm text-orange-300 mb-2">ROUND ANALYSIS:</h4>
+                      <div className="grid grid-cols-2 gap-4 text-xs">
+                        <div>
+                          <span className="text-red-400 font-medium">T SIDE:</span> {
+                            primaryZone.analytics.tPresence > primaryZone.analytics.ctPresence ? 
+                            'Executing → Control → Hold' : 'Setup → Probe → Support'
+                          }
+                        </div>
+                        <div>
+                          <span className="text-blue-400 font-medium">CT SIDE:</span> {
+                            primaryZone.analytics.ctPresence > primaryZone.analytics.tPresence ?
+                            'Defense ← Rotate ← Setup' : 'Fallback ← Rotate ← Reinforce'
+                          }
+                        </div>
                       </div>
                     </div>
+                    
+                    <div className="mt-4 p-3 bg-gray-800/50 rounded">
+                      <p className="text-xs text-gray-400">
+                        Primary engagement at {primaryZone.name.replace('_', ' ')} ({(maxIntensity * 100).toFixed(1)}% intensity) - {primaryZone.analytics.territoryControl} controlled
+                      </p>
+                      
+                      {zoneActivities.length > 0 && (
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                          {zoneActivities.map((activity, idx) => (
+                            <div key={idx} className="flex items-center gap-1">
+                              <span>{activity.icon}</span> 
+                              <span className={activity.color}>{activity.zone.replace('_', ' ')}</span> 
+                              <span className="text-gray-400">({activity.description})</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           {/* Detailed Zone Analytics Grid (exact copy from original) */}
           {zoneAnalytics.size > 0 && (

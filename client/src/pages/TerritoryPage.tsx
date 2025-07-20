@@ -40,10 +40,10 @@ const INFERNO_MAP_CONFIG = {
     minX: -2200, maxX: 2700,  // Extended bounds for full map coverage
     minY: -800, maxY: 3500    // Extended bounds for full map coverage
   },
-  // Zone labels positioned to match the reference labeled Inferno map
+  // Zone labels positioned using AUTHENTIC spawn coordinates from place column
   zones: {
     'T_SPAWN': { 
-      bounds: { minX: -1675, maxX: -1200, minY: 1000, maxY: 2000 },
+      bounds: { minX: -1700, maxX: -1500, minY: 280, maxY: 450 },
       color: '#22c55e', name: 'T Spawn', priority: 'low'
     },
     'CONSTRUCTION': { 
@@ -127,7 +127,7 @@ const INFERNO_MAP_CONFIG = {
       color: '#22c55e', name: 'Balcony', priority: 'medium'
     },
     'CT_SPAWN': { 
-      bounds: { minX: 2200, maxX: 2645, minY: 0, maxY: 800 },
+      bounds: { minX: 2290, maxX: 2500, minY: 2000, maxY: 2160 },
       color: '#22c55e', name: 'CT Spawn', priority: 'low'
     }
   }
@@ -442,7 +442,7 @@ export default function TerritoryPage() {
     return filteredData.filter(d => d.tick === targetTick);
   }, [filteredData, currentTick, uniqueTicks]);
 
-  // AUTHENTIC KILL EVENT DETECTION
+  // AUTHENTIC KILL EVENT DETECTION with enhanced debugging
   const getUniqueKillEvents = useCallback((data: XYZPlayerData[]) => {
     const killEvents: Array<{
       player: string;
@@ -457,30 +457,44 @@ export default function TerritoryPage() {
     // Sort by tick to process chronologically
     const sortedData = [...data].sort((a, b) => a.tick - b.tick);
     
-    // DEBUG: Log sample health data for understanding
+    // DEBUG: Enhanced logging for understanding coordinate and filtering issues
     if (data.length > 0) {
-      console.log('🔍 DEBUG KILL DETECTION - Sample Health Data:');
-      const samplePoints = sortedData.slice(0, 20);
-      samplePoints.forEach(p => {
-        console.log(`${p.name}: health=${p.health}, tick=${p.tick}`);
+      console.log('🔍 ENHANCED KILL DETECTION DEBUG:');
+      
+      // Check spawn coordinate detection
+      const spawnData = sortedData.filter(d => d.place === 'TSpawn' || d.place === 'CTSpawn');
+      console.log('🎯 SPAWN DETECTION:', {
+        totalSpawnRecords: spawnData.length,
+        tSpawns: spawnData.filter(d => d.place === 'TSpawn').length,
+        ctSpawns: spawnData.filter(d => d.place === 'CTSpawn').length
       });
       
-      // Find unique players and their health ranges
-      const playerHealthRanges = new Map();
-      sortedData.forEach(p => {
-        if (!playerHealthRanges.has(p.name)) {
-          playerHealthRanges.set(p.name, { min: p.health, max: p.health, points: 0 });
+      if (spawnData.length > 0) {
+        const tSpawnSample = spawnData.filter(d => d.place === 'TSpawn')[0];
+        const ctSpawnSample = spawnData.filter(d => d.place === 'CTSpawn')[0];
+        
+        console.log('📍 ACTUAL SPAWN COORDINATES:');
+        if (tSpawnSample) {
+          console.log(`T-Spawn: X=${tSpawnSample.X}, Y=${tSpawnSample.Y} (${tSpawnSample.name})`);
         }
-        const range = playerHealthRanges.get(p.name);
-        range.min = Math.min(range.min, p.health);
-        range.max = Math.max(range.max, p.health);
-        range.points++;
+        if (ctSpawnSample) {
+          console.log(`CT-Spawn: X=${ctSpawnSample.X}, Y=${ctSpawnSample.Y} (${ctSpawnSample.name})`);
+        }
+      }
+      
+      // Sample health data
+      const samplePoints = sortedData.slice(0, 20);
+      console.log('💊 HEALTH DATA SAMPLE:');
+      samplePoints.forEach(p => {
+        console.log(`${p.name}: health=${p.health}, tick=${p.tick}, place=${p.place || 'none'}`);
       });
       
-      console.log('👥 PLAYER HEALTH RANGES:');
-      Array.from(playerHealthRanges.entries()).forEach(([name, range]) => {
-        console.log(`${name}: ${range.min}-${range.max} health (${range.points} records)`);
-      });
+      // Player health distribution 
+      const healthValues = [...new Set(sortedData.map(d => d.health))].sort((a, b) => a - b);
+      console.log('💊 HEALTH VALUE DISTRIBUTION:', healthValues.slice(0, 20));
+      
+      const zeroHealthCount = sortedData.filter(d => d.health <= 0).length;
+      console.log(`💀 ZERO/NEGATIVE HEALTH RECORDS: ${zeroHealthCount}/${sortedData.length}`);
     }
 
     for (const point of sortedData) {

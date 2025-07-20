@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TacticalMapAnalysis } from '@/components/data-visualization/TacticalMapAnalysis';
+import { SimpleHeatmap } from '@/components/data-visualization/SimpleHeatmap';
 
 interface XYZPlayerData {
   health: number;
@@ -51,7 +51,7 @@ export default function HeatmapPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <TacticalMapAnalysis 
+            <SimpleHeatmap 
               xyzData={xyzData} 
             />
           </CardContent>

@@ -265,84 +265,23 @@ export default function TerritoryPage() {
     return null;
   }, [mappedZones]);
 
-  // Hardcoded zone coordinates from user's manual mapping (replaces localStorage dependency)
-  const INFERNO_ZONES = {
-    'T_SPAWN': { x: 50, y: 520, w: 120, h: 80 },
-    'CONSTRUCTION': { x: 470, y: 90, w: 100, h: 50 },
-    'GRILL': { x: 620, y: 150, w: 80, h: 60 },
-    'TRUCK': { x: 750, y: 580, w: 70, h: 50 },
-    'WELL': { x: 280, y: 130, w: 60, h: 60 },
-    'TERRACE': { x: 680, y: 220, w: 90, h: 50 },
-    'BANANA': { x: 250, y: 270, w: 200, h: 150 },
-    'T_RAMP': { x: 280, y: 450, w: 80, h: 50 },
-    'KITCHEN': { x: 220, y: 530, w: 80, h: 60 },
-    'APARTMENTS': { x: 550, y: 580, w: 100, h: 80 },
-    'BALCONY': { x: 750, y: 620, w: 70, h: 40 },
-    'SECOND_ORANGES': { x: 410, y: 200, w: 120, h: 50 },
-    'BRIDGE': { x: 350, y: 580, w: 60, h: 40 },
-    'STAIRS': { x: 570, y: 680, w: 60, h: 50 },
-    'ARCH': { x: 680, y: 360, w: 70, h: 60 },
-    'LIBRARY': { x: 750, y: 360, w: 100, h: 80 },
-    'A_LONG': { x: 650, y: 450, w: 120, h: 60 },
-    'MIDDLE': { x: 420, y: 480, w: 80, h: 50 },
-    'TOP_MID': { x: 650, y: 420, w: 80, h: 50 },
-    'PIT': { x: 150, y: 350, w: 60, h: 50 },
-    'A_SHORT': { x: 650, y: 580, w: 80, h: 60 },
-    'NEWBOX': { x: 470, y: 200, w: 70, h: 50 },
-    'CT_SPAWN': { x: 750, y: 200, w: 120, h: 80 },
-    'A_SITE': { x: 720, y: 520, w: 100, h: 80 },
-    'B_SITE': { x: 420, y: 150, w: 100, h: 80 },
-    'BOILER': { x: 650, y: 320, w: 60, h: 40 },
-    'SPEEDWAY': { x: 120, y: 420, w: 80, h: 50 },
-    'GRAVEYARD': { x: 720, y: 480, w: 80, h: 50 },
-    'MOTO': { x: 750, y: 450, w: 60, h: 40 },
-    'LONG_HALL': { x: 550, y: 650, w: 100, h: 50 },
-    'CUBBY': { x: 620, y: 680, w: 60, h: 40 },
-    'SANDBAGS': { x: 520, y: 280, w: 80, h: 50 },
-    '2ND_MID': { x: 520, y: 420, w: 70, h: 50 },
-    'DARK': { x: 420, y: 120, w: 70, h: 50 },
-    'T_APPS': { x: 280, y: 680, w: 100, h: 60 },
-    'COFFINS': { x: 470, y: 120, w: 70, h: 50 },
-    'UNDERPASS': { x: 420, y: 520, w: 90, h: 50 },
-    'CT': { x: 720, y: 150, w: 60, h: 50 }
-  };
-
-  // Updated zones list with user modifications
-  const zonesToMap = [
-    'T_SPAWN', 'CONSTRUCTION', 'GRILL', 'TRUCK', 
-    'WELL', 'TERRACE', 'BANANA', 'T_RAMP', 'KITCHEN', 
-    'APARTMENTS', 'BALCONY', 'SECOND_ORANGES', 'BRIDGE', 'STAIRS', 
-    'ARCH', 'LIBRARY', 'A_LONG', 'MIDDLE', 'TOP_MID', 'PIT', 
-    'A_SHORT', 'NEWBOX', 'CT_SPAWN', 'A_SITE', 'B_SITE',
-    'BOILER', 'SPEEDWAY', 'GRAVEYARD', 'MOTO', 
-    'LONG_HALL', 'CUBBY', 'SANDBAGS', '2ND_MID', 'DARK', 
-    'T_APPS', 'COFFINS', 'UNDERPASS', 'CT'
-  ];
-
-  // Initialize with hardcoded zones, fallback to localStorage for manual mapping
+  // Load only manually mapped zones from localStorage
   useEffect(() => {
-    // Always start with hardcoded zones for analysis
-    const hardcodedZones = new Map(Object.entries(INFERNO_ZONES));
-    
-    // If in mapping mode, try to load manual overrides from localStorage
-    if (isMapping) {
-      const saved = localStorage.getItem('infernoZoneMapping');
-      if (saved) {
-        try {
-          const zonesObject = JSON.parse(saved);
-          const manualZones = new Map(Object.entries(zonesObject));
-          setMappedZones(manualZones);
-          console.log('✅ LOADED MANUAL ZONES:', manualZones.size, 'zones for editing');
-          return;
-        } catch (error) {
-          console.error('Error loading manual zones:', error);
-        }
+    const saved = localStorage.getItem('infernoZoneMapping');
+    if (saved) {
+      try {
+        const zonesObject = JSON.parse(saved);
+        const manualZones = new Map(Object.entries(zonesObject));
+        setMappedZones(manualZones);
+        console.log('✅ LOADED MANUAL ZONES:', manualZones.size, 'zones');
+      } catch (error) {
+        console.error('Error loading manual zones:', error);
+        setMappedZones(new Map());
       }
+    } else {
+      setMappedZones(new Map());
     }
-    
-    setMappedZones(hardcodedZones);
-    console.log('✅ LOADED HARDCODED ZONES:', hardcodedZones.size, 'zones for analysis');
-  }, [isMapping]);
+  }, []);
 
   // Save zones to localStorage (exact copy from original)
   const saveMappedZones = () => {

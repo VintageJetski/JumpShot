@@ -182,22 +182,7 @@ function getPlayerZone(x: number, y: number, mappedZones?: Map<string, {x: numbe
     }
   }
   
-  // If still no manual zones, create basic fallback zones for interface functionality
-  if (!actualMappedZones || actualMappedZones.size === 0) {
-    actualMappedZones = new Map();
-    // Add basic zones so the interface works while user sets up manual zones
-    Object.entries(INFERNO_MAP_CONFIG.zones).forEach(([zoneName, zone]) => {
-      const bounds = zone.bounds;
-      const pos1 = coordToMapPercent(bounds.minX, bounds.minY);
-      const pos2 = coordToMapPercent(bounds.maxX, bounds.maxY);
-      actualMappedZones.set(zoneName, {
-        x: (pos1.x / 100) * 800,
-        y: (pos1.y / 100) * 600,
-        w: Math.abs((pos2.x - pos1.x) / 100) * 800,
-        h: Math.abs((pos2.y - pos1.y) / 100) * 600
-      });
-    });
-  }
+  // Do NOT load fallback zones - only use manually mapped zones
   
   // Check manually mapped zones for player position
   if (actualMappedZones && actualMappedZones.size > 0) {

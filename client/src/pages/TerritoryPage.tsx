@@ -137,8 +137,8 @@ const INFERNO_MAP_CONFIG = {
 function coordToMapPercent(x: number, y: number): { x: number, y: number } {
   const { bounds } = INFERNO_MAP_CONFIG;
   
-  // Apply padding to ensure all coordinates fit within the visible map area  
-  const padding = 0.15; // 15% padding (5% more to make map smaller and fit players)
+  // Apply padding to ensure all coordinates fit within the visible map area
+  const padding = 0.1; // 10% padding
   const width = bounds.maxX - bounds.minX;
   const height = bounds.maxY - bounds.minY;
   

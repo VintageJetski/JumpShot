@@ -1083,79 +1083,71 @@ export default function TerritoryPage() {
             );
           })()}
 
-          {/* Detailed Zone Analytics Grid (exact copy from original) */}
+          {/* Clean Zone Analytics */}
           {zoneAnalytics.size > 0 && (
-            <div className="space-y-4">
-              <h3 className="font-semibold">Zone Analysis</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {Array.from(zoneAnalytics.entries())
-                  .sort((a, b) => b[1].strategicValue - a[1].strategicValue)
-                  .slice(0, 9)
-                  .map(([zoneName, analytics]) => (
-                  <Card key={zoneName} className="bg-gray-900/50 border-gray-700">
-                    <CardContent className="p-4">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-start">
-                          <h4 className="font-semibold text-sm">{zoneName}</h4>
-                          <div className="text-right">
-                            <div className="text-xs text-gray-400">Strategic Value:</div>
-                            <div className="font-bold text-white">{(analytics.strategicValue * 100).toFixed(0)}%</div>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-3 text-xs">
-                          <div>
-                            <div className="text-gray-400">Contest Intensity:</div>
-                            <div className={`font-semibold ${analytics.contestIntensity > 0.1 ? 'text-green-400' : 'text-gray-500'}`}>
-                              {(analytics.contestIntensity * 100).toFixed(1)}%
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-gray-400">Territory:</div>
-                            <div className={`font-semibold ${
-                              analytics.territoryControl === 'T' ? 'text-red-400' :
-                              analytics.territoryControl === 'CT' ? 'text-blue-400' :
-                              analytics.territoryControl === 'Contested' ? 'text-orange-400' :
-                              'text-gray-500'
-                            }`}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  Zone Analysis
+                </CardTitle>
+                <CardDescription>
+                  Territory control and contest intensity by zone
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Array.from(zoneAnalytics.entries())
+                    .filter(([_, analytics]) => analytics.contestIntensity > 0.05 || analytics.actualKills > 0 || analytics.totalPresence > 5)
+                    .sort((a, b) => b[1].contestIntensity - a[1].contestIntensity)
+                    .slice(0, 6)
+                    .map(([zoneName, analytics]) => (
+                    <Card key={zoneName} className="bg-slate-800/50 border-slate-700">
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <h4 className="font-semibold text-white">{zoneName.replace('_', ' ')}</h4>
+                            <Badge variant={
+                              analytics.territoryControl === 'T' ? 'destructive' :
+                              analytics.territoryControl === 'CT' ? 'default' :
+                              analytics.territoryControl === 'Contested' ? 'secondary' : 'outline'
+                            }>
                               {analytics.territoryControl}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <div className="grid grid-cols-3 gap-2 text-xs">
-                            <div>
-                              <div className="text-gray-400">AWP:</div>
-                              <div className="font-semibold">0</div>
-                            </div>
-                            <div>
-                              <div className="text-gray-400">Entry:</div>
-                              <div className="font-semibold">{analytics.tPresence}</div>
-                            </div>
-                            <div>
-                              <div className="text-gray-400">Support:</div>
-                              <div className="font-semibold">{analytics.ctPresence}</div>
-                            </div>
+                            </Badge>
                           </div>
                           
-                          <div className="p-2 bg-gray-800/50 rounded text-xs text-gray-400">
-                            {analytics.contestIntensity > 0.1 ? 
-                              'Balanced activity - monitor for opportunities' : 
-                              analytics.territoryControl === 'T' ? 
-                                'Strong control established - maintain positioning' :
-                              analytics.territoryControl === 'CT' ?
-                                'Strong control established - maintain positioning' :
-                                'Poor role execution - reassign player positions'
-                            }
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <div className="text-slate-400 text-xs">Contest Intensity</div>
+                              <div className="font-semibold text-orange-400">
+                                {(analytics.contestIntensity * 100).toFixed(0)}%
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-slate-400 text-xs">Kills</div>
+                              <div className="font-semibold text-red-400">
+                                {analytics.actualKills}
+                              </div>
+                            </div>
                           </div>
+
+                          <div className="flex justify-between items-center text-xs">
+                            <div className="text-red-400">T: {analytics.tPresence}</div>
+                            <div className="text-blue-400">CT: {analytics.ctPresence}</div>
+                            <div className="text-slate-400">Total: {analytics.totalPresence}</div>
+                          </div>
+                          
+                          <Progress 
+                            value={analytics.contestIntensity * 100} 
+                            className="h-2"
+                          />
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
 

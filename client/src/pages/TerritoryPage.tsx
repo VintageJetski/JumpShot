@@ -439,26 +439,47 @@ export default function TerritoryPage() {
       strategicValue: number;
     }>();
 
-    // DEBUG: Log round timing information
+    // DEBUG: Log round timing information with FIX
     if (filteredData.length > 0) {
-      const roundDuration = Math.max(...filteredData.map(d => d.round_time_ms)) - Math.min(...filteredData.map(d => d.round_time_ms));
-      const halfwayMark = roundDuration / 2;
-      const killsAfterHalfway = filteredData.filter(d => d.health <= 0 && d.round_time_ms > halfwayMark);
+      // FIX: Use valid round_time_ms values only
+      const validTimes = filteredData
+        .map(d => d.round_time_ms)
+        .filter(time => !isNaN(time) && time !== null && time !== undefined);
       
-      console.log('🐛 DEBUG ZONE ANALYTICS:');
-      console.log('- Round Duration:', roundDuration, 'ms');
-      console.log('- Halfway Mark:', halfwayMark, 'ms');
-      console.log('- Total Kills (health ≤ 0):', filteredData.filter(d => d.health <= 0).length);
-      console.log('- Kills After Halfway:', killsAfterHalfway.length);
-      
-      if (killsAfterHalfway.length > 0) {
-        console.log('- Kill Details:', killsAfterHalfway.map(k => ({
-          player: k.name, 
-          side: k.side, 
-          coords: [k.X, k.Y], 
-          time: k.round_time_ms,
-          health: k.health
-        })));
+      if (validTimes.length > 0) {
+        const roundDuration = Math.max(...validTimes) - Math.min(...validTimes);
+        const minTime = Math.min(...validTimes);
+        const halfwayMark = minTime + (roundDuration / 2);
+        const killsAfterHalfway = filteredData.filter(d => d.health <= 0 && !isNaN(d.round_time_ms) && d.round_time_ms > halfwayMark);
+        
+        console.log('🐛 DEBUG ZONE ANALYTICS (FIXED):');
+        console.log('- Round Duration:', roundDuration, 'ms');
+        console.log('- Round Start:', minTime, 'ms');
+        console.log('- Halfway Mark:', halfwayMark, 'ms');
+        console.log('- Total Kills (health ≤ 0):', filteredData.filter(d => d.health <= 0).length);
+        console.log('- Kills After Halfway:', killsAfterHalfway.length);
+        
+        if (killsAfterHalfway.length > 0) {
+          console.log('- Kill Details:', killsAfterHalfway.slice(0, 5).map(k => ({
+            player: k.name, 
+            side: k.side, 
+            coords: [k.X, k.Y], 
+            time: k.round_time_ms,
+            health: k.health
+          })));
+        }
+      } else {
+        console.log('🚨 NO VALID ROUND TIMES FOUND - using tick-based halfway calculation');
+        // Fallback: Use tick progression for halfway calculation
+        const allTicks = filteredData.map(d => d.tick).filter(t => !isNaN(t));
+        if (allTicks.length > 0) {
+          const maxTick = Math.max(...allTicks);
+          const minTick = Math.min(...allTicks);
+          const halfwayTick = minTick + ((maxTick - minTick) / 2);
+          const killsAfterHalfway = filteredData.filter(d => d.health <= 0 && d.tick > halfwayTick);
+          console.log('- Using tick-based calculation: halfway tick =', halfwayTick);
+          console.log('- Kills After Halfway (tick-based):', killsAfterHalfway.length);
+        }
       }
     }
 
@@ -483,27 +504,40 @@ export default function TerritoryPage() {
         })));
       }
       
-      // Calculate contest intensity based on simultaneous presence
-      const tickGroups = new Map<number, {t: number, ct: number}>();
+      // FIXED: Calculate contest intensity including kill-based weighting
+      const tickGroups = new Map<number, {t: number, ct: number, kills: number}>();
       zoneData.forEach(point => {
         if (!tickGroups.has(point.tick)) {
-          tickGroups.set(point.tick, { t: 0, ct: 0 });
+          tickGroups.set(point.tick, { t: 0, ct: 0, kills: 0 });
         }
         if (point.side === 't') {
           tickGroups.get(point.tick)!.t++;
         } else {
           tickGroups.get(point.tick)!.ct++;
         }
-      });
-      
-      let contestedTicks = 0;
-      tickGroups.forEach(counts => {
-        if (counts.t > 0 && counts.ct > 0) {
-          contestedTicks++;
+        if (point.health <= 0) {
+          tickGroups.get(point.tick)!.kills++;
         }
       });
       
-      const contestIntensity = tickGroups.size > 0 ? contestedTicks / tickGroups.size : 0;
+      let contestedTicks = 0;
+      let killWeightedTicks = 0;
+      tickGroups.forEach(counts => {
+        if (counts.t > 0 && counts.ct > 0) {
+          contestedTicks++;
+          // Weight ticks with kills more heavily for contest intensity
+          if (counts.kills > 0) {
+            killWeightedTicks += 2; // Double weight for combat ticks
+          } else {
+            killWeightedTicks += 1; // Normal weight for presence-only ticks
+          }
+        }
+      });
+      
+      // Contest intensity now factors in kill activity
+      const baseIntensity = tickGroups.size > 0 ? contestedTicks / tickGroups.size : 0;
+      const killBonus = zoneKills.length > 0 ? Math.min(zoneKills.length / 100, 0.5) : 0; // Up to 50% bonus for kills
+      const contestIntensity = Math.min(baseIntensity + killBonus, 1.0);
 
       // Determine territory control
       let territoryControl: 'T' | 'CT' | 'Contested' | 'Neutral';

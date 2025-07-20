@@ -1096,42 +1096,46 @@ export default function TerritoryPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {Array.from(zoneAnalytics.entries())
                     .filter(([_, analytics]) => analytics.contestIntensity > 0.05 || analytics.actualKills > 0 || analytics.totalPresence > 5)
                     .sort((a, b) => b[1].contestIntensity - a[1].contestIntensity)
-                    .slice(0, 6)
+                    .slice(0, 4)
                     .map(([zoneName, analytics]) => (
                     <Card key={zoneName} className="bg-slate-800/50 border-slate-700">
                       <CardContent className="p-4">
                         <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            <h4 className="font-semibold text-white">{zoneName.replace('_', ' ')}</h4>
-                            <Badge variant={
-                              analytics.territoryControl === 'T' ? 'destructive' :
-                              analytics.territoryControl === 'CT' ? 'default' :
-                              analytics.territoryControl === 'Contested' ? 'secondary' : 'outline'
-                            }>
+                          <div className="flex justify-between items-start">
+                            <h4 className="font-semibold text-white text-lg">{zoneName.replace('_', ' ')}</h4>
+                            <Badge 
+                              className="ml-2"
+                              variant={
+                                analytics.territoryControl === 'T' ? 'destructive' :
+                                analytics.territoryControl === 'CT' ? 'default' :
+                                analytics.territoryControl === 'Contested' ? 'secondary' : 'outline'
+                              }
+                            >
                               {analytics.territoryControl}
                             </Badge>
                           </div>
                           
-                          <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="space-y-2">
                             <div>
-                              <div className="text-slate-400 text-xs">Contest Intensity</div>
-                              <div className="font-semibold text-orange-400">
+                              <div className="text-slate-400 text-sm mb-1">Contest Intensity</div>
+                              <div className="font-bold text-orange-400 text-xl">
                                 {(analytics.contestIntensity * 100).toFixed(0)}%
                               </div>
                             </div>
+                            
                             <div>
-                              <div className="text-slate-400 text-xs">Kills</div>
-                              <div className="font-semibold text-red-400">
+                              <div className="text-slate-400 text-sm mb-1">Kills</div>
+                              <div className="font-bold text-red-400 text-xl">
                                 {analytics.actualKills}
                               </div>
                             </div>
                           </div>
 
-                          <div className="flex justify-between items-center text-xs">
+                          <div className="flex justify-between items-center text-sm pt-2 border-t border-slate-700">
                             <div className="text-red-400">T: {analytics.tPresence}</div>
                             <div className="text-blue-400">CT: {analytics.ctPresence}</div>
                             <div className="text-slate-400">Total: {analytics.totalPresence}</div>
@@ -1139,7 +1143,7 @@ export default function TerritoryPage() {
                           
                           <Progress 
                             value={analytics.contestIntensity * 100} 
-                            className="h-2"
+                            className="h-3 mt-3"
                           />
                         </div>
                       </CardContent>

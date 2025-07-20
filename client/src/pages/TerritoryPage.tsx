@@ -427,7 +427,78 @@ export default function TerritoryPage() {
     return filteredData.filter(d => d.tick === targetTick);
   }, [filteredData, currentTick, uniqueTicks]);
 
-  // Zone analytics with tactical insights and DEBUG LOGGING
+  // AUTHENTIC KILL EVENT DETECTION
+  const getUniqueKillEvents = useCallback((data: XYZPlayerData[]) => {
+    const killEvents: Array<{
+      player: string;
+      side: 't' | 'ct';
+      tick: number;
+      coords: [number, number];
+      zone: string;
+    }> = [];
+    
+    const playerHealthTracker = new Map<string, number>();
+    
+    // Sort by tick to process chronologically
+    const sortedData = [...data].sort((a, b) => a.tick - b.tick);
+    
+    // DEBUG: Log sample health data for understanding
+    if (data.length > 0) {
+      console.log('🔍 DEBUG KILL DETECTION - Sample Health Data:');
+      const samplePoints = sortedData.slice(0, 20);
+      samplePoints.forEach(p => {
+        console.log(`${p.name}: health=${p.health}, tick=${p.tick}`);
+      });
+      
+      // Find unique players and their health ranges
+      const playerHealthRanges = new Map();
+      sortedData.forEach(p => {
+        if (!playerHealthRanges.has(p.name)) {
+          playerHealthRanges.set(p.name, { min: p.health, max: p.health, points: 0 });
+        }
+        const range = playerHealthRanges.get(p.name);
+        range.min = Math.min(range.min, p.health);
+        range.max = Math.max(range.max, p.health);
+        range.points++;
+      });
+      
+      console.log('👥 PLAYER HEALTH RANGES:');
+      Array.from(playerHealthRanges.entries()).forEach(([name, range]) => {
+        console.log(`${name}: ${range.min}-${range.max} health (${range.points} records)`);
+      });
+    }
+
+    for (const point of sortedData) {
+      const lastHealth = playerHealthTracker.get(point.name);
+      
+      // Initialize with first health value seen
+      if (lastHealth === undefined) {
+        playerHealthTracker.set(point.name, point.health);
+        continue;
+      }
+      
+      // Kill detected: health dropped from alive to dead
+      if (lastHealth > 0 && point.health <= 0) {
+        const killEvent = {
+          player: point.name,
+          side: point.side,
+          tick: point.tick,
+          coords: [point.X, point.Y] as [number, number],
+          zone: getPlayerZone(point.X, point.Y, mappedZones.size > 0 ? mappedZones : undefined)
+        };
+        killEvents.push(killEvent);
+        
+        // DEBUG: Log each kill detection
+        console.log(`🔥 KILL DETECTED: ${point.name} (health ${lastHealth} → ${point.health}) at tick ${point.tick}`);
+      }
+      
+      playerHealthTracker.set(point.name, point.health);
+    }
+    
+    return killEvents;
+  }, [mappedZones]);
+
+  // Zone analytics with authentic kill events and territory control
   const zoneAnalytics = useMemo(() => {
     const analytics = new Map<string, {
       totalPresence: number;
@@ -437,96 +508,67 @@ export default function TerritoryPage() {
       territoryControl: 'T' | 'CT' | 'Contested' | 'Neutral';
       tacticalEvents: Array<{icon: string, color: string, description: string}>;
       strategicValue: number;
+      actualKills: number;
     }>();
 
-    // DEBUG: Check coordinate transformation and zone assignment
-    if (filteredData.length > 0) {
-      const sampleKills = filteredData.filter(d => d.health <= 0).slice(0, 10);
-      console.log('🔍 DEBUGGING COORDINATE TRANSFORMATION FOR KILLS:');
-      sampleKills.forEach((kill, idx) => {
-        const worldCoords = [kill.X, kill.Y];
-        const mapPercent = coordToMapPercent(kill.X, kill.Y);
-        const canvasCoords = [(mapPercent.x / 100) * 800, (mapPercent.y / 100) * 600];
-        const assignedZone = getPlayerZone(kill.X, kill.Y, mappedZones.size > 0 ? mappedZones : undefined);
-        
-        console.log(`Kill ${idx + 1} (${kill.name}):`, {
-          world: worldCoords,
-          percent: [mapPercent.x.toFixed(1), mapPercent.y.toFixed(1)],
-          canvas: [canvasCoords[0].toFixed(1), canvasCoords[1].toFixed(1)],
-          zone: assignedZone,
-          tick: kill.tick
-        });
+    // Get authentic kill events for the round
+    const killEvents = getUniqueKillEvents(filteredData);
+    
+    // DEBUG: Log authentic kill events
+    if (killEvents.length > 0) {
+      console.log('💀 AUTHENTIC KILL EVENTS DETECTED:', killEvents.length);
+      killEvents.forEach((kill, idx) => {
+        console.log(`Kill ${idx + 1}: ${kill.player} (${kill.side}) in ${kill.zone} at tick ${kill.tick}`);
       });
       
-      // DEBUG: Log manual zones for comparison  
-      if (mappedZones.size > 0) {
-        console.log('📍 MANUAL ZONES LOADED:');
-        Array.from(mappedZones.entries()).forEach(([name, zone]) => {
-          console.log(`  ${name}: x=${zone.x}-${zone.x + zone.w}, y=${zone.y}-${zone.y + zone.h} (${zone.w}x${zone.h})`);
-        });
-      }
-      
-      // DEBUG: Tick-based halfway calculation
+      // Round timing analysis
       const allTicks = filteredData.map(d => d.tick).filter(t => !isNaN(t));
       if (allTicks.length > 0) {
-        const maxTick = Math.max(...allTicks);
         const minTick = Math.min(...allTicks);
-        const roundDuration = maxTick - minTick;
-        const halfwayTick = minTick + (roundDuration / 2);
-        const killsAfterHalfway = filteredData.filter(d => d.health <= 0 && d.tick > halfwayTick);
+        const maxTick = Math.max(...allTicks);
+        const halfwayTick = minTick + ((maxTick - minTick) / 2);
+        const killsAfterHalfway = killEvents.filter(k => k.tick > halfwayTick);
         
-        console.log('🐛 DEBUG ZONE ANALYTICS (TICK-BASED):');
-        console.log('- Round Duration (ticks):', roundDuration);
-        console.log('- Min/Max Tick:', minTick, '/', maxTick);
+        console.log('⏱️ ROUND TIMING ANALYSIS:');
+        console.log('- Round Duration (ticks):', maxTick - minTick);
         console.log('- Halfway Tick:', halfwayTick);
-        console.log('- Total Kills (health ≤ 0):', filteredData.filter(d => d.health <= 0).length);
         console.log('- Kills After Halfway:', killsAfterHalfway.length);
-        
-        if (killsAfterHalfway.length > 0) {
-          console.log('- Late Round Kills:', killsAfterHalfway.slice(0, 3).map(k => ({
-            player: k.name,
-            coords: [k.X, k.Y], 
-            tick: k.tick,
-            zone: getPlayerZone(k.X, k.Y, mappedZones.size > 0 ? mappedZones : undefined)
-          })));
-        }
+        console.log('- Kill Distribution:', killEvents.map(k => `${k.zone}@${k.tick}`));
       }
     }
 
     mappedZones.forEach((zone, zoneName) => {
+      // Get all position data for this zone (living players only for territory control)
       const zoneData = filteredData.filter(point => {
         return isPlayerInZone(point.X, point.Y, zone);
       });
 
-      const tPresence = zoneData.filter(p => p.side === 't').length;
-      const ctPresence = zoneData.filter(p => p.side === 'ct').length;
-      const totalPresence = zoneData.length;
+      // Separate living and dead players for accurate analysis
+      const livingPlayers = zoneData.filter(p => p.health > 0);
+      const tPresence = livingPlayers.filter(p => p.side === 't').length;
+      const ctPresence = livingPlayers.filter(p => p.side === 'ct').length;
+      const totalPresence = livingPlayers.length;
 
-      // DEBUG: Log zone-specific kill detection
-      const zoneKills = zoneData.filter(p => p.health <= 0);
-      if (zoneKills.length > 0) {
-        console.log(`🎯 ZONE ${zoneName} KILLS:`, zoneKills.length, 'kills detected');
-        console.log('- Kill coordinates:', zoneKills.map(k => ({
-          coords: [k.X, k.Y], 
-          time: k.round_time_ms, 
-          player: k.name, 
-          zone_bounds: zone
-        })));
-      }
+      // Get actual kill events in this zone
+      const zoneKillEvents = killEvents.filter(kill => kill.zone === zoneName);
       
-      // FIXED: Calculate contest intensity including kill-based weighting
-      const tickGroups = new Map<number, {t: number, ct: number, kills: number}>();
-      zoneData.forEach(point => {
+      // Calculate contest intensity based on living player interactions and kill events
+      const tickGroups = new Map<number, {t: number, ct: number, hasKill: boolean}>();
+      livingPlayers.forEach(point => {
         if (!tickGroups.has(point.tick)) {
-          tickGroups.set(point.tick, { t: 0, ct: 0, kills: 0 });
+          tickGroups.set(point.tick, { t: 0, ct: 0, hasKill: false });
         }
         if (point.side === 't') {
           tickGroups.get(point.tick)!.t++;
         } else {
           tickGroups.get(point.tick)!.ct++;
         }
-        if (point.health <= 0) {
-          tickGroups.get(point.tick)!.kills++;
+      });
+      
+      // Mark ticks with kill events for weighted contest intensity
+      zoneKillEvents.forEach(kill => {
+        if (tickGroups.has(kill.tick)) {
+          tickGroups.get(kill.tick)!.hasKill = true;
         }
       });
       
@@ -535,47 +577,44 @@ export default function TerritoryPage() {
       tickGroups.forEach(counts => {
         if (counts.t > 0 && counts.ct > 0) {
           contestedTicks++;
-          // Weight ticks with kills more heavily for contest intensity
-          if (counts.kills > 0) {
-            killWeightedTicks += 2; // Double weight for combat ticks
+          // Weight ticks with actual kills more heavily
+          if (counts.hasKill) {
+            killWeightedTicks += 3; // Triple weight for combat ticks
           } else {
-            killWeightedTicks += 1; // Normal weight for presence-only ticks
+            killWeightedTicks += 1; // Normal weight for contested presence
           }
         }
       });
       
-      // Contest intensity now factors in kill activity
+      // Contest intensity: base contestation + kill event weighting
       const baseIntensity = tickGroups.size > 0 ? contestedTicks / tickGroups.size : 0;
-      const killBonus = zoneKills.length > 0 ? Math.min(zoneKills.length / 100, 0.5) : 0; // Up to 50% bonus for kills
-      const contestIntensity = Math.min(baseIntensity + killBonus, 1.0);
+      const killWeight = zoneKillEvents.length > 0 ? Math.min(zoneKillEvents.length * 0.2, 0.4) : 0;
+      const contestIntensity = Math.min(baseIntensity + killWeight, 1.0);
 
-      // Determine territory control
-      let territoryControl: 'T' | 'CT' | 'Contested' | 'Neutral';
-      if (contestIntensity > 0.3) {
+      // Determine territory control based on living player presence and kill events
+      let territoryControl: 'T' | 'CT' | 'Contested' | 'Neutral' = 'Neutral';
+      if (contestIntensity > 0.3 || zoneKillEvents.length > 0) {
         territoryControl = 'Contested';
-      } else if (tPresence > ctPresence * 2) {
+      } else if (tPresence > ctPresence * 1.5) {
         territoryControl = 'T';
-      } else if (ctPresence > tPresence * 2) {
+      } else if (ctPresence > tPresence * 1.5) {
         territoryControl = 'CT';
-      } else {
-        territoryControl = 'Neutral';
       }
 
-      // Tactical events detection
+      // Tactical events detection based on authentic events
       const tacticalEvents: Array<{icon: string, color: string, description: string}> = [];
       
-      // Death events
-      const deadPlayers = zoneData.filter(p => p.health <= 0);
-      if (deadPlayers.length > 0) {
+      // Authentic kill events
+      if (zoneKillEvents.length > 0) {
         tacticalEvents.push({
           icon: '💀',
           color: '#dc2626',
-          description: `${deadPlayers.length} eliminations`
+          description: `${zoneKillEvents.length} kills`
         });
       }
 
-      // Utility usage
-      const flashedPlayers = zoneData.filter(p => p.flash_duration > 0);
+      // Utility usage patterns
+      const flashedPlayers = livingPlayers.filter(p => p.flash_duration > 0);
       if (flashedPlayers.length > 5) {
         tacticalEvents.push({
           icon: '💨',
@@ -584,8 +623,8 @@ export default function TerritoryPage() {
         });
       }
 
-      // High activity
-      if (zoneData.length > 100) {
+      // High activity zones
+      if (livingPlayers.length > 50) {
         tacticalEvents.push({
           icon: '⚡',
           color: '#eab308',
@@ -593,25 +632,22 @@ export default function TerritoryPage() {
         });
       }
 
-      // Strategic value based on zone importance with DEBUG logging
-      let strategicValue = 0.5; // Default
-      if (['BANANA', 'APARTMENTS', 'MIDDLE'].includes(zoneName)) {
-        strategicValue = 0.95; // Major chokepoints
-      } else if (['A_SITE', 'B_SITE'].includes(zoneName)) {
-        strategicValue = 0.85; // Bomb sites
-      } else if (zoneName.includes('SPAWN')) {
-        strategicValue = 0.1; // Spawns
+      // Calculate strategic value based on zone importance and authentic activity
+      const zoneImportance = INFERNO_MAP_CONFIG.zones[zoneName as keyof typeof INFERNO_MAP_CONFIG.zones];
+      let strategicValue = 0.5; // Base value
+      
+      if (zoneImportance) {
+        switch(zoneImportance.priority) {
+          case 'high': strategicValue = 0.95; break;
+          case 'medium': strategicValue = 0.7; break;
+          case 'low': strategicValue = 0.5; break;
+        }
       }
 
-      // DEBUG: Log strategic value calculation
-      if (totalPresence > 0 || zoneKills.length > 0) {
-        console.log(`📊 ZONE ${zoneName} ANALYTICS:`);
-        console.log('- Total Presence:', totalPresence);
-        console.log('- Contest Intensity:', contestIntensity.toFixed(3));
-        console.log('- Strategic Value:', strategicValue);
-        console.log('- Territory Control:', territoryControl);
-        console.log('- Zone Kills:', zoneKills.length);
-      }
+      // Adjust based on authentic activity
+      if (contestIntensity > 0.5) strategicValue *= 1.2;
+      if (zoneKillEvents.length > 0) strategicValue *= 1.1;
+      if (totalPresence < 10) strategicValue *= 0.9;
 
       analytics.set(zoneName, {
         totalPresence,
@@ -620,8 +656,19 @@ export default function TerritoryPage() {
         contestIntensity,
         territoryControl,
         tacticalEvents,
-        strategicValue
+        strategicValue: Math.min(strategicValue, 1.0),
+        actualKills: zoneKillEvents.length
       });
+
+      // DEBUG: Log zone analytics with authentic kills
+      if (zoneKillEvents.length > 0 || totalPresence > 0) {
+        console.log(`📊 ZONE ${zoneName} ANALYTICS:`);
+        console.log('- Living Player Presence:', totalPresence);
+        console.log('- Contest Intensity:', contestIntensity.toFixed(3));
+        console.log('- Strategic Value:', strategicValue.toFixed(2));
+        console.log('- Territory Control:', territoryControl);
+        console.log('- Actual Kills:', zoneKillEvents.length);
+      }
     });
 
     return analytics;

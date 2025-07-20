@@ -265,6 +265,18 @@ export default function TerritoryPage() {
     return null;
   }, [mappedZones]);
 
+  // Available zone names for mapping (no coordinates)
+  const ZONE_NAMES = [
+    'T_SPAWN', 'CONSTRUCTION', 'GRILL', 'TRUCK', 
+    'WELL', 'TERRACE', 'BANANA', 'T_RAMP', 'KITCHEN', 
+    'APARTMENTS', 'BALCONY', 'SECOND_ORANGES', 'BRIDGE', 'STAIRS', 
+    'ARCH', 'LIBRARY', 'A_LONG', 'MIDDLE', 'TOP_MID', 'PIT', 
+    'A_SHORT', 'NEWBOX', 'CT_SPAWN', 'A_SITE', 'B_SITE',
+    'BOILER', 'SPEEDWAY', 'GRAVEYARD', 'MOTO', 
+    'LONG_HALL', 'CUBBY', 'SANDBAGS', '2ND_MID', 'DARK', 
+    'T_APPS', 'COFFINS', 'UNDERPASS', 'CT'
+  ];
+
   // Load only manually mapped zones from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('infernoZoneMapping');
@@ -1117,18 +1129,21 @@ export default function TerritoryPage() {
                 </div>
                 
                 <div className="grid grid-cols-4 gap-2">
-                  {Array.from(mappedZones.keys()).map(zoneName => (
-                    <Button
-                      key={zoneName}
-                      onClick={() => deleteZone(zoneName)}
-                      variant="default"
-                      size="sm"
-                      className="text-xs h-8 bg-blue-600 hover:bg-blue-700"
-                    >
-                      <span className="mr-1">✓</span>
-                      {zoneName.replace('_', ' ')}
-                    </Button>
-                  ))}
+                  {ZONE_NAMES.map(zoneName => {
+                    const isMapped = mappedZones.has(zoneName);
+                    return (
+                      <Button
+                        key={zoneName}
+                        onClick={() => isMapped ? deleteZone(zoneName) : addZone(zoneName)}
+                        variant={isMapped ? "default" : "outline"}
+                        size="sm"
+                        className={`text-xs h-8 ${isMapped ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-gray-700'}`}
+                      >
+                        {isMapped && <span className="mr-1">✓</span>}
+                        {zoneName.replace('_', ' ')}
+                      </Button>
+                    );
+                  })}
                 </div>
                 
                 <div className="text-xs text-gray-400 mt-2">

@@ -37,127 +37,12 @@ interface TacticalMapAnalysisProps {
   xyzData: XYZPlayerData[];
 }
 
-// Accurate CS2 de_inferno map coordinate mapping based on actual round 4 data
+// Map coordinate bounds from round 4 data analysis
 const INFERNO_MAP_CONFIG = {
   // Real coordinate bounds from round 4 data analysis
   bounds: { 
     minX: -1675.62, maxX: 2644.97,  // Exact bounds from data
     minY: -755.62, maxY: 3452.23    // Exact bounds from data
-  },
-  // Zone labels positioned to match the reference labeled Inferno map
-  zones: {
-    'T_SPAWN': { 
-      bounds: { minX: -1675, maxX: -1200, minY: 1000, maxY: 2000 },
-      color: '#22c55e', name: 'T Spawn', priority: 'low'
-    },
-    'CONSTRUCTION': { 
-      bounds: { minX: -600, maxX: -200, minY: -800, maxY: -400 },
-      color: '#8b5cf6', name: 'Construction', priority: 'high'
-    },
-    'SPOOLS': { 
-      bounds: { minX: -1200, maxX: -800, minY: -200, maxY: 200 },
-      color: '#dc2626', name: 'Spools', priority: 'medium'
-    },
-    'GRILL': { 
-      bounds: { minX: -600, maxX: -200, minY: -600, maxY: -200 },
-      color: '#f59e0b', name: 'Grill', priority: 'medium'
-    },
-    'LONG_HALLS': { 
-      bounds: { minX: -400, maxX: 200, minY: -800, maxY: -400 },
-      color: '#8b5cf6', name: 'Long Halls', priority: 'medium'
-    },
-    'CONNECTOR': { 
-      bounds: { minX: -200, maxX: 400, minY: 200, maxY: 600 },
-      color: '#8b5cf6', name: 'Connector', priority: 'medium'
-    },
-    'WELL': { 
-      bounds: { minX: 1200, maxX: 1600, minY: -400, maxY: 0 },
-      color: '#22c55e', name: 'Well', priority: 'medium'
-    },
-    'TERRACE': { 
-      bounds: { minX: 1400, maxX: 1800, minY: -200, maxY: 200 },
-      color: '#22c55e', name: 'Terrace', priority: 'medium'
-    },
-    'CAR': { 
-      bounds: { minX: -1000, maxX: -600, minY: 600, maxY: 1000 },
-      color: '#8b5cf6', name: 'Car', priority: 'medium'
-    },
-    'BANANA': { 
-      bounds: { minX: -1000, maxX: -300, minY: 2000, maxY: 3000 },
-      color: '#eab308', name: 'Banana', priority: 'medium'
-    },
-    'T_RAMP': { 
-      bounds: { minX: -1000, maxX: -400, minY: 800, maxY: 1800 },
-      color: '#22c55e', name: 'T Ramp', priority: 'medium'
-    },
-    'KITCHEN': { 
-      bounds: { minX: -800, maxX: -400, minY: 1200, maxY: 1600 },
-      color: '#22c55e', name: 'Kitchen', priority: 'medium'
-    },
-    'APARTMENTS': { 
-      bounds: { minX: -800, maxX: -200, minY: -400, maxY: 200 },
-      color: '#3b82f6', name: 'Apartments', priority: 'high'
-    },
-    'BALCONY': { 
-      bounds: { minX: -400, maxX: 200, minY: 1800, maxY: 2400 },
-      color: '#8b5cf6', name: 'Balcony', priority: 'medium'
-    },
-    'SECOND_MID': { 
-      bounds: { minX: 0, maxX: 400, minY: 1200, maxY: 1800 },
-      color: '#f59e0b', name: 'Second Mid', priority: 'medium'
-    },
-    'BRIDGE': { 
-      bounds: { minX: 200, maxX: 600, minY: 2400, maxY: 3000 },
-      color: '#8b5cf6', name: 'Bridge', priority: 'medium'
-    },
-    'STAIRS': { 
-      bounds: { minX: 400, maxX: 800, minY: 2800, maxY: 3200 },
-      color: '#64748b', name: 'Stairs', priority: 'medium'
-    },
-    'ARCH': { 
-      bounds: { minX: 600, maxX: 1000, minY: 1400, maxY: 2000 },
-      color: '#dc2626', name: 'Arch', priority: 'medium'
-    },
-    'QUAD': { 
-      bounds: { minX: 800, maxX: 1200, minY: 1600, maxY: 2200 },
-      color: '#dc2626', name: 'Quad', priority: 'medium'
-    },
-    'MIDDLE': { 
-      bounds: { minX: 400, maxX: 1200, minY: 800, maxY: 1400 },
-      color: '#a3a3a3', name: 'Middle', priority: 'high'
-    },
-    'LIBRARY': { 
-      bounds: { minX: 1000, maxX: 1400, minY: 1200, maxY: 1800 },
-      color: '#8b5cf6', name: 'Library', priority: 'medium'
-    },
-    'A_LONG': { 
-      bounds: { minX: 1200, maxX: 1600, minY: 800, maxY: 1400 },
-      color: '#64748b', name: 'A Long', priority: 'medium'
-    },
-    'LONG_HALL': { 
-      bounds: { minX: 1200, maxX: 2000, minY: -200, maxY: 800 },
-      color: '#a3a3a3', name: 'Long Hall', priority: 'low'
-    },
-    'PIT': { 
-      bounds: { minX: 1800, maxX: 2200, minY: 1200, maxY: 1800 },
-      color: '#a3a3a3', name: 'Pit', priority: 'medium'
-    },
-    'A_SHORT': { 
-      bounds: { minX: 1600, maxX: 2000, minY: 1400, maxY: 2000 },
-      color: '#dc2626', name: 'A Short', priority: 'medium'
-    },
-    'A_SITE': { 
-      bounds: { minX: 1600, maxX: 2400, minY: 400, maxY: 1400 },
-      color: '#22c55e', name: 'A Site', priority: 'high'
-    },
-    'NEWBOX': { 
-      bounds: { minX: 2000, maxX: 2400, minY: 1200, maxY: 1600 },
-      color: '#dc2626', name: 'Newbox', priority: 'medium'
-    },
-    'CT_SPAWN': { 
-      bounds: { minX: 2200, maxX: 2644, minY: -200, maxY: 800 },
-      color: '#22c55e', name: 'CT Spawn', priority: 'low'
-    }
   }
 };
 
@@ -180,14 +65,9 @@ function coordToMapPercent(x: number, y: number): { x: number, y: number } {
   };
 }
 
-// Determine which zone a player is in using manually mapped zones
+// Determine which zone a player is in using manually mapped zones ONLY
 function getPlayerZone(x: number, y: number, mappedZones?: Map<string, {x: number, y: number, w: number, h: number}>): string {
-  // CLEAR CORRUPTED LOCALSTORAGE - force clean state
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('infernoZoneMapping');
-  }
-  
-  // If manually mapped zones provided, use them with correct coordinate transformation
+  // Only use manually mapped zones - no hardcoded fallbacks
   if (mappedZones && mappedZones.size > 0) {
     // Convert game coordinates to map percentage for zone checking
     const mapPos = coordToMapPercent(x, y);
@@ -203,13 +83,7 @@ function getPlayerZone(x: number, y: number, mappedZones?: Map<string, {x: numbe
     }
   }
   
-  // Fallback to hardcoded zones using game coordinates
-  for (const [zoneKey, zone] of Object.entries(INFERNO_MAP_CONFIG.zones)) {
-    if (x >= zone.bounds.minX && x <= zone.bounds.maxX && 
-        y >= zone.bounds.minY && y <= zone.bounds.maxY) {
-      return zoneKey;
-    }
-  }
+  // No fallback - return UNKNOWN if no manual zones match
   return 'UNKNOWN';
 }
 

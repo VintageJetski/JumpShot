@@ -62,9 +62,9 @@ const INFERNO_MAP_CONFIG = {
       bounds: { minX: -600, maxX: -200, minY: -600, maxY: -200 },
       color: '#f59e0b', name: 'Grill', priority: 'medium'
     },
-    'TRUCK': { 
+    'LONG_HALLS': { 
       bounds: { minX: -400, maxX: 200, minY: -800, maxY: -400 },
-      color: '#8b5cf6', name: 'Truck', priority: 'medium'
+      color: '#8b5cf6', name: 'Long Halls', priority: 'medium'
     },
     'CONNECTOR': { 
       bounds: { minX: -200, maxX: 400, minY: 200, maxY: 600 },

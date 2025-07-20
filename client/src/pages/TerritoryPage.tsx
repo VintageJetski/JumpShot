@@ -439,46 +439,56 @@ export default function TerritoryPage() {
       strategicValue: number;
     }>();
 
-    // DEBUG: Log round timing information with FIX
+    // DEBUG: Check coordinate transformation and zone assignment
     if (filteredData.length > 0) {
-      // FIX: Use valid round_time_ms values only
-      const validTimes = filteredData
-        .map(d => d.round_time_ms)
-        .filter(time => !isNaN(time) && time !== null && time !== undefined);
-      
-      if (validTimes.length > 0) {
-        const roundDuration = Math.max(...validTimes) - Math.min(...validTimes);
-        const minTime = Math.min(...validTimes);
-        const halfwayMark = minTime + (roundDuration / 2);
-        const killsAfterHalfway = filteredData.filter(d => d.health <= 0 && !isNaN(d.round_time_ms) && d.round_time_ms > halfwayMark);
+      const sampleKills = filteredData.filter(d => d.health <= 0).slice(0, 10);
+      console.log('🔍 DEBUGGING COORDINATE TRANSFORMATION FOR KILLS:');
+      sampleKills.forEach((kill, idx) => {
+        const worldCoords = [kill.X, kill.Y];
+        const mapPercent = coordToMapPercent(kill.X, kill.Y);
+        const canvasCoords = [(mapPercent.x / 100) * 800, (mapPercent.y / 100) * 600];
+        const assignedZone = getPlayerZone(kill.X, kill.Y, mappedZones.size > 0 ? mappedZones : undefined);
         
-        console.log('🐛 DEBUG ZONE ANALYTICS (FIXED):');
-        console.log('- Round Duration:', roundDuration, 'ms');
-        console.log('- Round Start:', minTime, 'ms');
-        console.log('- Halfway Mark:', halfwayMark, 'ms');
+        console.log(`Kill ${idx + 1} (${kill.name}):`, {
+          world: worldCoords,
+          percent: [mapPercent.x.toFixed(1), mapPercent.y.toFixed(1)],
+          canvas: [canvasCoords[0].toFixed(1), canvasCoords[1].toFixed(1)],
+          zone: assignedZone,
+          tick: kill.tick
+        });
+      });
+      
+      // DEBUG: Log manual zones for comparison  
+      if (mappedZones.size > 0) {
+        console.log('📍 MANUAL ZONES LOADED:');
+        Array.from(mappedZones.entries()).forEach(([name, zone]) => {
+          console.log(`  ${name}: x=${zone.x}-${zone.x + zone.w}, y=${zone.y}-${zone.y + zone.h} (${zone.w}x${zone.h})`);
+        });
+      }
+      
+      // DEBUG: Tick-based halfway calculation
+      const allTicks = filteredData.map(d => d.tick).filter(t => !isNaN(t));
+      if (allTicks.length > 0) {
+        const maxTick = Math.max(...allTicks);
+        const minTick = Math.min(...allTicks);
+        const roundDuration = maxTick - minTick;
+        const halfwayTick = minTick + (roundDuration / 2);
+        const killsAfterHalfway = filteredData.filter(d => d.health <= 0 && d.tick > halfwayTick);
+        
+        console.log('🐛 DEBUG ZONE ANALYTICS (TICK-BASED):');
+        console.log('- Round Duration (ticks):', roundDuration);
+        console.log('- Min/Max Tick:', minTick, '/', maxTick);
+        console.log('- Halfway Tick:', halfwayTick);
         console.log('- Total Kills (health ≤ 0):', filteredData.filter(d => d.health <= 0).length);
         console.log('- Kills After Halfway:', killsAfterHalfway.length);
         
         if (killsAfterHalfway.length > 0) {
-          console.log('- Kill Details:', killsAfterHalfway.slice(0, 5).map(k => ({
-            player: k.name, 
-            side: k.side, 
+          console.log('- Late Round Kills:', killsAfterHalfway.slice(0, 3).map(k => ({
+            player: k.name,
             coords: [k.X, k.Y], 
-            time: k.round_time_ms,
-            health: k.health
+            tick: k.tick,
+            zone: getPlayerZone(k.X, k.Y, mappedZones.size > 0 ? mappedZones : undefined)
           })));
-        }
-      } else {
-        console.log('🚨 NO VALID ROUND TIMES FOUND - using tick-based halfway calculation');
-        // Fallback: Use tick progression for halfway calculation
-        const allTicks = filteredData.map(d => d.tick).filter(t => !isNaN(t));
-        if (allTicks.length > 0) {
-          const maxTick = Math.max(...allTicks);
-          const minTick = Math.min(...allTicks);
-          const halfwayTick = minTick + ((maxTick - minTick) / 2);
-          const killsAfterHalfway = filteredData.filter(d => d.health <= 0 && d.tick > halfwayTick);
-          console.log('- Using tick-based calculation: halfway tick =', halfwayTick);
-          console.log('- Kills After Halfway (tick-based):', killsAfterHalfway.length);
         }
       }
     }

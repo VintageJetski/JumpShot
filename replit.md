@@ -115,6 +115,7 @@ Changelog:
 - July 07, 2025. Initial setup
 - July 09, 2025. Implemented manual zone mapping interface with drag-and-drop positioning and resizing functionality for CS2 Inferno tactical analysis
 - July 10, 2025. Implemented refined strategic value weighting system based on CS2 tactical importance. Enhanced contest intensity calculations to include non-combat presence for tactical advantage detection. Added contest intensity + presence-based sorting to surface most tactically interesting zones. Removed spawn zones entirely from strategic calculations (0% value as they offer no mid-round tactical value).
+- July 20, 2025. Fixed critical zone mapping corruption issue by completely removing all hardcoded zone coordinates that were overwriting manual localStorage zones. System now uses only manually mapped zones without any fallback coordinates, preserving user's precise positioning work.
 
 # User Preferences
 

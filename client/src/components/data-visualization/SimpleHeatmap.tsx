@@ -26,17 +26,28 @@ interface SimpleHeatmapProps {
   xyzData: XYZPlayerData[];
 }
 
-function coordToMapPercent(x: number, y: number) {
-  const MAP_BOUNDS = {
-    minX: -2217,
-    maxX: 2217,
-    minY: -756,
-    maxY: 3452
-  };
+// Map coordinate bounds from round 4 data analysis
+const INFERNO_MAP_CONFIG = {
+  // Real coordinate bounds from round 4 data analysis
+  bounds: { 
+    minX: -1675.62, maxX: 2644.97,  // Exact bounds from data
+    minY: -755.62, maxY: 3452.23    // Exact bounds from data
+  }
+};
+
+// Convert CS2 coordinates to map percentage with proper scaling
+function coordToMapPercent(x: number, y: number): { x: number, y: number } {
+  const { bounds } = INFERNO_MAP_CONFIG;
   
-  const mapX = (x - MAP_BOUNDS.minX) / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX);
-  const mapY = (y - MAP_BOUNDS.minY) / (MAP_BOUNDS.maxY - MAP_BOUNDS.minY);
+  // Apply padding to ensure all coordinates fit within the visible map area
+  const padding = 0.08; // 8% padding (copied from working PositionalAnalysisPage)
+  const width = bounds.maxX - bounds.minX;
+  const height = bounds.maxY - bounds.minY;
   
+  const mapX = ((x - bounds.minX) / width) * (1 - 2 * padding) + padding;
+  const mapY = ((y - bounds.minY) / height) * (1 - 2 * padding) + padding;
+  
+  // Invert Y coordinate for proper map orientation
   return { 
     x: Math.max(0, Math.min(100, mapX * 100)), 
     y: Math.max(0, Math.min(100, (1 - mapY) * 100)) 

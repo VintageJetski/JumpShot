@@ -33,12 +33,12 @@ interface XYZPlayerData {
   round_num: number;
 }
 
-// Accurate CS2 de_inferno map coordinate mapping based on actual round 4 data
+// Accurate CS2 de_inferno map coordinate mapping based on actual round 4 data  
 const INFERNO_MAP_CONFIG = {
-  // Real coordinate bounds from round 4 data analysis
+  // Extended coordinate bounds to ensure all players are captured
   bounds: { 
-    minX: -1675.62, maxX: 2644.97,  // Exact bounds from data
-    minY: -755.62, maxY: 3452.23    // Exact bounds from data
+    minX: -2200, maxX: 2700,  // Extended bounds for full map coverage
+    minY: -800, maxY: 3500    // Extended bounds for full map coverage
   },
   // Zone labels positioned to match the reference labeled Inferno map
   zones: {
@@ -396,19 +396,34 @@ export default function TerritoryPage() {
     });
   };
 
-  // Filtered data based on current selections
+  // Filtered data based on current selections with DEBUG logging
   const filteredData = useMemo(() => {
     let data = xyzData;
+    
+    console.log('🔍 DATA FILTERING DEBUG:');
+    console.log('- Raw XYZ data length:', data.length);
+    console.log('- Selected round:', selectedRound);
+    console.log('- Selected player:', selectedPlayer);
     
     // Round filter
     if (selectedRound !== 'all') {
       const roundNum = parseInt(selectedRound.split('_')[1]);
+      console.log('- Filtering for round:', roundNum);
       data = data.filter(d => d.round_num === roundNum);
+      console.log('- After round filter:', data.length);
     }
     
     // Player filter
     if (selectedPlayer !== 'all') {
+      console.log('- Filtering for player:', selectedPlayer);
       data = data.filter(d => d.name === selectedPlayer);
+      console.log('- After player filter:', data.length);
+    }
+    
+    if (data.length > 0) {
+      console.log('- Sample filtered data:', data.slice(0, 3));
+      const rounds = [...new Set(data.map(d => d.round_num))];
+      console.log('- Available rounds in data:', rounds.slice(0, 10));
     }
     
     return data;
@@ -515,10 +530,12 @@ export default function TerritoryPage() {
     const killEvents = getUniqueKillEvents(filteredData);
     
     // DEBUG: Log authentic kill events
+    console.log('💀 AUTHENTIC KILL EVENTS DETECTED:', killEvents.length);
     if (killEvents.length > 0) {
-      console.log('💀 AUTHENTIC KILL EVENTS DETECTED:', killEvents.length);
       killEvents.forEach((kill, idx) => {
+        const mapPercent = coordToMapPercent(kill.coords[0], kill.coords[1]);
         console.log(`Kill ${idx + 1}: ${kill.player} (${kill.side}) in ${kill.zone} at tick ${kill.tick}`);
+        console.log(`  Coords: [${kill.coords[0].toFixed(1)}, ${kill.coords[1].toFixed(1)}] -> Map: [${mapPercent.x.toFixed(1)}%, ${mapPercent.y.toFixed(1)}%]`);
       });
       
       // Round timing analysis
@@ -535,26 +552,38 @@ export default function TerritoryPage() {
         console.log('- Kills After Halfway:', killsAfterHalfway.length);
         console.log('- Kill Distribution:', killEvents.map(k => `${k.zone}@${k.tick}`));
       }
+    } else {
+      console.log('⚠️ NO KILL EVENTS DETECTED - Checking health data distribution');
+      const healthValues = filteredData.map(d => d.health);
+      const uniqueHealths = [...new Set(healthValues)];
+      console.log('- Unique health values:', uniqueHealths.slice(0, 10));
+      console.log('- Health ≤ 0 records:', filteredData.filter(d => d.health <= 0).length);
+      console.log('- Health > 0 records:', filteredData.filter(d => d.health > 0).length);
     }
 
     mappedZones.forEach((zone, zoneName) => {
-      // Get all position data for this zone (living players only for territory control)
-      const zoneData = filteredData.filter(point => {
+      // Get position data for this zone FROM CURRENT ROUND ONLY
+      const zoneData = currentTickData.filter(point => {
         return isPlayerInZone(point.X, point.Y, zone);
       });
 
-      // Separate living and dead players for accurate analysis
+      // Use living players for territory control at current tick
       const livingPlayers = zoneData.filter(p => p.health > 0);
       const tPresence = livingPlayers.filter(p => p.side === 't').length;
       const ctPresence = livingPlayers.filter(p => p.side === 'ct').length;
       const totalPresence = livingPlayers.length;
 
+      // Also check entire round data for this zone for contest intensity calculation
+      const allRoundZoneData = filteredData.filter(point => {
+        return isPlayerInZone(point.X, point.Y, zone);
+      });
+
       // Get actual kill events in this zone
       const zoneKillEvents = killEvents.filter(kill => kill.zone === zoneName);
       
-      // Calculate contest intensity based on living player interactions and kill events
+      // Calculate contest intensity based on ENTIRE ROUND data for this zone
       const tickGroups = new Map<number, {t: number, ct: number, hasKill: boolean}>();
-      livingPlayers.forEach(point => {
+      allRoundZoneData.filter(p => p.health > 0).forEach(point => {
         if (!tickGroups.has(point.tick)) {
           tickGroups.set(point.tick, { t: 0, ct: 0, hasKill: false });
         }
@@ -660,14 +689,15 @@ export default function TerritoryPage() {
         actualKills: zoneKillEvents.length
       });
 
-      // DEBUG: Log zone analytics with authentic kills
-      if (zoneKillEvents.length > 0 || totalPresence > 0) {
-        console.log(`📊 ZONE ${zoneName} ANALYTICS:`);
-        console.log('- Living Player Presence:', totalPresence);
-        console.log('- Contest Intensity:', contestIntensity.toFixed(3));
+      // DEBUG: Log zone analytics with authentic kills and current tick context
+      if (zoneKillEvents.length > 0 || totalPresence > 0 || tickGroups.size > 10) {
+        console.log(`📊 ZONE ${zoneName} ANALYTICS (Tick ${currentTick}):`);
+        console.log('- Current Tick Living Players:', totalPresence);
+        console.log('- Contest Intensity (Round):', contestIntensity.toFixed(3));
         console.log('- Strategic Value:', strategicValue.toFixed(2));
         console.log('- Territory Control:', territoryControl);
-        console.log('- Actual Kills:', zoneKillEvents.length);
+        console.log('- Actual Kills (Round):', zoneKillEvents.length);
+        console.log('- Round Tick Groups:', tickGroups.size);
       }
     });
 

@@ -133,12 +133,12 @@ const INFERNO_MAP_CONFIG = {
   }
 };
 
-// Convert CS2 coordinates to map percentage with proper scaling
+// Convert CS2 coordinates to map percentage with proper scaling (IDENTICAL to TacticalMapAnalysis)
 function coordToMapPercent(x: number, y: number): { x: number, y: number } {
   const { bounds } = INFERNO_MAP_CONFIG;
   
-  // Apply padding to ensure all coordinates fit within the visible map area
-  const padding = 0.1; // 10% padding
+  // Apply padding to ensure all coordinates fit within the visible map area  
+  const padding = 0.15; // 15% padding (5% more to make map smaller and fit players)
   const width = bounds.maxX - bounds.minX;
   const height = bounds.maxY - bounds.minY;
   
@@ -152,47 +152,7 @@ function coordToMapPercent(x: number, y: number): { x: number, y: number } {
   };
 }
 
-// Determine which zone a player is in using manually mapped zones
-function getPlayerZone(x: number, y: number, mappedZones?: Map<string, {x: number, y: number, w: number, h: number}>): string {
-  // If no mapped zones provided, try to load from localStorage
-  if (!mappedZones) {
-    const saved = localStorage.getItem('infernoZoneMapping');
-    
-    if (saved) {
-      try {
-        const zonesObject = JSON.parse(saved);
-        mappedZones = new Map(Object.entries(zonesObject));
-        
-        // Log zone loading success
-        console.log('✅ ZONES LOADED FROM LOCALSTORAGE:', mappedZones.size, 'zones');
-      } catch (error) {
-        console.error('❌ ERROR PARSING ZONES FROM LOCALSTORAGE:', error);
-      }
-    } else {
-      console.log('⚠️ NO MANUAL ZONES FOUND - USING HARDCODED FALLBACK');
-    }
-  }
-  
-  // Use manually mapped zones if available
-  if (mappedZones && mappedZones.size > 0) {
-    for (const [zoneKey, zoneRect] of mappedZones) {
-      if (isPlayerInZone(x, y, zoneRect)) {
-        return zoneKey;
-      }
-    }
-  }
-  
-  // Fallback to hardcoded zones only if no manual mapping exists
-  for (const [zoneKey, zone] of Object.entries(INFERNO_MAP_CONFIG.zones)) {
-    if (x >= zone.bounds.minX && x <= zone.bounds.maxX && 
-        y >= zone.bounds.minY && y <= zone.bounds.maxY) {
-      return zoneKey;
-    }
-  }
-  return 'UNKNOWN';
-}
-
-// Helper function to check if player coordinates are within mapped zone
+// IDENTICAL zone detection logic from TacticalMapAnalysis
 function isPlayerInZone(playerX: number, playerY: number, zoneRect: {x: number, y: number, w: number, h: number}): boolean {
   // Convert player world coordinates to canvas coordinates
   const pos = coordToMapPercent(playerX, playerY);
@@ -203,6 +163,52 @@ function isPlayerInZone(playerX: number, playerY: number, zoneRect: {x: number, 
          canvasX <= zoneRect.x + zoneRect.w &&
          canvasY >= zoneRect.y && 
          canvasY <= zoneRect.y + zoneRect.h;
+}
+
+// Determine which zone a player is in using manually mapped zones (IDENTICAL to TacticalMapAnalysis)
+function getPlayerZone(x: number, y: number, mappedZones?: Map<string, {x: number, y: number, w: number, h: number}>): string {
+  // Always try to load manually mapped zones first
+  let actualMappedZones = mappedZones;
+  if (!actualMappedZones || actualMappedZones.size === 0) {
+    const saved = localStorage.getItem('infernoZoneMapping');
+    if (saved) {
+      try {
+        const zonesObject = JSON.parse(saved);
+        actualMappedZones = new Map(Object.entries(zonesObject));
+        console.log('✅ LOADED HARDCODED ZONES:', actualMappedZones.size, 'zones for analysis');
+      } catch (error) {
+        console.error('❌ ERROR LOADING ZONES:', error);
+      }
+    }
+  }
+  
+  // If still no manual zones, create basic fallback zones for interface functionality
+  if (!actualMappedZones || actualMappedZones.size === 0) {
+    actualMappedZones = new Map();
+    // Add basic zones so the interface works while user sets up manual zones
+    Object.entries(INFERNO_MAP_CONFIG.zones).forEach(([zoneName, zone]) => {
+      const bounds = zone.bounds;
+      const pos1 = coordToMapPercent(bounds.minX, bounds.minY);
+      const pos2 = coordToMapPercent(bounds.maxX, bounds.maxY);
+      actualMappedZones.set(zoneName, {
+        x: (pos1.x / 100) * 800,
+        y: (pos1.y / 100) * 600,
+        w: Math.abs((pos2.x - pos1.x) / 100) * 800,
+        h: Math.abs((pos2.y - pos1.y) / 100) * 600
+      });
+    });
+  }
+  
+  // Check manually mapped zones for player position
+  if (actualMappedZones && actualMappedZones.size > 0) {
+    for (const [zoneKey, zoneRect] of actualMappedZones) {
+      if (isPlayerInZone(x, y, zoneRect)) {
+        return zoneKey;
+      }
+    }
+  }
+  
+  return 'UNKNOWN';
 }
 
 export default function TerritoryPage() {

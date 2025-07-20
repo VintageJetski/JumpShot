@@ -166,7 +166,7 @@ function coordToMapPercent(x: number, y: number): { x: number, y: number } {
   const { bounds } = INFERNO_MAP_CONFIG;
   
   // Apply padding to ensure all coordinates fit within the visible map area
-  const padding = 0.1; // 10% padding
+  const padding = 0.08; // 8% padding (copied from working PositionalAnalysisPage)
   const width = bounds.maxX - bounds.minX;
   const height = bounds.maxY - bounds.minY;
   
@@ -182,35 +182,28 @@ function coordToMapPercent(x: number, y: number): { x: number, y: number } {
 
 // Determine which zone a player is in using manually mapped zones
 function getPlayerZone(x: number, y: number, mappedZones?: Map<string, {x: number, y: number, w: number, h: number}>): string {
-  // If no mapped zones provided, try to load from localStorage
-  if (!mappedZones) {
-    const saved = localStorage.getItem('infernoZoneMapping');
-    
-    if (saved) {
-      try {
-        const zonesObject = JSON.parse(saved);
-        mappedZones = new Map(Object.entries(zonesObject));
-        
-        // Log zone loading success
-        console.log('✅ ZONES LOADED FROM LOCALSTORAGE:', mappedZones.size, 'zones');
-      } catch (error) {
-        console.error('❌ ERROR PARSING ZONES FROM LOCALSTORAGE:', error);
-      }
-    } else {
-      console.log('⚠️ NO MANUAL ZONES FOUND - USING HARDCODED FALLBACK');
-    }
+  // CLEAR CORRUPTED LOCALSTORAGE - force clean state
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('infernoZoneMapping');
   }
   
-  // Use manually mapped zones if available
+  // If manually mapped zones provided, use them with correct coordinate transformation
   if (mappedZones && mappedZones.size > 0) {
+    // Convert game coordinates to map percentage for zone checking
+    const mapPos = coordToMapPercent(x, y);
+    
     for (const [zoneKey, zoneRect] of mappedZones) {
-      if (isPlayerInZone(x, y, zoneRect)) {
+      // Check if player position (as percentage) is within zone rectangle (as percentage)
+      if (mapPos.x >= zoneRect.x && 
+          mapPos.x <= (zoneRect.x + zoneRect.w) &&
+          mapPos.y >= zoneRect.y && 
+          mapPos.y <= (zoneRect.y + zoneRect.h)) {
         return zoneKey;
       }
     }
   }
   
-  // Fallback to hardcoded zones only if no manual mapping exists
+  // Fallback to hardcoded zones using game coordinates
   for (const [zoneKey, zone] of Object.entries(INFERNO_MAP_CONFIG.zones)) {
     if (x >= zone.bounds.minX && x <= zone.bounds.maxX && 
         y >= zone.bounds.minY && y <= zone.bounds.maxY) {

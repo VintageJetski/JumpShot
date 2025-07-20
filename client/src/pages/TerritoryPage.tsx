@@ -994,14 +994,28 @@ export default function TerritoryPage() {
                 </Select>
               </div>
 
-              <Button 
-                variant={isMapping ? "destructive" : "default"} 
-                size="sm"
-                onClick={() => setIsMapping(!isMapping)}
-                className="w-full"
-              >
-                {isMapping ? 'Stop Mapping' : 'Start Zone Mapping'}
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => {
+                    localStorage.removeItem('infernoZoneMapping');
+                    setMappedZones(new Map());
+                    console.log('🧹 CLEARED CORRUPTED ZONES');
+                  }}
+                  className="flex-1"
+                >
+                  Clear Zones
+                </Button>
+                <Button 
+                  variant={isMapping ? "secondary" : "default"} 
+                  size="sm"
+                  onClick={() => setIsMapping(!isMapping)}
+                  className="flex-1"
+                >
+                  {isMapping ? 'Stop Mapping' : 'Start Zone Mapping'}
+                </Button>
+              </div>
               
               {isMapping && (
                 <div className="space-y-2">

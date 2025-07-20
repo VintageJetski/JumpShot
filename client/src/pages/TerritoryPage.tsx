@@ -427,7 +427,7 @@ export default function TerritoryPage() {
     return filteredData.filter(d => d.tick === targetTick);
   }, [filteredData, currentTick, uniqueTicks]);
 
-  // Zone analytics with tactical insights
+  // Zone analytics with tactical insights and DEBUG LOGGING
   const zoneAnalytics = useMemo(() => {
     const analytics = new Map<string, {
       totalPresence: number;
@@ -439,6 +439,29 @@ export default function TerritoryPage() {
       strategicValue: number;
     }>();
 
+    // DEBUG: Log round timing information
+    if (filteredData.length > 0) {
+      const roundDuration = Math.max(...filteredData.map(d => d.round_time_ms)) - Math.min(...filteredData.map(d => d.round_time_ms));
+      const halfwayMark = roundDuration / 2;
+      const killsAfterHalfway = filteredData.filter(d => d.health <= 0 && d.round_time_ms > halfwayMark);
+      
+      console.log('🐛 DEBUG ZONE ANALYTICS:');
+      console.log('- Round Duration:', roundDuration, 'ms');
+      console.log('- Halfway Mark:', halfwayMark, 'ms');
+      console.log('- Total Kills (health ≤ 0):', filteredData.filter(d => d.health <= 0).length);
+      console.log('- Kills After Halfway:', killsAfterHalfway.length);
+      
+      if (killsAfterHalfway.length > 0) {
+        console.log('- Kill Details:', killsAfterHalfway.map(k => ({
+          player: k.name, 
+          side: k.side, 
+          coords: [k.X, k.Y], 
+          time: k.round_time_ms,
+          health: k.health
+        })));
+      }
+    }
+
     mappedZones.forEach((zone, zoneName) => {
       const zoneData = filteredData.filter(point => {
         return isPlayerInZone(point.X, point.Y, zone);
@@ -447,6 +470,18 @@ export default function TerritoryPage() {
       const tPresence = zoneData.filter(p => p.side === 't').length;
       const ctPresence = zoneData.filter(p => p.side === 'ct').length;
       const totalPresence = zoneData.length;
+
+      // DEBUG: Log zone-specific kill detection
+      const zoneKills = zoneData.filter(p => p.health <= 0);
+      if (zoneKills.length > 0) {
+        console.log(`🎯 ZONE ${zoneName} KILLS:`, zoneKills.length, 'kills detected');
+        console.log('- Kill coordinates:', zoneKills.map(k => ({
+          coords: [k.X, k.Y], 
+          time: k.round_time_ms, 
+          player: k.name, 
+          zone_bounds: zone
+        })));
+      }
       
       // Calculate contest intensity based on simultaneous presence
       const tickGroups = new Map<number, {t: number, ct: number}>();
@@ -514,7 +549,7 @@ export default function TerritoryPage() {
         });
       }
 
-      // Strategic value based on zone importance
+      // Strategic value based on zone importance with DEBUG logging
       let strategicValue = 0.5; // Default
       if (['BANANA', 'APARTMENTS', 'MIDDLE'].includes(zoneName)) {
         strategicValue = 0.95; // Major chokepoints
@@ -522,6 +557,16 @@ export default function TerritoryPage() {
         strategicValue = 0.85; // Bomb sites
       } else if (zoneName.includes('SPAWN')) {
         strategicValue = 0.1; // Spawns
+      }
+
+      // DEBUG: Log strategic value calculation
+      if (totalPresence > 0 || zoneKills.length > 0) {
+        console.log(`📊 ZONE ${zoneName} ANALYTICS:`);
+        console.log('- Total Presence:', totalPresence);
+        console.log('- Contest Intensity:', contestIntensity.toFixed(3));
+        console.log('- Strategic Value:', strategicValue);
+        console.log('- Territory Control:', territoryControl);
+        console.log('- Zone Kills:', zoneKills.length);
       }
 
       analytics.set(zoneName, {

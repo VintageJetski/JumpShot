@@ -1,0 +1,178 @@
+client:495 [vite] connecting...
+client:618 [vite] connected.
+chunk-276SZO74.js?v=8339d5af:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+TerritoryPage.tsx:353 ✅ LOADED HARDCODED ZONES: 38 zones for analysis
+TerritoryPage.tsx:445 🔍 DEBUGGING COORDINATE TRANSFORMATION FOR KILLS:
+TerritoryPage.tsx:452 Kill 1 (frozen): {world: Array(2), percent: Array(2), canvas: Array(2), zone: 'SPEEDWAY', tick: 32838}
+TerritoryPage.tsx:452 Kill 2 (frozen): {world: Array(2), percent: Array(2), canvas: Array(2), zone: 'SPEEDWAY', tick: 32839}
+TerritoryPage.tsx:452 Kill 3 (frozen): {world: Array(2), percent: Array(2), canvas: Array(2), zone: 'SPEEDWAY', tick: 32840}
+TerritoryPage.tsx:452 Kill 4 (frozen): {world: Array(2), percent: Array(2), canvas: Array(2), zone: 'SPEEDWAY', tick: 32841}
+TerritoryPage.tsx:452 Kill 5 (frozen): {world: Array(2), percent: Array(2), canvas: Array(2), zone: 'SPEEDWAY', tick: 32842}
+TerritoryPage.tsx:452 Kill 6 (frozen): {world: Array(2), percent: Array(2), canvas: Array(2), zone: 'SPEEDWAY', tick: 32843}
+TerritoryPage.tsx:452 Kill 7 (frozen): {world: Array(2), percent: Array(2), canvas: Array(2), zone: 'SPEEDWAY', tick: 32844}
+TerritoryPage.tsx:452 Kill 8 (frozen): {world: Array(2), percent: Array(2), canvas: Array(2), zone: 'SPEEDWAY', tick: 32845}
+TerritoryPage.tsx:452 Kill 9 (frozen): {world: Array(2), percent: Array(2), canvas: Array(2), zone: 'SPEEDWAY', tick: 32846}
+TerritoryPage.tsx:452 Kill 10 (frozen): {world: Array(2), percent: Array(2), canvas: Array(2), zone: 'SPEEDWAY', tick: 32847}
+TerritoryPage.tsx:463 📍 MANUAL ZONES LOADED:
+TerritoryPage.tsx:465   T_SPAWN: x=50-170, y=520-600 (120x80)
+TerritoryPage.tsx:465   CONSTRUCTION: x=470-570, y=90-140 (100x50)
+TerritoryPage.tsx:465   GRILL: x=620-700, y=150-210 (80x60)
+TerritoryPage.tsx:465   TRUCK: x=750-820, y=580-630 (70x50)
+TerritoryPage.tsx:465   WELL: x=280-340, y=130-190 (60x60)
+TerritoryPage.tsx:465   TERRACE: x=680-770, y=220-270 (90x50)
+TerritoryPage.tsx:465   BANANA: x=250-450, y=270-420 (200x150)
+TerritoryPage.tsx:465   T_RAMP: x=280-360, y=450-500 (80x50)
+TerritoryPage.tsx:465   KITCHEN: x=220-300, y=530-590 (80x60)
+TerritoryPage.tsx:465   APARTMENTS: x=550-650, y=580-660 (100x80)
+TerritoryPage.tsx:465   BALCONY: x=750-820, y=620-660 (70x40)
+TerritoryPage.tsx:465   SECOND_ORANGES: x=410-530, y=200-250 (120x50)
+TerritoryPage.tsx:465   BRIDGE: x=350-410, y=580-620 (60x40)
+TerritoryPage.tsx:465   STAIRS: x=570-630, y=680-730 (60x50)
+TerritoryPage.tsx:465   ARCH: x=680-750, y=360-420 (70x60)
+TerritoryPage.tsx:465   LIBRARY: x=750-850, y=360-440 (100x80)
+TerritoryPage.tsx:465   A_LONG: x=650-770, y=450-510 (120x60)
+TerritoryPage.tsx:465   MIDDLE: x=420-500, y=480-530 (80x50)
+TerritoryPage.tsx:465   TOP_MID: x=650-730, y=420-470 (80x50)
+TerritoryPage.tsx:465   PIT: x=150-210, y=350-400 (60x50)
+TerritoryPage.tsx:465   A_SHORT: x=650-730, y=580-640 (80x60)
+TerritoryPage.tsx:465   NEWBOX: x=470-540, y=200-250 (70x50)
+TerritoryPage.tsx:465   CT_SPAWN: x=750-870, y=200-280 (120x80)
+TerritoryPage.tsx:465   A_SITE: x=720-820, y=520-600 (100x80)
+TerritoryPage.tsx:465   B_SITE: x=420-520, y=150-230 (100x80)
+TerritoryPage.tsx:465   BOILER: x=650-710, y=320-360 (60x40)
+TerritoryPage.tsx:465   SPEEDWAY: x=120-200, y=420-470 (80x50)
+TerritoryPage.tsx:465   GRAVEYARD: x=720-800, y=480-530 (80x50)
+TerritoryPage.tsx:465   MOTO: x=750-810, y=450-490 (60x40)
+TerritoryPage.tsx:465   LONG_HALL: x=550-650, y=650-700 (100x50)
+TerritoryPage.tsx:465   CUBBY: x=620-680, y=680-720 (60x40)
+TerritoryPage.tsx:465   SANDBAGS: x=520-600, y=280-330 (80x50)
+TerritoryPage.tsx:465   2ND_MID: x=520-590, y=420-470 (70x50)
+TerritoryPage.tsx:465   DARK: x=420-490, y=120-170 (70x50)
+TerritoryPage.tsx:465   T_APPS: x=280-380, y=680-740 (100x60)
+TerritoryPage.tsx:465   COFFINS: x=470-540, y=120-170 (70x50)
+TerritoryPage.tsx:465   UNDERPASS: x=420-510, y=520-570 (90x50)
+TerritoryPage.tsx:465   CT: x=720-780, y=150-200 (60x50)
+TerritoryPage.tsx:478 🐛 DEBUG ZONE ANALYTICS (TICK-BASED):
+TerritoryPage.tsx:479 - Round Duration (ticks): 9087
+TerritoryPage.tsx:480 - Min/Max Tick: 30197 / 39284
+TerritoryPage.tsx:481 - Halfway Tick: 34740.5
+TerritoryPage.tsx:482 - Total Kills (health ≤ 0): 22668
+TerritoryPage.tsx:483 - Kills After Halfway: 19658
+TerritoryPage.tsx:486 - Late Round Kills: (3) [{…}, {…}, {…}]
+TerritoryPage.tsx:608 📊 ZONE CONSTRUCTION ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 454
+TerritoryPage.tsx:610 - Contest Intensity: 0.000
+TerritoryPage.tsx:611 - Strategic Value: 0.5
+TerritoryPage.tsx:612 - Territory Control: CT
+TerritoryPage.tsx:613 - Zone Kills: 0
+TerritoryPage.tsx:608 📊 ZONE GRILL ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 1811
+TerritoryPage.tsx:610 - Contest Intensity: 0.000
+TerritoryPage.tsx:611 - Strategic Value: 0.5
+TerritoryPage.tsx:612 - Territory Control: CT
+TerritoryPage.tsx:613 - Zone Kills: 0
+TerritoryPage.tsx:608 📊 ZONE TERRACE ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 1381
+TerritoryPage.tsx:610 - Contest Intensity: 0.000
+TerritoryPage.tsx:611 - Strategic Value: 0.5
+TerritoryPage.tsx:612 - Territory Control: CT
+TerritoryPage.tsx:613 - Zone Kills: 0
+TerritoryPage.tsx:508 🎯 ZONE BANANA KILLS: 2584 kills detected
+TerritoryPage.tsx:509 - Kill coordinates: (2584) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, …]
+TerritoryPage.tsx:608 📊 ZONE BANANA ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 11494
+TerritoryPage.tsx:610 - Contest Intensity: 0.915
+TerritoryPage.tsx:611 - Strategic Value: 0.95
+TerritoryPage.tsx:612 - Territory Control: Contested
+TerritoryPage.tsx:613 - Zone Kills: 2584
+TerritoryPage.tsx:608 📊 ZONE T_RAMP ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 297
+TerritoryPage.tsx:610 - Contest Intensity: 0.000
+TerritoryPage.tsx:611 - Strategic Value: 0.5
+TerritoryPage.tsx:612 - Territory Control: T
+TerritoryPage.tsx:613 - Zone Kills: 0
+TerritoryPage.tsx:608 📊 ZONE SECOND_ORANGES ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 3807
+TerritoryPage.tsx:610 - Contest Intensity: 0.000
+TerritoryPage.tsx:611 - Strategic Value: 0.5
+TerritoryPage.tsx:612 - Territory Control: CT
+TerritoryPage.tsx:613 - Zone Kills: 0
+TerritoryPage.tsx:608 📊 ZONE A_LONG ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 4905
+TerritoryPage.tsx:610 - Contest Intensity: 0.000
+TerritoryPage.tsx:611 - Strategic Value: 0.5
+TerritoryPage.tsx:612 - Territory Control: CT
+TerritoryPage.tsx:613 - Zone Kills: 0
+TerritoryPage.tsx:608 📊 ZONE MIDDLE ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 630
+TerritoryPage.tsx:610 - Contest Intensity: 0.000
+TerritoryPage.tsx:611 - Strategic Value: 0.95
+TerritoryPage.tsx:612 - Territory Control: T
+TerritoryPage.tsx:613 - Zone Kills: 0
+TerritoryPage.tsx:608 📊 ZONE TOP_MID ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 2826
+TerritoryPage.tsx:610 - Contest Intensity: 0.000
+TerritoryPage.tsx:611 - Strategic Value: 0.5
+TerritoryPage.tsx:612 - Territory Control: CT
+TerritoryPage.tsx:613 - Zone Kills: 0
+TerritoryPage.tsx:608 📊 ZONE PIT ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 445
+TerritoryPage.tsx:610 - Contest Intensity: 0.000
+TerritoryPage.tsx:611 - Strategic Value: 0.5
+TerritoryPage.tsx:612 - Territory Control: T
+TerritoryPage.tsx:613 - Zone Kills: 0
+TerritoryPage.tsx:608 📊 ZONE B_SITE ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 5157
+TerritoryPage.tsx:610 - Contest Intensity: 0.000
+TerritoryPage.tsx:611 - Strategic Value: 0.85
+TerritoryPage.tsx:612 - Territory Control: CT
+TerritoryPage.tsx:613 - Zone Kills: 0
+TerritoryPage.tsx:608 📊 ZONE BOILER ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 216
+TerritoryPage.tsx:610 - Contest Intensity: 0.000
+TerritoryPage.tsx:611 - Strategic Value: 0.5
+TerritoryPage.tsx:612 - Territory Control: CT
+TerritoryPage.tsx:613 - Zone Kills: 0
+TerritoryPage.tsx:608 📊 ZONE SPEEDWAY ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 2098
+TerritoryPage.tsx:610 - Contest Intensity: 0.000
+TerritoryPage.tsx:611 - Strategic Value: 0.5
+TerritoryPage.tsx:612 - Territory Control: T
+TerritoryPage.tsx:613 - Zone Kills: 0
+TerritoryPage.tsx:608 📊 ZONE SANDBAGS ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 1357
+TerritoryPage.tsx:610 - Contest Intensity: 0.000
+TerritoryPage.tsx:611 - Strategic Value: 0.5
+TerritoryPage.tsx:612 - Territory Control: CT
+TerritoryPage.tsx:613 - Zone Kills: 0
+TerritoryPage.tsx:508 🎯 ZONE 2ND_MID KILLS: 3937 kills detected
+TerritoryPage.tsx:509 - Kill coordinates: (3937) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, …]
+TerritoryPage.tsx:608 📊 ZONE 2ND_MID ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 8958
+TerritoryPage.tsx:610 - Contest Intensity: 0.500
+TerritoryPage.tsx:611 - Strategic Value: 0.5
+TerritoryPage.tsx:612 - Territory Control: Contested
+TerritoryPage.tsx:613 - Zone Kills: 3937
+TerritoryPage.tsx:608 📊 ZONE DARK ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 1186
+TerritoryPage.tsx:610 - Contest Intensity: 0.000
+TerritoryPage.tsx:611 - Strategic Value: 0.5
+TerritoryPage.tsx:612 - Territory Control: CT
+TerritoryPage.tsx:613 - Zone Kills: 0
+TerritoryPage.tsx:608 📊 ZONE COFFINS ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 730
+TerritoryPage.tsx:610 - Contest Intensity: 0.000
+TerritoryPage.tsx:611 - Strategic Value: 0.5
+TerritoryPage.tsx:612 - Territory Control: CT
+TerritoryPage.tsx:613 - Zone Kills: 0
+TerritoryPage.tsx:608 📊 ZONE UNDERPASS ANALYTICS:
+TerritoryPage.tsx:609 - Total Presence: 728
+TerritoryPage.tsx:610 - Contest Intensity: 0.000
+TerritoryPage.tsx:611 - Strategic Value: 0.5
+TerritoryPage.tsx:612 - Territory Control: T
+TerritoryPage.tsx:613 - Zone Kills: 0
+chunk-276SZO74.js?v=8339d5af:18625 [Violation] 'setTimeout' handler took 270ms
+TerritoryPage.tsx:858 ✅ AUTO-SAVED 38 ZONES TO LOCALSTORAGE
+territory:1 Unchecked runtime.lastError: The message port closed before a response was received.
+territory:1 Unchecked runtime.lastError: The message port closed before a response was received.
+TerritoryPage.tsx:858 ✅ AUTO-SAVED 38 ZONES TO LOCALSTORAGE

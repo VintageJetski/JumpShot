@@ -35,10 +35,10 @@ interface XYZPlayerData {
 
 // Accurate CS2 de_inferno map coordinate mapping based on actual round 4 data  
 const INFERNO_MAP_CONFIG = {
-  // Extended coordinate bounds to ensure all players are captured
+  // Real coordinate bounds from round 4 data analysis (copied from working TacticalMapAnalysis)
   bounds: { 
-    minX: -2200, maxX: 2700,  // Extended bounds for full map coverage
-    minY: -800, maxY: 3500    // Extended bounds for full map coverage
+    minX: -1675.62, maxX: 2644.97,  // Exact bounds from data
+    minY: -755.62, maxY: 3452.23    // Exact bounds from data
   },
   // Zone labels positioned using AUTHENTIC spawn coordinates from place column
   zones: {
